@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>자릿값 카드 5연속 정답 챌린지</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Pretendard & Outfit & NanumSquareRound 웹폰트 -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    @font-face {
+      font-family: 'NanumSquareRound';
+      src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRound.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'NanumSquareRound';
+      src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/NanumSquareRoundB.woff') format('woff');
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      background-color: #f1f5f9;
+      letter-spacing: -0.02em;
+    }
+
+    .title-font {
+      font-family: 'NanumSquareRound', 'Pretendard', sans-serif;
+    }
+
+    .math-font {
+      font-family: 'Outfit', 'NanumSquareRound', sans-serif;
+    }
+
+    /* 카드 색상 정의 */
+    .card-1000 { background-color: #ffe6cf; } /* 연주황 (천의 자리) */
+    .card-100  { background-color: #def0db; } /* 연두 (백의 자리) */
+    .card-10   { background-color: #daf0fd; } /* 연하늘 (십의 자리) */
+    .card-1    { background-color: #fddced; } /* 연분홍 (일의 자리) */
+
+    .card-1000-border { border-color: #fad3b3; }
+    .card-100-border  { border-color: #c0e7bc; }
+    .card-10-border   { border-color: #b7e3fc; }
+    .card-1-border    { border-color: #f9c2e0; }
+
+    .card-input {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      text-align: center;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    /* 파인애플 애니메이션 */
+    @keyframes bounce-slow {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(3deg); }
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { filter: drop-shadow(0 0 15px rgba(234, 179, 8, 0.4)); }
+      50% { filter: drop-shadow(0 0 30px rgba(234, 179, 8, 0.8)); }
+    }
+
+    .pineapple-anim {
+      animation: bounce-slow 2.5s ease-in-out infinite, pulse-glow 2s ease-in-out infinite;
+    }
+
+    /* 화면 전환 애니메이션 */
+    .fade-in {
+      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="min-h-screen py-8 px-4 flex flex-col items-center justify-center text-slate-800">
+
+  <!-- main container -->
+  <main class="w-full max-w-3xl">
+
+    <!-- 1단계: 이름 입력 화면 -->
+    <div id="screen-name" class="fade-in bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-slate-100 text-center">
+      <div class="w-20 h-20 bg-amber-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner text-4xl">
+        🍍
+      </div>
+      
+      <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 title-font mb-3">
+        자릿값 카드 5연속 챌린지
+      </h1>
+      <p class="text-slate-600 mb-8 title-font text-base md:text-lg">
+        이름을 입력하고 5문제를连续으로 풀어보세요!<br>
+        틀리면 처음부터 다시 도전해야 해요!
+      </p>
+
+      <form onsubmit="handleStartGame(event)" class="max-w-md mx-auto space-y-4">
+        <div>
+          <label for="user-name-input" class="block text-left text-sm font-bold text-slate-700 mb-2 title-font">
+            학생 이름
+          </label>
+          <input 
+            type="text" 
+            id="user-name-input" 
+            placeholder="이름을 입력하세요 (예: 홍길동)" 
+            required
+            maxlength="10"
+            autocomplete="off"
+            class="w-full px-5 py-4 text-lg rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition text-slate-800 font-semibold title-font"
+          />
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 transition flex items-center justify-center gap-2 title-font cursor-pointer"
+        >
+          챌린지 시작하기
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+
+    <!-- 2단계: 문제 풀이 화면 -->
+    <div id="screen-game" class="hidden fade-in space-y-6">
+      
+      <!-- 상단 현황판 -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold title-font">
+            👤
+          </div>
+          <div>
+            <div class="text-xs text-slate-500 font-semibold">도전자</div>
+            <div id="player-name-display" class="font-bold text-slate-800 title-font text-base">도전자</div>
+          </div>
+        </div>
+
+        <!-- 연속 정답 게이지 (5단계) -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-500 mr-1 title-font">연속 정답:</span>
+          <div class="flex items-center gap-1.5" id="streak-badges">
+            <!-- JS에서 동적 생성 -->
+          </div>
+          <span id="streak-text-display" class="ml-2 font-bold text-indigo-600 math-font text-base">0 / 5</span>
+        </div>
+      </div>
+
+      <!-- 메인 문제 카드 -->
+      <div class="bg-white p-6 md:p-10 rounded-3xl shadow-lg border border-slate-100">
+        
+        <!-- 문제 헤더 -->
+        <div class="mb-8 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-lg text-xs font-bold title-font" id="problem-num-badge">
+              1번째 문제
+            </span>
+            <h2 class="text-lg md:text-xl font-bold text-slate-800 title-font">
+              빈칸에 알맞은 수를 써넣으세요.
+            </h2>
+          </div>
+        </div>
+
+        <!-- 수식 레이아웃 -->
+        <div class="overflow-x-auto pb-4">
+          <div class="min-w-[620px] flex items-center justify-start gap-3 sm:gap-4 py-4">
+            
+            <!-- [좌측] 결합된 네 자리 수 카드 -->
+            <div class="flex shadow-sm rounded-xl overflow-hidden border border-slate-200/80">
+              <div id="display-th" class="card-1000 w-12 sm:w-14 h-16 sm:h-20 flex items-center justify-center font-bold text-2xl sm:text-3xl border-r border-slate-200/60 math-font text-slate-800">5</div>
+              <div id="display-hu" class="card-100 w-12 sm:w-14 h-16 sm:h-20 flex items-center justify-center font-bold text-2xl sm:text-3xl border-r border-slate-200/60 math-font text-slate-800">3</div>
+              <div id="display-te" class="card-10 w-12 sm:w-14 h-16 sm:h-20 flex items-center justify-center font-bold text-2xl sm:text-3xl border-r border-slate-200/60 math-font text-slate-800">7</div>
+              <div id="display-un" class="card-1 w-12 sm:w-14 h-16 sm:h-20 flex items-center justify-center font-bold text-2xl sm:text-3xl math-font text-slate-800">4</div>
+            </div>
+
+            <!-- 등호 (=) -->
+            <div class="text-3xl sm:text-4xl text-slate-600 px-1 font-medium math-font select-none">=</div>
+
+            <!-- [우측] 분해된 빈칸 입력 카드리스트 -->
+            <div class="flex items-center gap-2 sm:gap-3">
+              
+              <!-- 천의 자리 -->
+              <div class="card-1000 card-1000-border border-2 rounded-xl w-28 sm:w-36 h-16 sm:h-20 flex items-center justify-center shadow-inner transition-all">
+                <input type="text" id="input-th" inputmode="numeric" maxlength="4" autocomplete="off" class="card-input math-font" />
+              </div>
+
+              <div class="text-2xl sm:text-3xl text-slate-500 font-medium math-font select-none">+</div>
+
+              <!-- 백의 자리 -->
+              <div class="card-100 card-100-border border-2 rounded-xl w-24 sm:w-32 h-16 sm:h-20 flex items-center justify-center shadow-inner transition-all">
+                <input type="text" id="input-hu" inputmode="numeric" maxlength="3" autocomplete="off" class="card-input math-font" />
+              </div>
+
+              <div class="text-2xl sm:text-3xl text-slate-500 font-medium math-font select-none">+</div>
+
+              <!-- 십의 자리 -->
+              <div class="card-10 card-10-border border-2 rounded-xl w-20 sm:w-28 h-16 sm:h-20 flex items-center justify-center shadow-inner transition-all">
+                <input type="text" id="input-te" inputmode="numeric" maxlength="2" autocomplete="off" class="card-input math-font" />
+              </div>
+
+              <div class="text-2xl sm:text-3xl text-slate-500 font-medium math-font select-none">+</div>
+
+              <!-- 일의 자리 -->
+              <div class="card-1 card-1-border border-2 rounded-xl w-16 sm:w-20 h-16 sm:h-20 flex items-center justify-center shadow-inner transition-all">
+                <input type="text" id="input-un" inputmode="numeric" maxlength="1" autocomplete="off" class="card-input math-font" />
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- 하단 버튼 및 결과 알림 -->
+        <div class="mt-6 flex flex-col items-center gap-4">
+          <div id="result-box" class="w-full p-4 rounded-2xl border hidden transition-all"></div>
+
+          <div class="flex items-center justify-end w-full gap-3">
+            <button 
+              type="button"
+              onclick="checkAnswer()" 
+              id="btn-submit"
+              class="w-full sm:w-auto px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-lg rounded-2xl shadow-md transition title-font flex items-center justify-center gap-2 cursor-pointer"
+            >
+              정답 제출하기
+            </button>
+            <button 
+              type="button"
+              onclick="nextProblem()" 
+              id="btn-next"
+              class="hidden w-full sm:w-auto px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-lg rounded-2xl shadow-md transition title-font flex items-center justify-center gap-2 cursor-pointer"
+            >
+              다음 문제로 ➡️
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 3단계: 파인애플 등장 성공 완료 화면 -->
+    <div id="screen-congrats" class="hidden fade-in bg-white p-8 md:p-14 rounded-3xl shadow-2xl border border-amber-200 text-center relative overflow-hidden">
+      <!-- 배경 장식 다이아몬드 Pattern -->
+      <div class="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#eab308_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+      <!-- 파인애플 SVG 아트워크 -->
+      <div class="relative z-10 my-4 flex justify-center">
+        <div class="pineapple-anim w-48 h-60 md:w-56 md:h-72">
+          <svg viewBox="0 0 200 260" class="w-full h-full filter drop-shadow-xl">
+            <!-- 파인애플 잎사귀 (상단) -->
+            <g fill="#22c55e">
+              <path d="M100 80 C80 30, 40 10, 30 5 C50 30, 70 60, 85 80 Z" />
+              <path d="M100 80 C70 20, 20 0, 10 0 C40 20, 70 50, 80 80 Z" />
+              <path d="M100 80 C120 30, 160 10, 170 5 C150 30, 130 60, 115 80 Z" />
+              <path d="M100 80 C130 20, 180 0, 190 0 C160 20, 130 50, 120 80 Z" />
+              <path d="M100 80 C100 10, 100 -10, 100 -20 C95 10, 95 40, 100 80 Z" fill="#16a34a" />
+            </g>
+
+            <!-- 파인애플 몸통 (기본 타원) -->
+            <ellipse cx="100" cy="165" rx="65" ry="80" fill="#f59e0b" />
+            
+            <!-- 몸통 격자 및 텍스처 (황금빛 패턴) -->
+            <path d="M50 120 L150 210 M40 150 L140 235 M70 100 L160 180" stroke="#d97706" stroke-width="4" stroke-linecap="round"/>
+            <path d="M150 120 L50 210 M160 150 L60 235 M130 100 L40 180" stroke="#d97706" stroke-width="4" stroke-linecap="round"/>
+
+            <!-- 눈사람 및 눈웃음 표현 -->
+            <!-- 왼쪽 눈 -->
+            <circle cx="78" cy="150" r="8" fill="#1e293b" />
+            <circle cx="80" cy="148" r="3" fill="#ffffff" />
+            
+            <!-- 오른쪽 눈 -->
+            <circle cx="122" cy="150" r="8" fill="#1e293b" />
+            <circle cx="124" cy="148" r="3" fill="#ffffff" />
+
+            <!-- 볼터치 -->
+            <ellipse cx="68" cy="162" rx="7" ry="4" fill="#f43f5e" opacity="0.6" />
+            <ellipse cx="132" cy="162" rx="7" ry="4" fill="#f43f5e" opacity="0.6" />
+
+            <!-- 웃는 입 -->
+            <path d="M88 165 Q100 180 112 165" fill="none" stroke="#1e293b" stroke-width="4" stroke-linecap="round" />
+
+            <!-- 미니 왕관 -->
+            <path d="M85 88 L92 72 L100 84 L108 72 L115 88 Z" fill="#eab308" stroke="#ca8a04" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="relative z-10 space-y-3">
+        <div class="inline-block px-4 py-1.5 bg-amber-100 text-amber-800 rounded-full font-extrabold text-sm title-font">
+          🎉 5연속 정답 성공 완료! 🎉
+        </div>
+        
+        <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 title-font">
+          축하합니다, <span id="congrats-user-name" class="text-amber-500">도전자</span>님!
+        </h2>
+        
+        <p class="text-slate-600 text-base md:text-lg max-w-md mx-auto title-font leading-relaxed">
+          네 자리 수의 자릿값을 완벽하게 이해하셨네요!<br>
+          황금 파인애플 상장을 받았습니다! 🍍✨
+        </p>
+
+        <div class="pt-6">
+          <button 
+            type="button"
+            onclick="restartGame()" 
+            class="px-8 py-4 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-extrabold text-lg rounded-2xl shadow-lg shadow-amber-200 transition title-font cursor-pointer"
+          >
+            다시 도전하기 🔄
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // 앱 게임 상태
+    let userName = '';
+    let currentStreak = 0;
+    const TARGET_STREAK = 5;
+
+    let currentDigits = { th: 5, hu: 3, te: 7, un: 4 };
+
+    // DOM 요소를 캐싱
+    const screenName = document.getElementById('screen-name');
+    const screenGame = document.getElementById('screen-game');
+    const screenCongrats = document.getElementById('screen-congrats');
+
+    const userNameInput = document.getElementById('user-name-input');
+    const playerNameDisplay = document.getElementById('player-name-display');
+    const congratsUserName = document.getElementById('congrats-user-name');
+    
+    const streakBadges = document.getElementById('streak-badges');
+    const streakTextDisplay = document.getElementById('streak-text-display');
+    const problemNumBadge = document.getElementById('problem-num-badge');
+
+    const displayTh = document.getElementById('display-th');
+    const displayHu = document.getElementById('display-hu');
+    const displayTe = document.getElementById('display-te');
+    const displayUn = document.getElementById('display-un');
+
+    const inputTh = document.getElementById('input-th');
+    const inputHu = document.getElementById('input-hu');
+    const inputTe = document.getElementById('input-te');
+    const inputUn = document.getElementById('input-un');
+
+    const resultBox = document.getElementById('result-box');
+    const btnSubmit = document.getElementById('btn-submit');
+    const btnNext = document.getElementById('btn-next');
+
+    // 1. 게임 시작 처리
+    function handleStartGame(e) {
+      e.preventDefault();
+      const val = userNameInput.value.trim();
+      if (!val) return;
+
+      userName = val;
+      playerNameDisplay.textContent = userName;
+      congratsUserName.textContent = userName;
+
+      currentStreak = 0;
+      updateStreakUI();
+
+      screenName.classList.add('hidden');
+      screenGame.classList.remove('hidden');
+      screenCongrats.classList.add('hidden');
+
+      generateProblem();
+    }
+
+    // 2. 문제 생성
+    function generateProblem() {
+      currentDigits.th = Math.floor(Math.random() * 9) + 1; // 1~9
+      currentDigits.hu = Math.floor(Math.random() * 10);    // 0~9
+      currentDigits.te = Math.floor(Math.random() * 10);    // 0~9
+      currentDigits.un = Math.floor(Math.random() * 10);    // 0~9
+
+      displayTh.textContent = currentDigits.th;
+      displayHu.textContent = currentDigits.hu;
+      displayTe.textContent = currentDigits.te;
+      displayUn.textContent = currentDigits.un;
+
+      // 인풋 비우기 및 클래스 초기화
+      [inputTh, inputHu, inputTe, inputUn].forEach(input => {
+        input.value = '';
+        input.disabled = false;
+        const container = input.parentElement;
+        container.classList.remove('ring-4', 'ring-emerald-400', 'ring-rose-400', 'border-emerald-500', 'border-rose-500');
+      });
+
+      resultBox.className = 'w-full p-4 rounded-2xl border hidden transition-all';
+      resultBox.innerHTML = '';
+
+      btnSubmit.classList.remove('hidden');
+      btnNext.classList.add('hidden');
+
+      problemNumBadge.textContent = `${currentStreak + 1}번째 문제 도전 중!`;
+
+      // 첫 번째 입력란으로 포커스 이동
+      setTimeout(() => inputTh.focus(), 100);
+    }
+
+    // 3. 정답 채점
+    function checkAnswer() {
+      const correctTh = currentDigits.th * 1000;
+      const correctHu = currentDigits.hu * 100;
+      const correctTe = currentDigits.te * 10;
+      const correctUn = currentDigits.un;
+
+      const userTh = parseInt(inputTh.value.trim(), 10);
+      const userHu = parseInt(inputHu.value.trim(), 10);
+      const userTe = parseInt(inputTe.value.trim(), 10);
+      const userUn = parseInt(inputUn.value.trim(), 10);
+
+      const isThCorrect = userTh === correctTh;
+      const isHuCorrect = userHu === correctHu;
+      const isTeCorrect = userTe === correctTe;
+      const isUnCorrect = userUn === correctUn;
+
+      markInput(inputTh, isThCorrect);
+      markInput(inputHu, isHuCorrect);
+      markInput(inputTe, isTeCorrect);
+      markInput(inputUn, isUnCorrect);
+
+      const isAllCorrect = isThCorrect && isHuCorrect && isTeCorrect && isUnCorrect;
+
+      resultBox.classList.remove('hidden');
+
+      if (isAllCorrect) {
+        currentStreak++;
+        updateStreakUI();
+
+        if (currentStreak >= TARGET_STREAK) {
+          // 5연속 성공! 파인애플 화면으로 이동
+          setTimeout(() => {
+            screenGame.classList.add('hidden');
+            screenCongrats.classList.remove('hidden');
+          }, 800);
+        } else {
+          // 정답 - 다음 문제로 넘어가기 버튼 활성화
+          resultBox.className = 'w-full p-4 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-900 flex items-center gap-3 title-font';
+          resultBox.innerHTML = `
+            <div class="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-bold flex-shrink-0">✓</div>
+            <div>
+              <div class="font-bold">정답입니다! 🎉</div>
+              <div class="text-sm text-emerald-700">연속 ${currentStreak}문제 성공! 5개까지 ${TARGET_STREAK - currentStreak}개 남았습니다.</div>
+            </div>
+          `;
+
+          btnSubmit.classList.add('hidden');
+          btnNext.classList.remove('hidden');
+          btnNext.focus();
+
+          // 모든 입력란 비활성화
+          [inputTh, inputHu, inputTe, inputUn].forEach(i => i.disabled = true);
+        }
+
+      } else {
+        // 오답! 규칙에 따라 연속 스코어 0으로 초기화
+        currentStreak = 0;
+        updateStreakUI();
+
+        resultBox.className = 'w-full p-4 rounded-2xl border border-rose-200 bg-rose-50 text-rose-900 flex items-center gap-3 title-font';
+        resultBox.innerHTML = `
+          <div class="w-8 h-8 rounded-lg bg-rose-500 text-white flex items-center justify-center font-bold flex-shrink-0">!</div>
+          <div>
+            <div class="font-bold">아쉽네요! 틀린 답이 있어요.</div>
+            <div class="text-sm text-rose-700">연속 정답이 리셋되었습니다. 1번째 문제부터 다시 도전해볼까요?</div>
+          </div>
+        `;
+
+        btnSubmit.classList.add('hidden');
+        btnNext.classList.remove('hidden');
+        btnNext.textContent = '처음부터 다시 도전 🔄';
+        btnNext.focus();
+
+        [inputTh, inputHu, inputTe, inputUn].forEach(i => i.disabled = true);
+      }
+    }
+
+    function markInput(inputElement, isCorrect) {
+      const container = inputElement.parentElement;
+      container.classList.remove('ring-4', 'ring-emerald-400', 'ring-rose-400', 'border-emerald-500', 'border-rose-500');
+      if (isCorrect) {
+        container.classList.add('ring-4', 'ring-emerald-400', 'border-emerald-500');
+      } else {
+        container.classList.add('ring-4', 'ring-rose-400', 'border-rose-500');
+      }
+    }
+
+    // 4. 다음 문제 이동
+    function nextProblem() {
+      btnNext.textContent = '다음 문제로 ➡️';
+      generateProblem();
+    }
+
+    // 5. 연속 정답 게이지 UI 업데이트
+    function updateStreakUI() {
+      streakBadges.innerHTML = '';
+      for (let i = 0; i < TARGET_STREAK; i++) {
+        const dot = document.createElement('div');
+        if (i < currentStreak) {
+          dot.className = 'w-6 h-6 rounded-full bg-amber-400 border-2 border-amber-500 flex items-center justify-center text-xs text-amber-950 font-bold transition-all transform scale-110 shadow-sm';
+          dot.textContent = '🍍';
+        } else {
+          dot.className = 'w-6 h-6 rounded-full bg-slate-200 border-2 border-slate-300 flex items-center justify-center text-xs text-slate-400 font-medium';
+          dot.textContent = i + 1;
+        }
+        streakBadges.appendChild(dot);
+      }
+      streakTextDisplay.textContent = `${currentStreak} / ${TARGET_STREAK}`;
+    }
+
+    // 6. 게임 재시작 (파인애플 완료 화면 후)
+    function restartGame() {
+      currentStreak = 0;
+      updateStreakUI();
+
+      screenCongrats.classList.add('hidden');
+      screenGame.classList.remove('hidden');
+
+      generateProblem();
+    }
+
+    // 엔터키 자동 이동 및 제출
+    [inputTh, inputHu, inputTe, inputUn].forEach((input, idx, arr) => {
+      input.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+          if (idx < arr.length - 1 && input.value.trim() !== '') {
+            arr[idx + 1].focus();
+          } else {
+            checkAnswer();
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
