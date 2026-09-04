@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4컷 그림 팝업 뷰어</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+    .modal-backdrop {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .fade-in {
+      animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    /* 말풍선 말꼬리 스타일 */
+    .bubble-tail-bottom-left::after {
+      content: '';
+      position: absolute;
+      bottom: -9px;
+      left: 24px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 10px solid white;
+    }
+    .bubble-tail-bottom-left::before {
+      content: '';
+      position: absolute;
+      bottom: -12px;
+      left: 23px;
+      width: 0;
+      height: 0;
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-top: 12px solid #334155;
+    }
+    .bubble-tail-bottom-right::after {
+      content: '';
+      position: absolute;
+      bottom: -9px;
+      right: 24px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 10px solid white;
+    }
+    .bubble-tail-bottom-right::before {
+      content: '';
+      position: absolute;
+      bottom: -12px;
+      right: 23px;
+      width: 0;
+      height: 0;
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-top: 12px solid #334155;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+  <!-- 헤더 영역 -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xl shadow-sm">
+          🎨
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold text-slate-800 tracking-tight">상황별 대화 그림 뷰어</h1>
+          <p class="text-xs text-slate-500">그림 위의 말풍선은 자유롭게 켜고 끌 수 있습니다.</p>
+        </div>
+      </div>
+
+      <!-- 상단 액션 버튼들 -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <!-- 전체 말풍선 일괄 토글 버튼 -->
+        <button id="toggleAllBubblesBtn" class="inline-flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 text-sm font-semibold px-3.5 py-2 rounded-xl transition-colors border border-sky-200 shadow-sm">
+          <span>💬</span>
+          <span id="allBubblesBtnText">모든 말풍선 숨기기</span>
+        </button>
+
+        <!-- 전체 4컷 이미지 불러오기 -->
+        <label for="imageUploadInput" class="cursor-pointer inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-3.5 py-2 rounded-xl transition-colors border border-slate-200">
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <span>4컷 원본 불러오기</span>
+        </label>
+        <input type="file" id="imageUploadInput" accept="image/*" class="hidden">
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 컨텐츠 영역 -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex-grow w-full">
+    <!-- 안내 배너 -->
+    <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-3xl p-5 mb-8 shadow-sm">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl shadow">
+            💬
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-800">그림 속 말풍선 대사 & 개별 제어</h2>
+            <p class="text-xs text-slate-600 mt-0.5">
+              각 그림 안쪽에 말풍선이 들어가 있습니다. <strong>'💬 말풍선'</strong> 버튼으로 말풍선을 없앴다가 다시 나타나게 할 수 있으며, <strong>내 그림으로 교체해도 말풍선 기능은 그대로 유지</strong>됩니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4개 그림 그리드 (2 x 2 배치) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="cardContainer">
+      <!-- 자바스크립트로 4개 카드가 동적으로 생성됩니다 -->
+    </div>
+  </main>
+
+  <!-- 푸터 -->
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+    4컷 그림 팝업 대화창 뷰어 &copy; 2026. 모든 디바이스에 최적화되어 있습니다.
+  </footer>
+
+  <!-- 팝업 모달 (Lightbox Modal) -->
+  <div id="imageModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true">
+    <div class="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-3xl w-full flex flex-col max-h-[92vh] fade-in relative border border-slate-100">
+      
+      <!-- 모달 상단 바 -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
+        <div class="flex items-center gap-3">
+          <span id="modalNumberBadge" class="w-8 h-8 rounded-full bg-emerald-600 text-white font-black flex items-center justify-center text-sm shadow">
+            1
+          </span>
+          <div>
+            <h3 id="modalTitle" class="text-base font-bold text-slate-800">그림 장면 1</h3>
+            <p id="modalSpeaker" class="text-xs text-slate-500">화자 정보</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 모달 내부 말풍선 보이기/숨기기 토글 버튼 -->
+          <button id="modalToggleBubbleBtn" class="inline-flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 shadow-sm transition-colors">
+            <span>💬</span>
+            <span id="modalToggleBubbleText">말풍선 끄기</span>
+          </button>
+
+          <!-- 모달 내부에서 바로 그림 교체하는 버튼 -->
+          <label class="cursor-pointer inline-flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 shadow-sm transition-colors">
+            <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <span>그림 교체</span>
+            <input type="file" id="modalSingleFileInput" accept="image/*" class="hidden">
+          </label>
+
+          <!-- 닫기 버튼 -->
+          <button id="modalCloseBtn" class="w-9 h-9 rounded-full bg-slate-200/80 hover:bg-rose-500 hover:text-white flex items-center justify-center text-slate-600 transition-colors duration-200 focus:outline-none ml-1" aria-label="팝업 닫기">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 모달 본문 (확대 이미지 및 말풍선 오버레이 영역) -->
+      <div class="relative flex-1 bg-slate-900/5 flex items-center justify-center p-4 sm:p-6 overflow-hidden min-h-[320px] max-h-[62vh]">
+        <!-- 팝업 큰 이미지 컨테이너 -->
+        <div id="modalImageContainer" class="relative w-full h-full max-w-lg max-h-[55vh] flex items-center justify-center">
+          <!-- 동적으로 이미지와 오버레이 말풍선이 들어갑니다 -->
+        </div>
+
+        <!-- 이전 버튼 -->
+        <button id="modalPrevBtn" class="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-lg flex items-center justify-center transition-all transform hover:scale-105 active:scale-95 focus:outline-none z-20" aria-label="이전 그림">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+
+        <!-- 다음 버튼 -->
+        <button id="modalNextBtn" class="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-lg flex items-center justify-center transition-all transform hover:scale-105 active:scale-95 focus:outline-none z-20" aria-label="다음 그림">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 모달 하단 영역 -->
+      <div class="px-6 py-4 bg-white border-t border-slate-100 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>상단 <strong>'말풍선 끄기/켜기'</strong> 버튼으로 그림 속 대사를 토글할 수 있습니다.</span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="ttsButton" class="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs px-3.5 py-2 rounded-xl transition-colors border border-emerald-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+            </svg>
+            <span>소리로 듣기</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 토스트 알림창 -->
+  <div id="toastMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white px-5 py-2.5 rounded-full text-sm font-medium shadow-xl opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+    알림 메시지
+  </div>
+
+  <script>
+    // 4컷 데이터 정의
+    const comicPanels = [
+      {
+        id: 1,
+        title: "1번 장면",
+        speaker: "하늘 (파란 모자를 쓴 하늘이)",
+        dialogue: "우아, 쉬는 시간이다!\n우리, 쌓기 놀이 같이 하는 거 어때?",
+        tailPosition: "bubble-tail-bottom-left", // 말풍선 꼬리 위치
+        bubbleAlign: "left", // 말풍선 정렬
+        renderBackground: () => `
+          <div class="w-full h-full bg-[#faeed8] flex flex-col justify-end p-2 relative rounded-2xl overflow-hidden select-none">
+            <div class="relative w-full h-[85%] flex items-end justify-center overflow-hidden">
+              <svg viewBox="0 0 280 320" class="w-auto h-full max-h-[220px] drop-shadow-sm select-none" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <line x1="0" y1="120" x2="280" y2="120" stroke="#b49372" stroke-width="2"/>
+                <line x1="50" y1="120" x2="30" y2="320" stroke="#d5bba2" stroke-width="1.5"/>
+                <line x1="160" y1="120" x2="135" y2="320" stroke="#d5bba2" stroke-width="1.5"/>
+                <line x1="250" y1="120" x2="230" y2="320" stroke="#d5bba2" stroke-width="1.5"/>
+                <path d="M 0 260 L 280 260 L 280 320 L 0 320 Z" fill="#9ecb9e"/>
+                <path d="M 105 200 Q 115 250 115 270 L 195 270 Q 185 240 180 205 Z" fill="#ffdcc4"/>
+                <ellipse cx="90" cy="275" rx="28" ry="30" fill="#58b6f6"/>
+                <path d="M 190 260 Q 220 270 240 280 L 235 315 L 180 300 Z" fill="#ffdcc4"/>
+                <path d="M 85 240 Q 140 232 195 240 L 190 320 L 80 320 Z" fill="#1fb854"/>
+                <path d="M 120 120 C 130 110 180 115 190 145 C 193 158 193 168 198 174 C 205 183 203 192 196 195 C 190 197 186 208 172 224 C 158 240 128 240 112 215 C 105 204 105 160 120 120 Z" fill="#ffdcc4"/>
+                <path d="M 124 165 C 112 165 110 188 123 198 C 130 203 138 195 137 182 C 137 172 133 165 124 165 Z" fill="#fed3b8"/>
+                <path d="M 126 173 C 120 175 120 187 127 190" stroke="#f6ab88" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M 175 142 Q 182 139 187 143" stroke="#33241b" stroke-width="3" stroke-linecap="round"/>
+                <ellipse cx="183" cy="155" rx="4.5" ry="6" fill="#2d1c14"/>
+                <circle cx="185" cy="153" r="1.5" fill="#ffffff"/>
+                <ellipse cx="197" cy="177" rx="2" ry="2.5" fill="#54382c"/>
+                <ellipse cx="165" cy="182" rx="13" ry="10" fill="#fca584" opacity="0.6"/>
+                <path d="M 183 198 C 187 194 195 194 198 198 C 195 208 186 208 183 198 Z" fill="#ce5634"/>
+                <g fill="#694a32">
+                  <circle cx="75" cy="190" r="16"/>
+                  <circle cx="68" cy="208" r="14"/>
+                  <circle cx="80" cy="222" r="16"/>
+                  <circle cx="98" cy="228" r="14"/>
+                  <circle cx="86" cy="172" r="17"/>
+                  <circle cx="95" cy="155" r="16"/>
+                  <circle cx="106" cy="180" r="18"/>
+                  <circle cx="115" cy="198" r="16"/>
+                  <circle cx="118" cy="160" r="13"/>
+                  <circle cx="132" cy="155" r="12"/>
+                  <circle cx="140" cy="165" r="11"/>
+                  <path d="M 72 175 Q 82 190 74 208 Q 85 220 95 228" stroke="#4a3220" stroke-width="3" fill="none"/>
+                  <path d="M 88 160 Q 98 175 92 195 Q 102 210 110 220" stroke="#4a3220" stroke-width="3" fill="none"/>
+                  <path d="M 104 150 Q 115 168 110 185" stroke="#4a3220" stroke-width="3" fill="none"/>
+                </g>
+                <path d="M 75 162 C 68 118 100 68 165 65 C 205 64 210 98 200 120 C 170 122 135 125 75 162 Z" fill="#0b7dd7"/>
+                <path d="M 100 75 Q 160 70 195 105" stroke="#38a2f5" stroke-width="3" fill="none"/>
+                <path d="M 175 118 C 175 118 205 92 238 94 C 255 96 260 115 240 125 C 210 138 185 127 175 118 Z" fill="#d2d5db" stroke="#9da3af" stroke-width="1.5"/>
+                <path d="M 185 114 Q 220 102 245 108" stroke="#a0a7b4" stroke-width="2" fill="none"/>
+                <path d="M 192 118 Q 222 110 236 117" stroke="#a0a7b4" stroke-width="2" fill="none"/>
+                <g transform="translate(45, 272)">
+                  <rect x="0" y="0" width="46" height="24" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+                  <text x="23" y="16" font-size="12" font-weight="bold" fill="#0f172a" text-anchor="middle">하늘</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 2,
+        title: "2번 장면",
+        speaker: "민서 (기쁜 마음으로 동의)",
+        dialogue: "오! 좋은 생각이야.\n넷이서 하면 정말 재미있거든.",
+        tailPosition: "bubble-tail-bottom-right",
+        bubbleAlign: "right",
+        renderBackground: () => `
+          <div class="w-full h-full bg-sky-50 flex flex-col justify-end p-4 relative rounded-2xl overflow-hidden select-none">
+            <div class="flex items-center justify-center my-auto">
+              <div class="flex flex-col items-center">
+                <div class="relative">
+                  <div class="w-32 h-32 rounded-full bg-amber-100 border-4 border-pink-300 flex items-center justify-center text-7xl shadow-lg">
+                    👧
+                  </div>
+                  <span class="absolute -top-1 -right-1 text-2xl">✨</span>
+                </div>
+                <div class="mt-2 bg-pink-100 text-pink-700 px-3 py-1 rounded-full text-xs font-bold border border-pink-300">
+                  민서
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 3,
+        title: "3번 장면",
+        speaker: "정현 (뾰로통한 표정)",
+        dialogue: "아, 짜증 나! 나는 쌓기 놀이보다\n보드게임이 더 재미있단 말이야.",
+        tailPosition: "bubble-tail-bottom-left",
+        bubbleAlign: "left",
+        renderBackground: () => `
+          <div class="w-full h-full bg-slate-100 flex flex-col justify-end p-4 relative rounded-2xl overflow-hidden select-none">
+            <div class="flex items-center justify-center my-auto">
+              <div class="flex flex-col items-center">
+                <div class="relative">
+                  <div class="w-32 h-32 rounded-full bg-orange-100 border-4 border-blue-400 flex items-center justify-center text-7xl shadow-lg">
+                    👦
+                  </div>
+                  <span class="absolute -top-1 -right-2 text-2xl">💢</span>
+                </div>
+                <div class="mt-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold border border-blue-300">
+                  정현
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        id: 4,
+        title: "4번 장면",
+        speaker: "하늘 & 하영 (의견 나누기)",
+        dialogue: "그래? 나는 보드게임하는 것도 좋아.\n하영아, 너는 어때? / 어……, 뭐가?",
+        tailPosition: "bubble-tail-bottom-left",
+        bubbleAlign: "left",
+        renderBackground: () => `
+          <div class="w-full h-full bg-stone-50 flex flex-col justify-end p-4 relative rounded-2xl overflow-hidden select-none">
+            <div class="flex items-center justify-center my-auto">
+              <div class="flex items-center gap-3 bg-white/80 px-4 py-3 rounded-2xl border border-stone-200 shadow-sm">
+                <div class="text-center">
+                  <div class="text-3xl">👦</div>
+                  <span class="text-[11px] text-slate-600 font-bold">하늘</span>
+                </div>
+                <div class="text-center">
+                  <div class="text-3xl">👧</div>
+                  <span class="text-[11px] text-slate-600 font-bold">하영</span>
+                </div>
+                <div class="text-center">
+                  <div class="text-3xl">👦</div>
+                  <span class="text-[11px] text-slate-600 font-bold">정현</span>
+                </div>
+                <div class="text-center">
+                  <div class="text-3xl">👧</div>
+                  <span class="text-[11px] text-slate-600 font-bold">민서</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      }
+    ];
+
+    // 각 번호별 커스텀 이미지 (null이면 기본 배경 렌더링)
+    let customCroppedImages = [null, null, null, null];
+
+    // 각 번호별 말풍선 표시 여부 상태 (기본값: true)
+    let bubbleVisibility = [true, true, true, true];
+
+    // 현재 열려있는 팝업 인덱스 (0~3)
+    let currentIndex = 0;
+
+    // DOM 요소 캐싱
+    const cardContainer = document.getElementById('cardContainer');
+    const imageModal = document.getElementById('imageModal');
+    const modalNumberBadge = document.getElementById('modalNumberBadge');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalSpeaker = document.getElementById('modalSpeaker');
+    const modalImageContainer = document.getElementById('modalImageContainer');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    const modalPrevBtn = document.getElementById('modalPrevBtn');
+    const modalNextBtn = document.getElementById('modalNextBtn');
+    const modalSingleFileInput = document.getElementById('modalSingleFileInput');
+    const modalToggleBubbleBtn = document.getElementById('modalToggleBubbleBtn');
+    const modalToggleBubbleText = document.getElementById('modalToggleBubbleText');
+    const toggleAllBubblesBtn = document.getElementById('toggleAllBubblesBtn');
+    const allBubblesBtnText = document.getElementById('allBubblesBtnText');
+    const ttsButton = document.getElementById('ttsButton');
+    const imageUploadInput = document.getElementById('imageUploadInput');
+    const toastMessage = document.getElementById('toastMessage');
+
+    // 알림 토스트 표시 함수
+    function showToast(msg) {
+      toastMessage.innerText = msg;
+      toastMessage.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toastMessage.classList.add('opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    // 줄바꿈이 적용된 말풍선 HTML 태그 생성 함수
+    function createBubbleHtml(panel, isVisible, isModal = false) {
+      const formattedText = panel.dialogue.replace(/\n/g, '<br>');
+      const alignClass = panel.bubbleAlign === 'right' ? 'self-end' : 'self-start';
+      const textSizeClass = isModal ? 'text-sm sm:text-base' : 'text-xs sm:text-sm';
+      const maxWidthClass = isModal ? 'max-w-[85%]' : 'max-w-[88%]';
+
+      return `
+        <div class="speech-bubble-overlay absolute top-3 sm:top-4 inset-x-3 sm:inset-x-4 z-20 flex flex-col pointer-events-none transition-all duration-300 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}">
+          <div class="${alignClass} ${maxWidthClass} relative bg-white/95 backdrop-blur border-2 border-slate-700 rounded-2xl px-3.5 py-2.5 shadow-xl ${panel.tailPosition}">
+            <p class="${textSizeClass} font-bold text-slate-800 leading-snug break-keep">
+              ${formattedText}
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    // 각 번호에 파일 적용 함수
+    function assignImageToPanel(idx, file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast('이미지 파일만 업로드할 수 있습니다.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        customCroppedImages[idx] = e.target.result;
+        renderCards();
+        if (!imageModal.classList.contains('hidden') && currentIndex === idx) {
+          updateModalContent();
+        }
+        showToast(`${idx + 1}번 그림에 새 이미지가 적용되었습니다! (말풍선 유지됨)`);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 특정 카드의 말풍선 토글 함수
+    function toggleBubble(idx) {
+      bubbleVisibility[idx] = !bubbleVisibility[idx];
+      renderCards();
+      if (!imageModal.classList.contains('hidden') && currentIndex === idx) {
+        updateModalContent();
+      }
+      showToast(`${idx + 1}번 말풍선이 ${bubbleVisibility[idx] ? '표시' : '숨김'} 처리되었습니다.`);
+    }
+
+    // 전체 말풍선 일괄 토글
+    function toggleAllBubbles() {
+      const anyVisible = bubbleVisibility.some(v => v);
+      const targetState = !anyVisible; // 하나라도 켜져 있으면 모두 끔, 모두 꺼져있으면 모두 켬
+      bubbleVisibility = bubbleVisibility.map(() => targetState);
+      
+      allBubblesBtnText.innerText = targetState ? '모든 말풍선 숨기기' : '모든 말풍선 보이기';
+      renderCards();
+      if (!imageModal.classList.contains('hidden')) {
+        updateModalContent();
+      }
+      showToast(targetState ? '모든 말풍선을 켰습니다.' : '모든 말풍선을 숨겼습니다.');
+    }
+
+    // 메인 그리드 카드 렌더링
+    function renderCards() {
+      cardContainer.innerHTML = '';
+
+      comicPanels.forEach((panel, idx) => {
+        const isBubbleOn = bubbleVisibility[idx];
+        const card = document.createElement('div');
+        card.className = 'group bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col relative';
+
+        // 배경 비주얼 (사용자 이미지 또는 기본 그래픽)
+        const backgroundVisual = customCroppedImages[idx]
+          ? `<div class="relative w-full h-full bg-slate-900/5 flex items-center justify-center p-2 overflow-hidden">
+               <img src="${customCroppedImages[idx]}" alt="${panel.title}" class="max-w-full max-h-full object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-300">
+             </div>`
+          : panel.renderBackground();
+
+        card.innerHTML = `
+          <!-- 상단 그림 영역 (안에 말풍선 오버레이 탑재) -->
+          <div class="h-64 sm:h-72 w-full p-3 bg-slate-50 border-b border-slate-100 flex items-center justify-center relative select-none">
+            <div class="w-full h-full rounded-2xl overflow-hidden shadow-sm relative thumbnail-trigger cursor-pointer">
+              <!-- 그림 본체 -->
+              ${backgroundVisual}
+
+              <!-- 그림 속 말풍선 (토글 가능) -->
+              ${createBubbleHtml(panel, isBubbleOn, false)}
+
+              <!-- 우하단 번호 배지 -->
+              <span class="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-emerald-600 text-white font-black flex items-center justify-center text-sm shadow z-20 pointer-events-none">
+                ${panel.id}
+              </span>
+
+              <!-- 돋보기 오버레이 -->
+              <div class="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+                <div class="bg-white/95 text-slate-800 px-4 py-2 rounded-full font-bold text-xs shadow-xl flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                  <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"></path>
+                  </svg>
+                  <span>클릭하여 확대</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 하단 컨트롤 영역 -->
+          <div class="p-4 sm:p-5 flex items-center justify-between gap-3 bg-white">
+            <div class="thumbnail-trigger cursor-pointer flex-1">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center">
+                  ${panel.id}
+                </span>
+                <span class="font-bold text-slate-800 text-base group-hover:text-amber-600 transition-colors">
+                  ${panel.title}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5 line-clamp-1">${panel.speaker}</p>
+            </div>
+
+            <!-- 버튼 모음: [말풍선 끄기/켜기], [파일 넣기], [확대] -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <!-- 말풍선 토글 버튼 -->
+              <button class="toggle-bubble-btn px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border ${
+                isBubbleOn 
+                  ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300' 
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border-slate-200'
+              }">
+                <span>💬</span>
+                <span>${isBubbleOn ? '말풍선 숨기기' : '말풍선 보이기'}</span>
+              </button>
+
+              <!-- 개별 파일 넣기 -->
+              <label for="fileInput_${idx}" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl text-xs font-bold transition-all border border-slate-200" title="${panel.id}번에 내 그림 넣기">
+                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </label>
+              <input type="file" id="fileInput_${idx}" accept="image/*" class="hidden">
+
+              <!-- 확대 버튼 -->
+              <button class="thumbnail-trigger bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-xl text-xs font-bold transition-colors shadow-sm" title="크게 보기">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        `;
+
+        // 확대 모달 열기 이벤트
+        card.querySelectorAll('.thumbnail-trigger').forEach(el => {
+          el.addEventListener('click', () => openModal(idx));
+        });
+
+        // 말풍선 토글 버튼 이벤트
+        const toggleBtn = card.querySelector('.toggle-bubble-btn');
+        toggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleBubble(idx);
+        });
+
+        // 파일 인풋 체인지 이벤트
+        const fileInput = card.querySelector(`#fileInput_${idx}`);
+        fileInput.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files[0]) {
+            assignImageToPanel(idx, e.target.files[0]);
+          }
+        });
+
+        // 카드 드래그 앤 드롭 지원
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          card.classList.add('ring-4', 'ring-amber-400');
+        });
+        card.addEventListener('dragleave', () => {
+          card.classList.remove('ring-4', 'ring-amber-400');
+        });
+        card.addEventListener('drop', (e) => {
+          e.preventDefault();
+          card.classList.remove('ring-4', 'ring-amber-400');
+          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            assignImageToPanel(idx, e.dataTransfer.files[0]);
+          }
+        });
+
+        cardContainer.appendChild(card);
+      });
+    }
+
+    // 모달 팝업 열기
+    function openModal(index) {
+      currentIndex = index;
+      updateModalContent();
+      imageModal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+
+    // 모달 팝업 닫기
+    function closeModal() {
+      imageModal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    }
+
+    // 모달 내부 컨텐츠 갱신
+    function updateModalContent() {
+      const panel = comicPanels[currentIndex];
+      const isBubbleOn = bubbleVisibility[currentIndex];
+
+      modalNumberBadge.innerText = panel.id;
+      modalTitle.innerText = panel.title;
+      modalSpeaker.innerText = panel.speaker;
+
+      // 모달 상단 토글 버튼 텍스트 변경
+      modalToggleBubbleText.innerText = isBubbleOn ? '말풍선 끄기' : '말풍선 켜기';
+
+      // 큰 이미지 및 말풍선 렌더링
+      const backgroundVisual = customCroppedImages[currentIndex]
+        ? `<img src="${customCroppedImages[currentIndex]}" alt="${panel.title}" class="max-w-full max-h-[55vh] object-contain rounded-2xl shadow-xl border border-slate-200 bg-white">`
+        : `<div class="w-full h-full max-w-md aspect-[4/3] rounded-2xl overflow-hidden shadow-md">${panel.renderBackground()}</div>`;
+
+      modalImageContainer.innerHTML = `
+        <div class="relative w-full h-full flex items-center justify-center">
+          ${backgroundVisual}
+          ${createBubbleHtml(panel, isBubbleOn, true)}
+        </div>
+      `;
+    }
+
+    // 팝업 내부 말풍선 토글 버튼 이벤트
+    modalToggleBubbleBtn.addEventListener('click', () => {
+      toggleBubble(currentIndex);
+    });
+
+    // 이전/다음 버튼
+    function showPrevPanel() {
+      currentIndex = (currentIndex - 1 + comicPanels.length) % comicPanels.length;
+      updateModalContent();
+    }
+    function showNextPanel() {
+      currentIndex = (currentIndex + 1) % comicPanels.length;
+      updateModalContent();
+    }
+
+    // 팝업 내에서 그림 즉시 교체
+    modalSingleFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        assignImageToPanel(currentIndex, e.target.files[0]);
+      }
+    });
+
+    // TTS 음성 읽기
+    function playSpeech() {
+      if (!('speechSynthesis' in window)) {
+        showToast('이 브라우저는 음성 읽기를 지원하지 않습니다.');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const textToRead = comicPanels[currentIndex].dialogue;
+      const utterance = new SpeechSynthesisUtterance(textToRead);
+      utterance.lang = 'ko-KR';
+      utterance.rate = 0.95;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // 2x2 분할 슬라이서 (상단 4컷 원본 업로드용)
+    function processImageSource(imgSrc) {
+      const img = new Image();
+      img.onload = function() {
+        const w = img.width;
+        const h = img.height;
+        const halfW = w / 2;
+        const halfH = h / 2;
+
+        const quadrants = [
+          { x: 0, y: 0, w: halfW, h: halfH },
+          { x: halfW, y: 0, w: halfW, h: halfH },
+          { x: 0, y: halfH, w: halfW, h: halfH },
+          { x: halfW, y: halfH, w: halfW, h: halfH }
+        ];
+
+        quadrants.forEach((q, i) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = q.w;
+          canvas.height = q.h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, q.x, q.y, q.w, q.h, 0, 0, q.w, q.h);
+          customCroppedImages[i] = canvas.toDataURL('image/png');
+        });
+
+        renderCards();
+        showToast('4컷 그림이 분할되어 적용되었습니다. (말풍선 유지됨)');
+      };
+      img.src = imgSrc;
+    }
+
+    imageUploadInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => processImageSource(event.target.result);
+      reader.readAsDataURL(file);
+    });
+
+    // 로컬 국어남자.png 파일 우선 감지
+    function tryLoadDefaultImages() {
+      const p1Candidates = ['국어남자.png', '하늘.png'];
+      p1Candidates.forEach((path) => {
+        const testImg = new Image();
+        testImg.onload = function() {
+          customCroppedImages[0] = path;
+          renderCards();
+        };
+        testImg.src = path;
+      });
+    }
+
+    // 이벤트 리스너 연결
+    toggleAllBubblesBtn.addEventListener('click', toggleAllBubbles);
+    modalCloseBtn.addEventListener('click', closeModal);
+    modalPrevBtn.addEventListener('click', showPrevPanel);
+    modalNextBtn.addEventListener('click', showNextPanel);
+    ttsButton.addEventListener('click', playSpeech);
+
+    imageModal.addEventListener('click', (e) => {
+      if (e.target === imageModal) closeModal();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (imageModal.classList.contains('hidden')) return;
+      if (e.key === 'Escape') closeModal();
+      else if (e.key === 'ArrowLeft') showPrevPanel();
+      else if (e.key === 'ArrowRight') showNextPanel();
+    });
+
+    // 초기 실행
+    renderCards();
+    tryLoadDefaultImages();
+  </script>
+</body>
+</html>
