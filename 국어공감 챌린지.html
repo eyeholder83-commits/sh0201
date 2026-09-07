@@ -1,0 +1,2074 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>공감하며 대화하기 퀴즈 게임</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
+    body {
+      font-family: 'Pretendard', sans-serif;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .animate-shake {
+      animation: shake 0.45s ease-in-out;
+    }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.95) translateY(10px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-pop {
+      animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-amber-50 via-sky-50 to-indigo-100 min-h-screen text-slate-800 flex flex-col justify-between selection:bg-indigo-200">
+
+  <!-- Header -->
+  <header class="w-full max-w-2xl mx-auto px-4 pt-6 pb-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">💬</span>
+      <div>
+        <h1 class="font-extrabold text-lg sm:text-xl text-indigo-950 tracking-tight">공감하며 대화하기</h1>
+        <p class="text-xs text-indigo-600 font-semibold">틀리면 1번부터 다시! 서든데스 챌린지</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-2">
+      <!-- Mute Toggle -->
+      <button id="soundToggleBtn" class="p-2.5 rounded-full bg-white/80 backdrop-blur shadow-sm border border-slate-200 text-slate-600 hover:text-indigo-600 hover:bg-white transition" title="소리 켜기/끄기">
+        <svg id="soundOnIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+        </svg>
+        <svg id="soundOffIcon" class="w-5 h-5 hidden text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path>
+        </svg>
+      </button>
+
+      <!-- View Mode Switcher (학생뷰 / 교사뷰) -->
+      <div class="flex items-center bg-white/90 backdrop-blur p-1 rounded-full border border-slate-200 text-xs font-bold shadow-sm">
+        <button id="studentViewBtn" type="button" class="flex items-center gap-1 px-3 py-1.5 rounded-full transition bg-indigo-600 text-white shadow-xs">
+          <span>🎓</span>
+          <span>학생뷰</span>
+        </button>
+        <button id="teacherViewBtn" type="button" class="flex items-center gap-1 px-3 py-1.5 rounded-full transition text-slate-600 hover:text-indigo-600">
+          <span>✏️</span>
+          <span>교사뷰</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Teacher WYSIWYG Toolbar Banner (교사뷰 툴바) -->
+  <div id="teacherToolbar" class="hidden w-full max-w-2xl mx-auto px-4 py-3 mb-2 bg-white/95 backdrop-blur rounded-2xl shadow-md border-2 border-indigo-500 animate-pop">
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+      <div class="flex items-center gap-2">
+        <span class="px-2 py-0.5 rounded-md bg-indigo-600 text-white font-extrabold text-[11px]">교사뷰 (위지윅 편집)</span>
+        <label for="teacherQuestionSelect" class="text-xs font-bold text-slate-700">문제 선택:</label>
+        <select id="teacherQuestionSelect" class="text-xs font-semibold bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-slate-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none">
+          <!-- Dynamically populated -->
+        </select>
+      </div>
+      <div class="flex items-center gap-1 text-xs">
+        <button id="addQuestionBtn" class="px-2.5 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 rounded-lg font-bold transition flex items-center gap-1">
+          <span>➕</span> 새 문제
+        </button>
+        <button id="deleteQuestionBtn" class="px-2.5 py-1 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-300 rounded-lg font-bold transition flex items-center gap-1">
+          <span>🗑️</span> 삭제
+        </button>
+      </div>
+    </div>
+
+    <!-- Formatting & Persistence Actions -->
+    <div class="flex flex-wrap items-center justify-between gap-2 pt-2.5 text-xs">
+      <div class="flex items-center gap-1">
+        <span class="text-slate-500 font-semibold text-[11px] mr-0.5">글꼴 서식:</span>
+        <button type="button" title="굵게" onmousedown="event.preventDefault(); document.execCommand('bold');" class="w-7 h-7 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg font-black text-slate-800 flex items-center justify-center">B</button>
+        <button type="button" title="기울임" onmousedown="event.preventDefault(); document.execCommand('italic');" class="w-7 h-7 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg italic font-serif text-slate-800 flex items-center justify-center">I</button>
+        <button type="button" title="밑줄" onmousedown="event.preventDefault(); document.execCommand('underline');" class="w-7 h-7 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg underline text-slate-800 flex items-center justify-center">U</button>
+        <button type="button" title="형광펜 강조" onmousedown="event.preventDefault(); document.execCommand('hiliteColor', false, '#fef08a');" class="px-2 h-7 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-lg font-bold text-amber-900 flex items-center justify-center">형광펜</button>
+        <button type="button" title="서식 지우기" onmousedown="event.preventDefault(); document.execCommand('removeFormat');" class="px-2 h-7 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg font-medium text-slate-600 flex items-center justify-center">지우기</button>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="toggleDialogueBtn" class="px-2.5 py-1.5 bg-amber-50 text-amber-800 border border-amber-300 rounded-lg font-bold hover:bg-amber-100 transition">📖 지문 켜기/끄기</button>
+        <button id="uploadImageBtn" class="px-2.5 py-1.5 bg-sky-50 text-sky-700 border border-sky-300 rounded-lg font-bold hover:bg-sky-100 transition flex items-center gap-1">
+          <span>🖼️</span> 그림 등록
+        </button>
+        <button id="openDashboardBtn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-extrabold shadow-sm transition flex items-center gap-1.5">
+          <span>📊</span> 실시간 제출 현황판 (<span id="teacherSubCountBadge">0</span>명)
+        </button>
+        <button id="exportHtmlBtn" class="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg font-extrabold shadow-sm transition flex items-center gap-1" title="Base64 이미지가 100% 내장된 배포용 독립 HTML 파일로 저장">
+          <span>📥</span> 영구 배포용 HTML 다운로드
+        </button>
+        <button id="saveQuizBtn" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-sm transition flex items-center gap-1">
+          <span>💾</span> 브라우저 저장
+        </button>
+        <button id="resetQuizBtn" class="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-semibold transition">
+          초기화
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden File Input for Base64 Image Upload -->
+  <input type="file" id="imageFileInput" accept="image/*" class="hidden">
+
+  <!-- Toast Notification Message (No alert()) -->
+  <div id="toastNotification" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900/95 text-white text-xs sm:text-sm font-semibold px-5 py-2.5 rounded-full shadow-2xl backdrop-blur flex items-center gap-2 animate-pop border border-slate-700">
+    <span id="toastIcon">💾</span>
+    <span id="toastMsg">변경 사항이 저장되었습니다.</span>
+  </div>
+
+  <!-- Main Container -->
+  <main class="w-full max-w-2xl mx-auto px-4 py-3 flex-1 flex flex-col justify-center">
+
+    <!-- Screen 1: Start Screen -->
+    <div id="startScreen" class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-100 text-center animate-pop">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-indigo-50 text-indigo-600 mb-4 shadow-inner">
+        <span class="text-4xl">🎯</span>
+      </div>
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">공감 대화 챌린지 퀴즈</h2>
+      <p class="text-slate-600 text-xs sm:text-sm leading-relaxed mb-5">
+        총 <span class="font-bold text-indigo-600">12문제</span>로 구성되어 있습니다.<br>
+        구간별로 틀리면 배운 내용을 복습하고 해당 구간의 처음부터 다시 도전합니다!
+      </p>
+
+      <!-- Student Name Input Box on First Screen -->
+      <div class="bg-indigo-50/70 border-2 border-indigo-200 rounded-2xl p-4 sm:p-5 mb-5 text-left">
+        <label for="startStudentName" class="block font-extrabold text-xs sm:text-sm text-indigo-950 mb-2 flex items-center justify-between">
+          <span class="flex items-center gap-1.5"><span class="text-base">👤</span> 학생/교사 이름 입력 <span class="text-rose-500">*</span></span>
+          <span class="text-[11px] text-indigo-600 font-semibold">등록된 23명 명단만 입장 가능</span>
+        </label>
+        <div class="relative">
+          <input type="text" id="startStudentName" placeholder="이름을 입력하세요 (예: 김서아)" autocomplete="off" class="w-full px-4 py-3 rounded-xl border-2 border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-slate-900 text-base font-bold shadow-inner transition placeholder:font-normal placeholder:text-slate-400">
+        </div>
+        <p id="nameValidationMsg" class="hidden text-rose-600 text-xs sm:text-sm font-bold mt-2.5 flex items-center gap-1.5 animate-pop">
+          <!-- Dynamically populated validation warning -->
+        </p>
+      </div>
+
+      <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 mb-6 text-left text-xs sm:text-sm text-slate-600 space-y-2">
+        <div class="flex items-center gap-2 font-bold text-slate-700">
+          <span class="text-amber-500">💡</span> 단계별 재도전 규칙
+        </div>
+        <p class="flex items-start gap-2">
+          <span class="text-amber-500 font-bold">•</span>
+          <strong>1~2번</strong> 틀리면: <strong>[A단계 복습]</strong> 공감의 뜻을 공부하고 <strong>1번부터 다시 풀기</strong>
+        </p>
+        <p class="flex items-start gap-2">
+          <span class="text-sky-500 font-bold">•</span>
+          <strong>3~7번</strong> 틀리면: <strong>[B단계 복습]</strong> 교과서 46쪽 확인 후 <strong>3번부터 다시 풀기</strong>
+        </p>
+        <p class="flex items-start gap-2">
+          <span class="text-indigo-500 font-bold">•</span>
+          <strong>8~12번</strong> 틀리면: <strong>[C단계 복습]</strong> 교과서 46쪽 확인 후 <strong>8번부터 다시 풀기</strong>
+        </p>
+        <p class="flex items-start gap-2">
+          <span class="text-emerald-500 font-bold">•</span>
+          <strong>12번까지 모두 통과</strong>하면 선생님께 <strong>이메일 전송</strong>하기!
+        </p>
+      </div>
+
+      <button id="startQuizBtn" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-extrabold text-base sm:text-lg shadow-lg shadow-indigo-200 active:scale-[0.98] transition flex items-center justify-center gap-2">
+        <span>이름 입력하고 퀴즈 시작하기 🚀</span>
+      </button>
+    </div>
+
+    <!-- Screen 2: Quiz Active Screen -->
+    <div id="quizScreen" class="hidden flex flex-col gap-4">
+
+      <!-- Progress Card -->
+      <div class="bg-white/90 backdrop-blur rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-col gap-2">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-600">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-xs" id="qNumberBadge">문제 1 / 12</span>
+            <span id="streakBadge" class="text-amber-600 flex items-center gap-1 font-semibold">
+              <span>🔥</span> 연속 정답: <span id="streakCount">0</span>
+            </span>
+          </div>
+          <div class="flex items-center gap-3">
+            <!-- Student Live Timer Display -->
+            <span class="flex items-center gap-1 text-indigo-700 font-extrabold bg-indigo-50 px-2.5 py-0.5 rounded-lg border border-indigo-100">
+              <span class="text-indigo-500">⏱️</span>
+              <span id="timerDisplay">00:00</span>
+            </span>
+            <span class="text-slate-400">도전 횟수: <span id="attemptCount" class="text-slate-700">1</span>회</span>
+          </div>
+        </div>
+        <!-- Progress Bar -->
+        <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="progressBar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-300" style="width: 8.33%;"></div>
+        </div>
+      </div>
+
+      <!-- Question Card -->
+      <div id="questionCard" class="bg-white rounded-3xl p-6 sm:p-7 shadow-xl border border-slate-200/90 flex flex-col gap-5 animate-pop">
+
+        <!-- Dialogue Box (shown dynamically for context questions) -->
+        <div id="dialogueContainer" class="hidden bg-amber-50/70 border border-amber-200 rounded-2xl p-4 text-xs sm:text-sm text-slate-700 space-y-2">
+          <div class="flex items-center justify-between border-b border-amber-200/80 pb-1.5 font-bold text-amber-900">
+            <span id="dialogueTitle" class="flex items-center gap-1.5">
+              <span>📖</span> [대화 본문 보기]
+            </span>
+            <span class="text-[11px] text-amber-700 font-normal">질문의 배경 대화입니다</span>
+          </div>
+          <div id="dialogueContent" class="space-y-1.5 leading-relaxed pt-1">
+            <!-- Dialog lines injected via JS -->
+          </div>
+        </div>
+
+        <!-- Question Title -->
+        <div>
+          <span class="text-xs font-bold text-indigo-500 tracking-wider uppercase mb-1 block">Question</span>
+          <div class="flex items-center justify-between">
+            <h2 id="questionText" class="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug outline-none rounded-lg focus:bg-indigo-50/50 p-1">
+              ‘공감’의 뜻으로 알맞은 것은 무엇인가요?
+            </h2>
+          </div>
+          <p id="teacherGuideTip" class="hidden text-[11px] text-indigo-600 font-semibold mt-1">💡 교사뷰: 문제 문구/보기/해설 직접 수정 가능 • 그림 드래그&드롭 또는 Ctrl+V로 이미지 즉시 첨부 가능</p>
+        </div>
+
+        <!-- Question Illustration / Image Container (Base64 Inline Data) -->
+        <div id="questionImageContainer" class="hidden flex flex-col items-center justify-center rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 p-2 sm:p-3 relative group">
+          <img id="questionImageTag" class="max-h-72 sm:max-h-80 w-auto rounded-xl object-contain shadow-sm" alt="문제 삽화 그림" />
+          <div id="imageEditOverlay" class="hidden absolute top-3 right-3 flex items-center gap-1.5 bg-slate-900/80 backdrop-blur px-2.5 py-1 rounded-xl shadow-md text-xs text-white">
+            <button id="changeImageBtn" class="hover:text-amber-300 font-medium flex items-center gap-1">
+              <span>🔄</span> 변경
+            </button>
+            <span class="text-slate-500">|</span>
+            <button id="removeImageBtn" class="hover:text-rose-300 font-medium flex items-center gap-1">
+              <span>🗑️</span> 삭제
+            </button>
+          </div>
+        </div>
+
+        <!-- Teacher-Only Image Upload Dropzone (shown in teacher mode when no image exists) -->
+        <div id="teacherImageDropzone" class="hidden border-2 border-dashed border-sky-300 bg-sky-50/50 hover:bg-sky-50 rounded-2xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center gap-1.5">
+          <div class="w-10 h-10 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-xl">🖼️</div>
+          <p class="text-xs sm:text-sm font-bold text-sky-900">문제 삽화 그림 첨부 (3번~12번 추천)</p>
+          <p class="text-[11px] text-sky-600">클릭하여 파일 선택, 여기로 드래그, 또는 캡처 후 <strong>Ctrl+V 붙여넣기</strong></p>
+          <span class="text-[10px] bg-white px-2 py-0.5 rounded-full border border-sky-200 text-slate-500">외부 파일 없이 HTML 코드에 100% 영구 내장 (Base64)</span>
+        </div>
+
+        <!-- Options Container -->
+        <div id="optionsList" class="flex flex-col gap-2.5">
+          <!-- Buttons generated in JS -->
+        </div>
+
+        <!-- Teacher-Only Inline Explanation Editor Area -->
+        <div id="teacherExplanationCard" class="hidden bg-slate-50 border-2 border-dashed border-indigo-200 rounded-2xl p-4 text-xs sm:text-sm space-y-1.5">
+          <div class="flex items-center justify-between font-bold text-indigo-950 border-b border-slate-200 pb-1.5">
+            <span class="flex items-center gap-1.5"><span>💡</span> 정답 해설 (직접 클릭해 수정)</span>
+            <span class="text-[11px] text-slate-400 font-normal">오답 시 학생에게 표시되는 설명</span>
+          </div>
+          <div id="teacherExplanationInput" contenteditable="true" class="outline-none p-1.5 rounded-lg focus:bg-white focus:ring-1 focus:ring-indigo-400 text-slate-700 leading-relaxed min-h-[44px]"></div>
+        </div>
+
+        <!-- Real-time Feedback Status -->
+        <div id="feedbackBox" class="hidden rounded-xl p-3 text-sm font-semibold flex items-center justify-between animate-pop">
+          <span id="feedbackText" class="flex items-center gap-2"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Game Over Modal / Specialized Checkpoint Fail Screen (A, B, C) -->
+    <div id="failModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-rose-100 text-center animate-pop max-h-[92vh] overflow-y-auto">
+        
+        <!-- Stage Badge (A, B, C) -->
+        <div id="failStageBadge" class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-3">
+          <!-- Filled by JS -->
+        </div>
+
+        <h3 id="failModalHeader" class="text-2xl font-black text-slate-900 mb-1">아쉽네요, 틀렸습니다!</h3>
+        <p id="failModalSubText" class="text-rose-600 font-bold text-xs sm:text-sm mb-4">복습 카드를 꼼꼼히 읽고 다시 도전해 보세요.</p>
+
+        <!-- Dynamic Review Guide Box (A, B, C) -->
+        <div id="stageReviewCard" class="rounded-2xl p-4 text-left text-xs sm:text-sm mb-4 border shadow-xs space-y-2">
+          <!-- Dynamically populated review content for A, B, or C -->
+        </div>
+
+        <!-- Problem Review Details -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left text-xs sm:text-sm space-y-2 mb-6">
+          <div>
+            <span class="text-slate-400 block text-xs">틀린 문제:</span>
+            <p id="failQuestionText" class="font-bold text-slate-800 line-clamp-2"></p>
+          </div>
+          <div class="pt-2 border-t border-slate-200 flex flex-col gap-1">
+            <div class="flex items-start gap-1 text-rose-600">
+              <span class="font-bold min-w-[62px]">내가 고른 답:</span>
+              <span id="userWrongAnswer"></span>
+            </div>
+            <div class="flex items-start gap-1 text-emerald-600">
+              <span class="font-bold min-w-[62px]">정답 확인:</span>
+              <span id="correctAnswerText" class="font-bold"></span>
+            </div>
+          </div>
+          <div id="failExplanation" class="pt-2 border-t border-slate-200 text-slate-600 text-xs"></div>
+        </div>
+
+        <button id="restartBtn" class="w-full py-3.5 px-6 rounded-2xl text-white font-extrabold text-sm sm:text-base shadow-lg active:scale-[0.98] transition flex items-center justify-center gap-2">
+          <span id="restartBtnText">1번 문제부터 다시 풀기 🔄</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Screen 4: Success / Complete Screen -->
+    <div id="winScreen" class="hidden bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-emerald-100 text-center animate-pop relative overflow-hidden">
+      <!-- Confetti Canvas -->
+      <canvas id="confettiCanvas" class="absolute inset-0 pointer-events-none w-full h-full"></canvas>
+
+      <div class="relative z-10">
+        <div class="w-20 h-20 rounded-3xl bg-amber-100 text-amber-500 flex items-center justify-center mx-auto mb-4 text-4xl shadow-inner animate-bounce">
+          🏆
+        </div>
+        <span class="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs uppercase tracking-wider mb-2">
+          미션 완수!
+        </span>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mb-2">공감 대화 마스터 등극!</h2>
+        <p class="text-slate-600 text-sm sm:text-base mb-4">
+          12문제를 단 한 번의 실수도 없이 연속으로 모두 맞혔습니다!<br>
+          상대방의 마음을 깊이 이해하고 공감하는 훌륭한 대화 태도를 갖추셨네요.
+        </p>
+
+        <!-- Student Final Time and Attempts Summary Card -->
+        <div class="grid grid-cols-2 gap-3 max-w-sm mx-auto mb-6">
+          <div class="bg-indigo-50/80 border border-indigo-200/70 rounded-2xl p-3 text-center">
+            <span class="block text-[11px] font-bold text-indigo-500 mb-0.5">⏱️ 총 걸린 시간</span>
+            <span id="finalTimeDisplay" class="text-lg font-black text-indigo-950">0초</span>
+          </div>
+          <div class="bg-amber-50/80 border border-amber-200/70 rounded-2xl p-3 text-center">
+            <span class="block text-[11px] font-bold text-amber-600 mb-0.5">🎯 총 도전 횟수</span>
+            <span id="finalAttemptsDisplay" class="text-lg font-black text-amber-950">1회</span>
+          </div>
+        </div>
+
+        <!-- Key Summary Box -->
+        <div class="bg-indigo-50/70 border border-indigo-200/80 rounded-2xl p-4 text-left text-xs sm:text-sm text-slate-700 space-y-2 mb-6">
+          <p class="font-bold text-indigo-900 flex items-center gap-1.5">
+            <span>✨</span> 공감하며 대화하는 네 가지 방법 정리
+          </p>
+          <ul class="list-disc list-inside space-y-1 text-slate-600 leading-relaxed text-xs">
+            <li><strong>상대의 기분을 살펴 말하기</strong> (상황과 안색 살피기)</li>
+            <li><strong>자신의 기분을 살펴 준 것에 고마움 표현하기</strong></li>
+            <li><strong>자신의 상황을 이해할 수 있게 솔직하게 설명하기</strong></li>
+            <li><strong>상대방의 말을 공감하고 귀 기울여 들어 주기</strong></li>
+          </ul>
+        </div>
+
+        <!-- Email & Homework Submission Card -->
+        <div class="bg-slate-50 border border-indigo-100 rounded-3xl p-5 sm:p-6 text-left mb-6 shadow-sm">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-xl">📩</span>
+            <h3 class="font-extrabold text-sm sm:text-base text-slate-900">선생님께 완주 결과 이메일 보내기</h3>
+          </div>
+          <p class="text-xs text-slate-500 mb-4 leading-relaxed">
+            자신의 이름과 정보를 입력하고 선생님 이메일로 결과를 전송하거나 클립보드에 복사해 제출할 수 있습니다.
+          </p>
+
+          <div class="space-y-3 text-xs sm:text-sm">
+            <div>
+              <label for="studentInfoInput" class="block font-bold text-slate-700 mb-1">
+                내 정보 <span class="text-rose-500">*</span>
+              </label>
+              <input type="text" id="studentInfoInput" placeholder="예: 5학년 2반 14번 김민준" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-800 text-xs sm:text-sm">
+            </div>
+
+            <div>
+              <label for="targetEmailInput" class="block font-bold text-slate-700 mb-1">
+                선생님 이메일 주소 <span class="text-rose-500">*</span>
+              </label>
+              <input type="email" id="targetEmailInput" placeholder="teacher@school.kr" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-800 text-xs sm:text-sm">
+            </div>
+
+            <div>
+              <label for="studentMemoInput" class="block font-bold text-slate-700 mb-1">
+                한 줄 소감 (선택)
+              </label>
+              <input type="text" id="studentMemoInput" placeholder="예: 친구의 기분을 배려하며 대화하는 법을 배웠습니다!" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-800 text-xs sm:text-sm">
+            </div>
+
+            <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <button type="button" id="sendEmailBtn" class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-indigo-100 flex items-center justify-center gap-1.5 transition active:scale-[0.98]">
+                <span>📧</span> 이메일 앱으로 바로 보내기
+              </button>
+              <button type="button" id="copyReportBtn" class="w-full py-3 px-4 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition active:scale-[0.98]">
+                <span>📋</span> 결과 복사 (클래스룸/메일용)
+              </button>
+            </div>
+
+            <!-- Real-time Online Submission to Teacher (1번 추천 기능) -->
+            <div class="mt-4 pt-4 border-t border-indigo-100 bg-white p-4 rounded-2xl border">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 text-xs">🚀</span>
+                  <span class="font-extrabold text-xs sm:text-sm text-slate-800">실시간 온라인 제출 (선생님 대시보드로 전송)</span>
+                </div>
+                <span id="submitStatusTag" class="text-[11px] px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-500">미제출</span>
+              </div>
+              <p class="text-[11px] text-slate-500 mb-3">
+                이메일 앱이 열리지 않아도 괜찮습니다! 버튼만 누르면 선생님 화면으로 결과가 즉시 전송됩니다.
+              </p>
+              <button type="button" id="onlineSubmitBtn" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-emerald-100 flex items-center justify-center gap-2 transition active:scale-[0.98]">
+                <span>🚀</span> <span>선생님께 온라인으로 결과 제출하기</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button id="playAgainBtn" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-indigo-600 hover:from-emerald-600 hover:to-indigo-700 text-white font-extrabold text-base shadow-lg shadow-emerald-200 active:scale-[0.98] transition">
+          다시 도전하기 🔁
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Screen 5: Teacher Real-time Dashboard Modal (선생님 실시간 제출 현황판) -->
+  <div id="dashboardModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5">
+    <div class="bg-white rounded-3xl p-5 sm:p-7 max-w-3xl w-full shadow-2xl border border-indigo-100 flex flex-col max-h-[92vh] animate-pop">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-black">
+            📊
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="font-extrabold text-base sm:text-lg text-slate-900">실시간 제출 현황판</h3>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> 실시간 수합 중
+              </span>
+            </div>
+            <p class="text-xs text-slate-500">학생들이 제출 버튼을 누르면 새로고침 없이 즉시 표에 추가됩니다.</p>
+          </div>
+        </div>
+        <button id="closeDashboardBtn" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm font-bold transition">
+          ✕
+        </button>
+      </div>
+
+      <!-- Stats Bar & Actions -->
+      <div class="flex flex-wrap items-center justify-between gap-2 py-3 bg-slate-50/80 px-4 rounded-2xl my-3 shrink-0 border border-slate-200/60">
+        <div class="flex items-center gap-3 text-xs sm:text-sm">
+          <span class="font-bold text-slate-700">총 제출 완료: <span id="dashTotalCount" class="text-indigo-600 font-extrabold text-base">0</span>명</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="dashSearchInput" placeholder="학생 이름 검색..." class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
+          <button id="downloadCsvBtn" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-sm transition">
+            <span>📥</span> 엑셀(CSV) 다운로드
+          </button>
+        </div>
+      </div>
+
+      <!-- Table Container -->
+      <div class="flex-1 overflow-y-auto border border-slate-200 rounded-2xl">
+        <table class="w-full text-left text-xs sm:text-sm border-collapse">
+          <thead class="bg-slate-100 text-slate-600 font-bold sticky top-0 border-b border-slate-200">
+            <tr>
+              <th class="py-2.5 px-3 w-12 text-center">번호</th>
+              <th class="py-2.5 px-3">학생 정보 (이름)</th>
+              <th class="py-2.5 px-3 w-20 text-center">도전 횟수</th>
+              <th class="py-2.5 px-3">제출 일시</th>
+              <th class="py-2.5 px-3">한 줄 소감</th>
+            </tr>
+          </thead>
+          <tbody id="submissionTableBody" class="divide-y divide-slate-100 text-slate-700">
+            <tr>
+              <td colspan="5" class="text-center py-8 text-slate-400 font-medium">
+                아직 제출된 결과가 없습니다. 학생이 12번을 통과하고 제출하면 실시간으로 표시됩니다.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="pt-3 mt-2 flex items-center justify-between text-xs text-slate-400 shrink-0">
+        <span>💡 교실 TV나 프로젝터에 띄워두고 학생들의 완주 현황을 함께 보실 수 있습니다.</span>
+        <button id="closeDashboardBottomBtn" class="px-4 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teacher Password Auth Modal (교사뷰 비밀번호 확인 팝업) -->
+  <div id="teacherAuthModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-2xl border border-indigo-100 text-center animate-pop">
+      <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3 text-2xl font-bold">
+        🔒
+      </div>
+      <h3 class="text-lg font-black text-slate-900 mb-1">교사뷰 비밀번호 입력</h3>
+      <p class="text-xs text-slate-500 mb-4">선생님 전용 관리 화면입니다. 비밀번호 4자리를 입력해주세요.</p>
+      
+      <div class="mb-4">
+        <input type="password" id="teacherPasswordInput" maxlength="10" placeholder="비밀번호 입력" class="w-full text-center tracking-widest text-lg font-black px-4 py-2.5 rounded-xl border-2 border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition" autocomplete="off">
+        <p id="teacherAuthErrorMsg" class="hidden text-rose-600 text-xs font-bold mt-2">비밀번호가 일치하지 않습니다.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button id="cancelTeacherAuthBtn" type="button" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+          취소
+        </button>
+        <button id="confirmTeacherAuthBtn" type="button" class="py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition shadow-md shadow-indigo-100">
+          확인
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="w-full max-w-2xl mx-auto px-4 py-3 text-center text-xs text-slate-400">
+    초등 국어 • 공감하며 대화하기 단원 복습 퀴즈
+  </footer>
+
+  <!-- Quiz Logic & Real-time Collection Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- Firebase Initialization with Safety Fallback ---
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'empathy-quiz-app';
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+    let isFirebaseReady = false;
+
+    // In-memory submissions array for real-time local updates and offline fallback
+    let submissions = [];
+
+    async function setupFirebase() {
+      try {
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+          const firebaseConfig = JSON.parse(__firebase_config);
+          const app = initializeApp(firebaseConfig);
+          db = getFirestore(app);
+          auth = getAuth(app);
+
+          // Authenticate before any queries
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            await signInAnonymously(auth);
+          }
+          currentUser = auth.currentUser;
+          isFirebaseReady = true;
+
+          // Listen for real-time submissions from all students (Public Collection)
+          const subsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'submissions');
+          onSnapshot(subsCollection, (snapshot) => {
+            const list = [];
+            snapshot.forEach(docSnap => {
+              list.push({ id: docSnap.id, ...docSnap.data() });
+            });
+            // Sort in memory by timestamp descending (Rule 2: simple collection query, in-memory sort)
+            list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            submissions = list;
+            updateDashboardUI();
+          }, (error) => {
+            console.warn('Real-time listener warning:', error);
+          });
+        }
+      } catch (err) {
+        console.warn('Cloud connection initialized in offline mode:', err);
+      }
+    }
+    setupFirebase();
+
+    // --- Initial Dataset (Default Fallback) ---
+    const defaultQuizData = [
+      {
+        id: 1,
+        question: "1. ‘공감’의 뜻으로 알맞은 것은 무엇인가요?",
+        dialogue: null,
+        options: [
+          "다른 사람의 말을 듣지 않는 것",
+          "다른 사람의 생각과 마음을 알고 자신도 그렇게 느끼는 것",
+          "자신의 생각만 말하는 것",
+          "다른 사람의 행동을 따라 하는 것"
+        ],
+        answer: 1,
+        explanation: "‘공감’은 상대방의 처지나 기분을 헤아려 상대방의 생각과 마음에 함께 느끼고 반응해 주는 것입니다."
+      },
+      {
+        id: 2,
+        question: "2. 다음 중 친구에게 공감하는 말은 무엇인가요?",
+        dialogue: null,
+        options: [
+          "“그게 뭐가 속상해?”",
+          "“나는 상관없어.”",
+          "“많이 속상했겠다. 나라도 그랬을 것 같아.”",
+          "“그만 이야기해.”"
+        ],
+        answer: 2,
+        explanation: "친구의 속상한 마음에 진심으로 맞장구치고 상대방의 입장에서 위로해 주는 말이 공감하는 말입니다."
+      },
+      {
+        id: 3,
+        question: "3. 남자아이는 여자아이에게 왜 말을 걸었나요?",
+        dialogue: {
+          title: "대화 1 (민재와 서연이)",
+          lines: [
+            "👦 <strong>민재(남자아이):</strong> “서연아, 표정이 안 좋아 보여. 어디 아프니?” ➔ (1)",
+            "👧 <strong>서연(여자아이):</strong> “응, 아침부터 배가 살살 아파서 힘들어.”",
+            "👦 <strong>민재(남자아이):</strong> “많이 아프겠다. 보건실에 같이 가 줄까?”",
+            "👧 <strong>서연(여자아이):</strong> “걱정해 줘서 고마워. 조금 쉬면 괜찮을 것 같아.” ➔ (2)"
+          ]
+        },
+        options: [
+          "같이 놀고 싶어서",
+          "기분이 안 좋아 보였기 때문에",
+          "숙제를 물어보려고",
+          "길을 알려 주려고"
+        ],
+        answer: 1,
+        explanation: "서연이의 표정이 어둡고 기분이 안 좋아 보였기 때문에 걱정하는 마음으로 먼저 다가가 말을 걸었습니다."
+      },
+      {
+        id: 4,
+        question: "4. 여자아이는 어디가 아프다고 했나요?",
+        dialogue: {
+          title: "대화 1 (민재와 서연이)",
+          lines: [
+            "👦 <strong>민재:</strong> “서연아, 표정이 안 좋아 보여. 어디 아프니?” ➔ (1)",
+            "👧 <strong>서연:</strong> “응, 아침부터 배가 살살 아파서 힘들어.”",
+            "👦 <strong>민재:</strong> “많이 아프겠다. 보건실에 같이 가 줄까?”",
+            "👧 <strong>서연:</strong> “걱정해 줘서 고마워. 조금 쉬면 괜찮을 것 같아.” ➔ (2)"
+          ]
+        },
+        options: [
+          "배",
+          "다리",
+          "머리",
+          "팔"
+        ],
+        answer: 0,
+        explanation: "서연이는 아침부터 배가 아파서 힘들다고 말했습니다."
+      },
+      {
+        id: 5,
+        question: "5. 여자아이가 남자아이에게 “고마워.”라고 말한 까닭은 무엇인가요?",
+        dialogue: {
+          title: "대화 1 (민재와 서연이)",
+          lines: [
+            "👦 <strong>민재:</strong> “서연아, 표정이 안 좋아 보여. 어디 아프니?” ➔ (1)",
+            "👧 <strong>서연:</strong> “응, 아침부터 배가 살살 아파서 힘들어.”",
+            "👦 <strong>민재:</strong> “많이 아프겠다. 보건실에 같이 가 줄까?”",
+            "👧 <strong>서연:</strong> “걱정해 줘서 고마워. 조금 쉬면 괜찮을 것 같아.” ➔ (2)"
+          ]
+        },
+        options: [
+          "아픈 곳을 걱정하며 물어봐 주어서",
+          "선물을 주어서",
+          "재미있는 이야기를 해 주어서",
+          "숙제를 대신 해 주어서"
+        ],
+        answer: 0,
+        explanation: "자신이 아픈 것을 알아채고 다정하게 걱정하며 물어봐 준 친구의 따뜻한 마음에 고마움을 표했습니다."
+      },
+      {
+        id: 6,
+        question: "6. (1)에 들어갈 말은 무엇인가요?",
+        dialogue: {
+          title: "대화 1 (민재와 서연이)",
+          lines: [
+            "👦 <strong>민재:</strong> “서연아, 표정이 안 좋아 보여. 어디 아프니?” ➔ <strong>(1) [ ? ]</strong>",
+            "👧 <strong>서연:</strong> “응, 아침부터 배가 살살 아파서 힘들어.”",
+            "👦 <strong>민재:</strong> “많이 아프겠다. 보건실에 같이 가 줄까?”",
+            "👧 <strong>서연:</strong> “걱정해 줘서 고마워.” ➔ (2)"
+          ]
+        },
+        options: [
+          "상대방의 말을 공감하며 들어 준다.",
+          "상대의 기분을 살펴 말한다.",
+          "자신의 기분을 살펴 준 것에 고마움을 나타낸다.",
+          "자신의 상황을 이해할 수 있게 설명한다."
+        ],
+        answer: 1, // ② 상대의 기분을 살펴 말한다.
+        explanation: "민재는 서연이의 안색과 기분을 먼저 살피며 조심스럽게 말을 건넸으므로 ‘상대의 기분을 살펴 말한다’가 정답입니다."
+      },
+      {
+        id: 7,
+        question: "7. (2)에 들어갈 말은 무엇인가요?",
+        dialogue: {
+          title: "대화 1 (민재와 서연이)",
+          lines: [
+            "👦 <strong>민재:</strong> “서연아, 표정이 안 좋아 보여. 어디 아프니?” ➔ (1)",
+            "👧 <strong>서연:</strong> “응, 아침부터 배가 살살 아파서 힘들어.”",
+            "👦 <strong>민재:</strong> “많이 아프겠다. 보건실에 같이 가 줄까?”",
+            "👧 <strong>서연:</strong> “걱정해 줘서 고마워.” ➔ <strong>(2) [ ? ]</strong>"
+          ]
+        },
+        options: [
+          "상대방의 말을 공감하며 들어 준다.",
+          "상대의 기분을 살펴 말한다.",
+          "자신의 기분을 살펴 준 것에 고마움을 나타낸다.",
+          "자신의 상황을 이해할 수 있게 설명한다."
+        ],
+        answer: 2, // ③ 자신의 기분을 살펴 준 것에 고마움을 나타낸다.
+        explanation: "서연이는 자신의 아픈 상태와 기분을 걱정해 준 친구에게 감사 인사를 전했으므로 ‘자신의 기분을 살펴 준 것에 고마움을 나타낸다’가 정답입니다."
+      },
+      {
+        id: 8,
+        question: "8. 여자아이가 가위를 가져오지 못한 까닭은 무엇인가요?",
+        dialogue: {
+          title: "대화 2 (준우와 지민이)",
+          lines: [
+            "👧 <strong>지민(여자아이):</strong> “준우야, 오늘 미술 시간에 쓸 가위를 깜빡 잊고 안 가져왔어. 혹시 가위를 같이 쓸 수 있을까?” ➔ (1)",
+            "👦 <strong>준우(남자아이):</strong> “가위를 안 가져와서 많이 곤란했겠구나. 내 가위 같이 쓰자!” ➔ (2)",
+            "👧 <strong>지민(여자아이):</strong> “빌려줘서 고마워!”"
+          ]
+        },
+        options: [
+          "가위를 잃어버려서",
+          "가위를 깜빡 잊어서",
+          "가위가 고장 나서",
+          "가위를 친구에게 주어서"
+        ],
+        answer: 1,
+        explanation: "지민이는 가위를 가져오는 것을 깜빡 잊었다고 설명했습니다."
+      },
+      {
+        id: 9,
+        question: "9. 여자아이는 친구에게 무엇을 부탁했나요?",
+        dialogue: {
+          title: "대화 2 (준우와 지민이)",
+          lines: [
+            "👧 <strong>지민:</strong> “준우야, 오늘 미술 시간에 쓸 가위를 깜빡 잊고 안 가져왔어. 혹시 가위를 같이 쓸 수 있을까?” ➔ (1)",
+            "👦 <strong>준우:</strong> “가위를 안 가져와서 많이 곤란했겠구나. 내 가위 같이 쓰자!” ➔ (2)"
+          ]
+        },
+        options: [
+          "색종이를 빌려 달라고 했다.",
+          "풀을 빌려 달라고 했다.",
+          "가위를 빌려 달라고 했다.",
+          "연필을 빌려 달라고 했다."
+        ],
+        answer: 2,
+        explanation: "미술 준비물인 가위를 깜빡 잊었기 때문에 친구에게 가위를 빌려달라고(함께 쓰자고) 부탁했습니다."
+      },
+      {
+        id: 10,
+        question: "10. 남자아이의 말과 행동에서 알 수 있는 마음은 무엇인가요?",
+        dialogue: {
+          title: "대화 2 (준우와 지민이)",
+          lines: [
+            "👧 <strong>지민:</strong> “가위를 깜빡 잊고 안 가져왔어. 혹시 가위를 같이 쓸 수 있을까?” ➔ (1)",
+            "👦 <strong>준우:</strong> “가위를 안 가져와서 많이 곤란했겠구나. 내 가위 같이 쓰자!” ➔ (2)"
+          ]
+        },
+        options: [
+          "친구를 도와주려는 마음",
+          "친구를 놀리려는 마음",
+          "혼자만 사용하려는 마음",
+          "친구에게 화가 난 마음"
+        ],
+        answer: 0,
+        explanation: "친구가 곤란해할 상황에 공감하며 선뜻 자신의 가위를 함께 쓰자고 배려하는 따뜻한 마음입니다."
+      },
+      {
+        id: 11,
+        question: "11. (1)에 들어갈 말은 무엇인가요?",
+        dialogue: {
+          title: "대화 2 (준우와 지민이)",
+          lines: [
+            "👧 <strong>지민:</strong> “준우야, 오늘 미술 시간에 쓸 가위를 깜빡 잊고 안 가져왔어. 혹시 가위를 같이 쓸 수 있을까?” ➔ <strong>(1) [ ? ]</strong>",
+            "👦 <strong>준우:</strong> “가위를 안 가져와서 많이 곤란했겠구나. 내 가위 같이 쓰자!” ➔ (2)"
+          ]
+        },
+        options: [
+          "상대방의 말을 공감하며 들어 준다.",
+          "상대의 기분을 살펴 말한다.",
+          "자신의 기분을 살펴 준 것에 고마움을 나타낸다.",
+          "자신의 상황을 이해할 수 있게 설명한다."
+        ],
+        answer: 3, // ④ 자신의 상황을 이해할 수 있게 설명한다.
+        explanation: "지민이는 가위를 가져오지 못한 까닭과 처지를 솔직하게 알리고 있으므로 ‘자신의 상황을 이해할 수 있게 설명한다’가 정답입니다."
+      },
+      {
+        id: 12,
+        question: "12. (2)에 들어갈 말은 무엇인가요?",
+        dialogue: {
+          title: "대화 2 (준우와 지민이)",
+          lines: [
+            "👧 <strong>지민:</strong> “준우야, 오늘 미술 시간에 쓸 가위를 깜빡 잊고 안 가져왔어. 혹시 가위를 같이 쓸 수 있을까?” ➔ (1)",
+            "👦 <strong>준우:</strong> “가위를 안 가져와서 많이 곤란했겠구나. 내 가위 같이 쓰자!” ➔ <strong>(2) [ ? ]</strong>"
+          ]
+        },
+        options: [
+          "상대방의 말을 공감하며 들어 준다.",
+          "상대의 기분을 살펴 말한다.",
+          "자신의 기분을 살펴 준 것에 고마움을 나타낸다.",
+          "자신의 상황을 이해할 수 있게 설명한다."
+        ],
+        answer: 0, // ① 상대방의 말을 공감하며 들어 준다.
+        explanation: "준우는 가위가 없어 난처해하는 친구의 마음에 깊이 맞장구치며 귀 기울여 주었으므로 ‘상대방의 말을 공감하며 들어 준다’가 정답입니다."
+      }
+    ];
+
+    // Default teacher email storage
+    let defaultTeacherEmail = "teacher@school.kr";
+
+    // Load from LocalStorage if customized
+    function loadQuizData() {
+      const savedEmail = localStorage.getItem('empathyQuiz_teacherEmail');
+      if (savedEmail) {
+        defaultTeacherEmail = savedEmail;
+      }
+      const saved = localStorage.getItem('empathyQuiz_data_v3');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.warn('Failed to parse saved quiz data', e);
+        }
+      }
+      return JSON.parse(JSON.stringify(defaultQuizData));
+    }
+
+    let quizData = loadQuizData();
+
+    // Ensure all questions have image field
+    quizData.forEach(q => {
+      if (q.image === undefined) q.image = null;
+    });
+
+    // --- State Variables ---
+    let currentQuestionIndex = 0;
+    let attempts = 1;
+    let streak = 0;
+    let soundEnabled = true;
+    let isTransitioning = false;
+    let isTeacherMode = false;
+
+    // --- Elapsed Time Tracking Variables ---
+    let quizStartTime = null;
+    let timerInterval = null;
+    let finalElapsedSeconds = 0;
+    let finalElapsedFormatted = "0분 00초";
+
+    function formatTime(totalSeconds) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      if (minutes > 0) {
+        return `${minutes}분 ${String(seconds).padStart(2, '0')}초`;
+      }
+      return `${seconds}초`;
+    }
+
+    function formatDigitalTime(totalSeconds) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function startTimer() {
+      stopTimer();
+      quizStartTime = Date.now();
+      const timerDisplay = document.getElementById('timerDisplay');
+      if (timerDisplay) timerDisplay.textContent = "00:00";
+
+      timerInterval = setInterval(() => {
+        if (!quizStartTime) return;
+        const now = Date.now();
+        const seconds = Math.floor((now - quizStartTime) / 1000);
+        if (timerDisplay) {
+          timerDisplay.textContent = formatDigitalTime(seconds);
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      if (quizStartTime) {
+        finalElapsedSeconds = Math.max(1, Math.floor((Date.now() - quizStartTime) / 1000));
+        finalElapsedFormatted = formatTime(finalElapsedSeconds);
+      }
+    }
+
+    // --- Web Audio API Synthesizer (No external audio file deps) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      try {
+        initAudio();
+        const now = audioCtx.currentTime;
+
+        if (type === 'correct') {
+          // Cheerful chime arpeggio: C5 -> E5 -> G5 -> C6
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+            gain.gain.setValueAtTime(0.18, now + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.35);
+          });
+        } else if (type === 'wrong') {
+          // Low buzzer buzz
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(150, now);
+          osc.frequency.linearRampToValueAtTime(80, now + 0.35);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else if (type === 'win') {
+          // Victory Fanfare
+          const fanfare = [
+            { f: 523.25, d: 0.15 },
+            { f: 659.25, d: 0.15 },
+            { f: 783.99, d: 0.15 },
+            { f: 1046.50, d: 0.45 }
+          ];
+          let offset = 0;
+          fanfare.forEach(item => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(item.f, now + offset);
+            gain.gain.setValueAtTime(0.25, now + offset);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + offset + item.d);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + offset);
+            osc.stop(now + offset + item.d);
+            offset += item.d;
+          });
+        }
+      } catch (e) {
+        console.warn('AudioContext error:', e);
+      }
+    }
+
+    // --- Toast Notification Helper ---
+    let toastTimer = null;
+    function showToast(msg, icon = '💾') {
+      const toast = document.getElementById('toastNotification');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+      toastMsg.textContent = msg;
+      toastIcon.textContent = icon;
+      toast.classList.remove('hidden');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 2400);
+    }
+
+    // --- DOM Elements ---
+    const studentViewBtn = document.getElementById('studentViewBtn');
+    const teacherViewBtn = document.getElementById('teacherViewBtn');
+    const teacherToolbar = document.getElementById('teacherToolbar');
+    const teacherQuestionSelect = document.getElementById('teacherQuestionSelect');
+    const teacherGuideTip = document.getElementById('teacherGuideTip');
+    const teacherExplanationCard = document.getElementById('teacherExplanationCard');
+    const teacherExplanationInput = document.getElementById('teacherExplanationInput');
+
+    // Teacher Password Auth Modal Elements
+    const teacherAuthModal = document.getElementById('teacherAuthModal');
+    const teacherPasswordInput = document.getElementById('teacherPasswordInput');
+    const teacherAuthErrorMsg = document.getElementById('teacherAuthErrorMsg');
+    const confirmTeacherAuthBtn = document.getElementById('confirmTeacherAuthBtn');
+    const cancelTeacherAuthBtn = document.getElementById('cancelTeacherAuthBtn');
+    const TEACHER_PIN = "5658";
+    let isTeacherAuthenticated = false;
+
+    const addQuestionBtn = document.getElementById('addQuestionBtn');
+    const deleteQuestionBtn = document.getElementById('deleteQuestionBtn');
+    const toggleDialogueBtn = document.getElementById('toggleDialogueBtn');
+    const saveQuizBtn = document.getElementById('saveQuizBtn');
+    const resetQuizBtn = document.getElementById('resetQuizBtn');
+    const uploadImageBtn = document.getElementById('uploadImageBtn');
+    const exportHtmlBtn = document.getElementById('exportHtmlBtn');
+    const imageFileInput = document.getElementById('imageFileInput');
+    const questionImageContainer = document.getElementById('questionImageContainer');
+    const questionImageTag = document.getElementById('questionImageTag');
+    const imageEditOverlay = document.getElementById('imageEditOverlay');
+    const changeImageBtn = document.getElementById('changeImageBtn');
+    const removeImageBtn = document.getElementById('removeImageBtn');
+    const teacherImageDropzone = document.getElementById('teacherImageDropzone');
+
+    // Submission elements
+    const studentInfoInput = document.getElementById('studentInfoInput');
+    const studentMemoInput = document.getElementById('studentMemoInput');
+    const copyReportBtn = document.getElementById('copyReportBtn');
+
+    const startScreen = document.getElementById('startScreen');
+    const quizScreen = document.getElementById('quizScreen');
+    const winScreen = document.getElementById('winScreen');
+    const failModal = document.getElementById('failModal');
+
+    const startQuizBtn = document.getElementById('startQuizBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const soundOnIcon = document.getElementById('soundOnIcon');
+    const soundOffIcon = document.getElementById('soundOffIcon');
+
+    const qNumberBadge = document.getElementById('qNumberBadge');
+    const streakCount = document.getElementById('streakCount');
+    const attemptCount = document.getElementById('attemptCount');
+    const progressBar = document.getElementById('progressBar');
+    const questionCard = document.getElementById('questionCard');
+
+    const dialogueContainer = document.getElementById('dialogueContainer');
+    const dialogueTitle = document.getElementById('dialogueTitle');
+    const dialogueContent = document.getElementById('dialogueContent');
+
+    const questionText = document.getElementById('questionText');
+    const optionsList = document.getElementById('optionsList');
+    const feedbackBox = document.getElementById('feedbackBox');
+    const feedbackText = document.getElementById('feedbackText');
+
+    const startStudentName = document.getElementById('startStudentName');
+    const nameValidationMsg = document.getElementById('nameValidationMsg');
+    const failStageBadge = document.getElementById('failStageBadge');
+    const failModalHeader = document.getElementById('failModalHeader');
+    const stageReviewCard = document.getElementById('stageReviewCard');
+    const restartBtnText = document.getElementById('restartBtnText');
+
+    const failQuestionText = document.getElementById('failQuestionText');
+    const userWrongAnswer = document.getElementById('userWrongAnswer');
+    const correctAnswerText = document.getElementById('correctAnswerText');
+    const failExplanation = document.getElementById('failExplanation');
+
+    // Dashboard & Online Submission DOM elements
+    const openDashboardBtn = document.getElementById('openDashboardBtn');
+    const dashboardModal = document.getElementById('dashboardModal');
+    const closeDashboardBtn = document.getElementById('closeDashboardBtn');
+    const closeDashboardBottomBtn = document.getElementById('closeDashboardBottomBtn');
+    const teacherSubCountBadge = document.getElementById('teacherSubCountBadge');
+    const dashTotalCount = document.getElementById('dashTotalCount');
+    const dashSearchInput = document.getElementById('dashSearchInput');
+    const submissionTableBody = document.getElementById('submissionTableBody');
+    const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+    const onlineSubmitBtn = document.getElementById('onlineSubmitBtn');
+    const submitStatusTag = document.getElementById('submitStatusTag');
+
+    let isSubmittedCurrentSession = false;
+
+    // Open/Close Dashboard Modal
+    openDashboardBtn.addEventListener('click', () => {
+      updateDashboardUI();
+      dashboardModal.classList.remove('hidden');
+    });
+    closeDashboardBtn.addEventListener('click', () => dashboardModal.classList.add('hidden'));
+    closeDashboardBottomBtn.addEventListener('click', () => dashboardModal.classList.add('hidden'));
+
+    // Update Dashboard Table & Count UI
+    function updateDashboardUI() {
+      const total = submissions.length;
+      if (teacherSubCountBadge) teacherSubCountBadge.textContent = total;
+      if (dashTotalCount) dashTotalCount.textContent = total;
+
+      if (!submissionTableBody) return;
+
+      const filterTerm = (dashSearchInput ? dashSearchInput.value.trim().toLowerCase() : '');
+      const filtered = submissions.filter(item => {
+        if (!filterTerm) return true;
+        return (item.studentInfo && item.studentInfo.toLowerCase().includes(filterTerm)) ||
+               (item.memo && item.memo.toLowerCase().includes(filterTerm));
+      });
+
+      if (filtered.length === 0) {
+        submissionTableBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center py-8 text-slate-400 font-medium">
+              ${filterTerm ? '검색된 학생 결과가 없습니다.' : '아직 제출된 결과가 없습니다. 학생이 12번을 통과하고 제출하면 실시간으로 표시됩니다.'}
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      submissionTableBody.innerHTML = filtered.map((item, idx) => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-2.5 px-3 text-center text-slate-400 font-semibold">${idx + 1}</td>
+          <td class="py-2.5 px-3 font-extrabold text-slate-900">${item.studentInfo || '이름 미입력'}</td>
+          <td class="py-2.5 px-3 text-center">
+            <span class="px-2 py-0.5 rounded-full text-xs font-bold ${item.attempts === 1 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+              ${item.attempts || 1}회
+            </span>
+          </td>
+          <td class="py-2.5 px-3 text-center font-bold text-indigo-700 bg-indigo-50/40 rounded-lg">
+            ${item.elapsedTime || item.elapsedFormatted || '-'}
+          </td>
+          <td class="py-2.5 px-3 text-slate-500 text-xs">${item.dateStr || '-'}</td>
+          <td class="py-2.5 px-3 text-slate-700 max-w-[200px] truncate" title="${item.memo || ''}">${item.memo || '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    if (dashSearchInput) {
+      dashSearchInput.addEventListener('input', updateDashboardUI);
+    }
+
+    // --- Online Submit Button Logic (Student End) ---
+    onlineSubmitBtn.addEventListener('click', async () => {
+      const studentInfo = (studentInfoInput.value.trim() || startStudentName.value.trim());
+      if (!studentInfo) {
+        showToast('학생 정보(학년/반/이름)를 입력해주세요.', '✏️');
+        studentInfoInput.focus();
+        return;
+      }
+
+      const memo = studentMemoInput.value.trim() || "공감하며 대화하는 법을 배웠습니다!";
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      const newRecord = {
+        studentInfo: studentInfo,
+        attempts: attempts,
+        elapsedTime: finalElapsedFormatted,
+        elapsedSeconds: finalElapsedSeconds,
+        memo: memo,
+        dateStr: dateStr,
+        timestamp: Date.now(),
+        quizCount: quizData.length
+      };
+
+      onlineSubmitBtn.disabled = true;
+      onlineSubmitBtn.innerHTML = `<span>⏳</span> <span>제출 전송 중...</span>`;
+
+      try {
+        if (isFirebaseReady && db) {
+          const subsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'submissions');
+          await addDoc(subsCollection, newRecord);
+        } else {
+          // Local in-memory fallback
+          submissions.unshift(newRecord);
+          updateDashboardUI();
+        }
+
+        isSubmittedCurrentSession = true;
+        submitStatusTag.className = "text-[11px] px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-700";
+        submitStatusTag.textContent = "제출 완료 ✓";
+
+        onlineSubmitBtn.className = "w-full py-3 px-4 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-default";
+        onlineSubmitBtn.innerHTML = `<span>🎉</span> <span>선생님께 온라인 제출이 완료되었습니다!</span>`;
+
+        showToast(`${studentInfo} 학생의 결과가 선생님께 성공적으로 전송되었습니다!`, '🚀');
+      } catch (err) {
+        console.error('Submission error:', err);
+        // Fallback local addition
+        submissions.unshift(newRecord);
+        updateDashboardUI();
+        onlineSubmitBtn.disabled = false;
+        onlineSubmitBtn.innerHTML = `<span>🚀</span> <span>선생님께 온라인으로 결과 제출하기</span>`;
+        showToast('제출되었습니다 (로컬 반영 완료).', '✅');
+      }
+    });
+
+    // --- CSV Download for Teacher ---
+    downloadCsvBtn.addEventListener('click', () => {
+      if (submissions.length === 0) {
+        showToast('다운로드할 제출 데이터가 아직 없습니다.', '⚠️');
+        return;
+      }
+
+      // UTF-8 BOM to ensure Korean text displays properly in Excel
+      let csvContent = "\uFEFF순번,학생 정보,도전 횟수,소요 시간,완주 일시,한 줄 소감\n";
+
+      submissions.forEach((item, index) => {
+        const cleanInfo = `"${(item.studentInfo || '').replace(/"/g, '""')}"`;
+        const cleanMemo = `"${(item.memo || '').replace(/"/g, '""')}"`;
+        const elapsedText = `"${item.elapsedTime || item.elapsedFormatted || '-'}"`;
+        const row = [
+          index + 1,
+          cleanInfo,
+          `${item.attempts || 1}회`,
+          elapsedText,
+          `"${item.dateStr || ''}"`,
+          cleanMemo
+        ].join(',');
+        csvContent += row + "\n";
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `공감대화퀴즈_학생결과수합_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast('엑셀(CSV) 파일이 성공적으로 다운로드되었습니다!', '📊');
+    });
+
+    // Track restart target question index for A, B, C checkpoints
+    let checkpointRestartIndex = 0;
+
+    // Registered Class Students & Teacher Whitelist (23 members)
+    const allowedMembers = [
+      "김서아", "유소영", "김수현", "이대운", "김윤아", "이새봄",
+      "김태영", "이서율", "김하랑", "이진서", "나예린", "이채원",
+      "박민제", "이초은", "박선우", "이태환", "양수빈", "이하린",
+      "한규빈", "한유은", "현지우", "황지우", "이승찬"
+    ];
+
+    // Whitelist Validator
+    function validateMemberName(input) {
+      if (!input) return null;
+      const cleanInput = input.trim();
+
+      // 1. Exact match
+      const exactMatch = allowedMembers.find(m => m === cleanInput);
+      if (exactMatch) return exactMatch;
+
+      // 2. Partial match (e.g. "5학년 2반 김서아" or "이승찬 선생님")
+      const partialMatch = allowedMembers.find(m => cleanInput.includes(m));
+      if (partialMatch) return partialMatch;
+
+      return null;
+    }
+
+    // Start Quiz Button with Strict Member Validation
+    startQuizBtn.addEventListener('click', () => {
+      const inputName = startStudentName.value.trim();
+      if (!inputName) {
+        nameValidationMsg.innerHTML = '<span>⚠️</span> <span>이름이 비어있습니다. 이름을 입력하고 다시 도전해주세요!</span>';
+        nameValidationMsg.classList.remove('hidden');
+        startStudentName.classList.remove('border-indigo-200');
+        startStudentName.classList.add('border-rose-500', 'ring-2', 'ring-rose-200', 'bg-rose-50/30');
+        startStudentName.focus();
+        showToast('이름을 입력해주세요!', '⚠️');
+        return;
+      }
+
+      // Validate against registered class members whitelist
+      const verifiedName = validateMemberName(inputName);
+      if (!verifiedName) {
+        nameValidationMsg.innerHTML = '<span>🚫</span> <span>등록된 우리 반 명단에 없거나 오타가 있습니다. 이름을 다시 확인하고 정확히 써주세요!</span>';
+        nameValidationMsg.classList.remove('hidden');
+        startStudentName.classList.remove('border-indigo-200');
+        startStudentName.classList.add('border-rose-500', 'ring-2', 'ring-rose-200', 'bg-rose-50/30');
+        startStudentName.focus();
+        startStudentName.select();
+        showToast('등록되지 않은 이름입니다. 다시 써주세요.', '🚫');
+        return;
+      }
+
+      nameValidationMsg.classList.add('hidden');
+      startStudentName.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200', 'bg-rose-50/30');
+      startStudentName.classList.add('border-indigo-200');
+
+      // Auto-populate verified name into the final submission screen
+      if (studentInfoInput) {
+        studentInfoInput.value = verifiedName;
+      }
+
+      initAudio();
+      startScreen.classList.add('hidden');
+      quizScreen.classList.remove('hidden');
+      winScreen.classList.add('hidden');
+      currentQuestionIndex = 0;
+      streak = 0;
+      startTimer();
+      renderQuestion();
+    });
+
+    // Clear validation error when student starts typing name
+    startStudentName.addEventListener('input', () => {
+      if (startStudentName.value.trim()) {
+        nameValidationMsg.classList.add('hidden');
+        startStudentName.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200', 'bg-rose-50/30');
+        startStudentName.classList.add('border-indigo-200');
+      }
+    });
+
+    // --- Sync Dropdown Select in Teacher Mode ---
+    function updateTeacherSelect() {
+      teacherQuestionSelect.innerHTML = '';
+      quizData.forEach((q, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        const plainText = q.question.replace(/<[^>]+>/g, '');
+        opt.textContent = `${idx + 1}번: ${plainText.substring(0, 18)}...`;
+        if (idx === currentQuestionIndex) {
+          opt.selected = true;
+        }
+        teacherQuestionSelect.appendChild(opt);
+      });
+    }
+
+    teacherQuestionSelect.addEventListener('change', (e) => {
+      currentQuestionIndex = parseInt(e.target.value, 10);
+      renderQuestion();
+    });
+
+    // --- Switch between 학생뷰 (Student View) and 교사뷰 (Teacher View) with Password Protection ---
+    function setViewMode(mode) {
+      isTeacherMode = (mode === 'teacher');
+      if (isTeacherMode) {
+        // Active state for 교사뷰
+        teacherViewBtn.className = 'flex items-center gap-1 px-3 py-1.5 rounded-full transition bg-indigo-600 text-white shadow-xs';
+        studentViewBtn.className = 'flex items-center gap-1 px-3 py-1.5 rounded-full transition text-slate-600 hover:text-indigo-600';
+        teacherToolbar.classList.remove('hidden');
+        teacherGuideTip.classList.remove('hidden');
+        teacherExplanationCard.classList.remove('hidden');
+
+        // Automatically display the quiz screen for editing
+        startScreen.classList.add('hidden');
+        winScreen.classList.add('hidden');
+        failModal.classList.add('hidden');
+        quizScreen.classList.remove('hidden');
+
+        showToast('교사뷰(위지윅 편집 모드)로 전환되었습니다.', '✏️');
+      } else {
+        // Active state for 학생뷰
+        isTeacherAuthenticated = false; // Reset session authentication on switching to student view
+        teacherViewBtn.className = 'flex items-center gap-1 px-3 py-1.5 rounded-full transition text-slate-600 hover:text-indigo-600';
+        studentViewBtn.className = 'flex items-center gap-1 px-3 py-1.5 rounded-full transition bg-indigo-600 text-white shadow-xs';
+        teacherToolbar.classList.add('hidden');
+        teacherGuideTip.classList.add('hidden');
+        teacherExplanationCard.classList.add('hidden');
+
+        showToast('학생뷰로 전환되었습니다.', '🎓');
+      }
+      renderQuestion();
+    }
+
+    // Open Password Modal when Teacher View is clicked
+    teacherViewBtn.addEventListener('click', () => {
+      if (isTeacherAuthenticated && isTeacherMode) return;
+      if (isTeacherAuthenticated) {
+        setViewMode('teacher');
+        return;
+      }
+      teacherPasswordInput.value = '';
+      teacherAuthErrorMsg.classList.add('hidden');
+      teacherPasswordInput.classList.remove('border-rose-500', 'bg-rose-50');
+      teacherAuthModal.classList.remove('hidden');
+      setTimeout(() => teacherPasswordInput.focus(), 100);
+    });
+
+    studentViewBtn.addEventListener('click', () => setViewMode('student'));
+
+    // Handle Teacher Password Confirmation
+    function verifyTeacherPassword() {
+      const enteredPass = teacherPasswordInput.value.trim();
+      if (enteredPass === TEACHER_PIN) {
+        isTeacherAuthenticated = true;
+        teacherAuthModal.classList.add('hidden');
+        setViewMode('teacher');
+      } else {
+        teacherAuthErrorMsg.classList.remove('hidden');
+        teacherPasswordInput.classList.add('border-rose-500', 'bg-rose-50');
+        teacherPasswordInput.value = '';
+        teacherPasswordInput.focus();
+      }
+    }
+
+    confirmTeacherAuthBtn.addEventListener('click', verifyTeacherPassword);
+    teacherPasswordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        verifyTeacherPassword();
+      }
+    });
+
+    cancelTeacherAuthBtn.addEventListener('click', () => {
+      teacherAuthModal.classList.add('hidden');
+      teacherPasswordInput.value = '';
+      teacherAuthErrorMsg.classList.add('hidden');
+    });
+
+    // --- Inline Question Title & Explanation Editing ---
+    questionText.addEventListener('input', () => {
+      if (isTeacherMode && quizData[currentQuestionIndex]) {
+        quizData[currentQuestionIndex].question = questionText.innerHTML;
+        updateTeacherSelect();
+      }
+    });
+
+    teacherExplanationInput.addEventListener('input', () => {
+      if (isTeacherMode && quizData[currentQuestionIndex]) {
+        quizData[currentQuestionIndex].explanation = teacherExplanationInput.innerHTML;
+      }
+    });
+
+    // --- Render Question (WYSIWYG Adaptive) ---
+    function renderQuestion() {
+      isTransitioning = false;
+      if (!quizData[currentQuestionIndex]) {
+        currentQuestionIndex = 0;
+      }
+      const q = quizData[currentQuestionIndex];
+
+      // Update Header Stats
+      qNumberBadge.textContent = `문제 ${currentQuestionIndex + 1} / ${quizData.length}`;
+      streakCount.textContent = streak;
+      attemptCount.textContent = attempts;
+      const progressPercent = ((currentQuestionIndex + 1) / quizData.length) * 100;
+      progressBar.style.width = `${progressPercent}%`;
+
+      // Hide Feedback Box
+      feedbackBox.classList.add('hidden');
+      feedbackBox.className = 'hidden rounded-xl p-3 text-sm font-semibold flex items-center justify-between';
+
+      // Animate Card
+      questionCard.classList.remove('animate-pop', 'animate-shake');
+      void questionCard.offsetWidth;
+      questionCard.classList.add('animate-pop');
+
+      // Update question dropdown selection
+      updateTeacherSelect();
+
+      // Configure Question Title & Editable Status
+      questionText.innerHTML = q.question;
+      questionText.contentEditable = isTeacherMode ? "true" : "false";
+      if (isTeacherMode) {
+        questionText.classList.add('border-2', 'border-dashed', 'border-indigo-300', 'bg-indigo-50/40');
+      } else {
+        questionText.classList.remove('border-2', 'border-dashed', 'border-indigo-300', 'bg-indigo-50/40');
+      }
+
+      // Teacher Explanation Editor
+      if (isTeacherMode) {
+        teacherExplanationInput.innerHTML = q.explanation || '';
+      }
+
+      // Render Question Image (Base64)
+      if (q.image) {
+        questionImageContainer.classList.remove('hidden');
+        questionImageTag.src = q.image;
+        if (isTeacherMode) {
+          imageEditOverlay.classList.remove('hidden');
+          teacherImageDropzone.classList.add('hidden');
+        } else {
+          imageEditOverlay.classList.add('hidden');
+          teacherImageDropzone.classList.add('hidden');
+        }
+      } else {
+        questionImageContainer.classList.add('hidden');
+        questionImageTag.removeAttribute('src');
+        imageEditOverlay.classList.add('hidden');
+        if (isTeacherMode) {
+          teacherImageDropzone.classList.remove('hidden');
+        } else {
+          teacherImageDropzone.classList.add('hidden');
+        }
+      }
+
+      // Check Dialogue
+      if (q.dialogue && q.dialogue.lines && q.dialogue.lines.length > 0) {
+        dialogueContainer.classList.remove('hidden');
+        dialogueTitle.innerHTML = `<span>📖</span> ${q.dialogue.title || '대화 본문'}`;
+        dialogueContent.innerHTML = q.dialogue.lines.map((line, lIdx) => 
+          `<div class="dialogue-line-item ${isTeacherMode ? 'p-1 rounded hover:bg-amber-100/70 border border-transparent hover:border-amber-300 outline-none' : ''}" data-lidx="${lIdx}" contenteditable="${isTeacherMode ? 'true' : 'false'}">${line}</div>`
+        ).join('');
+
+        if (isTeacherMode) {
+          dialogueContent.querySelectorAll('.dialogue-line-item').forEach(el => {
+            el.addEventListener('input', (e) => {
+              const lineIdx = parseInt(e.target.dataset.lidx, 10);
+              if (quizData[currentQuestionIndex].dialogue) {
+                quizData[currentQuestionIndex].dialogue.lines[lineIdx] = e.target.innerHTML;
+              }
+            });
+          });
+        }
+      } else {
+        dialogueContainer.classList.add('hidden');
+      }
+
+      // Render Options
+      optionsList.innerHTML = '';
+      const circleNumbers = ['①', '②', '③', '④'];
+
+      q.options.forEach((optText, index) => {
+        const isCorrect = (index === q.answer);
+
+        if (isTeacherMode) {
+          // --- TEACHER EDIT MODE OPTION ROW ---
+          const row = document.createElement('div');
+          row.className = `w-full p-3 rounded-2xl border-2 ${isCorrect ? 'border-emerald-500 bg-emerald-50/50 ring-1 ring-emerald-400' : 'border-slate-200 bg-white'} flex items-center justify-between gap-2 shadow-sm transition`;
+
+          const leftWrap = document.createElement('div');
+          leftWrap.className = 'flex items-center gap-3 flex-1 min-w-0';
+
+          const circleBadge = document.createElement('span');
+          circleBadge.className = `inline-flex items-center justify-center w-6 h-6 rounded-full ${isCorrect ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'} font-bold text-xs shrink-0`;
+          circleBadge.textContent = circleNumbers[index] || (index + 1);
+
+          const editSpan = document.createElement('div');
+          editSpan.contentEditable = "true";
+          editSpan.className = "flex-1 outline-none text-slate-800 text-sm sm:text-base font-medium p-1 rounded hover:bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-400";
+          editSpan.innerHTML = optText;
+          editSpan.addEventListener('input', () => {
+            quizData[currentQuestionIndex].options[index] = editSpan.innerHTML;
+          });
+
+          leftWrap.appendChild(circleBadge);
+          leftWrap.appendChild(editSpan);
+
+          // Correct Answer Toggle Button for Teacher
+          const answerBtn = document.createElement('button');
+          answerBtn.type = 'button';
+          answerBtn.className = `shrink-0 px-2.5 py-1 text-xs rounded-lg font-bold transition ${isCorrect ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-800 border border-slate-300'}`;
+          answerBtn.innerHTML = isCorrect ? '✓ 정답' : '정답으로 지정';
+          answerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            quizData[currentQuestionIndex].answer = index;
+            renderQuestion();
+            showToast(`${index + 1}번 보기가 정답으로 설정되었습니다.`, '🎯');
+          });
+
+          row.appendChild(leftWrap);
+          row.appendChild(answerBtn);
+          optionsList.appendChild(row);
+
+        } else {
+          // --- STUDENT PLAY MODE BUTTON ---
+          const btn = document.createElement('button');
+          btn.className = `option-btn w-full text-left p-3.5 sm:p-4 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 bg-white hover:bg-indigo-50/50 text-slate-700 font-medium text-sm sm:text-base transition-all duration-150 flex items-start gap-3 active:scale-[0.99]`;
+          btn.innerHTML = `
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-bold text-xs shrink-0 mt-0.5">${circleNumbers[index] || (index + 1)}</span>
+            <span class="flex-1 leading-relaxed">${optText}</span>
+          `;
+          btn.addEventListener('click', () => handleOptionClick(index, btn));
+          optionsList.appendChild(btn);
+        }
+      });
+    }
+
+    // --- Save Quiz Data to LocalStorage ---
+    saveQuizBtn.addEventListener('click', () => {
+      try {
+        localStorage.setItem('empathyQuiz_data_v3', JSON.stringify(quizData));
+        showToast('퀴즈 내용이 브라우저에 저장되었습니다!', '💾');
+      } catch (e) {
+        showToast('저장 용량 초과 또는 브라우저 제한 오류입니다.', '⚠️');
+      }
+    });
+
+    // --- Base64 Image Processing with Canvas Compression ---
+    function processImageFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast('이미지 파일만 업로드할 수 있습니다.', '⚠️');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          // Downscale large images (max 1000px width/height) to keep Base64 lightweight
+          const maxDim = 1000;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Output high-quality Base64 Data URL
+          const base64Data = canvas.toDataURL('image/jpeg', 0.86);
+          if (quizData[currentQuestionIndex]) {
+            quizData[currentQuestionIndex].image = base64Data;
+            renderQuestion();
+            showToast(`${currentQuestionIndex + 1}번 문제에 그림이 Base64로 저장되었습니다.`, '🖼️');
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Trigger File Input from Dropzone or Toolbar Button
+    uploadImageBtn.addEventListener('click', () => imageFileInput.click());
+    teacherImageDropzone.addEventListener('click', () => imageFileInput.click());
+    changeImageBtn.addEventListener('click', () => imageFileInput.click());
+
+    imageFileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        processImageFile(file);
+      }
+      imageFileInput.value = '';
+    });
+
+    // Remove Image
+    removeImageBtn.addEventListener('click', () => {
+      if (quizData[currentQuestionIndex]) {
+        quizData[currentQuestionIndex].image = null;
+        renderQuestion();
+        showToast('그림이 삭제되었습니다.', '🗑️');
+      }
+    });
+
+    // Drag and Drop Upload Support
+    teacherImageDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      teacherImageDropzone.classList.add('border-indigo-500', 'bg-indigo-50');
+    });
+    teacherImageDropzone.addEventListener('dragleave', () => {
+      teacherImageDropzone.classList.remove('border-indigo-500', 'bg-indigo-50');
+    });
+    teacherImageDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      teacherImageDropzone.classList.remove('border-indigo-500', 'bg-indigo-50');
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) processImageFile(file);
+    });
+
+    // Clipboard Paste Support (Ctrl+V directly on the screen)
+    window.addEventListener('paste', (e) => {
+      if (!isTeacherMode) return;
+      const items = (e.clipboardData || window.clipboardData).items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          processImageFile(file);
+          break;
+        }
+      }
+    });
+
+    // --- Export 100% Self-Contained HTML File with Embedded Base64 Images ---
+    exportHtmlBtn.addEventListener('click', () => {
+      try {
+        // Clone the document HTML
+        let fullHtml = document.documentElement.outerHTML;
+
+        // Ensure student mode is active in the exported file
+        fullHtml = fullHtml.replace(/<body[^>]*>/, '<body class="bg-gradient-to-br from-amber-50 via-sky-50 to-indigo-100 min-h-screen text-slate-800 flex flex-col justify-between selection:bg-indigo-200">');
+
+        // Replace defaultQuizData with current quizData
+        const jsonSerialized = JSON.stringify(quizData, null, 2);
+        const dataRegex = /const defaultQuizData = \[[\s\S]*?\];/;
+        fullHtml = fullHtml.replace(dataRegex, `const defaultQuizData = ${jsonSerialized};`);
+
+        // Create downloadable Blob
+        const blob = new Blob([`<!DOCTYPE html>\n${fullHtml}`], { type: 'text/html;charset=utf-8' });
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = '공감하며_대화하기_퀴즈_완성본.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+
+        showToast('그림 및 설정이 포함된 HTML 파일이 다운로드되었습니다!', '📥');
+      } catch (err) {
+        console.error('HTML Export error:', err);
+        showToast('파일 생성 중 오류가 발생했습니다.', '⚠️');
+      }
+    });
+
+    // --- Reset Quiz Data to Factory Default ---
+    resetQuizBtn.addEventListener('click', () => {
+      localStorage.removeItem('empathyQuiz_data_v3');
+      localStorage.removeItem('empathyQuiz_teacherEmail');
+      quizData = JSON.parse(JSON.stringify(defaultQuizData));
+      currentQuestionIndex = 0;
+      renderQuestion();
+      showToast('초기 12문제와 기본 설정으로 복원되었습니다.', '🔄');
+    });
+
+    // --- Generate Formatted Text Report ---
+    function generateResultReport() {
+      const studentInfo = studentInfoInput.value.trim() || "이름 미입력 학생";
+      const memo = studentMemoInput.value.trim() || "배운 대로 친구의 마음에 귀 기울이겠습니다!";
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      const reportText = `[공감하며 대화하기 서든데스 퀴즈 완주 리포트]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ 학생 정보 : ${studentInfo}
+■ 완주 일시 : ${dateStr}
+■ 소요 시간 : ${finalElapsedFormatted}
+■ 최종 결과 : ${quizData.length}문제 연속 정답 (챌린지 성공!)
+■ 총 도전 횟수 : ${attempts}회 만에 성공
+■ 학생 소감 : ${memo}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[학습한 공감 대화 4대 원칙]
+1. 상대의 기분을 살펴 말하기
+2. 자신의 기분을 살펴 준 것에 고마움 표현하기
+3. 자신의 상황을 이해할 수 있게 솔직하게 설명하기
+4. 상대방의 말을 공감하고 귀 기울여 들어 주기
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+위 학생은 모든 문항을 연속으로 정답 처리하여 '공감 대화 마스터'를 획득하였습니다.`;
+
+      return { studentInfo, memo, dateStr, reportText };
+    }
+
+    // --- Copy Result Report to Clipboard ---
+    copyReportBtn.addEventListener('click', () => {
+      const studentInfo = studentInfoInput.value.trim();
+      if (!studentInfo) {
+        showToast('학생 정보(이름)를 확인해주세요.', '✏️');
+        return;
+      }
+
+      const { reportText } = generateResultReport();
+
+      // Copy to clipboard using execCommand fallback
+      const tempTextArea = document.createElement('textarea');
+      tempTextArea.value = reportText;
+      tempTextArea.style.position = 'fixed';
+      tempTextArea.style.left = '-9999px';
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      
+      try {
+        document.execCommand('copy');
+        showToast('결과 리포트가 복사되었습니다! 클래스룸이나 과제방에 붙여넣기(Ctrl+V)하세요.', '📋');
+      } catch (err) {
+        showToast('클립보드 복사에 실패했습니다.', '⚠️');
+      } finally {
+        document.body.removeChild(tempTextArea);
+      }
+    });
+
+    // --- Add New Question ---
+    addQuestionBtn.addEventListener('click', () => {
+      const newNum = quizData.length + 1;
+      const newQuestion = {
+        id: Date.now(),
+        question: `${newNum}. 새로운 질문을 입력하세요.`,
+        dialogue: null,
+        options: [
+          "보기 1번 내용을 입력하세요.",
+          "보기 2번 내용을 입력하세요.",
+          "보기 3번 내용을 입력하세요.",
+          "보기 4번 내용을 입력하세요."
+        ],
+        answer: 0,
+        explanation: "이 문제에 대한 정답 해설을 작성해주세요."
+      };
+      quizData.push(newQuestion);
+      currentQuestionIndex = quizData.length - 1;
+      renderQuestion();
+      showToast(`새 문제(${newNum}번)가 추가되었습니다.`, '➕');
+    });
+
+    // --- Delete Current Question ---
+    deleteQuestionBtn.addEventListener('click', () => {
+      if (quizData.length <= 1) {
+        showToast('최소 1문제는 유지되어야 합니다.', '⚠️');
+        return;
+      }
+      quizData.splice(currentQuestionIndex, 1);
+      if (currentQuestionIndex >= quizData.length) {
+        currentQuestionIndex = quizData.length - 1;
+      }
+      renderQuestion();
+      showToast('선택한 문제가 삭제되었습니다.', '🗑️');
+    });
+
+    // --- Toggle Dialogue Container for Current Question ---
+    toggleDialogueBtn.addEventListener('click', () => {
+      const q = quizData[currentQuestionIndex];
+      if (!q.dialogue) {
+        q.dialogue = {
+          title: `대화 본문 (${currentQuestionIndex + 1}번 문제)`,
+          lines: [
+            "👦 <strong>철수:</strong> “새로운 대화 내용을 입력하세요.” ➔ (1)",
+            "👧 <strong>영희:</strong> “상대방의 답변 내용을 입력하세요.” ➔ (2)"
+          ]
+        };
+        showToast('대화 지문 카드가 생성되었습니다.', '📖');
+      } else {
+        q.dialogue = null;
+        showToast('대화 지문 카드가 숨겨졌습니다.', '📖');
+      }
+      renderQuestion();
+    });
+
+    // --- Option Selection Logic ---
+    function handleOptionClick(selectedIndex, clickedBtn) {
+      if (isTransitioning) return;
+      isTransitioning = true;
+
+      const q = quizData[currentQuestionIndex];
+      const allButtons = optionsList.querySelectorAll('.option-btn');
+      allButtons.forEach(b => b.classList.add('pointer-events-none'));
+
+      if (selectedIndex === q.answer) {
+        // --- CORRECT! ---
+        streak++;
+        playSound('correct');
+
+        clickedBtn.classList.remove('border-slate-200', 'bg-white', 'hover:border-indigo-400');
+        clickedBtn.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-950');
+        const badge = clickedBtn.querySelector('span');
+        badge.classList.remove('bg-slate-100', 'text-slate-700');
+        badge.classList.add('bg-emerald-500', 'text-white');
+
+        feedbackBox.classList.remove('hidden');
+        feedbackBox.classList.add('bg-emerald-100/80', 'text-emerald-800', 'border', 'border-emerald-200');
+        feedbackText.innerHTML = `<span>🎉 <strong>정답입니다!</strong> 다음 문제로 넘어갑니다...</span>`;
+
+        setTimeout(() => {
+          if (currentQuestionIndex + 1 < quizData.length) {
+            currentQuestionIndex++;
+            renderQuestion();
+          } else {
+            // Victory!
+            handleVictory();
+          }
+        }, 900);
+
+      } else {
+        // --- WRONG! (Instant Sudden-Death Fail) ---
+        playSound('wrong');
+        questionCard.classList.add('animate-shake');
+
+        clickedBtn.classList.remove('border-slate-200', 'bg-white', 'hover:border-indigo-400');
+        clickedBtn.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-950');
+        const badge = clickedBtn.querySelector('span');
+        badge.classList.remove('bg-slate-100', 'text-slate-700');
+        badge.classList.add('bg-rose-500', 'text-white');
+
+        // Highlight the true answer
+        const correctBtn = allButtons[q.answer];
+        correctBtn.classList.add('border-emerald-400', 'bg-emerald-50/70');
+
+        setTimeout(() => {
+          showFailModal(q, selectedIndex);
+        }, 700);
+      }
+    }
+
+    // --- Show Checkpoint Fail Modal (A, B, C logic) ---
+    function showFailModal(questionObj, userSelectedIndex) {
+      const qNum = currentQuestionIndex + 1;
+      const circleNumbers = ['①', '②', '③', '④'];
+      
+      failQuestionText.textContent = questionObj.question;
+      userWrongAnswer.textContent = `${circleNumbers[userSelectedIndex]} ${questionObj.options[userSelectedIndex]}`;
+      correctAnswerText.textContent = `${circleNumbers[questionObj.answer]} ${questionObj.options[questionObj.answer]}`;
+      failExplanation.innerHTML = `<strong>💡 정답 해설:</strong> ${questionObj.explanation}`;
+
+      if (currentQuestionIndex === 0 || currentQuestionIndex === 1) {
+        // [A 단계]: 1번, 2번 틀렸을 때 -> 공감의 뜻 설명 & 1번부터 다시 풀기
+        checkpointRestartIndex = 0;
+        failStageBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-3 bg-amber-100 text-amber-900 border border-amber-300';
+        failStageBadge.innerHTML = '<span>🌱</span> A단계 복습 (1~2번 문항)';
+        failModalHeader.textContent = '공감의 뜻을 다시 배워볼까요?';
+
+        stageReviewCard.className = 'rounded-2xl p-4 text-left text-xs sm:text-sm mb-4 border border-amber-300 bg-amber-50 text-amber-950 space-y-2';
+        stageReviewCard.innerHTML = `
+          <div class="font-extrabold text-amber-900 flex items-center gap-1.5 text-sm">
+            <span>📚</span> [A단계 복습] 공감이란 무엇일까요?
+          </div>
+          <p class="leading-relaxed font-medium">
+            <strong>‘공감(共感)’</strong>이란 상대방의 처지나 기분을 헤아려 <strong>다른 사람의 생각과 마음을 알고 자신도 그렇게 느끼는 것</strong>입니다.
+          </p>
+          <div class="p-2.5 rounded-xl bg-white/80 border border-amber-200 text-amber-900 font-semibold text-xs">
+            👉 친구가 속상하거나 힘들 때 <span class="underline decoration-amber-500 font-extrabold">“많이 속상했겠다. 나라도 그랬을 것 같아.”</span>처럼 친구의 입장에 서서 따뜻하게 마음을 나누는 것이 진정한 공감입니다!
+          </div>
+        `;
+
+        restartBtn.className = 'w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-amber-200 active:scale-[0.98] transition flex items-center justify-center gap-2';
+        restartBtnText.textContent = '1번 문제부터 다시 풀기 🔄';
+
+      } else if (currentQuestionIndex >= 2 && currentQuestionIndex <= 6) {
+        // [B 단계]: 3, 4, 5, 6, 7번 틀렸을 때 -> 교과서 46쪽 보기 & 3번부터 다시 풀기
+        checkpointRestartIndex = 2; // Index for Question 3
+        failStageBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-3 bg-sky-100 text-sky-900 border border-sky-300';
+        failStageBadge.innerHTML = '<span>📖</span> B단계 복습 (3~7번 문항)';
+        failModalHeader.textContent = '교과서 46쪽을 다시 살펴보세요!';
+
+        stageReviewCard.className = 'rounded-2xl p-4 text-left text-xs sm:text-sm mb-4 border border-sky-300 bg-sky-50 text-sky-950 space-y-2';
+        stageReviewCard.innerHTML = `
+          <div class="font-extrabold text-sky-900 flex items-center gap-1.5 text-sm">
+            <span>🔍</span> [B단계 복습] 교과서 46쪽 대화 1 (민재와 서연이)
+          </div>
+          <p class="leading-relaxed font-medium">
+            <strong>국어 교과서 46쪽</strong>의 [대화 1]을 다시 꼼꼼하게 읽어보세요!
+          </p>
+          <ul class="list-disc list-inside space-y-1 text-xs text-sky-900">
+            <li>민재는 서연이의 <strong>기분과 표정을 먼저 살피며</strong> 말을 건넸습니다. ➔ (1)</li>
+            <li>서연이는 자신의 아픈 배 상태를 걱정해 준 친구에게 <strong>고마움을 표현</strong>했습니다. ➔ (2)</li>
+          </ul>
+        `;
+
+        restartBtn.className = 'w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-sky-200 active:scale-[0.98] transition flex items-center justify-center gap-2';
+        restartBtnText.textContent = '3번 문제부터 다시 풀기 🔄';
+
+      } else {
+        // [C 단계]: 8, 9, 10, 11, 12번 틀렸을 때 -> 교과서 46쪽 보기 & 8번부터 다시 풀기
+        checkpointRestartIndex = 7; // Index for Question 8
+        failStageBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-3 bg-purple-100 text-purple-900 border border-purple-300';
+        failStageBadge.innerHTML = '<span>✂️</span> C단계 복습 (8~12번 문항)';
+        failModalHeader.textContent = '교과서 46쪽을 다시 살펴보세요!';
+
+        stageReviewCard.className = 'rounded-2xl p-4 text-left text-xs sm:text-sm mb-4 border border-purple-300 bg-purple-50 text-purple-950 space-y-2';
+        stageReviewCard.innerHTML = `
+          <div class="font-extrabold text-purple-900 flex items-center gap-1.5 text-sm">
+            <span>🔍</span> [C단계 복습] 교과서 46쪽 대화 2 (준우와 지민이)
+          </div>
+          <p class="leading-relaxed font-medium">
+            <strong>국어 교과서 46쪽</strong>의 [대화 2]를 다시 꼼꼼하게 읽어보세요!
+          </p>
+          <ul class="list-disc list-inside space-y-1 text-xs text-purple-900">
+            <li>지민이는 가위를 깜빡 잊은 <strong>자신의 상황을 솔직하게 설명</strong>했습니다. ➔ (1)</li>
+            <li>준우는 곤란한 친구의 마음에 <strong>공감하며 귀 기울여 함께 쓰자고 배려</strong>했습니다. ➔ (2)</li>
+          </ul>
+        `;
+
+        restartBtn.className = 'w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-purple-200 active:scale-[0.98] transition flex items-center justify-center gap-2';
+        restartBtnText.textContent = '8번 문제부터 다시 풀기 🔄';
+      }
+
+      failModal.classList.remove('hidden');
+    }
+
+    // --- Restart from the designated Checkpoint (1, 3, or 8) ---
+    restartBtn.addEventListener('click', () => {
+      failModal.classList.add('hidden');
+      attempts++;
+      streak = 0;
+      currentQuestionIndex = checkpointRestartIndex;
+      renderQuestion();
+    });
+
+    // --- Victory Handler (12번 통과 시 이메일 전송 화면 활성화) ---
+    function handleVictory() {
+      stopTimer();
+      playSound('win');
+      quizScreen.classList.add('hidden');
+      winScreen.classList.remove('hidden');
+      
+      // Update Final Stats Display on Win Screen
+      const finalTimeDisplay = document.getElementById('finalTimeDisplay');
+      const finalAttemptsDisplay = document.getElementById('finalAttemptsDisplay');
+      if (finalTimeDisplay) finalTimeDisplay.textContent = finalElapsedFormatted;
+      if (finalAttemptsDisplay) finalAttemptsDisplay.textContent = `${attempts}회`;
+
+      // Auto fill student name if entered initially
+      if (startStudentName && startStudentName.value.trim() && studentInfoInput) {
+        studentInfoInput.value = startStudentName.value.trim();
+      }
+
+      // Reset online submission button state for new victory
+      if (!isSubmittedCurrentSession) {
+        submitStatusTag.className = "text-[11px] px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-500";
+        submitStatusTag.textContent = "미제출";
+        onlineSubmitBtn.disabled = false;
+        onlineSubmitBtn.className = "w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-emerald-100 flex items-center justify-center gap-2 transition active:scale-[0.98]";
+        onlineSubmitBtn.innerHTML = `<span>🚀</span> <span>선생님께 온라인으로 결과 제출하기</span>`;
+      }
+
+      triggerConfetti();
+    }
+
+    // --- Play Again from Win Screen ---
+    playAgainBtn.addEventListener('click', () => {
+      winScreen.classList.add('hidden');
+      quizScreen.classList.remove('hidden');
+      attempts++;
+      streak = 0;
+      currentQuestionIndex = 0;
+      isSubmittedCurrentSession = false;
+      startTimer();
+      renderQuestion();
+    });
+
+    // --- Canvas Confetti Celebration ---
+    function triggerConfetti() {
+      const canvas = document.getElementById('confettiCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.offsetWidth;
+      canvas.height = canvas.parentElement.offsetHeight;
+
+      const particles = [];
+      const colors = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#3b82f6'];
+
+      for (let i = 0; i < 90; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 12,
+          vy: (Math.random() - 0.5) * 12 - 3,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          vRot: (Math.random() - 0.5) * 10,
+          opacity: 1
+        });
+      }
+
+      function animateConfetti() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let activeCount = 0;
+
+        particles.forEach(p => {
+          if (p.opacity > 0) {
+            activeCount++;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.2; // gravity
+            p.rotation += p.vRot;
+            p.opacity -= 0.009;
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.globalAlpha = Math.max(0, p.opacity);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            ctx.restore();
+          }
+        });
+
+        if (activeCount > 0) {
+          requestAnimationFrame(animateConfetti);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+
+      animateConfetti();
+    }
+  </script>
+</body>
+</html>
