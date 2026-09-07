@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>사계절 제철 요리 교실</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            spring: { 50: '#fdf2f8', 100: '#fce7f3', 500: '#ec4899', 600: '#db2777' },
+            summer: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#10b981', 600: '#059669' },
+            autumn: { 50: '#fffbeb', 100: '#fef3c7', 500: '#f59e0b', 600: '#d97706' },
+            winter: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb' },
+          },
+          keyframes: {
+            bounceIn: {
+              '0%': { transform: 'scale(0.3)', opacity: '0' },
+              '50%': { transform: 'scale(1.08)' },
+              '70%': { transform: 'scale(0.95)' },
+              '100%': { transform: 'scale(1)', opacity: '1' }
+            },
+            steam: {
+              '0%': { transform: 'translateY(0) scaleX(1)', opacity: '0' },
+              '50%': { opacity: '0.8' },
+              '100%': { transform: 'translateY(-40px) scaleX(1.4)', opacity: '0' }
+            },
+            shake: {
+              '0%, 100%': { transform: 'rotate(0deg)' },
+              '25%': { transform: 'rotate(-4deg)' },
+              '75%': { transform: 'rotate(4deg)' }
+            }
+          },
+          animation: {
+            bounceIn: 'bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+            steam: 'steam 1.8s infinite ease-out',
+            shake: 'shake 0.35s infinite ease-in-out'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;600;700;800&display=swap');
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .font-cute {
+      font-family: 'Jua', 'Noto Sans KR', sans-serif;
+    }
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-amber-50 via-orange-50 to-emerald-50 min-h-screen text-slate-800 flex flex-col">
+
+  <!-- Confetti Canvas -->
+  <canvas id="confettiCanvas" class="pointer-events-none fixed inset-0 z-50"></canvas>
+
+  <!-- 상단 헤더 -->
+  <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-orange-100 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-11 h-11 bg-orange-500 rounded-2xl flex items-center justify-center text-2xl shadow-md shadow-orange-200">
+          🍳
+        </div>
+        <div>
+          <h1 class="font-cute text-2xl md:text-3xl text-orange-600 tracking-wide">사계절 제철 요리 교실</h1>
+          <p class="text-xs text-slate-500 font-medium">계절을 대표하는 맛있는 재료를 담아 요리해 보아요!</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button id="btnSoundToggle" class="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs md:text-sm font-semibold transition flex items-center gap-1 shadow-sm" title="소리 켜기/끄기">
+          <span id="soundIcon">🔊</span>
+          <span class="hidden sm:inline">효과음</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 콘텐츠 영역 -->
+  <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full flex flex-col lg:flex-row gap-6">
+
+    <!-- 좌측: 재료 선택 영역 -->
+    <section class="flex-1 flex flex-col">
+      <!-- 계절 탭 버튼 -->
+      <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-200/80 mb-4 flex items-center justify-between gap-1 overflow-x-auto">
+        <button data-season="all" class="tab-btn flex-1 py-2 px-3 rounded-xl font-cute text-sm md:text-base transition text-center whitespace-nowrap bg-orange-500 text-white shadow-sm">
+          🌟 전체 재료
+        </button>
+        <button data-season="spring" class="tab-btn flex-1 py-2 px-3 rounded-xl font-cute text-sm md:text-base transition text-center whitespace-nowrap text-slate-600 hover:bg-pink-50 hover:text-pink-600">
+          🌸 봄
+        </button>
+        <button data-season="summer" class="tab-btn flex-1 py-2 px-3 rounded-xl font-cute text-sm md:text-base transition text-center whitespace-nowrap text-slate-600 hover:bg-emerald-50 hover:text-emerald-600">
+          ☀️ 여름
+        </button>
+        <button data-season="autumn" class="tab-btn flex-1 py-2 px-3 rounded-xl font-cute text-sm md:text-base transition text-center whitespace-nowrap text-slate-600 hover:bg-amber-50 hover:text-amber-600">
+          🍁 가을
+        </button>
+        <button data-season="winter" class="tab-btn flex-1 py-2 px-3 rounded-xl font-cute text-sm md:text-base transition text-center whitespace-nowrap text-slate-600 hover:bg-blue-50 hover:text-blue-600">
+          ❄️ 겨울
+        </button>
+      </div>
+
+      <!-- 안내 팁 -->
+      <div class="mb-3 px-3 py-2 bg-amber-100/70 border border-amber-200 rounded-xl text-xs md:text-sm text-amber-900 flex items-center gap-2">
+        <span class="text-base">💡</span>
+        <span>재료를 <strong>최소 4가지 이상</strong> 골라 그릇에 담은 후 요리하기를 눌러보세요! (최대 6개)</span>
+      </div>
+
+      <!-- 재료 카드 그리드 -->
+      <div id="ingredientGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 flex-1 overflow-y-auto max-h-[580px] p-1">
+        <!-- JS로 동적 렌더링 -->
+      </div>
+    </section>
+
+    <!-- 우측: 요리 그릇 및 조리대 영역 -->
+    <section class="w-full lg:w-96 flex flex-col gap-4">
+      <div class="bg-white rounded-3xl p-5 shadow-lg border border-orange-100 flex flex-col flex-1 relative overflow-hidden">
+        
+        <!-- 타이틀 바 -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🍲</span>
+            <h2 class="font-cute text-xl text-slate-800">요리 그릇</h2>
+          </div>
+          <span id="bowlCount" class="text-xs font-bold px-2.5 py-1 rounded-full bg-orange-100 text-orange-700">
+            0 / 6개 담김 (최소 4개)
+          </span>
+        </div>
+
+        <!-- 그릇 내부 비주얼 영역 -->
+        <div class="relative my-4 flex-1 flex flex-col items-center justify-center min-h-[260px] bg-gradient-to-b from-orange-50/50 via-amber-50/40 to-yellow-50/60 rounded-2xl border-2 border-dashed border-orange-200 p-4">
+          
+          <!-- 스팀 애니메이션 (숨김 상태) -->
+          <div id="steamEffect" class="hidden absolute -top-8 flex gap-6 z-10">
+            <span class="text-3xl animate-steam opacity-70">💨</span>
+            <span class="text-2xl animate-steam opacity-70" style="animation-delay: 0.4s;">💨</span>
+            <span class="text-3xl animate-steam opacity-70" style="animation-delay: 0.8s;">💨</span>
+          </div>
+
+          <!-- 요리 냄비/그릇 그래픽 -->
+          <div id="potVisual" class="relative w-44 h-44 flex items-center justify-center transition-transform">
+            <!-- 큰 냄비 본체 SVG -->
+            <svg viewBox="0 0 200 160" class="w-full h-full drop-shadow-md">
+              <ellipse cx="100" cy="130" rx="75" ry="18" fill="#e2e8f0"/>
+              <!-- 손잡이 -->
+              <path d="M 18 68 C 8 68 8 92 18 92" stroke="#78350f" stroke-width="9" stroke-linecap="round" fill="none"/>
+              <path d="M 182 68 C 192 68 192 92 182 92" stroke="#78350f" stroke-width="9" stroke-linecap="round" fill="none"/>
+              <!-- 냄비 몸통 -->
+              <path d="M 28 65 Q 28 135 100 135 Q 172 135 172 65 Z" fill="#fb923c"/>
+              <path d="M 32 68 Q 32 128 100 128 Q 168 128 168 68 Z" fill="#fdba74"/>
+              <!-- 그릇 입구 테두리 -->
+              <ellipse cx="100" cy="65" rx="72" ry="22" fill="#ea580c"/>
+              <ellipse cx="100" cy="65" rx="66" ry="18" fill="#fed7aa"/>
+              <ellipse cx="100" cy="68" rx="62" ry="15" fill="#fef3c7"/>
+            </svg>
+
+            <!-- 그릇 안에 담긴 재료 이모지들 (절대 배치) -->
+            <div id="potItemsContainer" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <!-- JS로 담긴 재료들이 동적으로 떠오름 -->
+            </div>
+          </div>
+
+          <!-- 담긴 재료가 없을 때 안내문 -->
+          <div id="emptyPotMsg" class="mt-3 text-center">
+            <p class="text-sm font-semibold text-slate-500">재료를 4가지 이상 골라주세요!</p>
+            <p class="text-xs text-slate-400 mt-0.5">다양한 계절 재료를 조합할수록 맛있는 요리가 탄생해요.</p>
+          </div>
+
+          <!-- 담긴 재료 리스트 칩 -->
+          <div id="selectedChips" class="w-full mt-4 flex flex-wrap gap-1.5 justify-center z-10 min-h-[32px]">
+            <!-- JS 칩 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 버튼 영역 -->
+        <div class="flex gap-2">
+          <button id="btnClearBowl" class="w-1/3 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-cute text-sm transition flex items-center justify-center gap-1">
+            🗑️ <span>비우기</span>
+          </button>
+          <button id="btnCook" disabled class="w-2/3 py-3 rounded-2xl bg-slate-300 text-slate-500 font-cute text-sm md:text-base shadow-md transition-all flex items-center justify-center gap-2 cursor-not-allowed">
+            🔥 <span>4개 이상 골라주세요</span>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 조리 중 오버레이 모달 -->
+  <div id="cookingModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative">
+      <div class="text-6xl animate-bounce mb-3">🔥</div>
+      <h3 class="font-cute text-2xl text-orange-600 mb-1">맛있게 보글보글 끓는 중!</h3>
+      <p id="cookingFlavorText" class="text-sm text-slate-600 mb-6">제철 재료들의 영양이 가득 우러나고 있어요...</p>
+      
+      <!-- 프로그레스 바 -->
+      <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200">
+        <div id="cookingProgress" class="bg-gradient-to-r from-amber-400 to-orange-500 h-full rounded-full transition-all duration-300 w-0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 요리 완성 결과 모달 -->
+  <div id="resultModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-5 md:p-6 text-center shadow-2xl border-4 border-orange-200 animate-bounceIn relative max-h-[90vh] flex flex-col">
+      
+      <!-- 상단 배너 -->
+      <div class="flex flex-col items-center mb-3">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black mb-1 bg-amber-100 text-amber-800 border border-amber-300">
+          🎉 제철 요리 한 상 완성!
+        </div>
+        <h3 class="font-cute text-2xl md:text-3xl text-slate-800">
+          선택한 재료로 만든 <span class="text-orange-600">5가지 제철 요리</span>
+        </h3>
+        <p class="text-xs text-slate-500 mt-1">
+          골라 담은 재료로 탄생한 요리들이에요. <strong class="text-orange-600 font-semibold">🔍 사진 보기</strong>를 누르면 실제 음식 이미지를 확인할 수 있어요!
+        </p>
+      </div>
+
+      <!-- 선택된 기본 재료 확인 바 -->
+      <div class="bg-orange-50/80 rounded-2xl p-2.5 mb-3 text-left border border-orange-200 flex items-center gap-2 flex-wrap">
+        <span class="text-xs font-bold text-orange-800 flex items-center gap-1">
+          <span>🥗</span> 선택한 재료 (<span id="resultSelectedCount">0</span>개):
+        </span>
+        <div id="resultIngredientChips" class="flex flex-wrap gap-1.5 flex-1">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+
+      <!-- 5가지 이상 요리 카드 스크롤 영역 -->
+      <div id="resultDishesList" class="flex-1 overflow-y-auto pr-1 space-y-2.5 text-left mb-4">
+        <!-- JS로 5개 이상의 요리 카드 동적 생성 -->
+      </div>
+
+      <!-- 버튼 영역 -->
+      <div class="pt-2 border-t border-slate-100">
+        <button id="btnResultClose" class="w-full py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-cute text-base shadow-md shadow-orange-200 transition">
+          ✨ 새로운 재료 골라 요리하기
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 알림 토스트 메시지 -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-xs md:text-sm px-4 py-2.5 rounded-full shadow-lg pointer-events-none transition-opacity duration-300 opacity-0 z-50 flex items-center gap-2">
+    <span id="toastIcon">⚠️</span>
+    <span id="toastMsg">알림 메시지</span>
+  </div>
+
+  <footer class="text-center py-4 text-xs text-slate-400 font-medium">
+    🌿 사계절 제철 음식 탐험 프로젝트 | 어린이 & 학생 요리 체험 웹 앱
+  </footer>
+
+  <script>
+    /* ==========================================================================
+       1. 데이터 정의 (재료 & 요리 레시피)
+       ========================================================================== */
+    
+    // 사계절 재료 및 순수 재료명
+    const INGREDIENTS = [
+      // 🌸 봄
+      { id: 'sp_naengi', name: '냉이', season: 'spring', seasonKr: '봄', emoji: '🌱', desc: '특유의 향긋함으로 봄 입맛을 돋우는 대표 나물' },
+      { id: 'sp_mugwort', name: '쑥', season: 'spring', seasonKr: '봄', emoji: '🌿', desc: '몸을 따뜻하게 해주고 향이 깊은 봄의 보약' },
+      { id: 'sp_plum', name: '매실', season: 'spring', seasonKr: '봄', emoji: '🟢', desc: '새콤달콤 피로를 풀고 소화를 돕는 늦봄 초록 보물' },
+      { id: 'sp_berry', name: '딸기', season: 'spring', seasonKr: '봄', emoji: '🍓', desc: '비타민C가 풍부한 싱그럽고 달콤한 봄 과일' },
+      { id: 'sp_octopus', name: '주꾸미', season: 'spring', seasonKr: '봄', emoji: '🐙', desc: '봄철 알이 꽉 차고 타우린이 풍부한 피로회복제' },
+
+      // ☀️ 여름
+      { id: 'su_melon', name: '수박', season: 'summer', seasonKr: '여름', emoji: '🍉', desc: '수분이 가득하여 무더위를 잊게 해주는 여름 왕' },
+      { id: 'su_potato', name: '감자', season: 'summer', seasonKr: '여름', emoji: '🥔', desc: '초여름 햇빛을 듬뿍 받아 포슬포슬 맛있는 영양 덩어리' },
+      { id: 'su_chili', name: '고추', season: 'summer', seasonKr: '여름', emoji: '🌶️', desc: '여름 뙤약볕에 칼칼하고 상큼한 맛을 내는 비타민 채소' },
+      { id: 'su_corn', name: '옥수수', season: 'summer', seasonKr: '여름', emoji: '🌽', desc: '알알이 톡톡 터지는 고소하고 든든한 간식' },
+      { id: 'su_tomato', name: '토마토', season: 'summer', seasonKr: '여름', emoji: '🍅', desc: '햇살을 듬뿍 받아 라이코펜 영양이 가득한 열매' },
+      { id: 'su_chicken', name: '닭고기', season: 'summer', seasonKr: '여름', emoji: '🍗', desc: '삼복더위를 거뜬히 이겨내는 보양 단백질' },
+
+      // 🍁 가을
+      { id: 'au_crab', name: '꽃게', season: 'autumn', seasonKr: '가을', emoji: '🦀', desc: '살이 꽉 차고 국물이 시원한 가을 바다의 별미' },
+      { id: 'au_acorn', name: '도토리묵', season: 'autumn', seasonKr: '가을', emoji: '🍮', desc: '가을 산도토리로 정성스레 쑨 쌉싸름하고 쫄깃한 묵' },
+      { id: 'au_pumpkin', name: '단호박', season: 'autumn', seasonKr: '가을', emoji: '🎃', desc: '황금빛 속살에 베타카로틴이 풍부한 영양 덩어리' },
+      { id: 'au_chestnut', name: '밤', season: 'autumn', seasonKr: '가을', emoji: '🌰', desc: '가을 숲의 영양을 듬뿍 담은 고소한 보물' },
+      { id: 'au_mushroom', name: '송이버섯', season: 'autumn', seasonKr: '가을', emoji: '🍄', desc: '가을 이슬과 솔잎 향기를 머금은 귀한 버섯' },
+      { id: 'au_apple', name: '사과', season: 'autumn', seasonKr: '가을', emoji: '🍎', desc: '가을 햇빛을 듬뿍 받아 달콤하고 아삭한 사과' },
+
+      // ❄️ 겨울
+      { id: 'wi_radish', name: '무', season: 'winter', seasonKr: '겨울', emoji: '🪴', desc: '겨울 동지 찬바람을 맞아 인삼보다 좋다는 달콤한 무' },
+      { id: 'wi_mussel', name: '홍합', season: 'winter', seasonKr: '겨울', emoji: '🦪', desc: '추운 겨울 포장마차의 온기를 전하는 따끈하고 뽀얀 국물' },
+      { id: 'wi_oyster', name: '굴', season: 'winter', seasonKr: '겨울', emoji: '🦪', desc: '바다의 우유라 불리는 겨울철 최고의 영양 식재료' },
+      { id: 'wi_tangerine', name: '귤', season: 'winter', seasonKr: '겨울', emoji: '🍊', desc: '따뜻한 방에서 까먹는 감기 예방 비타민C' },
+      { id: 'wi_sweetpotato', name: '고구마', season: 'winter', seasonKr: '겨울', emoji: '🍠', desc: '겨울 추위를 녹여주는 따끈따끈 영양 간식' },
+      { id: 'wi_ricecake', name: '떡', season: 'winter', seasonKr: '겨울', emoji: '⚪', desc: '새해의 건강과 평안을 빌며 먹는 흰 가래떡' },
+
+      // 🍚 사계절 기본 재료
+      { id: 'base_rice', name: '쌀', season: 'all', seasonKr: '사계절', emoji: '🍚', desc: '모든 요리의 든든한 바탕이 되는 우리 쌀' },
+      { id: 'base_noodle', name: '국수', season: 'all', seasonKr: '사계절', emoji: '🍜', desc: '후루룩 맛있게 넘어가는 우리 전통 면발' },
+    ];
+
+    // 완성 요리 도감 데이터
+    const RECIPES = [
+      {
+        id: 'rec_spring_1',
+        name: '봄나물 솥밥',
+        emoji: '🍲',
+        season: 'spring',
+        seasonKr: '봄 요리',
+        requires: ['sp_naengi', 'base_rice'],
+        optional: ['sp_mugwort', 'au_mushroom'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '냉이와 쑥을 밥과 함께 지어 은은한 향을 즐기는 솥밥입니다.'
+      },
+      {
+        id: 'rec_spring_4',
+        name: '매실 국수',
+        emoji: '🍜',
+        season: 'spring',
+        seasonKr: '봄 요리',
+        requires: ['sp_plum', 'base_noodle'],
+        optional: ['su_chili', 'su_melon'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '매실 양념에 국수를 비벼 먹는 면 요리입니다.'
+      },
+      {
+        id: 'rec_spring_2',
+        name: '주꾸미 볶음',
+        emoji: '🦑',
+        season: 'spring',
+        seasonKr: '봄 요리',
+        requires: ['sp_octopus'],
+        optional: ['base_rice', 'base_noodle', 'su_chili'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '주꾸미에 양념을 더해 볶아낸 해산물 요리입니다.'
+      },
+      {
+        id: 'rec_spring_3',
+        name: '딸기 찹쌀떡',
+        emoji: '🍧',
+        season: 'spring',
+        seasonKr: '봄 요리',
+        requires: ['sp_berry'],
+        optional: ['wi_ricecake', 'au_chestnut'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '생딸기와 쫄깃한 떡을 곁들여 먹는 간식입니다.'
+      },
+      {
+        id: 'rec_summer_1',
+        name: '삼계탕',
+        emoji: '🍲',
+        season: 'summer',
+        seasonKr: '여름 요리',
+        requires: ['su_chicken'],
+        optional: ['au_chestnut', 'base_rice'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '닭고기에 여러 재료를 넣고 푹 끓여낸 탕 요리입니다.'
+      },
+      {
+        id: 'rec_summer_5',
+        name: '감자 수제비 국수',
+        emoji: '🥔',
+        season: 'summer',
+        seasonKr: '여름 요리',
+        requires: ['su_potato', 'base_noodle'],
+        optional: ['su_chili', 'wi_mussel'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '감자와 면을 함께 넣고 따뜻하게 끓여낸 국수 요리입니다.'
+      },
+      {
+        id: 'rec_summer_2',
+        name: '수박 화채',
+        emoji: '🍉',
+        season: 'summer',
+        seasonKr: '여름 요리',
+        requires: ['su_melon'],
+        optional: ['sp_berry', 'su_tomato', 'wi_tangerine'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '시원한 수박을 한 입 크기로 썰어 즐기는 화채입니다.'
+      },
+      {
+        id: 'rec_summer_3',
+        name: '옥수수 구이',
+        emoji: '🌽',
+        season: 'summer',
+        seasonKr: '여름 요리',
+        requires: ['su_corn'],
+        optional: ['wi_sweetpotato', 'au_pumpkin'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '옥수수를 노릇노릇하게 구워낸 간식입니다.'
+      },
+      {
+        id: 'rec_autumn_4',
+        name: '꽃게탕',
+        emoji: '🦀',
+        season: 'autumn',
+        seasonKr: '가을 요리',
+        requires: ['au_crab'],
+        optional: ['wi_radish', 'su_chili', 'au_pumpkin'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '꽃게와 무 등을 넣고 시원하게 끓여낸 탕 요리입니다.'
+      },
+      {
+        id: 'rec_autumn_5',
+        name: '도토리묵 무침',
+        emoji: '🥗',
+        season: 'autumn',
+        seasonKr: '가을 요리',
+        requires: ['au_acorn'],
+        optional: ['su_chili', 'sp_naengi'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '도토리묵을 채소와 함께 양념에 버무려낸 요리입니다.'
+      },
+      {
+        id: 'rec_autumn_1',
+        name: '버섯 솥밥',
+        emoji: '🍄',
+        season: 'autumn',
+        seasonKr: '가을 요리',
+        requires: ['au_mushroom', 'base_rice'],
+        optional: ['au_chestnut', 'au_pumpkin'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '버섯을 넣어 밥을 지은 영양 솥밥입니다.'
+      },
+      {
+        id: 'rec_autumn_2',
+        name: '단호박 밤죽',
+        emoji: '🥣',
+        season: 'autumn',
+        seasonKr: '가을 요리',
+        requires: ['au_pumpkin'],
+        optional: ['au_chestnut', 'wi_ricecake', 'base_rice'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '단호박과 밤을 부드럽게 끓여낸 죽 요리입니다.'
+      },
+      {
+        id: 'rec_autumn_3',
+        name: '사과 파이',
+        emoji: '🥧',
+        season: 'autumn',
+        seasonKr: '가을 요리',
+        requires: ['au_apple'],
+        optional: ['au_chestnut', 'wi_sweetpotato'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '사과를 졸여 속을 채운 빵/간식 요리입니다.'
+      },
+      {
+        id: 'rec_winter_4',
+        name: '홍합탕',
+        emoji: '🦪',
+        season: 'winter',
+        seasonKr: '겨울 요리',
+        requires: ['wi_mussel'],
+        optional: ['wi_radish', 'su_chili'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '홍합을 넣고 뽀얗게 우려낸 국물 요리입니다.'
+      },
+      {
+        id: 'rec_winter_5',
+        name: '소고기 무국',
+        emoji: '🍲',
+        season: 'winter',
+        seasonKr: '겨울 요리',
+        requires: ['wi_radish', 'base_rice'],
+        optional: ['su_chili', 'wi_mussel'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '무를 큼직하게 썰어 맑고 시원하게 끓인 국 요리입니다.'
+      },
+      {
+        id: 'rec_winter_1',
+        name: '굴 떡국',
+        emoji: '🍲',
+        season: 'winter',
+        seasonKr: '겨울 요리',
+        requires: ['wi_oyster', 'wi_ricecake'],
+        optional: ['base_rice', 'sp_naengi'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '굴과 가래떡을 넣고 끓여낸 떡국입니다.'
+      },
+      {
+        id: 'rec_winter_2',
+        name: '군고구마와 귤',
+        emoji: '🍠',
+        season: 'winter',
+        seasonKr: '겨울 요리',
+        requires: ['wi_sweetpotato', 'wi_tangerine'],
+        optional: ['au_chestnut'],
+        stars: '⭐⭐⭐⭐⭐',
+        story: '구운 고구마와 귤을 곁들여 먹는 겨울 간식입니다.'
+      },
+      {
+        id: 'rec_all_rainbow',
+        name: '비빔밥',
+        emoji: '🌈',
+        season: 'all',
+        seasonKr: '전통 요리',
+        requires: ['base_rice'],
+        isRainbowSpecial: true,
+        stars: '⭐⭐⭐⭐⭐',
+        story: '여러 나물과 식재료를 밥과 함께 비벼 먹는 요리입니다.'
+      }
+    ];
+
+    /* ==========================================================================
+       2. 상태 관리 (State)
+       ========================================================================== */
+    const state = {
+      currentFilter: 'all',
+      bowl: [], // 최소 4개, 최대 6개 담기
+      minBowlCapacity: 4,
+      maxBowlCapacity: 6,
+      soundEnabled: true,
+      audioCtx: null
+    };
+
+    /* ==========================================================================
+       3. 효과음 사운드 엔진 (Web Audio API)
+       ========================================================================== */
+    function getAudioContext() {
+      if (!state.audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          state.audioCtx = new AudioContext();
+        }
+      }
+      if (state.audioCtx && state.audioCtx.state === 'suspended') {
+        state.audioCtx.resume();
+      }
+      return state.audioCtx;
+    }
+
+    function playSound(type) {
+      if (!state.soundEnabled) return;
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      const now = ctx.currentTime;
+
+      if (type === 'click') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(640, now + 0.12);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.13);
+
+      } else if (type === 'remove') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(480, now);
+        osc.frequency.exponentialRampToValueAtTime(240, now + 0.1);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.11);
+
+      } else if (type === 'boil') {
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc1.type = 'triangle';
+        osc2.type = 'sine';
+        osc1.frequency.setValueAtTime(140, now);
+        osc2.frequency.setValueAtTime(180, now);
+        osc1.frequency.linearRampToValueAtTime(260, now + 1.2);
+        osc2.frequency.linearRampToValueAtTime(320, now + 1.2);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 1.5);
+        osc2.stop(now + 1.5);
+
+      } else if (type === 'fanfare') {
+        const notes = [261.63, 329.63, 392.00, 523.25];
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          const start = now + idx * 0.12;
+          const dur = 0.35;
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(0.25, start + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + dur);
+        });
+      }
+    }
+
+    /* ==========================================================================
+       4. 구글 이미지 검색 바로가기 헬퍼 함수
+       ========================================================================== */
+    function openGoogleImageSearch(dishName) {
+      // 검색어 정제: 특수기호 제거 및 깨끗한 검색어 생성
+      const cleaned = dishName.replace(/[&/\\#,+()$~%.'":*?<>{}]/g, ' ').replace(/\s+/g, ' ').trim();
+      const searchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(cleaned)}`;
+      window.open(searchUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    /* ==========================================================================
+       5. UI 렌더링 함수들
+       ========================================================================== */
+
+    function getSeasonBadgeStyle(season) {
+      switch(season) {
+        case 'spring':
+          return 'bg-pink-100 text-pink-700 border-pink-200';
+        case 'summer':
+          return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'autumn':
+          return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'winter':
+          return 'bg-blue-100 text-blue-700 border-blue-200';
+        default:
+          return 'bg-orange-100 text-orange-700 border-orange-200';
+      }
+    }
+
+    function renderIngredients() {
+      const grid = document.getElementById('ingredientGrid');
+      grid.innerHTML = '';
+
+      const filtered = INGREDIENTS.filter(item => {
+        if (state.currentFilter === 'all') return true;
+        return item.season === state.currentFilter || item.season === 'all';
+      });
+
+      filtered.forEach(item => {
+        const isSelected = state.bowl.some(i => i.id === item.id);
+        const countInBowl = state.bowl.filter(i => i.id === item.id).length;
+
+        const card = document.createElement('div');
+        card.className = `group relative bg-white rounded-2xl p-3.5 border transition-all duration-200 cursor-pointer flex flex-col items-center text-center select-none shadow-sm hover:shadow-md hover:-translate-y-1 ${
+          isSelected 
+            ? 'border-orange-400 ring-2 ring-orange-200 bg-orange-50/40' 
+            : 'border-slate-200 hover:border-orange-300'
+        }`;
+
+        const seasonBadgeClass = getSeasonBadgeStyle(item.season);
+
+        card.innerHTML = `
+          <div class="w-full flex justify-between items-center mb-1">
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${seasonBadgeClass}">
+              ${item.seasonKr}
+            </span>
+            ${countInBowl > 0 ? `<span class="bg-orange-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-sm">✓</span>` : ''}
+          </div>
+
+          <div class="text-4xl my-1.5 transition-transform group-hover:scale-110">
+            ${item.emoji}
+          </div>
+
+          <h4 class="font-cute text-sm md:text-base text-slate-800 font-bold group-hover:text-orange-600 transition-colors">
+            ${item.name}
+          </h4>
+
+          <p class="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-tight">
+            ${item.desc}
+          </p>
+        `;
+
+        card.addEventListener('click', () => {
+          addIngredientToBowl(item);
+        });
+
+        grid.appendChild(card);
+      });
+    }
+
+    function renderBowl() {
+      const potItemsContainer = document.getElementById('potItemsContainer');
+      const selectedChips = document.getElementById('selectedChips');
+      const emptyPotMsg = document.getElementById('emptyPotMsg');
+      const bowlCount = document.getElementById('bowlCount');
+      const btnCook = document.getElementById('btnCook');
+
+      potItemsContainer.innerHTML = '';
+      selectedChips.innerHTML = '';
+
+      const count = state.bowl.length;
+      bowlCount.textContent = `${count} / ${state.maxBowlCapacity}개 담김 (최소 ${state.minBowlCapacity}개)`;
+
+      if (count < state.minBowlCapacity) {
+        emptyPotMsg.classList.remove('hidden');
+        if (count === 0) {
+          emptyPotMsg.innerHTML = `
+            <p class="text-sm font-semibold text-slate-500">재료를 4가지 이상 골라주세요!</p>
+            <p class="text-xs text-slate-400 mt-0.5">다양한 제철 재료를 담을수록 더 많은 요리가 나와요.</p>
+          `;
+          btnCook.innerHTML = `🔥 <span>4개 이상 골라주세요</span>`;
+        } else {
+          emptyPotMsg.innerHTML = `
+            <p class="text-sm font-bold text-orange-600">${state.minBowlCapacity - count}개 더 필요해요!</p>
+            <p class="text-xs text-slate-400 mt-0.5">현재 ${count}개 선택됨 (최소 4개 필요)</p>
+          `;
+          btnCook.innerHTML = `🔥 <span>${state.minBowlCapacity - count}개 더 담아주세요</span>`;
+        }
+        btnCook.disabled = true;
+        btnCook.className = 'w-2/3 py-3 rounded-2xl bg-slate-200 text-slate-400 font-cute text-sm md:text-base transition cursor-not-allowed';
+      } else {
+        emptyPotMsg.classList.add('hidden');
+        btnCook.disabled = false;
+        btnCook.innerHTML = `🔥 <span>${count}가지 재료로 요리하기!</span>`;
+        btnCook.className = 'w-2/3 py-3 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-cute text-sm md:text-base shadow-lg shadow-orange-300 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer animate-pulse';
+      }
+
+      const coords = [
+        { top: '36%', left: '42%' },
+        { top: '34%', left: '56%' },
+        { top: '48%', left: '33%' },
+        { top: '47%', left: '52%' },
+        { top: '42%', left: '68%' },
+        { top: '52%', left: '44%' }
+      ];
+
+      state.bowl.forEach((item, index) => {
+        const pos = coords[index] || { top: '42%', left: '50%' };
+        
+        const floatItem = document.createElement('div');
+        floatItem.className = 'absolute text-2xl filter drop-shadow animate-bounceIn';
+        floatItem.style.top = pos.top;
+        floatItem.style.left = pos.left;
+        floatItem.style.transform = `translate(-50%, -50%) rotate(${(index * 25) - 20}deg)`;
+        floatItem.textContent = item.emoji;
+        potItemsContainer.appendChild(floatItem);
+
+        const chip = document.createElement('div');
+        chip.className = 'inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-white border border-orange-200 shadow-sm text-xs text-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 cursor-pointer transition';
+        chip.innerHTML = `<span>${item.emoji}</span> <span class="font-medium">${item.name}</span> <span class="text-[10px] text-slate-400">✕</span>`;
+        chip.title = '클릭하여 그릇에서 빼기';
+        chip.addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeIngredientFromBowl(index);
+        });
+        selectedChips.appendChild(chip);
+      });
+
+      renderIngredients();
+    }
+
+    /* ==========================================================================
+       6. 인터랙션 및 요리 엔진
+       ========================================================================== */
+
+    function addIngredientToBowl(item) {
+      if (state.bowl.length >= state.maxBowlCapacity) {
+        showToast(`그릇에 최대 ${state.maxBowlCapacity}개까지만 담을 수 있어요!`, '🍲');
+        shakePot();
+        return;
+      }
+
+      if (state.bowl.some(i => i.id === item.id)) {
+        showToast('이미 그릇에 담긴 재료예요! 다른 재료도 넣어보세요.', '💡');
+        return;
+      }
+
+      state.bowl.push(item);
+      playSound('click');
+      renderBowl();
+
+      if (state.bowl.length === state.minBowlCapacity) {
+        showToast('최소 재료 4개를 모두 채웠어요! 이제 요리할 수 있어요.', '🎉');
+      }
+    }
+
+    function removeIngredientFromBowl(index) {
+      state.bowl.splice(index, 1);
+      playSound('remove');
+      renderBowl();
+    }
+
+    function clearBowl() {
+      if (state.bowl.length === 0) return;
+      state.bowl = [];
+      playSound('remove');
+      renderBowl();
+      showToast('그릇을 깨끗이 비웠어요!', '✨');
+    }
+
+    function shakePot() {
+      const pot = document.getElementById('potVisual');
+      pot.classList.add('animate-shake');
+      setTimeout(() => pot.classList.remove('animate-shake'), 400);
+    }
+
+    let toastTimeout = null;
+    function showToast(msg, icon = '💡') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = msg;
+      toastIcon.textContent = icon;
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 2500);
+    }
+
+    function evaluateCookedDishes() {
+      const bowlIds = state.bowl.map(i => i.id);
+      const dishes = [];
+      const usedDishNames = new Set();
+
+      // 1. 도감 정규 레시피 매칭
+      const scoredRecipes = RECIPES.map(recipe => {
+        let matchedCount = 0;
+        let requiresMatched = true;
+
+        if (recipe.requires) {
+          recipe.requires.forEach(req => {
+            if (bowlIds.includes(req)) matchedCount += 2;
+            else requiresMatched = false;
+          });
+        }
+        if (recipe.optional) {
+          recipe.optional.forEach(opt => {
+            if (bowlIds.includes(opt)) matchedCount += 1;
+          });
+        }
+
+        return {
+          recipe,
+          score: matchedCount,
+          perfect: requiresMatched && matchedCount > 0
+        };
+      })
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+      for (const item of scoredRecipes) {
+        if (!usedDishNames.has(item.recipe.name)) {
+          dishes.push(item.recipe);
+          usedDishNames.add(item.recipe.name);
+        }
+        if (dishes.length >= 3) break;
+      }
+
+      // 2. 선택된 재료 기반 테마 요리 자동 생성 (5가지 이상 확보)
+      const dominantSeason = getDominantSeason();
+
+      const ing1 = state.bowl[0];
+      const ing2 = state.bowl[1];
+      const ing3 = state.bowl[2];
+      const ing4 = state.bowl[3];
+
+      const dynamicThemes = [
+        {
+          name: `${ing1.name} ${ing2.name} 전골`,
+          emoji: '🍲',
+          season: dominantSeason,
+          seasonKr: '전골',
+          stars: '⭐⭐⭐⭐⭐',
+          story: `${ing1.name}와(과) ${ing2.name}을(를) 넣고 끓여낸 맑은 전골 요리입니다.`
+        },
+        {
+          name: `${ing2.name} 부침전`,
+          emoji: '🥞',
+          season: dominantSeason,
+          seasonKr: '전',
+          stars: '⭐⭐⭐⭐⭐',
+          story: `${ing2.name}을(를) 얇게 부쳐낸 전 요리입니다.`
+        },
+        {
+          name: `${ing3.name} 무침`,
+          emoji: '🥗',
+          season: dominantSeason,
+          seasonKr: '무침',
+          stars: '⭐⭐⭐⭐⭐',
+          story: `${ing3.name}에 양념을 버무려낸 반찬 요리입니다.`
+        },
+        {
+          name: `${ing1.name} ${ing4.name} 솥밥`,
+          emoji: '🍚',
+          season: dominantSeason,
+          seasonKr: '솥밥',
+          stars: '⭐⭐⭐⭐⭐',
+          story: `${ing1.name}와(과) ${ing4.name}을(를) 얹어 지은 솥밥입니다.`
+        },
+        {
+          name: `${state.bowl[Math.min(2, state.bowl.length - 1)].name} 디저트`,
+          emoji: '🍧',
+          season: dominantSeason,
+          seasonKr: '디저트',
+          stars: '⭐⭐⭐⭐⭐',
+          story: `${state.bowl[Math.min(2, state.bowl.length - 1)].name}의 단맛을 살려 만든 후식입니다.`
+        },
+        {
+          name: `${ing1.name} ${ing2.name} 볶음`,
+          emoji: '🥘',
+          season: dominantSeason,
+          seasonKr: '볶음',
+          stars: '⭐⭐⭐⭐⭐',
+          story: `${ing1.name}와(과) ${ing2.name}을(를) 함께 볶아낸 요리입니다.`
+        }
+      ];
+
+      for (const customDish of dynamicThemes) {
+        if (!usedDishNames.has(customDish.name)) {
+          dishes.push({
+            id: 'custom_' + Math.random().toString(36).substr(2, 9),
+            ...customDish
+          });
+          usedDishNames.add(customDish.name);
+        }
+        if (dishes.length >= 5) break;
+      }
+
+      while (dishes.length < 5) {
+        const targetIng = state.bowl[dishes.length % state.bowl.length];
+        const fallbackDish = {
+          id: 'custom_extra_' + dishes.length,
+          name: `${targetIng.name} 요리`,
+          emoji: '🍽️',
+          season: dominantSeason,
+          seasonKr: '일품 요리',
+          stars: '⭐⭐⭐⭐⭐',
+          story: `${targetIng.name}을(를) 활용해 만든 요리입니다.`
+        };
+        dishes.push(fallbackDish);
+      }
+
+      return dishes;
+    }
+
+    function getDominantSeason() {
+      const seasonCounts = { spring: 0, summer: 0, autumn: 0, winter: 0 };
+      state.bowl.forEach(item => {
+        if (seasonCounts[item.season] !== undefined) {
+          seasonCounts[item.season]++;
+        }
+      });
+
+      let maxSeason = 'spring';
+      let maxCount = -1;
+      for (const [season, count] of Object.entries(seasonCounts)) {
+        if (count > maxCount) {
+          maxCount = count;
+          maxSeason = season;
+        }
+      }
+      return maxSeason;
+    }
+
+    function startCooking() {
+      if (state.bowl.length < state.minBowlCapacity) {
+        showToast(`재료를 최소 ${state.minBowlCapacity}가지 이상 골라주세요!`, '⚠️');
+        shakePot();
+        return;
+      }
+
+      const modal = document.getElementById('cookingModal');
+      const progressBar = document.getElementById('cookingProgress');
+      const flavorText = document.getElementById('cookingFlavorText');
+      const steam = document.getElementById('steamEffect');
+
+      modal.classList.remove('hidden');
+      steam.classList.remove('hidden');
+      progressBar.style.width = '0%';
+
+      playSound('boil');
+
+      const messages = [
+        '불 위에서 재료들이 보글보글 익어가고 있어요...',
+        '맛있는 냄새가 온 교실에 솔솔 퍼져요!',
+        '4가지 이상의 풍성한 재료로 요리 5가지를 준비하는 중!'
+      ];
+
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 25;
+        progressBar.style.width = progress + '%';
+        flavorText.textContent = messages[Math.floor((progress / 100) * messages.length)] || messages[0];
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            modal.classList.add('hidden');
+            steam.classList.add('hidden');
+            finishCooking();
+          }, 300);
+        }
+      }, 350);
+    }
+
+    function finishCooking() {
+      const dishes = evaluateCookedDishes();
+
+      playSound('fanfare');
+      fireConfetti();
+
+      document.getElementById('resultSelectedCount').textContent = state.bowl.length;
+      const chipsContainer = document.getElementById('resultIngredientChips');
+      chipsContainer.innerHTML = '';
+      state.bowl.forEach(item => {
+        const span = document.createElement('span');
+        span.className = 'px-2 py-0.5 rounded-lg bg-white border border-orange-200 text-xs text-slate-700 font-semibold flex items-center gap-1';
+        span.innerHTML = `<span>${item.emoji}</span> <span>${item.name}</span>`;
+        chipsContainer.appendChild(span);
+      });
+
+      // 5가지 이상의 요리 카드 목록 렌더링 + 이미지 검색 바로가기 버튼 추가
+      const dishesList = document.getElementById('resultDishesList');
+      dishesList.innerHTML = '';
+
+      dishes.forEach((dish, idx) => {
+        const card = document.createElement('div');
+        const badgeClass = getSeasonBadgeStyle(dish.season);
+
+        card.className = 'bg-gradient-to-r from-orange-50/60 to-amber-50/50 hover:from-orange-100/70 hover:to-amber-100/70 border border-orange-200/80 rounded-2xl p-3.5 flex items-start gap-3 transition shadow-xs';
+        card.innerHTML = `
+          <!-- 요리 순번 및 이모지 -->
+          <div class="relative flex-shrink-0 w-12 h-12 rounded-xl bg-white border border-orange-100 flex items-center justify-center text-2xl shadow-xs">
+            <span>${dish.emoji}</span>
+            <span class="absolute -top-1.5 -left-1.5 bg-orange-500 text-white font-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center">${idx + 1}</span>
+          </div>
+
+          <!-- 요리 정보 -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+              <h4 class="font-cute text-base md:text-lg text-slate-800 font-bold">${dish.name}</h4>
+              
+              <!-- 별점 및 계절 태그 & 구글 이미지 검색 바로가기 버튼 -->
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-xs text-amber-500 font-bold hidden sm:inline">${dish.stars || '⭐⭐⭐⭐⭐'}</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded border ${badgeClass}">
+                  ${dish.seasonKr}
+                </span>
+                <button class="btn-dish-search px-2.5 py-1 rounded-xl bg-white hover:bg-orange-500 hover:text-white text-orange-600 border border-orange-300 text-xs font-bold transition flex items-center gap-1 shadow-xs active:scale-95 shrink-0" title="'${dish.name}' 구글 이미지 검색">
+                  🔍 <span>사진 보기</span>
+                </button>
+              </div>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">${dish.story}</p>
+          </div>
+        `;
+
+        // 검색 버튼 클릭 이벤트 바인딩
+        const searchBtn = card.querySelector('.btn-dish-search');
+        searchBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openGoogleImageSearch(dish.name);
+        });
+
+        dishesList.appendChild(card);
+      });
+
+      document.getElementById('resultModal').classList.remove('hidden');
+    }
+
+    /* ==========================================================================
+       7. 색종이 (Confetti) 파티클 시스템
+       ========================================================================== */
+    const canvas = document.getElementById('confettiCanvas');
+    const ctx = canvas.getContext('2d');
+    let confettiParticles = [];
+    let confettiAnimationId = null;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function fireConfetti() {
+      confettiParticles = [];
+      const colors = ['#f43f5e', '#ec4899', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#fbbf24'];
+
+      for (let i = 0; i < 90; i++) {
+        confettiParticles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          w: Math.random() * 9 + 4,
+          h: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: (Math.random() - 0.5) * 16,
+          vy: (Math.random() - 0.8) * 18,
+          gravity: 0.35,
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 12,
+          opacity: 1
+        });
+      }
+
+      if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+      animateConfetti();
+    }
+
+    function animateConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+
+      confettiParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.rotation += p.rotationSpeed;
+        p.opacity -= 0.012;
+
+        if (p.opacity > 0) {
+          alive = true;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        }
+      });
+
+      if (alive) {
+        confettiAnimationId = requestAnimationFrame(animateConfetti);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    /* ==========================================================================
+       8. 이벤트 바인딩 및 초기화
+       ========================================================================== */
+    document.addEventListener('DOMContentLoaded', () => {
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          tabButtons.forEach(b => {
+            b.className = 'tab-btn flex-1 py-2 px-3 rounded-xl font-cute text-sm md:text-base transition text-center whitespace-nowrap text-slate-600 hover:bg-orange-50 hover:text-orange-600';
+          });
+          btn.className = 'tab-btn flex-1 py-2 px-3 rounded-xl font-cute text-sm md:text-base transition text-center whitespace-nowrap bg-orange-500 text-white shadow-sm';
+
+          state.currentFilter = btn.getAttribute('data-season');
+          renderIngredients();
+        });
+      });
+
+      document.getElementById('btnClearBowl').addEventListener('click', clearBowl);
+      document.getElementById('btnCook').addEventListener('click', startCooking);
+
+      document.getElementById('btnResultClose').addEventListener('click', () => {
+        document.getElementById('resultModal').classList.add('hidden');
+        clearBowl();
+      });
+
+      const soundBtn = document.getElementById('btnSoundToggle');
+      const soundIcon = document.getElementById('soundIcon');
+      soundBtn.addEventListener('click', () => {
+        state.soundEnabled = !state.soundEnabled;
+        soundIcon.textContent = state.soundEnabled ? '🔊' : '🔇';
+        showToast(state.soundEnabled ? '효과음을 켰어요!' : '효과음을 껐어요.', state.soundEnabled ? '🔊' : '🔇');
+      });
+
+      renderIngredients();
+      renderBowl();
+    });
+  </script>
+</body>
+</html>
