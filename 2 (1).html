@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2단 곱셈구구 디지털 교과서</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap');
+    body {
+      font-family: 'Gowun Dodum', sans-serif;
+      background-color: #f8fafc;
+    }
+    .font-jua {
+      font-family: 'Jua', sans-serif;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop-in {
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col items-center p-3 sm:p-6">
+
+  <!-- Header Tab Navigation -->
+  <header class="w-full max-w-4xl bg-white rounded-2xl shadow-sm border border-slate-200 p-2 sm:p-3 mb-4">
+    <nav class="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-center font-jua text-sm sm:text-base">
+      <button onclick="setPage(1)" id="tab-1" class="py-2 px-1 rounded-xl transition-all duration-200">1. 하나씩 보기</button>
+      <button onclick="setPage(2)" id="tab-2" class="py-2 px-1 rounded-xl transition-all duration-200">2. 두 개 비교하기</button>
+      <button onclick="setPage(3)" id="tab-3" class="py-2 px-1 rounded-xl transition-all duration-200">3. 더해서 계산하기</button>
+      <button onclick="setPage(4)" id="tab-4" class="py-2 px-1 rounded-xl transition-all duration-200">4. 2씩 커지는 규칙</button>
+      <button onclick="setPage(5)" id="tab-5" class="py-2 px-1 rounded-xl transition-all duration-200">5. 곱셈식 만들기</button>
+      <button onclick="setPage(6)" id="tab-6" class="py-2 px-1 rounded-xl transition-all duration-200">6. 곱셈구구 완성</button>
+    </nav>
+  </header>
+
+  <!-- Main Interactive Area -->
+  <main class="w-full max-w-4xl bg-white rounded-3xl shadow-md border border-slate-200 p-4 sm:p-8 flex-1 flex flex-col items-center justify-start min-h-[560px]">
+    <div id="page-content" class="w-full flex flex-col items-center"></div>
+  </main>
+
+  <!-- Success Mascot Modal -->
+  <div id="success-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border-4 border-amber-300 text-center animate-pop-in relative">
+      <div class="text-6xl mb-3">🦉🎓</div>
+      <h3 class="font-jua text-2xl text-amber-600 mb-1">대단해요! 5연속 성공! 🎉</h3>
+      <p id="modal-desc" class="text-slate-600 text-sm sm:text-base font-medium mb-5">2단 곱셈구구 마스터로 인정합니다!</p>
+      <button onclick="closeModal()" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-jua text-lg rounded-xl shadow-md transition-all active:scale-95">
+        멋져요! 계속 도전하기 🚀
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'correct') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+      } else if (type === 'wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(174.61, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      } else if (type === 'fanfare') {
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const noteOsc = audioCtx.createOscillator();
+          const noteGain = audioCtx.createGain();
+          noteOsc.connect(noteGain);
+          noteGain.connect(audioCtx.destination);
+          noteOsc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.12);
+          noteGain.gain.setValueAtTime(0.25, audioCtx.currentTime + idx * 0.12);
+          noteGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + idx * 0.12 + 0.3);
+          noteOsc.start(audioCtx.currentTime + idx * 0.12);
+          noteOsc.stop(audioCtx.currentTime + idx * 0.12 + 0.3);
+        });
+      }
+    }
+
+    let currentPage = 4;
+
+    function createWheelSVG() {
+      return `
+        <svg class="w-8 h-8 sm:w-9 sm:h-9 inline-block" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="#f59e0b" stroke="#451a03" stroke-width="6"/>
+          <circle cx="50" cy="50" r="32" fill="#fbbf24" stroke="#78350f" stroke-width="4"/>
+          <circle cx="50" cy="50" r="14" fill="#1e293b"/>
+          <circle cx="50" cy="50" r="6" fill="#f8fafc"/>
+          <path d="M 50 4 L 50 96 M 4 50 L 96 50 M 17 17 L 83 83 M 17 83 L 83 17" stroke="#78350f" stroke-width="3" stroke-dasharray="8 6"/>
+        </svg>
+      `;
+    }
+
+    function createWheelPairSVG() {
+      return `
+        <div class="inline-flex items-center justify-center gap-1.5 px-2.5 py-1 bg-pink-100/90 rounded-full border-2 border-dashed border-pink-300">
+          ${createWheelSVG()}
+          ${createWheelSVG()}
+        </div>
+      `;
+    }
+
+    function createPairItemSVG() {
+      return `
+        <div class="inline-flex items-center justify-center p-1 hover:scale-105 transition-transform select-none" title="노란 신발 1켤레 (2짝)">
+          <svg class="w-11 h-10 sm:w-13 sm:h-11 drop-shadow-sm" viewBox="0 0 74 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(16, -2)">
+              <ellipse cx="25" cy="40" rx="14" ry="17" fill="#ca8a04" opacity="0.25"/>
+              <path d="M14 36 C12 24 19 14 27 14 C35 14 38 22 37 34 C36 44 30 48 22 48 C16 48 14 42 14 36 Z" 
+                    fill="#eab308" stroke="#92400e" stroke-width="2.2" stroke-linejoin="round"/>
+              <ellipse cx="27" cy="23" rx="6" ry="8" fill="#78350f" stroke="#ca8a04" stroke-width="1.5" transform="rotate(18 27 23)"/>
+              <ellipse cx="27" cy="23" rx="4" ry="6" fill="#451a03" transform="rotate(18 27 23)"/>
+              <path d="M17 34 C16 26 20 18 24 17" stroke="#fef08a" stroke-width="2" stroke-linecap="round"/>
+            </g>
+            <g transform="translate(0, 4)">
+              <path d="M14 36 C12 24 19 14 27 14 C35 14 38 22 37 34 C36 44 30 48 22 48 C16 48 14 42 14 36 Z" 
+                    fill="#f59e0b" stroke="#92400e" stroke-width="2.2" stroke-linejoin="round"/>
+              <ellipse cx="27" cy="23" rx="6" ry="8" fill="#78350f" stroke="#ca8a04" stroke-width="1.5" transform="rotate(18 27 23)"/>
+              <ellipse cx="27" cy="23" rx="4" ry="6" fill="#451a03" transform="rotate(18 27 23)"/>
+              <path d="M17 34 C16 26 20 18 24 17" stroke="#fef08a" stroke-width="2" stroke-linecap="round"/>
+            </g>
+          </svg>
+        </div>
+      `;
+    }
+
+    function createDiceSVG() {
+      return `
+        <svg class="w-10 h-10 sm:w-11 sm:h-11 inline-block drop-shadow-sm" viewBox="0 0 100 100">
+          <rect x="5" y="5" width="90" height="90" rx="20" fill="#f43f5e" stroke="#be123c" stroke-width="6"/>
+          <circle cx="32" cy="32" r="12" fill="#ffffff"/>
+          <circle cx="68" cy="68" r="12" fill="#ffffff"/>
+        </svg>
+      `;
+    }
+
+    let p1Multiplier = 3;
+    let p1Streak = 0;
+
+    function renderPage1() {
+      const container = document.getElementById('page-content');
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center">
+          <div class="w-full flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div class="flex items-center gap-2 font-jua text-lg text-emerald-700 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-200">
+              <span>⭐ 연속 성공:</span>
+              <span id="p1-stars" class="text-amber-500 font-bold tracking-widest">
+                ${'★'.repeat(p1Streak)}${'☆'.repeat(5 - p1Streak)}
+              </span>
+              <span class="text-slate-500 text-sm">(${p1Streak}/5)</span>
+            </div>
+            <button onclick="randomizeP1()" class="py-2.5 px-5 bg-indigo-500 hover:bg-indigo-600 text-white font-jua rounded-2xl shadow-sm transition-all active:scale-95 flex items-center gap-1.5">
+              <span>🎲 곱하는 수 바꾸기 (랜덤)</span>
+            </button>
+          </div>
+
+          <div class="w-full max-w-[340px] sm:max-w-[380px] bg-white rounded-3xl p-5 border-4 border-lime-400 shadow-sm flex flex-col items-center relative mb-5">
+            <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-lime-200 text-slate-800 font-jua text-xl px-5 py-1 rounded-full border-2 border-lime-400">
+              2 × <span class="text-emerald-600 font-extrabold">${p1Multiplier}</span>
+            </div>
+            <div class="pt-4 pb-2 flex flex-col items-center gap-2 min-h-[160px] justify-center">
+              ${p1Multiplier === 0 
+                ? '<div class="text-slate-400 font-jua text-base py-6">바퀴가 0묶음 들어있어요!</div>'
+                : Array(p1Multiplier).fill(0).map(() => createWheelPairSVG()).join('')}
+            </div>
+          </div>
+
+          <div class="w-full max-w-[340px] sm:max-w-[380px] bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col items-center gap-3 font-jua text-lg text-slate-800 mb-6">
+            <div class="flex items-center justify-center gap-1.5 whitespace-nowrap">
+              <span class="text-blue-600 font-bold">2</span>
+              <span>씩</span>
+              <input type="text" id="p1-input-group" placeholder="?" maxlength="2"
+                class="w-12 h-10 text-center font-bold text-emerald-600 bg-white border-2 border-emerald-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
+              <span class="flex-shrink-0">묶음은</span>
+            </div>
+            <div class="flex items-center justify-center gap-1.5 whitespace-nowrap">
+              <span>2의</span>
+              <input type="text" id="p1-input-times" placeholder="?" maxlength="2"
+                class="w-12 h-10 text-center font-bold text-emerald-600 bg-white border-2 border-emerald-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
+              <span class="flex-shrink-0">배야.</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button onclick="checkP1Answer()" class="py-3 px-8 bg-emerald-500 hover:bg-emerald-600 text-white font-jua text-lg rounded-2xl shadow-md transition-all active:scale-95 flex items-center gap-2">
+              ✏️ 정답 확인하기
+            </button>
+          </div>
+
+          <div id="p1-feedback" class="mt-4 font-jua text-base text-center min-h-[24px]"></div>
+        </div>
+      `;
+    }
+
+    function randomizeP1() {
+      p1Multiplier = Math.floor(Math.random() * 10);
+      renderPage1();
+    }
+
+    function checkP1Answer() {
+      const groupVal = document.getElementById('p1-input-group').value.trim();
+      const timesVal = document.getElementById('p1-input-times').value.trim();
+      const feedback = document.getElementById('p1-feedback');
+
+      if (groupVal === '' && timesVal === '') {
+        feedback.className = 'mt-4 font-jua text-base text-center text-amber-600';
+        feedback.innerText = '⚠️ 답을 입력하지 않았어요! 네모칸에 숫자를 먼저 써넣어 보세요.';
+        return;
+      }
+
+      if (groupVal === '' || timesVal === '') {
+        feedback.className = 'mt-4 font-jua text-base text-center text-amber-600';
+        feedback.innerText = '⚠️ 빈칸이 남아있어요! 두 네모칸을 모두 입력해 주세요.';
+        return;
+      }
+
+      const gNum = parseInt(groupVal, 10);
+      const tNum = parseInt(timesVal, 10);
+
+      if (gNum === p1Multiplier && tNum === p1Multiplier) {
+        playSound('correct');
+        p1Streak++;
+        feedback.className = 'mt-4 font-jua text-base text-center text-emerald-600';
+        feedback.innerText = '🎉 정답입니다! 멋져요!';
+        
+        if (p1Streak >= 5) {
+          playSound('fanfare');
+          document.getElementById('modal-desc').innerText = '1쪽 5연속 정답 성공! 바퀴 묶음 마스터입니다!';
+          document.getElementById('success-modal').classList.remove('hidden');
+          p1Streak = 0;
+        } else {
+          setTimeout(randomizeP1, 1100);
+        }
+      } else {
+        playSound('wrong');
+        p1Streak = 0;
+        feedback.className = 'mt-4 font-jua text-base text-center text-rose-500';
+        feedback.innerText = '❌ 틀렸어요! 연속 성공이 초기화되어 처음부터 다시 시작합니다.';
+        document.getElementById('p1-stars').innerText = '☆☆☆☆☆';
+        setTimeout(randomizeP1, 1400);
+      }
+    }
+
+    let p2MultA = 3;
+    let p2MultB = 5;
+    let p2Streak = 0;
+
+    function renderPage2() {
+      const diffGroup = Math.abs(p2MultA - p2MultB);
+      const diffCount = diffGroup * 2;
+      const isRightMore = p2MultB >= p2MultA;
+
+      const container = document.getElementById('page-content');
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center">
+          <div class="w-full flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div class="flex items-center gap-2 font-jua text-lg text-emerald-700 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-200">
+              <span>⭐ 연속 성공:</span>
+              <span id="p2-stars" class="text-amber-500 font-bold tracking-widest">
+                ${'★'.repeat(p2Streak)}${'☆'.repeat(5 - p2Streak)}
+              </span>
+              <span class="text-slate-500 text-sm">(${p2Streak}/5)</span>
+            </div>
+            <button onclick="randomizeP2()" class="py-2.5 px-5 bg-indigo-500 hover:bg-indigo-600 text-white font-jua rounded-2xl shadow-sm transition-all active:scale-95 flex items-center gap-1.5">
+              <span>🎲 새로운 문제 (랜덤)</span>
+            </button>
+          </div>
+
+          <div class="w-full flex flex-col sm:flex-row items-center sm:items-stretch justify-center gap-6 mb-6">
+            <div class="w-full max-w-[260px] bg-white rounded-3xl p-5 border-4 border-lime-400 shadow-sm flex flex-col items-center relative min-h-[320px]">
+              <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-lime-200 text-slate-800 font-jua text-xl px-5 py-1 rounded-full border-2 border-lime-400 whitespace-nowrap">
+                2 × <span class="text-emerald-600 font-extrabold">${p2MultA}</span>
+              </div>
+              <div class="pt-6 w-full flex flex-col items-center justify-start gap-2 flex-1">
+                ${p2MultA === 0 
+                  ? '<div class="text-slate-400 font-jua py-8">0묶음</div>'
+                  : Array(p2MultA).fill(0).map(() => createWheelPairSVG()).join('')}
+              </div>
+            </div>
+
+            <div class="w-full max-w-[260px] bg-white rounded-3xl p-5 border-4 border-lime-400 shadow-sm flex flex-col items-center relative min-h-[320px]">
+              <div class="absolute -top-5 left-1/2 -translate-x-1/2 bg-lime-200 text-slate-800 font-jua text-xl px-5 py-1 rounded-full border-2 border-lime-400 whitespace-nowrap">
+                2 × <span class="text-emerald-600 font-extrabold">${p2MultB}</span>
+              </div>
+              <div class="pt-6 w-full flex flex-col items-center justify-start gap-2 flex-1">
+                ${p2MultB === 0 
+                  ? '<div class="text-slate-400 font-jua py-8">0묶음</div>'
+                  : Array(p2MultB).fill(0).map(() => createWheelPairSVG()).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="w-full max-w-xl bg-emerald-50 rounded-2xl p-4 border border-emerald-200 flex flex-col items-center gap-3 font-jua text-base sm:text-lg text-slate-800 mb-6">
+            <div class="flex flex-wrap items-center justify-center gap-1.5 text-center">
+              <span>💡 ${isRightMore ? '오른쪽' : '왼쪽'}이 ${isRightMore ? '왼쪽' : '오른쪽'}보다</span>
+              <input type="text" id="p2-input-group" placeholder="?" maxlength="2"
+                class="w-12 h-10 text-center font-bold text-rose-500 bg-white border-2 border-rose-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-300">
+              <span class="text-rose-600">묶음</span>
+              <span>(</span>
+              <input type="text" id="p2-input-count" placeholder="?" maxlength="2"
+                class="w-12 h-10 text-center font-bold text-rose-500 bg-white border-2 border-rose-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-300">
+              <span class="text-rose-600">개</span>
+              <span>) 더 많아요!</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button onclick="checkP2Answer()" class="py-3 px-8 bg-emerald-500 hover:bg-emerald-600 text-white font-jua text-lg rounded-2xl shadow-md transition-all active:scale-95">
+              ✏️ 정답 확인하기
+            </button>
+          </div>
+
+          <div id="p2-feedback" class="mt-4 font-jua text-base text-center min-h-[24px]"></div>
+        </div>
+      `;
+    }
+
+    function randomizeP2() {
+      p2MultA = Math.floor(Math.random() * 8) + 1;
+      do {
+        p2MultB = Math.floor(Math.random() * 8) + 1;
+      } while (p2MultB === p2MultA);
+      renderPage2();
+    }
+
+    function checkP2Answer() {
+      const diffGroup = Math.abs(p2MultA - p2MultB);
+      const diffCount = diffGroup * 2;
+      const feedback = document.getElementById('p2-feedback');
+
+      const gVal = document.getElementById('p2-input-group').value.trim();
+      const cVal = document.getElementById('p2-input-count').value.trim();
+
+      if (gVal === '' && cVal === '') {
+        feedback.className = 'mt-4 font-jua text-base text-center text-amber-600';
+        feedback.innerText = '⚠️ 답을 입력하지 않았어요! 네모칸에 숫자를 먼저 써넣어 보세요.';
+        return;
+      }
+
+      if (gVal === '' || cVal === '') {
+        feedback.className = 'mt-4 font-jua text-base text-center text-amber-600';
+        feedback.innerText = '⚠️ 빈칸이 남아있어요! 두 네모칸을 모두 입력해 주세요.';
+        return;
+      }
+
+      if (parseInt(gVal, 10) === diffGroup && parseInt(cVal, 10) === diffCount) {
+        playSound('correct');
+        p2Streak++;
+        feedback.className = 'mt-4 font-jua text-base text-center text-emerald-600';
+        feedback.innerText = '🎉 정확합니다! 비교를 아주 잘했어요!';
+        
+        if (p2Streak >= 5) {
+          playSound('fanfare');
+          document.getElementById('modal-desc').innerText = '2쪽 5연속 성공! 비교 마스터 임명장!';
+          document.getElementById('success-modal').classList.remove('hidden');
+          p2Streak = 0;
+        } else {
+          setTimeout(randomizeP2, 1100);
+        }
+      } else {
+        playSound('wrong');
+        p2Streak = 0;
+        feedback.className = 'mt-4 font-jua text-base text-center text-rose-500';
+        feedback.innerText = '❌ 틀렸어요! 연속 성공이 초기화되어 처음부터 다시 시작합니다.';
+        document.getElementById('p2-stars').innerText = '☆☆☆☆☆';
+        setTimeout(randomizeP2, 1400);
+      }
+    }
+
+    let p3Target = Math.floor(Math.random() * 8) + 2;
+    let p3CurrentCount = 0;
+    let p3Streak = 0;
+
+    function renderPage3() {
+      const container = document.getElementById('page-content');
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center">
+          <div class="w-full flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div class="flex items-center gap-2 font-jua text-lg text-emerald-700 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-200">
+              <span>⭐ 연속 성공:</span>
+              <span id="p3-stars" class="text-amber-500 font-bold tracking-widest">
+                ${'★'.repeat(p3Streak)}${'☆'.repeat(5 - p3Streak)}
+              </span>
+              <span id="p3-streak-num" class="text-slate-500 text-sm">(${p3Streak}/5)</span>
+            </div>
+            <button onclick="randomizeP3()" class="py-2.5 px-5 bg-indigo-500 hover:bg-indigo-600 text-white font-jua rounded-2xl shadow-sm transition-all active:scale-95 flex items-center gap-1.5">
+              <span>🎲 새로운 문제 (랜덤)</span>
+            </button>
+          </div>
+
+          <div class="w-full max-w-2xl bg-white rounded-3xl p-6 border-2 border-sky-100 shadow-sm flex flex-col items-center gap-6">
+            <!-- SENTENCE DESCRIPTION AT TOP -->
+            <div class="w-full bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center font-jua text-lg sm:text-xl text-slate-800">
+              2 × <span class="text-emerald-600 font-extrabold">${p3Target}</span> 는 
+              <span class="text-blue-600 font-bold">2</span> 씩 
+              <input type="text" id="p3-times-input" placeholder="?" maxlength="2"
+                class="w-12 h-10 text-center font-bold text-sky-600 bg-white border-2 border-sky-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-300">
+              번 더해서 계산할 수 있어.
+            </div>
+
+            <!-- BUTTON ROW -->
+            <div class="flex flex-wrap items-center justify-center gap-3 font-jua text-xl text-slate-800">
+              <span>2 × <span class="text-emerald-600 font-extrabold">${p3Target}</span> =</span>
+              <button onclick="addP3Two()" class="py-2 px-5 bg-sky-500 hover:bg-sky-600 text-white font-jua text-base rounded-2xl shadow-sm transition-all active:scale-95">
+                + 2 더하기
+              </button>
+              <button onclick="resetP3Add()" class="py-2 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-jua text-base rounded-2xl transition-all active:scale-95">
+                다시 누르기
+              </button>
+            </div>
+
+            <!-- ADDITION BOX -->
+            <div class="w-full min-h-[64px] bg-sky-50/50 rounded-2xl border-2 border-dashed border-sky-200 p-4 flex flex-wrap items-center justify-center gap-2 font-jua text-xl">
+              ${p3CurrentCount === 0 
+                ? '<span class="text-slate-400 text-base">[+ 2 더하기] 버튼을 눌러보세요!</span>'
+                : Array(p3CurrentCount).fill(0).map((_, i) => `
+                    <span class="px-3 py-1 bg-sky-100 text-sky-700 rounded-xl border border-sky-300 animate-pop-in">2</span>
+                    ${i < p3CurrentCount - 1 ? '<span class="text-sky-400">+</span>' : ''}
+                  `).join('')}
+            </div>
+
+            <!-- RESULT INPUT (ALWAYS VISIBLE) -->
+            <div class="flex items-center gap-2 font-jua text-xl text-slate-800">
+              <span class="font-bold">=</span>
+              <input type="text" id="p3-ans-input" placeholder="?" maxlength="3"
+                class="w-16 h-12 text-center font-bold text-emerald-600 bg-white border-2 border-emerald-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <div class="flex items-center gap-3">
+              <button onclick="checkP3Answer()" class="py-3 px-8 bg-sky-500 hover:bg-sky-600 text-white font-jua text-lg rounded-2xl shadow-md transition-all active:scale-95">
+                ✏️ 정답 확인
+              </button>
+            </div>
+
+            <div id="p3-feedback" class="font-jua text-base text-center min-h-[24px]"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function randomizeP3() {
+      let next;
+      do {
+        next = Math.floor(Math.random() * 8) + 2;
+      } while (next === p3Target);
+      p3Target = next;
+      p3CurrentCount = 0;
+      renderPage3();
+    }
+
+    function addP3Two() {
+      p3CurrentCount++;
+      playSound('correct');
+      renderPage3();
+    }
+
+    function resetP3Add() {
+      p3CurrentCount = 0;
+      renderPage3();
+    }
+
+    function checkP3Answer() {
+      const timesVal = document.getElementById('p3-times-input').value.trim();
+      const ansInput = document.getElementById('p3-ans-input');
+      const ansVal = ansInput ? ansInput.value.trim() : '';
+      const feedback = document.getElementById('p3-feedback');
+
+      if (timesVal === '' && ansVal === '' && p3CurrentCount === 0) {
+        feedback.className = 'font-jua text-base text-center text-amber-600';
+        feedback.innerText = '⚠️ 답을 입력하지 않았어요! [+ 2 더하기] 버튼을 누르고 네모칸에 숫자를 써넣어 보세요.';
+        return;
+      }
+
+      if (timesVal === '' || ansVal === '') {
+        feedback.className = 'font-jua text-base text-center text-amber-600';
+        feedback.innerText = '⚠️ 빈칸이 남아있어요! 네모칸에 답을 모두 입력해 주세요.';
+        return;
+      }
+
+      if (p3CurrentCount === p3Target && parseInt(timesVal, 10) === p3Target && parseInt(ansVal, 10) === p3Target * 2) {
+        playSound('correct');
+        p3Streak++;
+        feedback.className = 'font-jua text-base text-center text-emerald-600';
+        feedback.innerText = '🎉 정답입니다! 곱셈과 덧셈의 관계를 완벽히 이해했어요!';
+
+        if (p3Streak >= 5) {
+          playSound('fanfare');
+          document.getElementById('modal-desc').innerText = '3쪽 5연속 성공! 덧셈-곱셈 박사입니다!';
+          document.getElementById('success-modal').classList.remove('hidden');
+          p3Streak = 0;
+        } else {
+          setTimeout(randomizeP3, 1100);
+        }
+      } else {
+        playSound('wrong');
+        p3Streak = 0;
+        feedback.className = 'font-jua text-base text-center text-rose-500';
+        feedback.innerText = '❌ 틀렸어요! 연속 성공이 초기화되어 처음부터 다시 시작합니다.';
+        document.getElementById('p3-stars').innerText = '☆☆☆☆☆';
+        const numEl = document.getElementById('p3-streak-num');
+        if (numEl) numEl.innerText = '(0/5)';
+        setTimeout(randomizeP3, 1400);
+      }
+    }
+
+    let p4ValA = Math.floor(Math.random() * 6) + 1;
+    let p4ValB = p4ValA + Math.floor(Math.random() * 3) + 2;
+    let p4Streak = 0;
+
+    function renderPage4() {
+      const container = document.getElementById('page-content');
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center">
+          <div class="w-full flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div class="flex items-center gap-2 font-jua text-lg text-emerald-700 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-200">
+              <span>⭐ 연속 성공:</span>
+              <span id="p4-stars" class="text-amber-500 font-bold tracking-widest">
+                ${'★'.repeat(p4Streak)}${'☆'.repeat(5 - p4Streak)}
+              </span>
+              <span id="p4-streak-num" class="text-slate-500 text-sm">(${p4Streak}/5)</span>
+            </div>
+            <button onclick="randomizeP4()" class="py-2.5 px-5 bg-indigo-500 hover:bg-indigo-600 text-white font-jua rounded-2xl shadow-sm transition-all active:scale-95 flex items-center gap-1.5">
+              <span>🎲 새로운 문제 (랜덤)</span>
+            </button>
+          </div>
+
+          <div class="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm flex flex-col items-center gap-8">
+            
+            <!-- SECTION 1: Rule Concept Understanding -->
+            <div class="flex items-center justify-center gap-4 sm:gap-8 w-full flex-wrap sm:flex-nowrap">
+              <div class="flex flex-col gap-3 items-center">
+                <div class="flex items-center gap-2 font-black text-2xl text-slate-800">
+                  <span>2 ×</span>
+                  <div class="w-12 h-12 flex items-center justify-center font-black text-2xl text-sky-600 bg-sky-50 border-2 border-sky-400 rounded-2xl shadow-sm">
+                    ${p4ValA}
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 font-black text-2xl text-slate-800">
+                  <span>2 ×</span>
+                  <div class="w-12 h-12 flex items-center justify-center font-black text-2xl text-amber-600 bg-amber-50 border-2 border-amber-400 rounded-2xl shadow-sm">
+                    ${p4ValB}
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-center px-1">
+                <svg width="40" height="60" viewBox="0 0 44 64" fill="none">
+                  <path d="M 6 14 C 38 14, 38 50, 10 50" stroke="#38bdf8" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+                  <polygon points="12,44 4,50 12,56" fill="#38bdf8" />
+                </svg>
+              </div>
+
+              <div class="flex items-center gap-2 font-black text-xl sm:text-2xl text-slate-900 whitespace-nowrap">
+                <span>2를</span>
+                <input 
+                  type="text" 
+                  id="p4-ans-diff" 
+                  inputmode="numeric" 
+                  maxlength="2" 
+                  placeholder="?" 
+                  class="w-12 h-12 text-center font-black text-2xl text-sky-600 bg-white border-2 border-sky-400 rounded-2xl focus:ring-4 focus:ring-sky-200 outline-none shadow-sm transition-all"
+                />
+                <span>번 <span class="text-rose-600 underline decoration-rose-400 decoration-4 underline-offset-4">더</span> 더하면 된다</span>
+              </div>
+            </div>
+
+            <!-- Divider line -->
+            <div class="w-full border-t-2 border-dashed border-slate-200 my-1"></div>
+
+            <!-- SECTION 2: Calculation & Addition Formula -->
+            <div class="flex items-center justify-center gap-2 sm:gap-3 w-full flex-wrap sm:flex-nowrap">
+              <div class="flex flex-col gap-3 items-center">
+                <div class="flex items-center gap-2 font-black text-2xl text-slate-800">
+                  <span>2 ×</span>
+                  <div class="w-12 h-12 flex items-center justify-center font-black text-2xl text-sky-600 bg-sky-50 border-2 border-sky-400 rounded-2xl shadow-sm">
+                    ${p4ValA}
+                  </div>
+                  <span>=</span>
+                  <input 
+                    type="text" 
+                    id="p4-res-top-input" 
+                    inputmode="numeric" 
+                    maxlength="2" 
+                    placeholder="?" 
+                    class="w-12 h-12 text-center font-black text-xl sm:text-2xl text-sky-600 bg-white border-2 border-sky-400 rounded-xl focus:ring-4 focus:ring-sky-200 outline-none shadow-sm transition-all"
+                  />
+                </div>
+
+                <div class="flex items-center gap-2 font-black text-2xl text-slate-800">
+                  <span>2 ×</span>
+                  <div class="w-12 h-12 flex items-center justify-center font-black text-2xl text-amber-600 bg-amber-50 border-2 border-amber-400 rounded-2xl shadow-sm">
+                    ${p4ValB}
+                  </div>
+                  <span>=</span>
+                  <input 
+                    type="text" 
+                    id="p4-res-bot-input" 
+                    inputmode="numeric" 
+                    maxlength="2" 
+                    placeholder="?" 
+                    class="w-12 h-12 text-center font-black text-xl sm:text-2xl text-sky-600 bg-white border-2 border-sky-400 rounded-xl focus:ring-4 focus:ring-sky-200 outline-none shadow-sm transition-all"
+                  />
+                </div>
+              </div>
+
+              <div class="flex items-center justify-center -mr-1">
+                <svg width="40" height="60" viewBox="0 0 44 64" fill="none">
+                  <path d="M 6 14 C 38 14, 38 50, 10 50" stroke="#38bdf8" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+                  <polygon points="12,44 4,50 12,56" fill="#38bdf8" />
+                </svg>
+              </div>
+
+              <!-- Right Addition Formula: + [ ? × ? = ? ] -->
+              <div class="flex items-center gap-1.5 whitespace-nowrap">
+                <span class="text-rose-500 font-black text-3xl sm:text-4xl select-none leading-none -ml-1 mr-0.5">+</span>
+                <div class="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-50/60 border-2 border-dashed border-rose-300 rounded-2xl shadow-sm">
+                  <input 
+                    type="text" 
+                    id="p4-mult-base-input" 
+                    inputmode="numeric" 
+                    maxlength="2" 
+                    placeholder="?" 
+                    class="w-11 h-12 text-center font-black text-xl sm:text-2xl text-rose-500 bg-white border-2 border-rose-400 rounded-xl focus:ring-4 focus:ring-rose-200 outline-none shadow-sm transition-all"
+                  />
+                  <span class="text-slate-700 font-black text-xl sm:text-2xl">×</span>
+                  <input 
+                    type="text" 
+                    id="p4-mult-diff-input" 
+                    inputmode="numeric" 
+                    maxlength="2" 
+                    placeholder="?" 
+                    class="w-11 h-12 text-center font-black text-xl sm:text-2xl text-rose-500 bg-white border-2 border-rose-400 rounded-xl focus:ring-4 focus:ring-rose-200 outline-none shadow-sm transition-all"
+                  />
+                  <span class="text-slate-700 font-black text-xl sm:text-2xl">=</span>
+                  <input 
+                    type="text" 
+                    id="p4-mult-res-input" 
+                    inputmode="numeric" 
+                    maxlength="2" 
+                    placeholder="?" 
+                    class="w-11 h-12 text-center font-black text-xl sm:text-2xl text-rose-500 bg-white border-2 border-rose-400 rounded-xl focus:ring-4 focus:ring-rose-200 outline-none shadow-sm transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Button Row -->
+            <div class="flex flex-wrap items-center justify-center gap-3 mt-3">
+              <button onclick="checkP4Answer()" class="py-3 px-7 bg-sky-500 hover:bg-sky-600 text-white font-jua text-lg rounded-2xl shadow-md transition-all active:scale-95 flex items-center gap-2">
+                ✏️ 확인하기
+              </button>
+              <button onclick="resetP4Input()" class="py-3 px-6 bg-rose-50 hover:bg-rose-100 text-rose-600 font-jua text-lg rounded-2xl shadow-sm transition-all active:scale-95">
+                다시 쓰기
+              </button>
+            </div>
+
+            <div id="p4-feedback" class="font-jua text-base text-center min-h-[24px]"></div>
+          </div>
+        </div>
+      `;
+
+      const inputs = [
+        'p4-ans-diff', 
+        'p4-res-top-input', 
+        'p4-res-bot-input', 
+        'p4-mult-base-input', 
+        'p4-mult-diff-input', 
+        'p4-mult-res-input'
+      ];
+      inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') checkP4Answer();
+          });
+        }
+      });
+    }
+
+    function randomizeP4() {
+      let nextA, nextB;
+      do {
+        nextA = Math.floor(Math.random() * 7) + 1;
+        nextB = Math.floor(Math.random() * (9 - nextA)) + (nextA + 1);
+      } while (nextA === p4ValA && nextB === p4ValB);
+      p4ValA = nextA;
+      p4ValB = nextB;
+      renderPage4();
+    }
+
+    function resetP4Input() {
+      const ids = [
+        'p4-ans-diff', 
+        'p4-res-top-input', 
+        'p4-res-bot-input', 
+        'p4-mult-base-input', 
+        'p4-mult-diff-input', 
+        'p4-mult-res-input'
+      ];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.value = '';
+          el.classList.remove('border-emerald-500', 'bg-emerald-50', 'border-rose-400', 'bg-rose-50');
+        }
+      });
+      const firstInput = document.getElementById('p4-ans-diff');
+      if (firstInput) firstInput.focus();
+      const feedback = document.getElementById('p4-feedback');
+      if (feedback) feedback.innerText = '';
+    }
+
+    function checkP4Answer() {
+      const inDiff = document.getElementById('p4-ans-diff');
+      const inResTop = document.getElementById('p4-res-top-input');
+      const inResBot = document.getElementById('p4-res-bot-input');
+      const inBase = document.getElementById('p4-mult-base-input');
+      const inMultDiff = document.getElementById('p4-mult-diff-input');
+      const inMultRes = document.getElementById('p4-mult-res-input');
+      const feedback = document.getElementById('p4-feedback');
+
+      if (!inDiff || !inResTop || !inResBot || !inBase || !inMultDiff || !inMultRes) return;
+
+      const allInputs = [inDiff, inResTop, inResBot, inBase, inMultDiff, inMultRes];
+      const allVals = allInputs.map(el => el.value.trim());
+
+      if (allVals.every(v => v === '')) {
+        feedback.className = 'font-jua text-base text-center text-amber-600';
+        feedback.innerText = '⚠️ 답을 입력하지 않았어요! 네모칸에 숫자를 먼저 써넣어 보세요.';
+        inDiff.focus();
+        return;
+      }
+
+      if (allVals.some(v => v === '')) {
+        feedback.className = 'font-jua text-base text-center text-amber-600';
+        feedback.innerText = '⚠️ 아직 채우지 않은 네모칸이 있어요! 모든 칸을 입력해 주세요.';
+        return;
+      }
+
+      const expectedDiff = p4ValB - p4ValA;
+      const expectedResTop = p4ValA * 2;
+      const expectedResBot = p4ValB * 2;
+      const expectedBase = 2;
+      const expectedMultDiff = expectedDiff;
+      const expectedMultRes = expectedDiff * 2;
+
+      const isDiffOk = parseInt(inDiff.value.trim(), 10) === expectedDiff;
+      const isResTopOk = parseInt(inResTop.value.trim(), 10) === expectedResTop;
+      const isResBotOk = parseInt(inResBot.value.trim(), 10) === expectedResBot;
+      const isBaseOk = parseInt(inBase.value.trim(), 10) === expectedBase;
+      const isMultDiffOk = parseInt(inMultDiff.value.trim(), 10) === expectedMultDiff;
+      const isMultResOk = parseInt(inMultRes.value.trim(), 10) === expectedMultRes;
+
+      const mark = (el, ok) => {
+        el.classList.remove('border-emerald-500', 'bg-emerald-50', 'border-rose-400', 'bg-rose-50');
+        if (ok) el.classList.add('border-emerald-500', 'bg-emerald-50');
+        else el.classList.add('border-rose-400', 'bg-rose-50');
+      };
+
+      mark(inDiff, isDiffOk);
+      mark(inResTop, isResTopOk);
+      mark(inResBot, isResBotOk);
+      mark(inBase, isBaseOk);
+      mark(inMultDiff, isMultDiffOk);
+      mark(inMultRes, isMultResOk);
+
+      if (isDiffOk && isResTopOk && isResBotOk && isBaseOk && isMultDiffOk && isMultResOk) {
+        playSound('correct');
+        p4Streak++;
+        document.getElementById('p4-stars').innerText = '★'.repeat(p4Streak) + '☆'.repeat(5 - p4Streak);
+        document.getElementById('p4-streak-num').innerText = `(${p4Streak}/5)`;
+        feedback.className = 'font-jua text-base text-center text-emerald-600';
+        feedback.innerText = `🎉 완벽합니다! 2를 ${expectedDiff}번 더 더해서 (+ 2 × ${expectedDiff} = ${expectedMultRes}) ${expectedResBot}이 됩니다!`;
+
+        if (p4Streak >= 5) {
+          playSound('fanfare');
+          document.getElementById('modal-desc').innerText = '4쪽 5연속 성공! 2씩 커지는 곱셈 규칙 박사입니다!';
+          document.getElementById('success-modal').classList.remove('hidden');
+          p4Streak = 0;
+        } else {
+          setTimeout(randomizeP4, 1200);
+        }
+      } else {
+        playSound('wrong');
+        p4Streak = 0;
+        feedback.className = 'font-jua text-base text-center text-rose-500';
+        feedback.innerText = '❌ 틀렸어요! 연속 성공이 초기화되어 처음부터 다시 시작합니다.';
+        document.getElementById('p4-stars').innerText = '☆☆☆☆☆';
+        document.getElementById('p4-streak-num').innerText = '(0/5)';
+        setTimeout(randomizeP4, 1500);
+      }
+    }
+
+    let p5Pairs = Math.floor(Math.random() * 8) + 2;
+    let p5Streak = 0;
+
+    function renderPage5() {
+      const container = document.getElementById('page-content');
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center">
+          <div class="w-full flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div class="flex items-center gap-2 font-jua text-lg text-emerald-700 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-200">
+              <span>⭐ 연속 성공:</span>
+              <span id="p5-stars" class="text-amber-500 font-bold tracking-widest">
+                ${'★'.repeat(p5Streak)}${'☆'.repeat(5 - p5Streak)}
+              </span>
+              <span id="p5-streak-num" class="text-slate-500 text-sm">(${p5Streak}/5)</span>
+            </div>
+            <button onclick="randomizeP5()" class="py-2.5 px-5 bg-indigo-500 hover:bg-indigo-600 text-white font-jua rounded-2xl shadow-sm transition-all active:scale-95 flex items-center gap-1.5">
+              <span>🎲 새로운 문제 (랜덤)</span>
+            </button>
+          </div>
+
+          <div class="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 border-2 border-purple-200 shadow-sm flex flex-col items-center gap-6">
+            <h2 class="font-jua text-xl sm:text-2xl text-slate-800 text-center flex items-center gap-2">
+              <span class="w-3.5 h-3.5 bg-purple-500 rounded-full inline-block"></span>
+              신발 진열장을 보고 곱셈식을 완성해 보세요!
+            </h2>
+
+            <!-- Shoe Shelf Frame Display -->
+            <div class="w-full bg-purple-50/50 rounded-2xl border-4 border-purple-200 p-5 shadow-inner flex flex-wrap items-center justify-center gap-2 sm:gap-3 min-h-[120px]">
+              ${Array(p5Pairs).fill(0).map(() => createPairItemSVG()).join('')}
+            </div>
+
+            <!-- Formula Inputs -->
+            <div class="w-full bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-center gap-3 font-jua text-xl sm:text-2xl text-slate-800">
+              <span class="text-blue-600 font-black">2</span>
+              <span>×</span>
+              <input type="text" id="p5-pairs-input" placeholder="켤레" maxlength="2"
+                class="w-14 h-12 text-center font-black text-sky-600 bg-white border-2 border-sky-400 rounded-2xl focus:ring-4 focus:ring-sky-200 outline-none shadow-sm transition-all">
+              <span>=</span>
+              <input type="text" id="p5-total-input" placeholder="전체" maxlength="3"
+                class="w-16 h-12 text-center font-black text-emerald-600 bg-white border-2 border-emerald-400 rounded-2xl focus:ring-4 focus:ring-emerald-200 outline-none shadow-sm transition-all">
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button onclick="checkP5Answer()" class="py-3 px-8 bg-purple-500 hover:bg-purple-600 text-white font-jua text-lg rounded-2xl shadow-md transition-all active:scale-95 flex items-center gap-2">
+                ✏️ 정답 확인
+              </button>
+            </div>
+
+            <div id="p5-feedback" class="font-jua text-base text-center min-h-[24px]"></div>
+          </div>
+        </div>
+      `;
+
+      const inputA = document.getElementById('p5-pairs-input');
+      const inputB = document.getElementById('p5-total-input');
+      [inputA, inputB].forEach(el => {
+        if (el) {
+          el.addEventListener('keydown', e => {
+            if (e.key === 'Enter') checkP5Answer();
+          });
+        }
+      });
+      if (inputA) inputA.focus();
+    }
+
+    function randomizeP5() {
+      let nextPairs;
+      do {
+        nextPairs = Math.floor(Math.random() * 8) + 2;
+      } while (nextPairs === p5Pairs);
+      p5Pairs = nextPairs;
+      renderPage5();
+    }
+
+    function checkP5Answer() {
+      const pInput = document.getElementById('p5-pairs-input');
+      const tInput = document.getElementById('p5-total-input');
+      const feedback = document.getElementById('p5-feedback');
+
+      if (!pInput || !tInput) return;
+      const pVal = pInput.value.trim();
+      const tVal = tInput.value.trim();
+
+      if (pVal === '' && tVal === '') {
+        feedback.className = 'font-jua text-base text-center text-amber-600';
+        feedback.innerText = '⚠️ 답을 입력하지 않았어요! 신발 켤레 수와 전체 짝수를 써넣어 보세요.';
+        pInput.focus();
+        return;
+      }
+
+      if (pVal === '' || tVal === '') {
+        feedback.className = 'font-jua text-base text-center text-amber-600';
+        feedback.innerText = '⚠️ 빈칸이 남아있어요! 두 네모칸을 모두 입력해 주세요.';
+        return;
+      }
+
+      const expectedPairs = p5Pairs;
+      const expectedTotal = p5Pairs * 2;
+
+      const isPairOk = parseInt(pVal, 10) === expectedPairs;
+      const isTotalOk = parseInt(tVal, 10) === expectedTotal;
+
+      if (isPairOk && isTotalOk) {
+        playSound('correct');
+        p5Streak++;
+        document.getElementById('p5-stars').innerText = '★'.repeat(p5Streak) + '☆'.repeat(5 - p5Streak);
+        document.getElementById('p5-streak-num').innerText = `(${p5Streak}/5)`;
+        feedback.className = 'font-jua text-base text-center text-emerald-600';
+        feedback.innerText = `🎉 완벽합니다! 2짝씩 ${expectedPairs}켤레이므로 2 × ${expectedPairs} = ${expectedTotal}짝입니다!`;
+
+        if (p5Streak >= 5) {
+          playSound('fanfare');
+          document.getElementById('modal-desc').innerText = '5쪽 5연속 성공! 신발 곱셈식 만들기 박사입니다!';
+          document.getElementById('success-modal').classList.remove('hidden');
+          p5Streak = 0;
+        } else {
+          setTimeout(randomizeP5, 1200);
+        }
+      } else {
+        playSound('wrong');
+        p5Streak = 0;
+        feedback.className = 'font-jua text-base text-center text-rose-500';
+        feedback.innerText = '❌ 틀렸어요! 연속 성공이 초기화되어 처음부터 다시 시작합니다.';
+        document.getElementById('p5-stars').innerText = '☆☆☆☆☆';
+        document.getElementById('p5-streak-num').innerText = '(0/5)';
+        setTimeout(randomizeP5, 1500);
+      }
+    }
+
+    let p6Multiplier = Math.floor(Math.random() * 9) + 1;
+    let p6Streak = 0;
+
+    function renderPage6() {
+      const container = document.getElementById('page-content');
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center">
+          <div class="w-full flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div class="flex items-center gap-2 font-jua text-lg text-emerald-700 bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-200">
+              <span>⭐ 연속 성공:</span>
+              <span id="p6-stars" class="text-amber-500 font-bold tracking-widest">
+                ${'★'.repeat(p6Streak)}${'☆'.repeat(5 - p6Streak)}
+              </span>
+              <span id="p6-streak-num" class="text-slate-500 text-sm">(${p6Streak}/5)</span>
+            </div>
+            <button onclick="randomizeP6()" class="py-2.5 px-5 bg-indigo-500 hover:bg-indigo-600 text-white font-jua rounded-2xl shadow-sm transition-all active:scale-95 flex items-center gap-1.5">
+              <span>🎲 새로운 문제 (랜덤)</span>
+            </button>
+          </div>
+
+          <div class="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 border-4 border-rose-200 shadow-sm flex flex-col items-center gap-6">
+            <h2 class="font-jua text-xl sm:text-2xl text-slate-800 text-center flex items-center gap-2">
+              <span class="w-3.5 h-3.5 bg-rose-500 rounded-full inline-block"></span>
+              주사위 눈(2점)을 보고 2단 곱셈구구를 완성해 보세요!
+            </h2>
+
+            <!-- Dice Graphic Container -->
+            <div class="w-full bg-rose-50/50 rounded-2xl border-2 border-dashed border-rose-200 p-5 flex flex-wrap items-center justify-center gap-3 min-h-[110px]">
+              ${Array(p6Multiplier).fill(0).map(() => createDiceSVG()).join('')}
+            </div>
+
+            <!-- Interactive Equation -->
+            <div class="w-full bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-center gap-3 font-jua text-xl sm:text-2xl text-slate-800">
+              <span class="text-rose-600 font-black text-2xl sm:text-3xl">2</span>
+              <span>×</span>
+              <input type="text" id="p6-dice-input" placeholder="주사위 수" maxlength="2"
+                class="w-20 sm:w-24 h-12 text-center font-bold text-lg sm:text-xl placeholder:text-xs sm:placeholder:text-sm placeholder:font-normal text-rose-600 bg-white border-2 border-rose-400 rounded-2xl focus:ring-4 focus:ring-rose-200 outline-none shadow-sm transition-all">
+              <span>=</span>
+              <input type="text" id="p6-total-input" placeholder="점의 수" maxlength="3"
+                class="w-20 sm:w-24 h-12 text-center font-bold text-lg sm:text-xl placeholder:text-xs sm:placeholder:text-sm placeholder:font-normal text-emerald-600 bg-white border-2 border-emerald-400 rounded-2xl focus:ring-4 focus:ring-emerald-200 outline-none shadow-sm transition-all">
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button onclick="checkP6Answer()" class="py-3 px-8 bg-rose-500 hover:bg-rose-600 text-white font-jua text-lg rounded-2xl shadow-md transition-all active:scale-95 flex items-center gap-2">
+                ✏️ 정답 확인
+              </button>
+            </div>
+
+            <div id="p6-feedback" class="font-jua text-base text-center min-h-[24px]"></div>
+          </div>
+        </div>
+      `;
+
+      const inputA = document.getElementById('p6-dice-input');
+      const inputB = document.getElementById('p6-total-input');
+      [inputA, inputB].forEach(el => {
+        if (el) {
+          el.addEventListener('keydown', e => {
+            if (e.key === 'Enter') checkP6Answer();
+          });
+        }
+      });
+      if (inputA) inputA.focus();
+    }
+
+    function randomizeP6() {
+      let nextMult;
+      do {
+        nextMult = Math.floor(Math.random() * 9) + 1;
+      } while (nextMult === p6Multiplier);
+      p6Multiplier = nextMult;
+      renderPage6();
+    }
+
+    function checkP6Answer() {
+      const dInput = document.getElementById('p6-dice-input');
+      const tInput = document.getElementById('p6-total-input');
+      const feedback = document.getElementById('p6-feedback');
+
+      if (!dInput || !tInput) return;
+      const dVal = dInput.value.trim();
+      const tVal = tInput.value.trim();
+
+      if (dVal === '' && tVal === '') {
+        feedback.className = 'font-jua text-base text-center text-amber-600';
+        feedback.innerText = '⚠️ 답을 입력하지 않았어요! 주사위 개수와 총 점의 수를 써넣어 보세요.';
+        dInput.focus();
+        return;
+      }
+
+      if (dVal === '' || tVal === '') {
+        feedback.className = 'font-jua text-base text-center text-amber-600';
+        feedback.innerText = '⚠️ 빈칸이 남아있어요! 두 네모칸을 모두 입력해 주세요.';
+        return;
+      }
+
+      const expectedD = p6Multiplier;
+      const expectedT = p6Multiplier * 2;
+
+      const isDOk = parseInt(dVal, 10) === expectedD;
+      const isTOk = parseInt(tVal, 10) === expectedT;
+
+      if (isDOk && isTOk) {
+        playSound('correct');
+        p6Streak++;
+        document.getElementById('p6-stars').innerText = '★'.repeat(p6Streak) + '☆'.repeat(5 - p6Streak);
+        document.getElementById('p6-streak-num').innerText = `(${p6Streak}/5)`;
+        feedback.className = 'font-jua text-base text-center text-emerald-600';
+        feedback.innerText = `🎉 완벽합니다! 2 × ${expectedD} = ${expectedT} 정답입니다!`;
+
+        if (p6Streak >= 5) {
+          playSound('fanfare');
+          document.getElementById('modal-desc').innerText = '6쪽 5연속 성공! 2단 곱셈구구 완전 정복 마스터입니다!';
+          document.getElementById('success-modal').classList.remove('hidden');
+          p6Streak = 0;
+        } else {
+          setTimeout(randomizeP6, 1200);
+        }
+      } else {
+        playSound('wrong');
+        p6Streak = 0;
+        feedback.className = 'font-jua text-base text-center text-rose-500';
+        feedback.innerText = '❌ 틀렸어요! 연속 성공이 초기화되어 처음부터 다시 시작합니다.';
+        document.getElementById('p6-stars').innerText = '☆☆☆☆☆';
+        document.getElementById('p6-streak-num').innerText = '(0/5)';
+        setTimeout(randomizeP6, 1500);
+      }
+    }
+
+    function setPage(num, forceRandom = true) {
+      currentPage = num;
+      for (let i = 1; i <= 6; i++) {
+        const tab = document.getElementById(`tab-${i}`);
+        if (i === num) {
+          tab.className = "py-2 px-1 rounded-xl bg-emerald-500 text-white shadow-sm font-bold";
+        } else {
+          tab.className = "py-2 px-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium";
+        }
+      }
+
+      if (forceRandom) {
+        if (num === 1) randomizeP1();
+        else if (num === 2) randomizeP2();
+        else if (num === 3) randomizeP3();
+        else if (num === 4) randomizeP4();
+        else if (num === 5) randomizeP5();
+        else if (num === 6) randomizeP6();
+      } else {
+        if (num === 1) renderPage1();
+        else if (num === 2) renderPage2();
+        else if (num === 3) renderPage3();
+        else if (num === 4) renderPage4();
+        else if (num === 5) renderPage5();
+        else if (num === 6) renderPage6();
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('success-modal').classList.add('hidden');
+      if (currentPage === 1) randomizeP1();
+      else if (currentPage === 2) randomizeP2();
+      else if (currentPage === 3) randomizeP3();
+      else if (currentPage === 4) randomizeP4();
+      else if (currentPage === 5) randomizeP5();
+      else if (currentPage === 6) randomizeP6();
+    }
+
+    window.onload = () => {
+      setPage(6, true);
+    };
+  </script>
+</body>
+</html>
