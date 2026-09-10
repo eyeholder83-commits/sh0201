@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>작품 제출하기</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f6f8; }
+        .card { background: white; padding: 20px; border-radius: 12px; max-width: 400px; margin: 0 auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        select, input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
+        button { background: #4CAF50; color: white; font-weight: bold; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+        #preview { width: 100%; max-height: 200px; object-fit: contain; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🍎 열매 작품 제출</h2>
+        <select id="studentNo">
+            <option value="">학생 번호를 선택하세요</option>
+            <script>
+                for(let i=1; i<=25; i++) {
+                    document.write(`<option value="${i}">${i}번 학생</option>`);
+                }
+            </script>
+        </select>
+        <input type="file" id="photoInput" accept="image/*" onchange="previewImage(event)">
+        <img id="preview">
+        <button onclick="submitPhoto()">나무에 열매 맺기</button>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBdzd9kGRolGA1w8zklc2zoUKMR5IKoVB8",
+            authDomain: "tree-6aac6.firebaseapp.com",
+            databaseURL: "https://tree-6aac6-default-rtdb.firebaseio.com",
+            projectId: "tree-6aac6",
+            storageBucket: "tree-6aac6.firebasestorage.app",
+            messagingSenderId: "329257160746",
+            appId: "1:329257160746:web:5679a08b4d5649cdb0f353"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        function previewImage(event) {
+            const reader = new FileReader();
+            reader.onload = function() {
+                const preview = document.getElementById('preview');
+                preview.src = reader.result;
+                preview.style.display = 'block';
+            }
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        function submitPhoto() {
+            const num = document.getElementById('studentNo').value;
+            const fileInput = document.getElementById('photoInput');
+
+            if (!num) { alert('번호를 선택해주세요!'); return; }
+            if (!fileInput.files[0]) { alert('사진을 선택해주세요!'); return; }
+
+            const reader = new FileReader();
+            reader.onload = function() {
+                const base64Image = reader.result;
+                
+                database.ref('tree/' + num).set({
+                    photo: base64Image,
+                    timestamp: Date.now()
+                }).then(() => {
+                    alert(`${num}번 학생의 열매가 성공적으로 전송되었습니다!`);
+                    location.reload();
+                }).catch(err => {
+                    alert('전송 실패: ' + err.message);
+                });
+            }
+            reader.readAsDataURL(fileInput.files[0]);
+        }
+    </script>
+</body>
+</html>
