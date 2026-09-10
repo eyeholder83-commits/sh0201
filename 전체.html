@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전자칠판 작품 나무 (Smart Tree Gallery)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js for dynamic classroom sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&family=Gaegu:wght@700&display=swap');
+        
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #0f172a;
+            overflow: hidden;
+        }
+
+        .font-gaegu {
+            font-family: 'Gaegu', cursive, sans-serif;
+        }
+
+        /* 열매 바운스 및 흔들림 애니메이션 */
+        @keyframes fruitPop {
+            0% { transform: scale(0) translateY(-10px) rotate(-15deg); opacity: 0; }
+            60% { transform: scale(1.18) translateY(2px) rotate(8deg); opacity: 1; }
+            80% { transform: scale(0.92) translateY(-2px) rotate(-3deg); }
+            100% { transform: scale(1) translateY(0) rotate(0deg); opacity: 1; }
+        }
+
+        @keyframes gentleSway {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-4px) rotate(2deg); }
+        }
+
+        @keyframes spotlightPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 25px 8px rgba(250, 204, 21, 0.9); }
+            50% { transform: scale(1.25); box-shadow: 0 0 45px 18px rgba(253, 224, 71, 1); }
+        }
+
+        .fruit-node {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s;
+            will-change: transform;
+        }
+
+        .fruit-node:hover, .fruit-node:active {
+            transform: scale(1.18) translateY(-4px);
+            z-index: 40 !important;
+        }
+
+        .fruit-node.spawning {
+            animation: fruitPop 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .fruit-node.idle {
+            animation: gentleSway 4s ease-in-out infinite;
+        }
+
+        .fruit-node.spotlight {
+            animation: spotlightPulse 0.9s infinite alternate !important;
+            z-index: 50 !important;
+        }
+
+        /* 나무 잎사귀 부드러운 바람 효과 */
+        .leaf-cluster {
+            transform-origin: center bottom;
+            animation: windBreeze 6s ease-in-out infinite alternate;
+        }
+        @keyframes windBreeze {
+            0% { transform: rotate(0deg) skewX(0deg); }
+            100% { transform: rotate(1.2deg) skewX(1deg); }
+        }
+
+        /* 스크롤바 미려하게 숨기기 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative flex flex-col justify-between text-slate-100">
+
+    <!-- 상단 대시보드 및 전자칠판 컨트롤 바 -->
+    <header class="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none">
+        <div class="flex items-center space-x-4 pointer-events-auto">
+            <div class="bg-emerald-500/20 border border-emerald-400/40 backdrop-blur-md px-4 py-2 rounded-2xl flex items-center gap-3 shadow-lg">
+                <span class="text-2xl">🌳</span>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-emerald-300 font-gaegu text-2xl leading-none">우리 반 열매 나무</h1>
+                    <p class="text-xs text-emerald-100/70 font-medium"><span id="submittedCount">0</span>명의 꿈과 작품이 열렸어요</p>
+                </div>
+            </div>
+            
+            <!-- 테마 선택 버튼 -->
+            <div class="hidden sm:flex bg-slate-800/60 backdrop-blur-md p-1 rounded-xl border border-slate-700/50">
+                <button onclick="setTheme('summer')" id="theme-summer" class="theme-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white transition-all shadow-sm">🌿 여름 숲</button>
+                <button onclick="setTheme('spring')" id="theme-spring" class="theme-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all">🌸 봄 벚꽃</button>
+                <button onclick="setTheme('autumn')" id="theme-autumn" class="theme-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all">🍁 가을 단풍</button>
+                <button onclick="setTheme('night')" id="theme-night" class="theme-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all">✨ 밤하늘</button>
+            </div>
+        </div>
+
+        <!-- 우측 액션 도구함 (전자칠판 터치 친화형) -->
+        <div class="flex items-center gap-2 pointer-events-auto">
+            <!-- 랜덤 발표자 추첨 -->
+            <button onclick="pickRandomStudent()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-amber-500/30">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                <span>랜덤 발표자</span>
+            </button>
+
+            <!-- 전체 갤러리 뷰 -->
+            <button onclick="openGalleryModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-white border border-slate-600 font-semibold text-sm backdrop-blur transition-all shadow-md">
+                <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                <span class="hidden md:inline">모아보기</span>
+            </button>
+
+            <!-- 작품 등록 / 시뮬레이션 버튼 -->
+            <button onclick="openSubmitModal()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-sm transition-all shadow-lg shadow-emerald-600/30">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                <span>작품 달기</span>
+            </button>
+
+            <!-- 전체화면 토글 -->
+            <button onclick="toggleFullscreen()" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600 active:scale-95 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- 메인 캔버스 영역: 생생한 백터 나무 배경 + 열매 컨테이너 -->
+    <main id="treeCanvasWrapper" class="relative flex-1 w-full h-full overflow-hidden select-none">
+        
+        <!-- 배경 그라데이션 및 일러스트 (테마에 따라 전환) -->
+        <div id="skyBackground" class="absolute inset-0 transition-colors duration-1000 bg-gradient-to-b from-sky-900 via-sky-800 to-emerald-950"></div>
+
+        <!-- 부유하는 빛망울 / 꽃잎 효과 파티클 컨테이너 -->
+        <div id="ambientParticles" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+        <!-- 고해상도 백터 나무 일러스트레이션 SVG -->
+        <svg id="treeSvg" class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax meet">
+            <defs>
+                <!-- 줄기 그라데이션 -->
+                <linearGradient id="trunkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#3d2214" />
+                    <stop offset="35%" stop-color="#5a3821" />
+                    <stop offset="70%" stop-color="#4a2e1b" />
+                    <stop offset="100%" stop-color="#2a160b" />
+                </linearGradient>
+
+                <!-- 기본 여름 잎사귀 그라데이션 -->
+                <radialGradient id="leafGradSummer1" cx="40%" cy="30%" r="70%">
+                    <stop offset="0%" stop-color="#4ade80" />
+                    <stop offset="50%" stop-color="#16a34a" />
+                    <stop offset="100%" stop-color="#14532d" />
+                </radialGradient>
+                <radialGradient id="leafGradSummer2" cx="35%" cy="35%" r="70%">
+                    <stop offset="0%" stop-color="#86efac" />
+                    <stop offset="60%" stop-color="#22c55e" />
+                    <stop offset="100%" stop-color="#15803d" />
+                </radialGradient>
+
+                <!-- 열매 드롭 섀도우 -->
+                <filter id="fruitGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.45"/>
+                </filter>
+            </defs>
+
+            <!-- 언덕 / 땅 -->
+            <path id="groundPath" d="M -200 1000 Q 800 840 1800 1000 L 1800 1100 L -200 1100 Z" fill="#143423" />
+            <ellipse cx="800" cy="940" rx="360" ry="40" fill="#0d2317" opacity="0.6"/>
+
+            <!-- 뒷쪽 잎 덩어리들 (깊이감 부여) -->
+            <g id="backCanopy" class="leaf-cluster" opacity="0.85">
+                <circle cx="500" cy="380" r="160" fill="url(#leafGradSummer1)" />
+                <circle cx="1100" cy="380" r="170" fill="url(#leafGradSummer1)" />
+                <circle cx="800" cy="270" r="210" fill="url(#leafGradSummer1)" />
+                <circle cx="340" cy="500" r="140" fill="url(#leafGradSummer1)" />
+                <circle cx="1260" cy="500" r="140" fill="url(#leafGradSummer1)" />
+            </g>
+
+            <!-- 튼튼한 나무 밑동과 굵은 원줄기 -->
+            <path d="M 720 950 
+                     C 730 830, 710 680, 750 560
+                     C 760 520, 710 420, 640 370
+                     C 630 360, 640 345, 655 355
+                     C 730 400, 780 470, 790 530
+                     C 815 450, 850 380, 960 320
+                     C 975 310, 985 330, 970 340
+                     C 870 410, 830 490, 820 560
+                     C 850 670, 850 830, 880 950
+                     Z" 
+                  fill="url(#trunkGrad)" />
+
+            <!-- 좌우 굵은 큰 가지들 -->
+            <!-- 왼쪽 1번 큰 가지 -->
+            <path d="M 740 680 C 620 660, 480 620, 360 550 C 345 540, 355 525, 375 530 C 480 590, 610 625, 735 635 Z" fill="url(#trunkGrad)" />
+            <!-- 왼쪽 2번 뻗은 가지 -->
+            <path d="M 520 605 C 440 520, 380 410, 300 370 C 285 360, 300 345, 315 355 C 385 400, 445 490, 515 570 Z" fill="url(#trunkGrad)" />
+            <!-- 오른쪽 1번 큰 가지 -->
+            <path d="M 830 680 C 950 660, 1100 620, 1240 540 C 1255 530, 1245 515, 1225 520 C 1100 590, 960 625, 835 635 Z" fill="url(#trunkGrad)" />
+            <!-- 오른쪽 2번 뻗은 가지 -->
+            <path d="M 1050 600 C 1140 510, 1200 410, 1310 360 C 1325 350, 1310 335, 1295 345 C 1195 400, 1130 490, 1045 565 Z" fill="url(#trunkGrad)" />
+            <!-- 중앙 상단 분기 가지들 -->
+            <path d="M 770 510 C 720 420, 710 320, 720 220 C 722 205, 740 205, 738 220 C 730 310, 745 400, 785 480 Z" fill="url(#trunkGrad)" />
+            <path d="M 805 480 C 840 400, 870 310, 890 220 C 895 205, 915 210, 908 225 C 885 310, 855 390, 815 470 Z" fill="url(#trunkGrad)" />
+
+            <!-- 앞쪽 풍성한 잎사귀 군집 (포근한 볼륨감) -->
+            <g id="frontCanopy" class="leaf-cluster">
+                <!-- 상단 중앙 메인 수관 -->
+                <circle cx="800" cy="200" r="160" fill="url(#leafGradSummer2)" />
+                <circle cx="680" cy="240" r="140" fill="url(#leafGradSummer1)" />
+                <circle cx="920" cy="230" r="150" fill="url(#leafGradSummer2)" />
+                <circle cx="800" cy="340" r="170" fill="url(#leafGradSummer1)" opacity="0.95" />
+
+                <!-- 좌측 수관 -->
+                <circle cx="480" cy="330" r="150" fill="url(#leafGradSummer2)" />
+                <circle cx="340" cy="420" r="130" fill="url(#leafGradSummer1)" />
+                <circle cx="260" cy="510" r="120" fill="url(#leafGradSummer2)" />
+                <circle cx="460" cy="480" r="140" fill="url(#leafGradSummer1)" />
+                <circle cx="600" cy="440" r="130" fill="url(#leafGradSummer2)" />
+
+                <!-- 우측 수관 -->
+                <circle cx="1120" cy="320" r="155" fill="url(#leafGradSummer2)" />
+                <circle cx="1270" cy="420" r="135" fill="url(#leafGradSummer1)" />
+                <circle cx="1340" cy="510" r="120" fill="url(#leafGradSummer2)" />
+                <circle cx="1140" cy="470" r="145" fill="url(#leafGradSummer1)" />
+                <circle cx="1000" cy="440" r="130" fill="url(#leafGradSummer2)" />
+            </g>
+        </svg>
+
+        <!-- 열매 노드들이 실제로 배치되는 오버레이 (퍼센트 기반 완벽 반응형) -->
+        <div id="fruitsContainer" class="absolute inset-0 w-full h-full pointer-events-auto"></div>
+
+        <!-- 하단 교실 가이드 팁 안내 바 -->
+        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 bg-black/50 backdrop-blur-md px-5 py-2 rounded-full border border-white/10 text-xs text-slate-300 pointer-events-none shadow-md">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>열매(작품)를 터치하면 큰 화면으로 감상하고 칭찬할 수 있어요!</span>
+        </div>
+    </main>
+
+    <!-- 1. 작품 상세 보기 모달 (Lightbox) -->
+    <div id="detailModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="detailBox" class="relative bg-slate-900 border border-slate-700/80 rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl transform scale-90 transition-transform duration-300">
+            <!-- 모달 상단 헤더 -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/40">
+                <div class="flex items-center gap-3">
+                    <span id="detailBadge" class="px-3 py-1 bg-emerald-500/20 text-emerald-300 font-bold rounded-xl text-sm border border-emerald-500/30">1번 학생</span>
+                    <h3 id="detailStudentName" class="text-xl font-bold text-white tracking-tight">홍길동</h3>
+                </div>
+                <button onclick="closeDetailModal()" class="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- 작품 이미지 뷰 -->
+            <div class="relative flex-1 bg-black/60 flex items-center justify-center p-4 min-h-[320px] max-h-[50vh] overflow-hidden">
+                <img id="detailImg" src="" alt="학생 작품" class="max-w-full max-h-full object-contain rounded-xl shadow-lg transition-transform duration-300">
+            </div>
+
+            <!-- 작품 정보 및 인터랙션 -->
+            <div class="p-6 bg-slate-900 flex flex-col gap-4">
+                <div>
+                    <h4 id="detailTitle" class="text-lg font-bold text-amber-300">나의 꿈과 미래 마을</h4>
+                    <p id="detailDesc" class="text-sm text-slate-300 mt-1 leading-relaxed">자연과 함께 숨쉬는 미래 도시를 상상하며 그려보았습니다.</p>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+                    <!-- 칭찬 하트 인터랙션 버튼 -->
+                    <button id="likeBtn" onclick="toggleLikeCurrentWork()" class="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 active:scale-95 text-rose-300 font-semibold border border-rose-500/30 transition">
+                        <span id="likeIcon" class="text-xl">❤️</span>
+                        <span>선생님 칭찬도장 (<span id="likeCountText">0</span>)</span>
+                    </button>
+
+                    <span id="detailTime" class="text-xs text-slate-400">방금 등록됨</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 작품 등록 / 제출 시뮬레이션 모달 -->
+    <div id="submitModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl flex flex-col gap-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🍎</span>
+                    <h3 class="text-xl font-bold text-white">새 열매(작품) 달기</h3>
+                </div>
+                <button onclick="closeSubmitModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <form onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">출석 번호</label>
+                        <input id="inputNum" type="number" min="1" max="30" value="1" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">학생 이름</label>
+                        <input id="inputName" type="text" placeholder="예: 김민준" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">작품 제목</label>
+                    <input id="inputTitle" type="text" placeholder="작품의 멋진 제목을 적어주세요" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">한 줄 설명</label>
+                    <textarea id="inputDesc" rows="2" placeholder="작품에 대한 생각이나 소감을 남겨보세요" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">작품 사진 선택</label>
+                    <div class="flex items-center gap-2">
+                        <label class="flex-1 cursor-pointer flex items-center justify-center gap-2 px-3 py-3 rounded-xl border-2 border-dashed border-slate-700 hover:border-emerald-500 bg-slate-800/60 hover:bg-slate-800 text-sm font-semibold text-slate-300 transition">
+                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span id="fileChosenLabel">내 사진 파일 첨부...</span>
+                            <input id="inputFile" type="file" accept="image/*" class="hidden" onchange="handleFileSelected(event)">
+                        </label>
+                        <button type="button" onclick="useSampleArt()" class="px-3 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-amber-300">
+                            🎨 예시 그림
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="closeSubmitModal()" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm">취소</button>
+                    <button type="submit" class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30">나무에 매달기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. 전체 모아보기 갤러리 모달 -->
+    <div id="galleryModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/85 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-5xl w-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/50">
+                <div class="flex items-center gap-3">
+                    <h3 class="text-xl font-bold text-white">🖼️ 우리 반 전체 작품 전시관</h3>
+                    <span id="galleryCountBadge" class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">0작품</span>
+                </div>
+                <button onclick="closeGalleryModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="galleryGrid" class="p-6 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <!-- 동적으로 카드 렌더링 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 축하 토스트 메시지 / 알림 팝업 (Never uses alert()) -->
+    <div id="toastBox" class="fixed bottom-14 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 transition-all duration-300 transform translate-y-10 opacity-0">
+        <div class="px-5 py-3 rounded-2xl bg-slate-900/95 border border-emerald-500/50 text-emerald-200 text-sm font-bold shadow-2xl flex items-center gap-3 backdrop-blur-md">
+            <span id="toastIcon" class="text-xl">✨</span>
+            <span id="toastMessage">새 작품이 나무에 열렸습니다!</span>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. 오디오 합성기 (Tone.js) - 교실 전자칠판 효과음
+           ========================================================================== */
+        let chimeSynth = null;
+        let popSynth = null;
+
+        function initAudio() {
+            if (chimeSynth) return;
+            try {
+                // 부드러운 차임벨 사운드 (열매 등장 / 당첨 축하용)
+                chimeSynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.02, decay: 0.4, sustain: 0.2, release: 1.2 }
+                }).toDestination();
+                chimeSynth.volume.value = -8;
+
+                // 통통 튀는 팝 사운드 (터치용)
+                popSynth = new Tone.MembraneSynth({
+                    pitchDecay: 0.05,
+                    octaves: 3,
+                    envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.2 }
+                }).toDestination();
+                popSynth.volume.value = -6;
+            } catch (e) {
+                console.warn("Audio init error:", e);
+            }
+        }
+
+        function playPopSound() {
+            initAudio();
+            if (Tone.context.state !== 'running') Tone.start();
+            if (popSynth) popSynth.triggerAttackRelease("C5", "8n");
+        }
+
+        function playCelebrateChime() {
+            initAudio();
+            if (Tone.context.state !== 'running') Tone.start();
+            if (chimeSynth) {
+                const now = Tone.now();
+                chimeSynth.triggerAttackRelease("C5", "8n", now);
+                chimeSynth.triggerAttackRelease("E5", "8n", now + 0.1);
+                chimeSynth.triggerAttackRelease("G5", "8n", now + 0.2);
+                chimeSynth.triggerAttackRelease("C6", "4n", now + 0.3);
+            }
+        }
+
+        /* ==========================================================================
+           2. 1~30번 학생 좌우 대칭 및 자연스러운 나뭇가지 위 좌표 매핑 (x: %, y: %)
+           ========================================================================== */
+        const positions = {
+            // 상단 수관 (Center high)
+            1:  { x: 48, y: 16 },
+            2:  { x: 52, y: 19 },
+            3:  { x: 42, y: 22 },
+            4:  { x: 58, y: 23 },
+            5:  { x: 50, y: 27 },
+
+            // 좌측 상부 ~ 중부 가지 (Left branches)
+            6:  { x: 30, y: 26 },
+            7:  { x: 23, y: 33 },
+            8:  { x: 35, y: 35 },
+            9:  { x: 17, y: 43 },
+            10: { x: 28, y: 46 },
+            11: { x: 39, y: 42 },
+            12: { x: 19, y: 56 },
+            13: { x: 32, y: 55 },
+            14: { x: 43, y: 52 },
+            15: { x: 25, y: 65 },
+
+            // 우측 상부 ~ 중부 가지 (Right branches)
+            16: { x: 70, y: 25 },
+            17: { x: 77, y: 33 },
+            18: { x: 65, y: 35 },
+            19: { x: 83, y: 43 },
+            20: { x: 72, y: 46 },
+            21: { x: 61, y: 43 },
+            22: { x: 81, y: 56 },
+            23: { x: 68, y: 55 },
+            24: { x: 57, y: 52 },
+            25: { x: 75, y: 65 },
+
+            // 하단 및 외곽 추가 가지 (26~30번)
+            26: { x: 12, y: 50 },
+            27: { x: 37, y: 64 },
+            28: { x: 63, y: 64 },
+            29: { x: 88, y: 50 },
+            30: { x: 50, y: 39 }
+        };
+
+        // 기본 예시용 데모 작품들 (즉시 시연 가능하도록 탑재)
+        const sampleArtList = [
+            {
+                num: 1,
+                name: "이지민",
+                title: "새벽녘 숲속 작은 호수",
+                desc: "아침 안개가 피어나는 숲의 고요함을 푸른색 수채화로 담아보았어요.",
+                photo: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80",
+                likes: 5,
+                timestamp: "오전 9:15"
+            },
+            {
+                num: 4,
+                name: "박시우",
+                title: "은하수를 건너는 우주선",
+                desc: "우주비행사가 되어 반짝이는 별자리를 탐험하는 상상화입니다.",
+                photo: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=600&auto=format&fit=crop&q=80",
+                likes: 8,
+                timestamp: "오전 9:22"
+            },
+            {
+                num: 7,
+                name: "정하은",
+                title: "알록달록 행복한 꿈동산",
+                desc: "친구들과 잔디밭에서 마음껏 웃고 뛰노는 우리 학교 모습을 그렸어요.",
+                photo: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&auto=format&fit=crop&q=80",
+                likes: 12,
+                timestamp: "오전 9:35"
+            },
+            {
+                num: 11,
+                name: "최도윤",
+                title: "따뜻한 가을 노을",
+                desc: "학교 운동장에서 바라본 붉은 노을빛이 너무 예뻐서 물감으로 표현했습니다.",
+                photo: "https://images.unsplash.com/photo-1549887534-1541e9326642?w=600&auto=format&fit=crop&q=80",
+                likes: 4,
+                timestamp: "오전 9:48"
+            },
+            {
+                num: 16,
+                name: "강서연",
+                title: "바닷속 물고기들의 음악회",
+                desc: "산호초 사이에서 피아노를 치는 문어와 춤추는 돌고래 이야기예요.",
+                photo: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=600&auto=format&fit=crop&q=80",
+                likes: 7,
+                timestamp: "오전 10:02"
+            },
+            {
+                num: 20,
+                name: "윤태양",
+                title: "미래의 자율주행 친환경 자동차",
+                desc: "태양광과 물방울로 달리는 공기정화 자동차를 설계했습니다.",
+                photo: "https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80",
+                likes: 9,
+                timestamp: "오전 10:14"
+            }
+        ];
+
+        // 메모리 내 작품 데이터 저장소
+        const studentWorks = {};
+        let currentDetailNum = null;
+        let selectedFileBase64 = null;
+
+        const container = document.getElementById('fruitsContainer');
+
+        function renderFruitNode(data, isNew = false) {
+            const num = data.num;
+            if (!positions[num]) return;
+
+            studentWorks[num] = data;
+            updateCountBadge();
+
+            let wrapper = document.getElementById(`fruit-wrapper-${num}`);
+
+            if (!wrapper) {
+                wrapper = document.createElement('div');
+                wrapper.id = `fruit-wrapper-${num}`;
+                wrapper.className = `fruit-node group ${isNew ? 'spawning' : 'idle'}`;
+                wrapper.style.left = positions[num].x + '%';
+                wrapper.style.top = positions[num].y + '%';
+                wrapper.style.transform = 'translate(-50%, -50%)';
+
+                // 열매 내부 구조 (사과/열매 형태의 고해상도 테두리 + 번호 뱃지 + 꼭지 디테일)
+                wrapper.innerHTML = `
+                    <!-- 열매 꼭지(이파리) 장식 -->
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 w-3.5 h-3.5 pointer-events-none z-10">
+                        <svg viewBox="0 0 20 20" fill="#22c55e" class="w-full h-full drop-shadow">
+                            <path d="M10 0 C12 6, 18 8, 18 14 C18 18, 14 20, 10 20 C6 20, 2 18, 2 14 C2 8, 8 6, 10 0 Z"/>
+                        </svg>
+                    </div>
+
+                    <!-- 동그란 사진 열매 -->
+                    <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-1 bg-white shadow-xl shadow-black/40 ring-4 ring-amber-400/80 group-hover:ring-amber-300 transition-all overflow-hidden">
+                        <img id="fruit-img-${num}" src="${data.photo}" alt="${data.name} 작품" class="w-full h-full object-cover rounded-full pointer-events-none transition-transform duration-300 group-hover:scale-110">
+                        <!-- 반사광 하이라이트 -->
+                        <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-transparent to-white/40 pointer-events-none"></div>
+                    </div>
+
+                    <!-- 학생 이름 & 번호 라벨 -->
+                    <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-900/90 text-white text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border border-white/20 whitespace-nowrap shadow-md">
+                        <span class="text-amber-400 font-extrabold">${num}번</span>
+                        <span class="text-slate-200">${data.name}</span>
+                    </div>
+                `;
+
+                // 클릭 또는 터치 시 상세 모달 오픈
+                wrapper.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    playPopSound();
+                    openDetailModal(num);
+                });
+
+                container.appendChild(wrapper);
+
+                if (isNew) {
+                    playCelebrateChime();
+                    showToast(`🍎 ${num}번 ${data.name} 학생의 작품이 열렸어요!`);
+                    setTimeout(() => {
+                        wrapper.classList.remove('spawning');
+                        wrapper.classList.add('idle');
+                    }, 900);
+                }
+            } else {
+                // 기존 열매 업데이트
+                const img = document.getElementById(`fruit-img-${num}`);
+                if (img) img.src = data.photo;
+            }
+        }
+
+        function openDetailModal(num) {
+            const data = studentWorks[num];
+            if (!data) return;
+
+            currentDetailNum = num;
+            document.getElementById('detailBadge').innerText = `${num}번 학생`;
+            document.getElementById('detailStudentName').innerText = data.name;
+            document.getElementById('detailTitle').innerText = data.title;
+            document.getElementById('detailDesc').innerText = data.desc || "우리 반 친구의 소중한 작품입니다.";
+            document.getElementById('detailImg').src = data.photo;
+            document.getElementById('detailTime').innerText = data.timestamp || "오늘";
+            document.getElementById('likeCountText').innerText = data.likes || 0;
+
+            const modal = document.getElementById('detailModal');
+            const box = document.getElementById('detailBox');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            box.classList.remove('scale-90');
+            box.classList.add('scale-100');
+        }
+
+        function closeDetailModal() {
+            const modal = document.getElementById('detailModal');
+            const box = document.getElementById('detailBox');
+            box.classList.remove('scale-100');
+            box.classList.add('scale-90');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            currentDetailNum = null;
+        }
+
+        function toggleLikeCurrentWork() {
+            if (!currentDetailNum || !studentWorks[currentDetailNum]) return;
+            studentWorks[currentDetailNum].likes = (studentWorks[currentDetailNum].likes || 0) + 1;
+            document.getElementById('likeCountText').innerText = studentWorks[currentDetailNum].likes;
+            
+            // 귀여운 도장 애니메이션 효과
+            const icon = document.getElementById('likeIcon');
+            icon.classList.add('scale-150');
+            setTimeout(() => icon.classList.remove('scale-150'), 250);
+            playPopSound();
+            showToast(`💖 ${studentWorks[currentDetailNum].name} 학생에게 칭찬 도장을 찍었습니다!`);
+        }
+
+        function openSubmitModal() {
+            // 다음 빈 출석번호 자동 추천
+            let nextNum = 1;
+            while (studentWorks[nextNum] && nextNum <= 30) {
+                nextNum++;
+            }
+            if (nextNum > 30) nextNum = 1;
+            document.getElementById('inputNum').value = nextNum;
+            document.getElementById('inputName').value = '';
+            document.getElementById('inputTitle').value = '';
+            document.getElementById('inputDesc').value = '';
+            document.getElementById('fileChosenLabel').innerText = '내 사진 파일 첨부...';
+            selectedFileBase64 = null;
+
+            const modal = document.getElementById('submitModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeSubmitModal() {
+            const modal = document.getElementById('submitModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function handleFileSelected(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('fileChosenLabel').innerText = file.name;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                selectedFileBase64 = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function useSampleArt() {
+            // 랜덤 미술 샘플 세팅
+            const sample = sampleArtList[Math.floor(Math.random() * sampleArtList.length)];
+            selectedFileBase64 = sample.photo;
+            document.getElementById('fileChosenLabel').innerText = `[샘플 그림] ${sample.title}`;
+            if (!document.getElementById('inputTitle').value) {
+                document.getElementById('inputTitle').value = sample.title;
+            }
+            if (!document.getElementById('inputDesc').value) {
+                document.getElementById('inputDesc').value = sample.desc;
+            }
+            showToast("🎨 예시 미술 작품이 선택되었습니다.");
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const num = parseInt(document.getElementById('inputNum').value, 10);
+            const name = document.getElementById('inputName').value.trim();
+            const title = document.getElementById('inputTitle').value.trim();
+            const desc = document.getElementById('inputDesc').value.trim();
+
+            const photoUrl = selectedFileBase64 || "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&auto=format&fit=crop&q=80";
+
+            const now = new Date();
+            const timeStr = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+            const newWork = {
+                num,
+                name,
+                title,
+                desc,
+                photo: photoUrl,
+                likes: 0,
+                timestamp: `오늘 ${timeStr}`
+            };
+
+            renderFruitNode(newWork, true);
+            closeSubmitModal();
+        }
+
+        // 랜덤 발표자 추첨 기능 (스마트 전자칠판 전용 애니메이션)
+        let isPicking = false;
+        function pickRandomStudent() {
+            const keys = Object.keys(studentWorks);
+            if (keys.length === 0) {
+                showToast("⚠️ 아직 제출된 작품 열매가 없습니다.");
+                return;
+            }
+            if (isPicking) return;
+            isPicking = true;
+
+            // 모든 스포트라이트 제거
+            document.querySelectorAll('.fruit-node').forEach(el => el.classList.remove('spotlight'));
+
+            let count = 0;
+            const totalSteps = 16;
+            const intervalTime = 120;
+
+            const timer = setInterval(() => {
+                const randomKey = keys[Math.floor(Math.random() * keys.length)];
+                document.querySelectorAll('.fruit-node').forEach(el => el.classList.remove('spotlight'));
+                
+                const targetWrapper = document.getElementById(`fruit-wrapper-${randomKey}`);
+                if (targetWrapper) {
+                    targetWrapper.classList.add('spotlight');
+                    playPopSound();
+                }
+                count++;
+
+                if (count >= totalSteps) {
+                    clearInterval(timer);
+                    isPicking = false;
+                    const finalKey = keys[Math.floor(Math.random() * keys.length)];
+                    document.querySelectorAll('.fruit-node').forEach(el => el.classList.remove('spotlight'));
+                    
+                    const luckyOne = document.getElementById(`fruit-wrapper-${finalKey}`);
+                    if (luckyOne) {
+                        luckyOne.classList.add('spotlight');
+                    }
+                    playCelebrateChime();
+                    showToast(`🎉 오늘 발표자는 [${finalKey}번 ${studentWorks[finalKey].name}] 학생입니다!`);
+
+                    // 1초 뒤 해당 학생의 작품 상세를 띄워 발표 준비
+                    setTimeout(() => {
+                        openDetailModal(finalKey);
+                    }, 1200);
+                }
+            }, intervalTime);
+        }
+
+        // 모아보기 갤러리 모달
+        function openGalleryModal() {
+            const grid = document.getElementById('galleryGrid');
+            grid.innerHTML = '';
+            const works = Object.values(studentWorks);
+
+            document.getElementById('galleryCountBadge').innerText = `${works.length}작품`;
+
+            if (works.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-16 text-center text-slate-400">아직 제출된 작품이 없습니다.</div>`;
+            } else {
+                works.sort((a, b) => a.num - b.num).forEach(work => {
+                    const card = document.createElement('div');
+                    card.className = "group relative bg-slate-800/80 rounded-2xl overflow-hidden border border-slate-700 hover:border-emerald-500 transition cursor-pointer flex flex-col";
+                    card.innerHTML = `
+                        <div class="h-36 overflow-hidden bg-black/40">
+                            <img src="${work.photo}" alt="${work.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                        </div>
+                        <div class="p-3 flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between text-xs text-amber-300 font-bold mb-1">
+                                    <span>${work.num}번 ${work.name}</span>
+                                    <span>❤️ ${work.likes || 0}</span>
+                                </div>
+                                <h4 class="text-sm font-bold text-white truncate">${work.title}</h4>
+                            </div>
+                        </div>
+                    `;
+                    card.onclick = () => {
+                        closeGalleryModal();
+                        openDetailModal(work.num);
+                    };
+                    grid.appendChild(card);
+                });
+            }
+
+            document.getElementById('galleryModal').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeGalleryModal() {
+            document.getElementById('galleryModal').classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function updateCountBadge() {
+            const count = Object.keys(studentWorks).length;
+            document.getElementById('submittedCount').innerText = count;
+        }
+
+        // 사계절 테마 변경 시스템
+        const themes = {
+            summer: {
+                sky: 'from-sky-900 via-sky-800 to-emerald-950',
+                ground: '#143423',
+                leafGrad1: ['#4ade80', '#16a34a', '#14532d'],
+                leafGrad2: ['#86efac', '#22c55e', '#15803d'],
+                particleColor: 'rgba(255, 255, 255, 0.4)'
+            },
+            spring: {
+                sky: 'from-pink-950 via-sky-900 to-slate-900',
+                ground: '#2a1b24',
+                leafGrad1: ['#f472b6', '#db2777', '#831843'],
+                leafGrad2: ['#fbcfe8', '#ec4899', '#9d174d'],
+                particleColor: 'rgba(251, 207, 232, 0.6)'
+            },
+            autumn: {
+                sky: 'from-amber-950 via-orange-950 to-stone-900',
+                ground: '#2c1810',
+                leafGrad1: ['#fb923c', '#ea580c', '#7c2d12'],
+                leafGrad2: ['#fed7aa', '#f97316', '#9a3412'],
+                particleColor: 'rgba(254, 215, 170, 0.5)'
+            },
+            night: {
+                sky: 'from-indigo-950 via-slate-950 to-black',
+                ground: '#0a0f1d',
+                leafGrad1: ['#6366f1', '#4338ca', '#1e1b4b'],
+                leafGrad2: ['#a5b4fc', '#4f46e5', '#312e81'],
+                particleColor: 'rgba(250, 204, 21, 0.7)'
+            }
+        };
+
+        function setTheme(themeKey) {
+            const t = themes[themeKey];
+            if (!t) return;
+
+            document.querySelectorAll('.theme-btn').forEach(b => {
+                b.className = 'theme-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all';
+            });
+            const activeBtn = document.getElementById(`theme-${themeKey}`);
+            if (activeBtn) {
+                activeBtn.className = 'theme-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white transition-all shadow-sm';
+            }
+
+            document.getElementById('skyBackground').className = `absolute inset-0 transition-colors duration-1000 bg-gradient-to-b ${t.sky}`;
+            document.getElementById('groundPath').setAttribute('fill', t.ground);
+
+            // SVG 그라데이션 동적 교체
+            const lg1 = document.getElementById('leafGradSummer1');
+            if (lg1) {
+                lg1.children[0].setAttribute('stop-color', t.leafGrad1[0]);
+                lg1.children[1].setAttribute('stop-color', t.leafGrad1[1]);
+                lg1.children[2].setAttribute('stop-color', t.leafGrad1[2]);
+            }
+            const lg2 = document.getElementById('leafGradSummer2');
+            if (lg2) {
+                lg2.children[0].setAttribute('stop-color', t.leafGrad2[0]);
+                lg2.children[1].setAttribute('stop-color', t.leafGrad2[1]);
+                lg2.children[2].setAttribute('stop-color', t.leafGrad2[2]);
+            }
+
+            spawnParticles(t.particleColor);
+        }
+
+        // 은은하게 흩날리는 파티클 생성
+        function spawnParticles(color) {
+            const container = document.getElementById('ambientParticles');
+            container.innerHTML = '';
+            for (let i = 0; i < 24; i++) {
+                const p = document.createElement('div');
+                const size = Math.random() * 6 + 4;
+                p.style.position = 'absolute';
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.borderRadius = '50%';
+                p.style.backgroundColor = color;
+                p.style.left = `${Math.random() * 100}%`;
+                p.style.top = `${Math.random() * 100}%`;
+                p.style.filter = 'blur(1px)';
+                p.style.opacity = Math.random() * 0.7 + 0.3;
+                p.style.animation = `gentleSway ${Math.random() * 3 + 3}s ease-in-out infinite alternate`;
+                container.appendChild(p);
+            }
+        }
+
+        // 토스트 알림창
+        let toastTimeout = null;
+        function showToast(msg, icon = '✨') {
+            const toast = document.getElementById('toastBox');
+            document.getElementById('toastMessage').innerText = msg;
+            document.getElementById('toastIcon').innerText = icon;
+
+            toast.classList.remove('translate-y-10', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-10', 'opacity-0');
+            }, 3000);
+        }
+
+        // 전체화면 토글
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.warn(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        window.onload = function() {
+            // 초기 데모 데이터 열매 순차적 팝업 렌더링
+            sampleArtList.forEach((item, index) => {
+                setTimeout(() => {
+                    renderFruitNode(item, false);
+                }, index * 120);
+            });
+
+            // 기본 파티클 생성
+            spawnParticles('rgba(255, 255, 255, 0.4)');
+
+            // 모달 바깥 터치 시 닫기
+            window.addEventListener('click', (e) => {
+                if (e.target === document.getElementById('detailModal')) closeDetailModal();
+                if (e.target === document.getElementById('submitModal')) closeSubmitModal();
+                if (e.target === document.getElementById('galleryModal')) closeGalleryModal();
+            });
+        };
+    </script>
+</body>
+</html>
