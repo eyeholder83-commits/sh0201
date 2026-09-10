@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>전자칠판 작품 나무</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1a2a3a; }
+        #treeContainer { position: relative; width: 100vw; height: 100vh; }
+        .tree-bg { position: absolute; width: 100%; height: 100%; object-fit: contain; }
+        
+        .fruit {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            object-fit: cover;
+            transform: scale(0);
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .fruit.active { transform: scale(1); }
+        .fruit-label {
+            position: absolute;
+            bottom: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.75);
+            color: white;
+            font-size: 13px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="treeContainer"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBdzd9kGRolGA1w8zklc2zoUKMR5IKoVB8",
+            authDomain: "tree-6aac6.firebaseapp.com",
+            databaseURL: "https://tree-6aac6-default-rtdb.firebaseio.com",
+            projectId: "tree-6aac6",
+            storageBucket: "tree-6aac6.firebasestorage.app",
+            messagingSenderId: "329257160746",
+            appId: "1:329257160746:web:5679a08b4d5649cdb0f353"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // 번호별 미리 지정된 나무 가지 좌표 (x: %, y: %)
+        const positions = {
+            1: { x: 30, y: 25 },  2: { x: 45, y: 20 },  3: { x: 60, y: 22 },
+            4: { x: 25, y: 35 },  5: { x: 40, y: 32 },  6: { x: 55, y: 33 },
+            7: { x: 70, y: 38 },  8: { x: 20, y: 50 },  9: { x: 35, y: 45 },
+            10: { x: 50, y: 48 }, 11: { x: 65, y: 46 }, 12: { x: 78, y: 52 },
+            13: { x: 28, y: 62 }, 14: { x: 42, y: 60 }, 15: { x: 58, y: 61 }
+        };
+
+        const container = document.getElementById('treeContainer');
+
+        database.ref('tree').on('child_added', snapshot => {
+            const studentNum = snapshot.key;
+            const data = snapshot.val();
+            if (positions[studentNum]) displayFruit(studentNum, data.photo);
+        });
+
+        database.ref('tree').on('child_changed', snapshot => {
+            const studentNum = snapshot.key;
+            const data = snapshot.val();
+            if (positions[studentNum]) displayFruit(studentNum, data.photo);
+        });
+
+        function displayFruit(num, photoData) {
+            let fruitImg = document.getElementById(`fruit-${num}`);
+            
+            if (!fruitImg) {
+                const fruitWrapper = document.createElement('div');
+                fruitWrapper.style.position = 'absolute';
+                fruitWrapper.style.left = positions[num].x + '%';
+                fruitWrapper.style.top = positions[num].y + '%';
+
+                fruitImg = document.createElement('img');
+                fruitImg.id = `fruit-${num}`;
+                fruitImg.className = 'fruit';
+
+                const label = document.createElement('span');
+                label.className = 'fruit-label';
+                label.innerText = `${num}번`;
+
+                fruitWrapper.appendChild(fruitImg);
+                fruitWrapper.appendChild(label);
+                container.appendChild(fruitWrapper);
+            }
+
+            fruitImg.src = photoData;
+            setTimeout(() => { fruitImg.classList.add('active'); }, 100);
+        }
+    </script>
+</body>
+</html>
