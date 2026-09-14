@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>키워드 칭찬 판</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti for celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap');
+    * {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .tile-card {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      touch-action: manipulation;
+    }
+    .tile-card:hover {
+      transform: translateY(-2px);
+    }
+    .tile-card:active {
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 via-emerald-50/40 to-slate-200 min-h-screen text-slate-800 flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
+
+  <!-- 헤더 영역 -->
+  <header class="w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-xs sticky top-0 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-black text-xl shadow-md shadow-emerald-500/25" id="headerGridBadge">
+        3
+      </div>
+      <div>
+        <h1 class="text-base sm:text-lg font-black tracking-tight text-slate-800 flex items-center gap-2">
+          <span id="headerTitle">3×3 키워드 칭찬 판</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full">키워드 활동</span>
+        </h1>
+        <p class="text-[11px] text-slate-500">타일을 열어 키워드를 확인하고 성공하여 칭찬 스탬프를 모아보세요!</p>
+      </div>
+    </div>
+
+    <!-- 우측 상단 교사 모드 및 사운드 버튼 -->
+    <div class="flex items-center gap-2">
+      <button id="btnSoundToggle" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold border border-slate-200 transition flex items-center gap-1">
+        <span id="soundIcon">🔊</span>
+      </button>
+      <button id="btnOpenTeacherAuth" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-sm transition flex items-center gap-1.5">
+        <span>🔐</span> 교사 모드
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 w-full max-w-6xl mx-auto p-3 sm:p-6 flex flex-col lg:flex-row gap-5 items-start justify-center">
+
+    <!-- 좌측 칭찬 현황 패널 (색상별 칭찬 성공 현황 유지) -->
+    <aside class="w-full lg:w-72 flex flex-col gap-4 order-2 lg:order-1">
+      <div class="bg-white/95 backdrop-blur-sm border border-slate-200/90 shadow-md rounded-3xl p-4 sm:p-5 flex flex-col gap-4">
+        <div class="flex items-center justify-between pb-1 border-b border-slate-100">
+          <h2 class="font-extrabold text-sm text-slate-700 flex items-center gap-1.5">
+            <span>🌟</span> 칭찬 현황
+          </h2>
+          <span id="bingoAlertBadge" class="hidden text-[10px] font-black px-2 py-0.5 bg-amber-100 text-amber-700 border border-amber-300 rounded-full animate-pulse">
+            🎉 줄 완성!
+          </span>
+        </div>
+
+        <!-- 빨강 / 파랑 칭찬 성공 스코어 카드 -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="bg-gradient-to-br from-rose-500 to-rose-600 rounded-2xl p-3 text-white text-center shadow-md shadow-rose-500/20">
+            <span class="text-[11px] font-bold text-rose-100 flex items-center justify-center gap-1">🔴 빨강 칭찬</span>
+            <div class="text-3xl font-black my-0.5" id="scoreRed">0</div>
+            <span id="bingoRed" class="text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-full">0줄 완성</span>
+          </div>
+
+          <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-3 text-white text-center shadow-md shadow-blue-500/20">
+            <span class="text-[11px] font-bold text-blue-100 flex items-center justify-center gap-1">🔵 파랑 칭찬</span>
+            <div class="text-3xl font-black my-0.5" id="scoreBlue">0</div>
+            <span id="bingoBlue" class="text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-full">0줄 완성</span>
+          </div>
+        </div>
+
+        <!-- 진행률 프로그레스 바 -->
+        <div class="flex flex-col gap-1.5">
+          <div class="flex justify-between text-[11px] font-bold text-slate-500">
+            <span>전체 진행률</span>
+            <span id="progressRateText">0%</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex">
+            <div id="progressBarRed" class="bg-rose-500 h-full transition-all duration-300" style="width: 0%"></div>
+            <div id="progressBarBlue" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
+            <div id="progressBarDraw" class="bg-slate-800 h-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- 상태 카운트 통계 -->
+        <div class="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs text-slate-600 font-semibold px-1">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-800 inline-block"></span>
+            <span>무승부:</span>
+            <span id="statDrawCount" class="font-black text-slate-900">0</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block"></span>
+            <span>대기:</span>
+            <span id="statNeutralCount" class="font-black text-slate-700">9</span>
+          </div>
+        </div>
+
+        <!-- 버튼 제어 영역 (랜덤 / 공백 / 초기화) -->
+        <div class="flex flex-col gap-1.5 mt-1">
+          <div class="grid grid-cols-2 gap-1.5">
+            <button id="btnQuickRandomKeywords" class="py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition flex items-center justify-center gap-1 shadow-xs">
+              <span>🎲</span> 단어 랜덤 배치
+            </button>
+            <button id="btnQuickBlankBoard" class="py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold transition flex items-center justify-center gap-1 shadow-xs">
+              <span>⬜</span> 공백 판
+            </button>
+          </div>
+          <button id="btnQuickResetBoard" class="w-full py-2 rounded-xl bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-500 border border-slate-200 text-xs font-bold transition flex items-center justify-center gap-1">
+            <span>🔄</span> 판 전체 초기화
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 우측 N x N 격자 보드 영역 -->
+    <section class="flex-1 w-full max-w-2xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-md rounded-3xl p-3.5 sm:p-6 flex flex-col items-center order-1 lg:order-2">
+      
+      <!-- 열 가이드 번호 -->
+      <div id="columnHeaderGrid" class="w-full grid gap-2 sm:gap-3 text-center mb-1.5 text-[11px] font-black text-slate-400">
+        <!-- Javascript dynamic rendering -->
+      </div>
+
+      <!-- 타일 그리드 컨테이너 -->
+      <div id="boardGrid" class="w-full grid gap-2 sm:gap-3.5 aspect-square">
+        <!-- Javascript dynamic rendering -->
+      </div>
+    </section>
+  </main>
+
+  <!-- 푸터 -->
+  <footer class="w-full text-center py-3 text-[11px] text-slate-400 border-t border-slate-200/60 bg-white/50">
+    키워드 칭찬 판 • 함께 성공을 만들어가는 키워드 활동
+  </footer>
+
+  <!-- 1. 칭찬 성공 모달창 -->
+  <div id="battleModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white border border-slate-200 rounded-3xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-4 animate-in fade-in zoom-in duration-150">
+      
+      <!-- 모달 상단 정보 & 닫기 -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1.5 text-xs font-bold text-slate-500">
+          <span id="modalPosBadge" class="bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">위치: 1행 1열</span>
+          <span id="modalStatusBadge" class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-100">현재: 대기</span>
+        </div>
+        <button id="btnCloseBattleModal" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold flex items-center justify-center transition">
+          ✕
+        </button>
+      </div>
+
+      <!-- 선택된 키워드 표시 박스 -->
+      <div class="bg-slate-50/90 border border-slate-200/80 rounded-2xl p-6 text-center shadow-inner flex flex-col items-center justify-center gap-1">
+        <span class="text-[11px] font-bold text-slate-400">선택된 키워드</span>
+        <h3 id="modalKeywordText" class="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight break-keep leading-tight">
+          키워드
+        </h3>
+      </div>
+
+      <!-- 타이머 제어 박스 -->
+      <div class="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 flex items-center justify-between shadow-xs">
+        <div class="flex flex-col">
+          <span class="text-[11px] font-extrabold text-amber-800 flex items-center gap-1">
+            ⏱️ 타이머 <span id="modalTimerStatusText" class="text-[10px] text-amber-600 font-semibold">(진행 중...)</span>
+          </span>
+          <span id="modalTimerDigits" class="text-3xl sm:text-4xl font-black text-amber-600 tracking-tight font-mono">
+            00:10
+          </span>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <button id="btnModalTimerToggle" class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs shadow-sm transition">
+            일시정지
+          </button>
+          <button id="btnModalTimerReset" class="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 font-bold text-xs transition">
+            리셋
+          </button>
+        </div>
+      </div>
+
+      <!-- 결과 선택 안내 -->
+      <div class="text-center pt-1">
+        <span class="text-xs font-bold text-slate-500">활동 결과를 선택하세요</span>
+      </div>
+
+      <!-- 색상별 칭찬 성공 및 무승부 버튼 3종 -->
+      <div class="grid grid-cols-3 gap-2">
+        <button id="btnRedSuccess" class="bg-gradient-to-br from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white rounded-2xl py-3 px-2 flex flex-col items-center justify-center gap-0.5 shadow-md shadow-rose-500/25 transition active:scale-95">
+          <span class="text-base">🔴</span>
+          <span class="text-xs font-black">빨강 칭찬</span>
+          <span class="text-[10px] font-semibold opacity-85">성공</span>
+        </button>
+
+        <button id="btnBlueSuccess" class="bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-2xl py-3 px-2 flex flex-col items-center justify-center gap-0.5 shadow-md shadow-blue-500/25 transition active:scale-95">
+          <span class="text-base">🔵</span>
+          <span class="text-xs font-black">파랑 칭찬</span>
+          <span class="text-[10px] font-semibold opacity-85">성공</span>
+        </button>
+
+        <button id="btnDraw" class="bg-gradient-to-br from-slate-800 to-slate-950 hover:from-slate-900 hover:to-black text-white rounded-2xl py-3 px-2 flex flex-col items-center justify-center gap-0.5 shadow-md shadow-slate-900/25 transition active:scale-95">
+          <span class="text-base">⚫</span>
+          <span class="text-xs font-black">무승부</span>
+          <span class="text-[10px] font-semibold opacity-85">검정 표시</span>
+        </button>
+      </div>
+
+      <!-- 선택 취소 (대기 상태로 되돌리기) -->
+      <div class="text-center pt-1">
+        <button id="btnCancelClaim" class="text-xs font-bold text-slate-400 hover:text-slate-600 underline">
+          선택 취소 (대기 상태로 되돌리기)
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 2. 교사 모드 비밀번호 모달 (5658) -->
+  <div id="teacherAuthModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white border border-slate-200 rounded-3xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4">
+      <div class="text-center">
+        <div class="w-12 h-12 bg-indigo-100 text-indigo-700 rounded-2xl mx-auto flex items-center justify-center text-xl font-black mb-2">
+          🔐
+        </div>
+        <h3 class="text-base font-extrabold text-slate-800">교사 전용 인증</h3>
+        <p class="text-xs text-slate-500 mt-0.5">교사 비밀번호를 입력해주세요.</p>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <input type="password" id="inputTeacherPassword" maxlength="10" placeholder="비밀번호 입력"
+               class="w-full text-center tracking-widest text-lg font-black py-2.5 px-4 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white" />
+        <p id="teacherPasswordError" class="text-[11px] text-rose-500 font-bold text-center hidden">비밀번호가 일치하지 않습니다.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btnCloseTeacherAuth" class="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition">
+          닫기
+        </button>
+        <button id="btnSubmitTeacherPassword" class="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md shadow-indigo-600/25 transition">
+          확인
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 교사 관리 센터 모달 (격자 크기 2x2~6x6, 시간, 단어 관리) -->
+  <div id="teacherSettingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden overflow-y-auto">
+    <div class="bg-white border border-slate-200 rounded-3xl shadow-2xl w-full max-w-lg p-5 sm:p-6 flex flex-col gap-4 my-6 max-h-[90vh] overflow-y-auto">
+      
+      <!-- 상단 헤더 -->
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="font-extrabold text-lg text-indigo-950 flex items-center gap-2">
+            <span>⚙️</span> 교사 관리 센터
+          </h3>
+          <p class="text-xs text-slate-500">격자 크기, 시간, 단어 세트를 자유롭게 설정합니다.</p>
+        </div>
+        <button id="btnCloseTeacherSettings" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold flex items-center justify-center">
+          ✕
+        </button>
+      </div>
+
+      <!-- 1. 격자 크기 선택기 (2x2, 3x3 기본, 4x4, 5x5, 6x6) -->
+      <div class="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-4 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-black text-indigo-950">📐 격자 크기 선택 (기본: 3×3)</span>
+          <span id="gridSizeInfoBadge" class="text-[11px] font-bold text-indigo-700 bg-white px-2.5 py-0.5 rounded-full border border-indigo-200 shadow-xs">
+            현재 3×3 (총 9칸)
+          </span>
+        </div>
+        <div class="grid grid-cols-5 gap-1.5" id="gridSizeButtonGroup">
+          <button type="button" class="btn-grid-size py-2 rounded-xl text-xs font-bold border transition text-center bg-white hover:bg-slate-100 text-slate-700 border-slate-200" data-size="2">2×2</button>
+          <button type="button" class="btn-grid-size py-2 rounded-xl text-xs font-bold border transition text-center bg-indigo-600 text-white border-indigo-600 shadow-xs" data-size="3">3×3 (기본)</button>
+          <button type="button" class="btn-grid-size py-2 rounded-xl text-xs font-bold border transition text-center bg-white hover:bg-slate-100 text-slate-700 border-slate-200" data-size="4">4×4</button>
+          <button type="button" class="btn-grid-size py-2 rounded-xl text-xs font-bold border transition text-center bg-white hover:bg-slate-100 text-slate-700 border-slate-200" data-size="5">5×5</button>
+          <button type="button" class="btn-grid-size py-2 rounded-xl text-xs font-bold border transition text-center bg-white hover:bg-slate-100 text-slate-700 border-slate-200" data-size="6">6×6</button>
+        </div>
+      </div>
+
+      <!-- 2. 타이머 시간 설정 -->
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col gap-3">
+        <span class="text-xs font-extrabold text-slate-700">⏱️ 시간 설정</span>
+        <div class="flex items-center gap-2">
+          <input type="number" id="inputCustomTime" min="5" max="300" value="10"
+                 class="w-24 px-3 py-1.5 text-xs font-bold border border-slate-300 rounded-xl text-center focus:ring-2 focus:ring-indigo-500" />
+          <span class="text-xs text-slate-600 font-semibold">초 (5초 ~ 300초)</span>
+          <button id="btnApplyCustomTime" class="ml-auto px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition">
+            시간 적용
+          </button>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer pt-1 text-xs text-slate-600 font-medium">
+          <input type="checkbox" id="toggleAutoTimer" checked class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" />
+          <span>타일 클릭 시 타이머 자동 카운트다운 시작</span>
+        </label>
+      </div>
+
+      <!-- 3. 판 노출 방식 설정 -->
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col gap-2.5">
+        <span class="text-xs font-extrabold text-slate-700">📋 판 운영 설정</span>
+        <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-600 font-medium">
+          <input type="checkbox" id="toggleRevealAll" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" />
+          <span>처음부터 키워드 모두 공개하기 (체크 해제 시 물음표로 숨김)</span>
+        </label>
+      </div>
+
+      <!-- 4. 키워드 편집 관리 -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-extrabold text-slate-700" id="keywordEditTitleLabel">📝 키워드 단어 세트 편집</span>
+          <span id="keywordCountPreview" class="text-xs font-black text-indigo-600">9 / 9 단어</span>
+        </div>
+
+        <!-- 단어 프리셋 -->
+        <div class="flex flex-wrap gap-1.5">
+          <button class="btn-preset-words px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-lg text-xs font-bold" data-preset="praise">기본 칭찬단어(20개)</button>
+          <button class="btn-preset-words px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold" data-preset="science">과학/생물</button>
+          <button class="btn-preset-words px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold" data-preset="history">역사/사회</button>
+          <button class="btn-preset-words px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold" data-preset="idioms">사자성어</button>
+        </div>
+
+        <textarea id="textareaKeywords" rows="3" 
+                  class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono leading-relaxed"
+                  placeholder="쉼표(,)나 줄바꿈으로 구분된 키워드를 입력하세요."></textarea>
+
+        <div class="flex items-center justify-between pt-1">
+          <button id="btnShuffleKeywords" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+            🔀 단어 섞기
+          </button>
+          <button id="btnApplyKeywords" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold shadow-sm transition">
+            단어 세트 적용
+          </button>
+        </div>
+      </div>
+
+      <!-- 하단 교사 모드 나가기 -->
+      <div class="pt-2 flex justify-end">
+        <button id="btnLogoutTeacher" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition">
+          교사 모드 종료 (잠금)
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 토스트 알림 메시지 바 -->
+  <div id="toastMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900/90 backdrop-blur-sm text-white text-xs font-bold rounded-full shadow-lg transition-all duration-300 pointer-events-none opacity-0 translate-y-2 z-50">
+    알림 내용
+  </div>
+
+  <script>
+    const PRESET_KEYWORDS = {
+      praise: [
+        "성격", "친구 사이", "공부", "노력", "운동", 
+        "잘하는 것", "맡은 일", "예의", "말하기", "발표", 
+        "글씨", "그림", "노래", "춤", "만들기", 
+        "정리", "인사", "도와주기", "약속", "용기"
+      ],
+      science: [
+        "광합성", "DNA", "미토콘드리아", "원소기호", "빅뱅이론",
+        "중력가속도", "뉴턴법칙", "온실효과", "판구조론", "신경세포",
+        "자연선택설", "주기율표", "엔트로피", "도플러효과", "산화환원",
+        "지진파", "오존층", "소화효소", "전자기파", "줄기세포"
+      ],
+      history: [
+        "고조선", "삼국통일", "훈민정음", "임진왜란", "동학농민운동",
+        "3·1운동", "대한민국임시정부", "광복절", "6·25전쟁", "한강의기적",
+        "세계인권선언", "프랑스혁명", "산업혁명", "문예부흥", "비단길"
+      ],
+      idioms: [
+        "일석이조", "고진감래", "과유불급", "역지사지", "동문서답",
+        "새옹지마", "유비무환", "대기만성", "설상가상", "이심전심",
+        "구사일생", "천고마비", "온고지신", "호가호위", "다다익선"
+      ]
+    };
+
+    const TEACHER_PASSWORD = "5658";
+    let isTeacherAuthenticated = false;
+
+    // 기본 격자 크기: 3 (3x3, 총 9칸)
+    let gridSize = 3;
+    function getTotalTiles() {
+      return gridSize * gridSize;
+    }
+
+    let autoStartTimerOnTile = true;
+    let alwaysRevealKeywords = false;
+
+    // 전체 마스터 단어 풀 (기본 칭찬 단어 20개)
+    let masterKeywordPool = [...PRESET_KEYWORDS.praise];
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // 기본 단어풀에서 9개를 무작위 추출하여 초기 세팅
+    let currentKeywords = shuffleArray(masterKeywordPool).slice(0, getTotalTiles());
+    let tileStates = Array(getTotalTiles()).fill('neutral');
+    let revealedTiles = Array(getTotalTiles()).fill(false);
+    let selectedTileIndex = null;
+
+    // 기본 타이머: 10초
+    let timerInitial = 10;
+    let timerRemaining = 10;
+    let timerInterval = null;
+    let isTimerRunning = false;
+    let soundEnabled = true;
+
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === 'click') {
+          osc.frequency.setValueAtTime(440, now);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'praise') {
+          // 따뜻하고 기분 좋은 칭찬 상승음
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(880.00, now + 0.25);
+          gain.gain.setValueAtTime(0.14, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+          osc.start(now);
+          osc.stop(now + 0.32);
+        } else if (type === 'bingo') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.connect(g);
+            g.connect(ctx.destination);
+            o.frequency.setValueAtTime(freq, now + i * 0.09);
+            g.gain.setValueAtTime(0.12, now + i * 0.09);
+            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.25);
+            o.start(now + i * 0.09);
+            o.stop(now + i * 0.09 + 0.25);
+          });
+        } else if (type === 'tick') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(800, now);
+          gain.gain.setValueAtTime(0.03, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+          osc.start(now);
+          osc.stop(now + 0.03);
+        }
+      } catch(e) {
+        // Audio fallback handling
+      }
+    }
+
+    const boardGrid = document.getElementById('boardGrid');
+    const columnHeaderGrid = document.getElementById('columnHeaderGrid');
+    const headerTitle = document.getElementById('headerTitle');
+    const headerGridBadge = document.getElementById('headerGridBadge');
+
+    function renderBoard() {
+      const totalTiles = getTotalTiles();
+
+      if (headerTitle) headerTitle.textContent = `${gridSize}×${gridSize} 키워드 칭찬 판`;
+      if (headerGridBadge) headerGridBadge.textContent = gridSize;
+
+      boardGrid.style.gridTemplateColumns = `repeat(${gridSize}, minmax(0, 1fr))`;
+      boardGrid.innerHTML = '';
+
+      if (columnHeaderGrid) {
+        columnHeaderGrid.style.gridTemplateColumns = `repeat(${gridSize}, minmax(0, 1fr))`;
+        columnHeaderGrid.innerHTML = '';
+        for (let c = 1; c <= gridSize; c++) {
+          const colDiv = document.createElement('div');
+          colDiv.textContent = `열 ${c}`;
+          columnHeaderGrid.appendChild(colDiv);
+        }
+      }
+
+      for (let i = 0; i < totalTiles; i++) {
+        const row = Math.floor(i / gridSize) + 1;
+        const col = (i % gridSize) + 1;
+        const state = tileStates[i];
+        const isRevealed = alwaysRevealKeywords || revealedTiles[i];
+        const keyword = currentKeywords[i] || `단어 #${i+1}`;
+
+        const cell = document.createElement('button');
+        cell.className = 'tile-card relative flex flex-col items-center justify-between p-1.5 sm:p-2.5 rounded-2xl shadow-xs border transition-all duration-200 cursor-pointer overflow-hidden focus:outline-none';
+
+        if (state === 'neutral') {
+          cell.classList.add('bg-white/95', 'hover:bg-slate-50', 'border-slate-200', 'text-slate-800');
+        } else if (state === 'red') {
+          cell.classList.add('bg-gradient-to-br', 'from-rose-500', 'to-rose-600', 'border-rose-300', 'text-white', 'shadow-md', 'shadow-rose-500/25');
+        } else if (state === 'blue') {
+          cell.classList.add('bg-gradient-to-br', 'from-blue-500', 'to-indigo-600', 'border-blue-300', 'text-white', 'shadow-md', 'shadow-blue-500/25');
+        } else if (state === 'draw') {
+          cell.classList.add('bg-gradient-to-br', 'from-slate-800', 'to-slate-950', 'border-slate-700', 'text-white', 'shadow-md', 'shadow-slate-900/25');
+        }
+
+        const topDiv = document.createElement('div');
+        topDiv.className = 'w-full flex items-center justify-between text-[10px] font-bold opacity-70 pointer-events-none';
+        topDiv.innerHTML = `<span>#${i+1}</span><span>${row}-${col}</span>`;
+        cell.appendChild(topDiv);
+
+        const centerDiv = document.createElement('div');
+        centerDiv.className = 'flex-1 w-full flex items-center justify-center text-center px-0.5 py-1 pointer-events-none';
+
+        const textSizeClass = gridSize <= 3 ? 'text-base sm:text-xl' : (gridSize === 4 ? 'text-xs sm:text-base' : 'text-[11px] sm:text-sm');
+
+        if (isRevealed) {
+          if (keyword.trim() === '') {
+            centerDiv.innerHTML = `<span class="font-normal text-slate-300 text-xs italic">(공백)</span>`;
+          } else {
+            centerDiv.innerHTML = `<span class="font-black ${textSizeClass} leading-tight break-keep line-clamp-2">${keyword}</span>`;
+          }
+        } else {
+          centerDiv.innerHTML = `<span class="text-2xl sm:text-3xl font-black text-slate-300 select-none">?</span>`;
+        }
+        cell.appendChild(centerDiv);
+
+        const botDiv = document.createElement('div');
+        botDiv.className = 'w-full text-center text-[10px] font-semibold opacity-90 pointer-events-none flex items-center justify-center gap-1';
+        if (state === 'neutral') {
+          botDiv.textContent = '대기';
+        } else if (state === 'red') {
+          botDiv.innerHTML = `<span>🔴 칭찬 성공</span>`;
+        } else if (state === 'blue') {
+          botDiv.innerHTML = `<span>🔵 칭찬 성공</span>`;
+        } else if (state === 'draw') {
+          botDiv.innerHTML = `<span>⚫ 무승부</span>`;
+        }
+        cell.appendChild(botDiv);
+
+        cell.addEventListener('click', () => {
+          openBattleModal(i);
+        });
+
+        boardGrid.appendChild(cell);
+      }
+
+      updateScoreboardAndBingos();
+    }
+
+    function calculateColorBingos(color) {
+      let count = 0;
+      // 가로 검사
+      for (let r = 0; r < gridSize; r++) {
+        let line = true;
+        for (let c = 0; c < gridSize; c++) {
+          if (tileStates[r * gridSize + c] !== color) { line = false; break; }
+        }
+        if (line) count++;
+      }
+      // 세로 검사
+      for (let c = 0; c < gridSize; c++) {
+        let line = true;
+        for (let r = 0; r < gridSize; r++) {
+          if (tileStates[r * gridSize + c] !== color) { line = false; break; }
+        }
+        if (line) count++;
+      }
+      // 대각선 검사
+      let d1 = true, d2 = true;
+      for (let i = 0; i < gridSize; i++) {
+        if (tileStates[i * gridSize + i] !== color) d1 = false;
+        if (tileStates[i * gridSize + (gridSize - 1 - i)] !== color) d2 = false;
+      }
+      if (d1) count++;
+      if (d2) count++;
+      return count;
+    }
+
+    let prevTotalBingos = 0;
+
+    function updateScoreboardAndBingos() {
+      const totalTiles = getTotalTiles();
+      let redCount = 0;
+      let blueCount = 0;
+      let drawCount = 0;
+
+      tileStates.forEach(st => {
+        if (st === 'red') redCount++;
+        else if (st === 'blue') blueCount++;
+        else if (st === 'draw') drawCount++;
+      });
+      const neutralCount = totalTiles - (redCount + blueCount + drawCount);
+
+      document.getElementById('scoreRed').textContent = redCount;
+      document.getElementById('scoreBlue').textContent = blueCount;
+      document.getElementById('statDrawCount').textContent = drawCount;
+      document.getElementById('statNeutralCount').textContent = neutralCount;
+
+      const completed = redCount + blueCount + drawCount;
+      const rate = Math.round((completed / totalTiles) * 100);
+      document.getElementById('progressRateText').textContent = `${rate}%`;
+
+      document.getElementById('progressBarRed').style.width = `${(redCount / totalTiles) * 100}%`;
+      document.getElementById('progressBarBlue').style.width = `${(blueCount / totalTiles) * 100}%`;
+      document.getElementById('progressBarDraw').style.width = `${(drawCount / totalTiles) * 100}%`;
+
+      const redBingos = calculateColorBingos('red');
+      const blueBingos = calculateColorBingos('blue');
+      document.getElementById('bingoRed').textContent = `${redBingos}줄 완성`;
+      document.getElementById('bingoBlue').textContent = `${blueBingos}줄 완성`;
+
+      const totalBingos = redBingos + blueBingos;
+      const bingoBadge = document.getElementById('bingoAlertBadge');
+      if (totalBingos > prevTotalBingos) {
+        bingoBadge.classList.remove('hidden');
+        playSound('bingo');
+        fireConfetti();
+        showToast(`🎉 ${gridSize}칸 연속 완성으로 줄을 완성했습니다! 멋져요!`);
+      }
+      prevTotalBingos = totalBingos;
+    }
+
+    function fireConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 80,
+          spread: 75,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function updateTimerUI() {
+      const digits = document.getElementById('modalTimerDigits');
+      const statusText = document.getElementById('modalTimerStatusText');
+      const toggleBtn = document.getElementById('btnModalTimerToggle');
+
+      if (digits) {
+        digits.textContent = formatTime(timerRemaining);
+        if (timerRemaining <= 5 && timerRemaining > 0 && isTimerRunning) {
+          digits.className = 'text-3xl sm:text-4xl font-black text-rose-600 tracking-tight font-mono animate-pulse';
+        } else {
+          digits.className = 'text-3xl sm:text-4xl font-black text-amber-600 tracking-tight font-mono';
+        }
+      }
+
+      if (statusText) {
+        statusText.textContent = isTimerRunning ? '(진행 중...)' : (timerRemaining === 0 ? '(시간 종료)' : '(일시정지)');
+      }
+
+      if (toggleBtn) {
+        toggleBtn.textContent = isTimerRunning ? '일시정지' : '시작';
+        toggleBtn.className = isTimerRunning 
+          ? 'px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs shadow-sm transition'
+          : 'px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-sm transition';
+      }
+    }
+
+    function startTimer() {
+      if (isTimerRunning) return;
+      isTimerRunning = true;
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (timerRemaining > 0) {
+          timerRemaining--;
+          if (timerRemaining <= 5 && timerRemaining > 0) {
+            playSound('tick');
+          }
+          updateTimerUI();
+        } else {
+          pauseTimer();
+          showToast("⏳ 제한 시간이 종료되었습니다!");
+        }
+      }, 1000);
+      updateTimerUI();
+    }
+
+    function pauseTimer() {
+      isTimerRunning = false;
+      clearInterval(timerInterval);
+      updateTimerUI();
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      timerRemaining = timerInitial;
+      updateTimerUI();
+    }
+
+    function startTimerFresh() {
+      pauseTimer();
+      timerRemaining = timerInitial;
+      startTimer();
+    }
+
+    const battleModal = document.getElementById('battleModal');
+    const modalKeywordText = document.getElementById('modalKeywordText');
+    const modalPosBadge = document.getElementById('modalPosBadge');
+    const modalStatusBadge = document.getElementById('modalStatusBadge');
+    const btnCloseBattleModal = document.getElementById('btnCloseBattleModal');
+
+    function openBattleModal(index) {
+      selectedTileIndex = index;
+      revealedTiles[index] = true;
+      
+      const row = Math.floor(index / gridSize) + 1;
+      const col = (index % gridSize) + 1;
+      const keyword = currentKeywords[index] || '';
+      const state = tileStates[index];
+
+      modalPosBadge.textContent = `위치: ${row}행 ${col}열 (칸 #${index + 1})`;
+      modalKeywordText.textContent = keyword.trim() === '' ? '(공백 칸)' : keyword;
+
+      if (state === 'neutral') {
+        modalStatusBadge.textContent = '현재: 대기';
+        modalStatusBadge.className = 'bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full border border-slate-200';
+      } else if (state === 'red') {
+        modalStatusBadge.textContent = '현재: 🔴 빨강 칭찬 성공';
+        modalStatusBadge.className = 'bg-rose-100 text-rose-800 px-2.5 py-1 rounded-full border border-rose-200';
+      } else if (state === 'blue') {
+        modalStatusBadge.textContent = '현재: 🔵 파랑 칭찬 성공';
+        modalStatusBadge.className = 'bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full border border-blue-200';
+      } else if (state === 'draw') {
+        modalStatusBadge.textContent = '현재: ⚫ 무승부';
+        modalStatusBadge.className = 'bg-slate-800 text-white px-2.5 py-1 rounded-full border border-slate-700';
+      }
+
+      battleModal.classList.remove('hidden');
+      playSound('click');
+
+      if (autoStartTimerOnTile) {
+        startTimerFresh();
+      } else {
+        resetTimer();
+      }
+
+      renderBoard();
+    }
+
+    function closeBattleModal() {
+      battleModal.classList.add('hidden');
+      selectedTileIndex = null;
+      pauseTimer();
+    }
+
+    function applyTileResult(state, soundType, msg) {
+      if (selectedTileIndex === null) return;
+      tileStates[selectedTileIndex] = state;
+      playSound(soundType);
+      showToast(msg);
+      closeBattleModal();
+      renderBoard();
+    }
+
+    btnCloseBattleModal.addEventListener('click', closeBattleModal);
+
+    document.getElementById('btnRedSuccess').addEventListener('click', () => {
+      applyTileResult('red', 'praise', `🔴 칸 #${selectedTileIndex + 1} 빨강 칭찬 성공을 달성했습니다!`);
+    });
+
+    document.getElementById('btnBlueSuccess').addEventListener('click', () => {
+      applyTileResult('blue', 'praise', `🔵 칸 #${selectedTileIndex + 1} 파랑 칭찬 성공을 달성했습니다!`);
+    });
+
+    document.getElementById('btnDraw').addEventListener('click', () => {
+      applyTileResult('draw', 'click', `⚫ 칸 #${selectedTileIndex + 1} 무승부로 표시되었습니다.`);
+    });
+
+    document.getElementById('btnCancelClaim').addEventListener('click', () => {
+      applyTileResult('neutral', 'click', `칸 #${selectedTileIndex + 1}이(가) 대기 상태로 변경되었습니다.`);
+    });
+
+    document.getElementById('btnModalTimerToggle').addEventListener('click', () => {
+      if (isTimerRunning) pauseTimer();
+      else startTimer();
+    });
+
+    document.getElementById('btnModalTimerReset').addEventListener('click', resetTimer);
+
+    battleModal.addEventListener('click', (e) => {
+      if (e.target === battleModal) closeBattleModal();
+    });
+
+    const btnOpenTeacherAuth = document.getElementById('btnOpenTeacherAuth');
+    const teacherAuthModal = document.getElementById('teacherAuthModal');
+    const btnCloseTeacherAuth = document.getElementById('btnCloseTeacherAuth');
+    const btnSubmitTeacherPassword = document.getElementById('btnSubmitTeacherPassword');
+    const inputTeacherPassword = document.getElementById('inputTeacherPassword');
+    const teacherPasswordError = document.getElementById('teacherPasswordError');
+
+    const teacherSettingsModal = document.getElementById('teacherSettingsModal');
+    const btnCloseTeacherSettings = document.getElementById('btnCloseTeacherSettings');
+    const btnLogoutTeacher = document.getElementById('btnLogoutTeacher');
+
+    btnOpenTeacherAuth.addEventListener('click', () => {
+      if (isTeacherAuthenticated) {
+        openTeacherSettings();
+      } else {
+        teacherPasswordError.classList.add('hidden');
+        inputTeacherPassword.value = '';
+        teacherAuthModal.classList.remove('hidden');
+        setTimeout(() => inputTeacherPassword.focus(), 50);
+      }
+    });
+
+    btnCloseTeacherAuth.addEventListener('click', () => {
+      teacherAuthModal.classList.add('hidden');
+    });
+
+    function verifyTeacherPassword() {
+      if (inputTeacherPassword.value === TEACHER_PASSWORD) {
+        isTeacherAuthenticated = true;
+        teacherAuthModal.classList.add('hidden');
+        btnOpenTeacherAuth.innerHTML = `<span>🔓</span> 교사 모드`;
+        btnOpenTeacherAuth.className = 'px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm transition flex items-center gap-1.5';
+        showToast("교사 모드로 인증되었습니다.");
+        openTeacherSettings();
+      } else {
+        teacherPasswordError.classList.remove('hidden');
+      }
+    }
+
+    btnSubmitTeacherPassword.addEventListener('click', verifyTeacherPassword);
+    inputTeacherPassword.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') verifyTeacherPassword();
+    });
+
+    function openTeacherSettings() {
+      loadTeacherSettingsToUI();
+      teacherSettingsModal.classList.remove('hidden');
+    }
+
+    btnCloseTeacherSettings.addEventListener('click', () => {
+      teacherSettingsModal.classList.add('hidden');
+    });
+
+    btnLogoutTeacher.addEventListener('click', () => {
+      isTeacherAuthenticated = false;
+      btnOpenTeacherAuth.innerHTML = `<span>🔐</span> 교사 모드`;
+      btnOpenTeacherAuth.className = 'px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-sm transition flex items-center gap-1.5';
+      teacherSettingsModal.classList.add('hidden');
+      showToast("교사 모드가 잠겼습니다.");
+    });
+
+    const gridSizeInfoBadge = document.getElementById('gridSizeInfoBadge');
+    const keywordEditTitleLabel = document.getElementById('keywordEditTitleLabel');
+    const inputCustomTime = document.getElementById('inputCustomTime');
+    const btnApplyCustomTime = document.getElementById('btnApplyCustomTime');
+    const toggleAutoTimer = document.getElementById('toggleAutoTimer');
+    const toggleRevealAll = document.getElementById('toggleRevealAll');
+    const textareaKeywords = document.getElementById('textareaKeywords');
+    const keywordCountPreview = document.getElementById('keywordCountPreview');
+    const btnApplyKeywords = document.getElementById('btnApplyKeywords');
+    const btnShuffleKeywords = document.getElementById('btnShuffleKeywords');
+
+    function setGridSize(newSize) {
+      gridSize = parseInt(newSize, 10);
+      const total = getTotalTiles();
+
+      // 마스터 풀에서 새 크기만큼 무작위 추출
+      if (masterKeywordPool.length >= total) {
+        currentKeywords = shuffleArray(masterKeywordPool).slice(0, total);
+      } else {
+        const pool = [...masterKeywordPool];
+        while (pool.length < total) {
+          pool.push(`단어 #${pool.length + 1}`);
+        }
+        currentKeywords = shuffleArray(pool).slice(0, total);
+      }
+
+      tileStates = Array(total).fill('neutral');
+      revealedTiles = Array(total).fill(false);
+      prevTotalBingos = 0;
+      resetTimer();
+
+      document.querySelectorAll('.btn-grid-size').forEach(btn => {
+        const sz = parseInt(btn.dataset.size, 10);
+        if (sz === gridSize) {
+          btn.className = 'btn-grid-size py-2 rounded-xl text-xs font-bold border transition text-center bg-indigo-600 text-white border-indigo-600 shadow-xs';
+        } else {
+          btn.className = 'btn-grid-size py-2 rounded-xl text-xs font-bold border transition text-center bg-white hover:bg-slate-100 text-slate-700 border-slate-200';
+        }
+      });
+
+      if (gridSizeInfoBadge) gridSizeInfoBadge.textContent = `현재 ${gridSize}×${gridSize} (총 ${total}칸)`;
+      if (keywordEditTitleLabel) keywordEditTitleLabel.textContent = `📝 ${total}개 단어 세트 편집`;
+
+      loadTeacherSettingsToUI();
+      renderBoard();
+      document.getElementById('bingoAlertBadge').classList.add('hidden');
+      showToast(`${gridSize}×${gridSize} (${total}칸) 판으로 변경되었습니다.`);
+    }
+
+    document.querySelectorAll('.btn-grid-size').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const sz = parseInt(e.currentTarget.dataset.size, 10);
+        if (sz !== gridSize) {
+          setGridSize(sz);
+          playSound('click');
+        }
+      });
+    });
+
+    function loadTeacherSettingsToUI() {
+      const total = getTotalTiles();
+      inputCustomTime.value = timerInitial;
+      toggleAutoTimer.checked = autoStartTimerOnTile;
+      toggleRevealAll.checked = alwaysRevealKeywords;
+      textareaKeywords.value = masterKeywordPool.join(', ');
+      
+      if (gridSizeInfoBadge) gridSizeInfoBadge.textContent = `현재 ${gridSize}×${gridSize} (총 ${total}칸)`;
+      if (keywordEditTitleLabel) keywordEditTitleLabel.textContent = `📝 ${total}개 단어 세트 편집`;
+
+      document.querySelectorAll('.btn-grid-size').forEach(btn => {
+        const sz = parseInt(btn.dataset.size, 10);
+        if (sz === gridSize) {
+          btn.className = 'btn-grid-size py-2 rounded-xl text-xs font-bold border transition text-center bg-indigo-600 text-white border-indigo-600 shadow-xs';
+        } else {
+          btn.className = 'btn-grid-size py-2 rounded-xl text-xs font-bold border transition text-center bg-white hover:bg-slate-100 text-slate-700 border-slate-200';
+        }
+      });
+
+      updateKeywordCount();
+    }
+
+    function parseKeywords(text) {
+      return text.split(/[,\n]+/).map(w => w.trim()).filter(w => w.length > 0);
+    }
+
+    function updateKeywordCount() {
+      const total = getTotalTiles();
+      const words = parseKeywords(textareaKeywords.value);
+      
+      if (words.length > total) {
+        keywordCountPreview.textContent = `${words.length}개 단어 풀 (${total}개 무작위 추첨 🎲)`;
+        keywordCountPreview.className = 'text-xs font-black text-indigo-600';
+      } else if (words.length === total) {
+        keywordCountPreview.textContent = `${words.length} / ${total} 단어 (일치 ✨)`;
+        keywordCountPreview.className = 'text-xs font-black text-emerald-600';
+      } else {
+        keywordCountPreview.textContent = `${words.length} / ${total} 단어 (${total - words.length}개 부족)`;
+        keywordCountPreview.className = 'text-xs font-bold text-rose-500';
+      }
+    }
+
+    textareaKeywords.addEventListener('input', updateKeywordCount);
+
+    btnApplyCustomTime.addEventListener('click', () => {
+      const val = parseInt(inputCustomTime.value, 10);
+      if (val >= 5 && val <= 300) {
+        timerInitial = val;
+        resetTimer();
+        showToast(`제한시간이 ${val}초로 변경되었습니다.`);
+      }
+    });
+
+    toggleAutoTimer.addEventListener('change', (e) => {
+      autoStartTimerOnTile = e.target.checked;
+      showToast(autoStartTimerOnTile ? "클릭 시 타이머 자동 시작 ON" : "클릭 시 타이머 수동 시작");
+    });
+
+    toggleRevealAll.addEventListener('change', (e) => {
+      alwaysRevealKeywords = e.target.checked;
+      renderBoard();
+      showToast(alwaysRevealKeywords ? "키워드가 모두 공개됩니다." : "키워드가 다시 물음표(?)로 숨겨집니다.");
+    });
+
+    document.querySelectorAll('.btn-preset-words').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const pKey = e.currentTarget.dataset.preset;
+        if (PRESET_KEYWORDS[pKey]) {
+          masterKeywordPool = [...PRESET_KEYWORDS[pKey]];
+          textareaKeywords.value = masterKeywordPool.join(', ');
+          updateKeywordCount();
+          playSound('click');
+          showToast(`'${e.currentTarget.textContent}' 프리셋 (${masterKeywordPool.length}개)이 로드되었습니다.`);
+        }
+      });
+    });
+
+    btnApplyKeywords.addEventListener('click', () => {
+      const total = getTotalTiles();
+      const words = parseKeywords(textareaKeywords.value);
+
+      if (words.length < total) {
+        showToast(`단어가 부족합니다 (${words.length}개). 최소 ${total}개를 입력해주세요.`);
+        return;
+      }
+
+      masterKeywordPool = [...words];
+      const shuffled = shuffleArray(masterKeywordPool);
+      currentKeywords = shuffled.slice(0, total);
+      renderBoard();
+      playSound('click');
+      showToast(`단어 세트(${words.length}개)가 적용되었으며, 판에 ${total}개가 배치되었습니다!`);
+    });
+
+    btnShuffleKeywords.addEventListener('click', () => {
+      const total = getTotalTiles();
+      const words = parseKeywords(textareaKeywords.value);
+      if (words.length > 0) {
+        masterKeywordPool = shuffleArray(words);
+        textareaKeywords.value = masterKeywordPool.join(', ');
+        currentKeywords = masterKeywordPool.slice(0, total);
+        renderBoard();
+        playSound('click');
+        showToast("단어 순서를 무작위로 섞어 판에 반영했습니다.");
+      }
+    });
+
+    // 신규 기능 1: 단어 랜덤 재배치 버튼 (현재 단어 풀에서 랜덤 선택)
+    function applyRandomKeywords() {
+      const total = getTotalTiles();
+      let pool = masterKeywordPool.length >= total ? masterKeywordPool : PRESET_KEYWORDS.praise;
+      const shuffled = shuffleArray(pool);
+      currentKeywords = shuffled.slice(0, total);
+      renderBoard();
+      playSound('click');
+      showToast(`단어 세트에서 ${total}개의 키워드를 무작위로 새로 배치했습니다! 🎲`);
+    }
+
+    // 신규 기능 2: 공백 판 만들기 버튼 (모든 칸의 키워드를 빈칸으로 설정)
+    function applyBlankKeywords() {
+      const total = getTotalTiles();
+      currentKeywords = Array(total).fill('');
+      renderBoard();
+      playSound('click');
+      showToast(`키워드가 없는 공백 판으로 설정되었습니다. ⬜`);
+    }
+
+    document.getElementById('btnQuickRandomKeywords').addEventListener('click', applyRandomKeywords);
+    document.getElementById('btnQuickBlankBoard').addEventListener('click', applyBlankKeywords);
+
+    function resetEntireBoard() {
+      const total = getTotalTiles();
+      tileStates = Array(total).fill('neutral');
+      revealedTiles = Array(total).fill(false);
+      prevTotalBingos = 0;
+      resetTimer();
+      renderBoard();
+      document.getElementById('bingoAlertBadge').classList.add('hidden');
+      showToast("판이 깨끗하게 초기화되었습니다.");
+    }
+
+    document.getElementById('btnQuickResetBoard').addEventListener('click', () => {
+      resetEntireBoard();
+      playSound('click');
+    });
+
+    document.getElementById('btnSoundToggle').addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      document.getElementById('soundIcon').textContent = soundEnabled ? '🔊' : '🔇';
+      showToast(soundEnabled ? "효과음이 켜졌습니다." : "효과음이 꺼졌습니다.");
+    });
+
+    let toastTimeout = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toastMessage');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.remove('opacity-0', 'translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'translate-y-2');
+      }, 2200);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderBoard();
+      updateTimerUI();
+    });
+  </script>
+</body>
+</html>
