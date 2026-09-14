@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>크니프의 친구 사귀기 워크북 (이야기 복습)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .page-section {
+      transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+    }
+    .sentence-flow {
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      line-height: 2.1;
+    }
+    .teacher-only {
+      display: none;
+    }
+    body.teacher-mode .teacher-only {
+      display: flex !important;
+    }
+    body.teacher-mode .teacher-only-block {
+      display: block !important;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-amber-50/60 text-slate-800 min-h-screen flex flex-col items-center justify-between p-3 sm:p-6 select-none sm:select-auto">
+
+  <div class="w-full max-w-4xl mx-auto flex flex-col flex-grow">
+    <header class="bg-white/95 backdrop-blur shadow-sm rounded-3xl p-4 sm:p-6 mb-5 border border-amber-200/80 flex flex-col lg:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-2xl shadow-inner border border-amber-300">
+          📖
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">초등 독서 활동지</span>
+            <span id="roleBadge" class="text-xs font-black tracking-wider px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-300">
+              학생 모드
+            </span>
+          </div>
+          <h1 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight mt-1">
+            「크니프의 친구 사귀기」 워크북
+          </h1>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-between lg:justify-end">
+        <button id="openEditorBtn" onclick="toggleTeacherDrawer(true)" class="hidden items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition shadow-sm">
+          <span>✏️</span>
+          <span>내용 수정창</span>
+        </button>
+
+        <button id="exportHtmlBtn" onclick="downloadPermanentHtml()" class="teacher-only items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm" title="수정된 정답 내용이 영구 보존된 단일 HTML 파일로 내려받기">
+          <span>📩</span>
+          <span>영구 배포용 HTML 다운로드</span>
+        </button>
+
+        <button id="teacherModeBtn" onclick="toggleTeacherMode()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition shadow-sm">
+          <span id="lockIcon">🔒</span>
+          <span id="teacherBtnText">교사 뷰(로그인)</span>
+        </button>
+
+        <button id="soundToggleBtn" onclick="toggleSound()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition shadow-sm" title="효과음 켜기/끄기">
+          <span id="soundIcon">🔔</span>
+          <span id="soundText" class="hidden sm:inline">소리 켬</span>
+        </button>
+      </div>
+    </header>
+
+    <div id="teacherBanner" class="hidden mb-4 p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs sm:text-sm flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-2 font-bold">
+        <span>👨‍🏫 <strong>교사 모드 활성화됨</strong> : [내용 수정창]에서 빈칸 정답을 수정하고 영구 배포용 파일로 저장할 수 있습니다.</span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0 ml-2">
+        <button onclick="downloadPermanentHtml()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl shadow-sm flex items-center gap-1 text-xs">
+          <span>📩</span>
+          <span>영구 배포용 HTML 다운로드</span>
+        </button>
+        <button onclick="toggleTeacherDrawer(true)" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl shadow-sm text-xs">
+          ✏️ 내용 편집하기
+        </button>
+      </div>
+    </div>
+
+    <main class="flex-grow">
+      <!-- PAGE 1: Story Summary & Interactive Blanks -->
+      <section id="page-1" class="page-section bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-amber-200/70 mb-5 relative">
+        <div class="border-b border-amber-100 pb-4 mb-6">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <span class="text-xs uppercase font-extrabold tracking-wider bg-orange-100 text-orange-700 px-3 py-1 rounded-full">
+              이야기 복습 활동지
+            </span>
+            <span class="text-sm font-semibold text-slate-500">
+              맞힌 개수: <span id="p1Score" class="font-extrabold text-amber-600 text-base">0</span> / 6
+            </span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-2">
+            「크니프의 친구 사귀기」 복습용 요약본
+          </h2>
+          <p class="text-slate-600 mt-1 text-sm sm:text-base">
+            괄호 <span class="font-bold text-amber-700">( &nbsp; )</span> 안에 들어갈 알맞은 단어를 떠올려 입력하고 이야기를 복습해 보세요!
+          </p>
+        </div>
+
+        <div class="space-y-4 text-slate-700 leading-relaxed text-base sm:text-lg">
+          <!-- Item 1 -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-amber-50/50 border border-amber-200/60 hover:border-amber-300 transition flex flex-col md:flex-row md:items-start gap-3">
+            <div class="flex items-center gap-2 md:w-44 shrink-0 font-bold text-amber-900 pt-0.5">
+              <span class="w-7 h-7 rounded-lg bg-amber-200 text-amber-900 flex items-center justify-center text-sm font-black shrink-0">1</span>
+              <span>혼자 남은 크니프</span>
+            </div>
+            <div class="flex-grow sentence-flow text-slate-700 text-base sm:text-lg">
+              오늘도 크니프는 혼자 남아 심심해하며 아무도 놀아주지 않아 자신이
+              <span class="inline-flex items-center align-middle mx-1">
+                <span class="text-amber-600 font-bold mr-1">①</span>
+                <input type="text" id="blank-1" data-ans="외톨이" placeholder="(단어 입력)"
+                  class="blank-input w-28 px-3 py-1 text-center font-bold text-slate-800 bg-white border-2 border-slate-300 rounded-xl focus:outline-none focus:border-amber-500 shadow-inner text-base transition"
+                  autocomplete="off">
+              </span>라고 생각했습니다.
+              <span id="feedback-1" class="hidden text-xs px-2 py-0.5 rounded-full font-bold ml-1 align-middle"></span>
+            </div>
+          </div>
+
+          <!-- Item 2 -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-amber-50/50 border border-amber-200/60 hover:border-amber-300 transition flex flex-col md:flex-row md:items-start gap-3">
+            <div class="flex items-center gap-2 md:w-44 shrink-0 font-bold text-amber-900 pt-0.5">
+              <span class="w-7 h-7 rounded-lg bg-amber-200 text-amber-900 flex items-center justify-center text-sm font-black shrink-0">2</span>
+              <span>작은 노래소리와의 만남</span>
+            </div>
+            <div class="flex-grow sentence-flow text-slate-700 text-base sm:text-lg">
+              어디선가 아주 작고 작은 노래소리가 들려왔고, 크니프는 노래를 참 잘 부른다며 귀를 기울였습니다. 이 소리의 주인은 목소리는 작지만 아는 것이 많은 방울새
+              <span class="inline-flex items-center align-middle mx-1">
+                <span class="text-amber-600 font-bold mr-1">②</span>
+                <input type="text" id="blank-2" data-ans="속삭이" placeholder="(단어 입력)"
+                  class="blank-input w-28 px-3 py-1 text-center font-bold text-slate-800 bg-white border-2 border-slate-300 rounded-xl focus:outline-none focus:border-amber-500 shadow-inner text-base transition"
+                  autocomplete="off">
+              </span>였습니다.
+              <span id="feedback-2" class="hidden text-xs px-2 py-0.5 rounded-full font-bold ml-1 align-middle"></span>
+            </div>
+          </div>
+
+          <!-- Item 3 & 4 -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-amber-50/50 border border-amber-200/60 hover:border-amber-300 transition flex flex-col md:flex-row md:items-start gap-3">
+            <div class="flex items-center gap-2 md:w-44 shrink-0 font-bold text-amber-900 pt-0.5">
+              <span class="w-7 h-7 rounded-lg bg-amber-200 text-amber-900 flex items-center justify-center text-sm font-black shrink-0">3</span>
+              <span>서로에게 전한 칭찬</span>
+            </div>
+            <div class="flex-grow sentence-flow text-slate-700 text-base sm:text-lg">
+              크니프는 속삭이의 목소리가 참
+              <span class="inline-flex items-center align-middle mx-1">
+                <span class="text-amber-600 font-bold mr-1">③</span>
+                <select id="blank-3" data-ans="예쁘다"
+                  class="blank-input px-2.5 py-1 text-center font-bold text-slate-800 bg-white border-2 border-slate-300 rounded-xl focus:outline-none focus:border-amber-500 shadow-inner text-base transition cursor-pointer">
+                  <option value="">(선택하세요)</option>
+                  <option value="예쁘다">예쁘다</option>
+                  <option value="거칠다">거칠다</option>
+                  <option value="시끄럽다">시끄럽다</option>
+                  <option value="이상하다">이상하다</option>
+                </select>
+              </span>고 칭찬해 주었습니다. 그러자 속삭이는 크니프의 목소리가
+              <span class="inline-flex items-center align-middle mx-1">
+                <span class="text-amber-600 font-bold mr-1">④</span>
+                <select id="blank-4" data-ans="크다"
+                  class="blank-input px-2.5 py-1 text-center font-bold text-slate-800 bg-white border-2 border-slate-300 rounded-xl focus:outline-none focus:border-amber-500 shadow-inner text-base transition cursor-pointer">
+                  <option value="">(선택하세요)</option>
+                  <option value="크다">크다</option>
+                  <option value="작다">작다</option>
+                  <option value="가늘다">가늘다</option>
+                  <option value="약하다">약하다</option>
+                </select>
+              </span>서 멋지다고 답해 주었습니다.
+              <span id="feedback-3" class="hidden text-xs px-2 py-0.5 rounded-full font-bold ml-1 align-middle"></span>
+              <span id="feedback-4" class="hidden text-xs px-2 py-0.5 rounded-full font-bold ml-1 align-middle"></span>
+            </div>
+          </div>
+
+          <!-- Item 5 -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-amber-50/50 border border-amber-200/60 hover:border-amber-300 transition flex flex-col md:flex-row md:items-start gap-3">
+            <div class="flex items-center gap-2 md:w-44 shrink-0 font-bold text-amber-900 pt-0.5">
+              <span class="w-7 h-7 rounded-lg bg-amber-200 text-amber-900 flex items-center justify-center text-sm font-black shrink-0">4</span>
+              <span>크니프의 고민 고백</span>
+            </div>
+            <div class="flex-grow sentence-flow text-slate-700 text-base sm:text-lg">
+              크니프는 뾰족한 발가락을 꼼지락거리며, 아무도 자신을 좋아하지 않고 이야기나 놀이를 함께 하려 하지 않는다며 슬픈
+              <span class="inline-flex items-center align-middle mx-1">
+                <span class="text-amber-600 font-bold mr-1">⑤</span>
+                <input type="text" id="blank-5" data-ans="고민" placeholder="(단어 입력)"
+                  class="blank-input w-28 px-3 py-1 text-center font-bold text-slate-800 bg-white border-2 border-slate-300 rounded-xl focus:outline-none focus:border-amber-500 shadow-inner text-base transition"
+                  autocomplete="off">
+              </span>을 털어놓았습니다.
+              <span id="feedback-5" class="hidden text-xs px-2 py-0.5 rounded-full font-bold ml-1 align-middle"></span>
+            </div>
+          </div>
+
+          <!-- Item 6 -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-amber-50/50 border border-amber-200/60 hover:border-amber-300 transition flex flex-col md:flex-row md:items-start gap-3">
+            <div class="flex items-center gap-2 md:w-44 shrink-0 font-bold text-amber-900 pt-0.5">
+              <span class="w-7 h-7 rounded-lg bg-amber-200 text-amber-900 flex items-center justify-center text-sm font-black shrink-0">5</span>
+              <span>속삭이가 알려준 비법</span>
+            </div>
+            <div class="flex-grow sentence-flow text-slate-700 text-base sm:text-lg">
+              속삭이는 싱긋 웃으며 친구 사귀는 방법은 생각보다 간단하다고 알려 주었습니다. 그 비법은 바로 친구를 만나면 먼저 반갑게
+              <span class="inline-flex items-center align-middle mx-1">
+                <span class="text-amber-600 font-bold mr-1">⑥</span>
+                <input type="text" id="blank-6" data-ans="인사" placeholder="(단어 입력)"
+                  class="blank-input w-28 px-3 py-1 text-center font-bold text-slate-800 bg-white border-2 border-slate-300 rounded-xl focus:outline-none focus:border-amber-500 shadow-inner text-base transition"
+                  autocomplete="off">
+              </span>해 보는 것이었습니다.
+              <span id="feedback-6" class="hidden text-xs px-2 py-0.5 rounded-full font-bold ml-1 align-middle"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <button onclick="checkPage1Answers()" class="w-full sm:w-auto px-6 py-3 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-extrabold rounded-2xl shadow-md shadow-amber-500/20 transition flex items-center justify-center gap-2">
+            <span>✨ 채점하기</span>
+          </button>
+
+          <button onclick="resetAnswers()" class="w-full sm:w-auto px-5 py-3 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold rounded-2xl transition border border-slate-300 flex items-center justify-center gap-2">
+            <span>🔄 다시 풀기</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="mt-auto py-4 text-center text-xs text-slate-500 font-medium">
+      「크니프의 친구 사귀기」 독서 활동 워크북 · 이야기 복습
+    </footer>
+  </div>
+
+  <!-- Teacher Auth Password Modal -->
+  <div id="pwdModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center animate-fade-in">
+      <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-700 mx-auto flex items-center justify-center text-3xl mb-3 shadow-inner">
+        🔐
+      </div>
+      <h3 class="text-lg font-black text-slate-800 mb-1">교사 인증 비밀번호</h3>
+      <p class="text-xs text-slate-500 mb-4">문제 정답 수정 및 사진 등록 권한을 위한 비밀번호 4자리를 입력하세요.</p>
+      
+      <div class="relative mb-4">
+        <input type="password" id="teacherPwdInput" maxlength="10" placeholder="비밀번호 입력"
+          class="w-full px-4 py-3 rounded-xl border-2 border-slate-300 text-center text-xl tracking-widest font-black focus:outline-none focus:border-indigo-500 shadow-inner">
+        <div id="pwdError" class="hidden text-rose-600 text-xs font-bold mt-2">비밀번호가 올바르지 않습니다. 다시 확인해주세요.</div>
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="closePwdModal()" class="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-bold text-sm hover:bg-slate-50">
+          취소
+        </button>
+        <button onclick="verifyTeacherPassword()" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm shadow-md">
+          확인
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teacher Simple Content Editor Drawer / Modal -->
+  <div id="teacherDrawer" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-200">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">✏️</span>
+          <div>
+            <h3 class="text-lg font-black text-slate-800">교사용 간편 내용 편집기</h3>
+            <p class="text-xs text-slate-500">1~5페이지의 정답과 대사, 보기 문구를 간편하게 수정할 수 있습니다.</p>
+          </div>
+        </div>
+        <button onclick="toggleTeacherDrawer(false)" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold">
+          ✕
+        </button>
+      </div>
+
+      <!-- Edit Form -->
+      <div class="space-y-5 text-xs sm:text-sm">
+        <!-- P1 Answers -->
+        <div class="bg-amber-50/70 p-4 rounded-2xl border border-amber-200">
+          <h4 class="font-extrabold text-amber-900 mb-2 flex items-center gap-1">
+            <span>📝</span> 1페이지 빈칸 정답 설정 (쉼표로 유사 정답 허용)
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">① 빈칸 정답</label>
+              <input type="text" id="edit-ans-1" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-bold text-slate-800">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">② 빈칸 정답</label>
+              <input type="text" id="edit-ans-2" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-bold text-slate-800">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">③ 빈칸 정답</label>
+              <input type="text" id="edit-ans-3" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-bold text-slate-800">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">④ 빈칸 정답</label>
+              <input type="text" id="edit-ans-4" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-bold text-slate-800">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">⑤ 빈칸 정답</label>
+              <input type="text" id="edit-ans-5" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-bold text-slate-800">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">⑥ 빈칸 정답</label>
+              <input type="text" id="edit-ans-6" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-bold text-slate-800">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action buttons in Teacher Drawer -->
+      <div class="mt-6 pt-4 border-t border-slate-200 flex items-center justify-between gap-3">
+        <button onclick="resetToDefaults()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs sm:text-sm">
+          🔄 기본값으로 복원
+        </button>
+        <div class="flex gap-2">
+          <button onclick="downloadPermanentHtml()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm shadow-sm flex items-center gap-1.5">
+            <span>📩</span>
+            <span>영구 배포용 다운로드</span>
+          </button>
+          <button onclick="toggleTeacherDrawer(false)" class="px-4 py-2 border border-slate-300 text-slate-600 font-bold rounded-xl text-xs sm:text-sm hover:bg-slate-50">
+            취소
+          </button>
+          <button onclick="saveDrawerEdits()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-xs sm:text-sm shadow-md">
+            💾 저장 및 화면 반영
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 transform translate-y-24 opacity-0 transition duration-300 z-50 pointer-events-none">
+    <span id="toastIcon" class="text-xl">✨</span>
+    <span id="toastMsg" class="font-bold text-sm">알림 메시지</span>
+  </div>
+
+  <script>
+    // System State
+    const TEACHER_PASSWORD = "5658";
+    let isTeacherMode = false;
+    let audioContext = null;
+    let isMuted = false;
+
+    // Default Complete Content Model for Page 1
+    const defaultData = {
+      answers: {
+        1: "외톨이",
+        2: "속삭이",
+        3: "예쁘다",
+        4: "크다",
+        5: "고민",
+        6: "인사"
+      }
+    };
+
+    let currentData = JSON.parse(localStorage.getItem('kniff_workbook_p1_data')) || JSON.parse(JSON.stringify(defaultData));
+
+    // Apply entire data tree to DOM
+    function applyCurrentData() {
+      if (!currentData.answers) currentData.answers = { ...defaultData.answers };
+
+      // Set Page 1 blanks
+      for (let i = 1; i <= 6; i++) {
+        const blank = document.getElementById(`blank-${i}`);
+        if (blank && currentData.answers[i]) {
+          blank.setAttribute('data-ans', currentData.answers[i]);
+        }
+      }
+
+      // Populate Drawer inputs
+      for (let i = 1; i <= 6; i++) {
+        const editAns = document.getElementById(`edit-ans-${i}`);
+        if (editAns) editAns.value = currentData.answers[i] || '';
+      }
+    }
+
+    function initAudio() {
+      if (!audioContext) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) audioContext = new AudioCtx();
+      }
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }
+
+    function playTone(freq, duration, type = 'sine') {
+      if (isMuted) return;
+      try {
+        initAudio();
+        if (!audioContext) return;
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+        gain.gain.setValueAtTime(0.12, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.start();
+        osc.stop(audioContext.currentTime + duration);
+      } catch (e) {
+        console.warn("Audio error:", e);
+      }
+    }
+
+    function playSuccessSound() {
+      if (isMuted) return;
+      playTone(523.25, 0.1);
+      setTimeout(() => playTone(659.25, 0.1), 80);
+      setTimeout(() => playTone(783.99, 0.22), 160);
+    }
+
+    function playErrorSound() {
+      if (isMuted) return;
+      playTone(260, 0.16, 'sawtooth');
+    }
+
+    function toggleSound() {
+      isMuted = !isMuted;
+      document.getElementById('soundIcon').innerText = isMuted ? '🔇' : '🔔';
+      const soundText = document.getElementById('soundText');
+      if (soundText) soundText.innerText = isMuted ? '소리 끔' : '소리 켬';
+      showToast(isMuted ? '효과음이 꺼졌습니다.' : '효과음이 켜졌습니다.', isMuted ? '🔇' : '🔔');
+    }
+
+    let toastTimer = null;
+    function showToast(msg, icon = '💡') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      document.getElementById('toastIcon').innerText = icon;
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 2600);
+    }
+
+    function toggleTeacherMode() {
+      if (isTeacherMode) {
+        setTeacherMode(false);
+        showToast('학생 모드로 전환되었습니다.', '🧑‍🎓');
+      } else {
+        const modal = document.getElementById('pwdModal');
+        const input = document.getElementById('teacherPwdInput');
+        document.getElementById('pwdError').classList.add('hidden');
+        input.value = '';
+        modal.classList.remove('hidden');
+        setTimeout(() => input.focus(), 100);
+      }
+    }
+
+    function closePwdModal() {
+      document.getElementById('pwdModal').classList.add('hidden');
+    }
+
+    function verifyTeacherPassword() {
+      const input = document.getElementById('teacherPwdInput');
+      const err = document.getElementById('pwdError');
+
+      if (input.value === TEACHER_PASSWORD) {
+        closePwdModal();
+        setTeacherMode(true);
+        playSuccessSound();
+        showToast('교사 인증 완료! 수정창 기능이 활성화되었습니다.', '👨‍🏫');
+      } else {
+        err.classList.remove('hidden');
+        playErrorSound();
+        input.select();
+      }
+    }
+
+    document.getElementById('teacherPwdInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') verifyTeacherPassword();
+      else if (e.key === 'Escape') closePwdModal();
+    });
+
+    function setTeacherMode(enabled) {
+      isTeacherMode = enabled;
+      
+      if (enabled) {
+        document.body.classList.add('teacher-mode');
+      } else {
+        document.body.classList.remove('teacher-mode');
+      }
+
+      const roleBadge = document.getElementById('roleBadge');
+      if (roleBadge) {
+        roleBadge.className = enabled 
+          ? 'text-xs font-black tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-400'
+          : 'text-xs font-black tracking-wider px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-300';
+        roleBadge.innerText = enabled ? '교사 뷰 (정답 수정 가능)' : '학생 모드';
+      }
+
+      const teacherBtnText = document.getElementById('teacherBtnText');
+      if (teacherBtnText) teacherBtnText.innerText = enabled ? '교사 뷰 종료' : '교사 뷰(로그인)';
+
+      const lockIcon = document.getElementById('lockIcon');
+      if (lockIcon) lockIcon.innerText = enabled ? '🔓' : '🔒';
+
+      const openEditorBtn = document.getElementById('openEditorBtn');
+      if (openEditorBtn) {
+        if (enabled) {
+          openEditorBtn.classList.remove('hidden');
+          openEditorBtn.classList.add('flex');
+        } else {
+          openEditorBtn.classList.add('hidden');
+          openEditorBtn.classList.remove('flex');
+        }
+      }
+
+      const teacherBanner = document.getElementById('teacherBanner');
+      if (teacherBanner) {
+        if (enabled) teacherBanner.classList.remove('hidden');
+        else teacherBanner.classList.add('hidden');
+      }
+
+      if (!enabled) {
+        toggleTeacherDrawer(false);
+      }
+    }
+
+    function toggleTeacherDrawer(show) {
+      if (show && !isTeacherMode) {
+        showToast('교사 로그인 후 이용할 수 있습니다.', '🔒');
+        return;
+      }
+      const drawer = document.getElementById('teacherDrawer');
+      if (!drawer) return;
+
+      if (show) {
+        applyCurrentData();
+        drawer.classList.remove('hidden');
+      } else {
+        drawer.classList.add('hidden');
+      }
+    }
+
+    function saveDrawerEdits() {
+      if (!isTeacherMode) return;
+
+      for (let i = 1; i <= 6; i++) {
+        const input = document.getElementById(`edit-ans-${i}`);
+        if (input && input.value.trim()) {
+          currentData.answers[i] = input.value.trim();
+        }
+      }
+
+      localStorage.setItem('kniff_workbook_p1_data', JSON.stringify(currentData));
+      applyCurrentData();
+      toggleTeacherDrawer(false);
+      playSuccessSound();
+      showToast('정답 내용이 안전하게 저장되었습니다!', '💾');
+    }
+
+    function resetToDefaults() {
+      if (!isTeacherMode) return;
+      currentData = JSON.parse(JSON.stringify(defaultData));
+      localStorage.removeItem('kniff_workbook_p1_data');
+      applyCurrentData();
+      showToast('정답이 기본 설정값으로 복원되었습니다.', '🔄');
+    }
+
+    function resetAnswers() {
+      for (let i = 1; i <= 6; i++) {
+        const input = document.getElementById(`blank-${i}`);
+        const feedback = document.getElementById(`feedback-${i}`);
+        if (input) {
+          input.value = '';
+          input.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-800', 'border-rose-400', 'bg-rose-50', 'text-rose-800');
+          input.classList.add('border-slate-300', 'bg-white', 'text-slate-800');
+        }
+        if (feedback) {
+          feedback.classList.add('hidden');
+        }
+      }
+      document.getElementById('p1Score').innerText = '0';
+      showToast('입력한 답안이 초기화되었습니다. 다시 풀어보세요!', '🔄');
+    }
+
+    function checkPage1Answers() {
+      let correctCount = 0;
+      const total = 6;
+
+      for (let i = 1; i <= total; i++) {
+        const input = document.getElementById(`blank-${i}`);
+        const feedback = document.getElementById(`feedback-${i}`);
+        if (!input || !feedback) continue;
+
+        const accepted = (input.getAttribute('data-ans') || '').split(',').map(s => s.trim());
+        const userVal = input.value.trim().replace(/\s+/g, '');
+
+        const isCorrect = accepted.some(ans => {
+          const cleanAns = ans.replace(/\s+/g, '');
+          return userVal === cleanAns || (userVal.length > 0 && cleanAns.includes(userVal) && userVal.length >= 2);
+        });
+
+        feedback.classList.remove('hidden');
+        if (isCorrect) {
+          correctCount++;
+          input.classList.remove('border-slate-300', 'border-rose-400', 'bg-rose-50');
+          input.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-800');
+          feedback.className = 'text-xs px-2 py-0.5 rounded-full font-bold ml-1 bg-emerald-100 text-emerald-700';
+          feedback.innerText = '정답! ✔';
+        } else {
+          input.classList.remove('border-slate-300', 'border-emerald-500', 'bg-emerald-50');
+          input.classList.add('border-rose-400', 'bg-rose-50', 'text-rose-800');
+          feedback.className = 'text-xs px-2 py-0.5 rounded-full font-bold ml-1 bg-rose-100 text-rose-700';
+          feedback.innerText = userVal ? '다시 확인해 보세요' : (input.tagName.toLowerCase() === 'select' ? '보기를 선택하세요' : '답을 적어보세요');
+        }
+      }
+
+      document.getElementById('p1Score').innerText = correctCount;
+
+      if (correctCount === total) {
+        playSuccessSound();
+        showToast('대단해요! 6개 문제를 모두 맞혔습니다! 🎉', '⭐');
+      } else {
+        playErrorSound();
+        showToast(`${correctCount}개를 맞혔습니다. 틀린 문제를 다시 확인해 보세요!`, '📝');
+      }
+    }
+
+    // Permanent Deployment HTML Exporter
+    function downloadPermanentHtml() {
+      if (!isTeacherMode) {
+        showToast('교사 로그인 상태에서만 영구 배포용 파일을 내려받을 수 있습니다.', '🔒');
+        return;
+      }
+
+      try {
+        let sourceHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+        const serializedData = JSON.stringify(currentData, null, 2);
+        
+        const dataRegex = /const defaultData = \{[\s\S]*?\n    \};/;
+        if (dataRegex.test(sourceHtml)) {
+          sourceHtml = sourceHtml.replace(dataRegex, `const defaultData = ${serializedData};`);
+        }
+
+        sourceHtml = sourceHtml.replace(/<body([^>]*)class="([^"]*)teacher-mode([^"]*)"/i, '<body$1class="$2$3"');
+
+        const blob = new Blob([sourceHtml], { type: 'text/html;charset=utf-8' });
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+        a.href = downloadUrl;
+        a.download = `크니프의_친구사귀기_이야기복습_${dateStr}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+
+        playSuccessSound();
+        showToast('정답 설정이 내장된 배포용 HTML이 다운로드되었습니다!', '📩');
+      } catch (err) {
+        console.error('다운로드 오류:', err);
+        showToast('파일 생성 중 오류가 발생했습니다.', '⚠️');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      applyCurrentData();
+      const inputs = document.querySelectorAll('.blank-input');
+      inputs.forEach((input, idx) => {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            if (idx < inputs.length - 1) inputs[idx + 1].focus();
+            else checkPage1Answers();
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
