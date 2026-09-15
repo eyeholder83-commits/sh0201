@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>학급 발표 칭찬판 & 포인트 통장</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  
+    #firebaseStatus { position: fixed; right: 12px; bottom: 12px; z-index: 9999; padding: 8px 12px; border-radius: 999px; background: white; border: 1px solid #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,.12); font-size: 12px; font-weight: 700; color: #475569; }
+</style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- [1] 최상단 교사용 헤더 (학생 뷰 로그인 시 기본 숨김) -->
+  <header id="teacherHeader" class="hidden bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+    <div class="max-w-[1920px] mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- 좌측: 로고, 날짜 선택기, 인원수 뱃지, 쿠폰 승인 요청 뱃지 -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-2 mr-1">
+          <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white font-black text-lg shadow-sm">
+            🎯
+          </div>
+          <h1 class="text-lg font-black text-slate-900 tracking-tight">발표 칭찬판</h1>
+        </div>
+
+        <!-- 교사용 날짜 선택기 -->
+        <div class="flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+          <span class="text-slate-400 pl-1.5">📅</span>
+          <select id="selectYear" onchange="handleDateSelectChange()" class="bg-white border border-slate-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500 font-extrabold text-slate-700"></select>
+          <select id="selectMonth" onchange="handleDateSelectChange()" class="bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 font-extrabold text-slate-700"></select>
+          <select id="selectDay" onchange="handleDateSelectChange()" class="bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 font-extrabold text-slate-700"></select>
+          <input type="date" id="nativeDatePicker" onchange="handleNativeDatePicked(this.value)" class="hidden">
+          <button type="button" onclick="document.getElementById('nativeDatePicker').showPicker()" class="p-1 hover:bg-white rounded-lg text-slate-600 transition" title="달력으로 날짜 선택">🗓️</button>
+        </div>
+
+        <!-- 이전/오늘/다음 버튼 -->
+        <div class="flex items-center gap-0.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+          <button type="button" onclick="changeDateOffset(-1)" class="px-2 py-1 hover:bg-white rounded-lg text-slate-600 font-black">◀</button>
+          <button type="button" onclick="setTodayDate()" class="px-2.5 py-1 bg-white shadow-2xs rounded-lg text-indigo-600 font-black">오늘</button>
+          <button type="button" onclick="changeDateOffset(1)" class="px-2 py-1 hover:bg-white rounded-lg text-slate-600 font-black">▶</button>
+        </div>
+
+        <!-- 학급 인원 뱃지 -->
+        <span id="studentCountBadge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-black">
+          학급 22명
+        </span>
+
+        <!-- 쿠폰 승인 요청 뱃지 -->
+        <button id="teacherCouponApprovalBtn" onclick="openApprovalModal()" class="hidden items-center gap-1.5 bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-md shadow-rose-200 transition animate-pulse cursor-pointer">
+          <span>🔔 쿠폰 사용 승인</span>
+          <span id="approvalBadgeCount" class="bg-white text-rose-600 rounded-full px-1.5 py-0.2 text-[11px] font-black">0</span>
+        </button>
+      </div>
+
+      <!-- 우측: 한 줄 보기, 뷰 전환, 설정, 날짜 비우기 -->
+      <div class="flex items-center gap-2">
+        <div class="hidden lg:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+          <span class="text-slate-400 px-1.5 font-semibold">한줄:</span>
+          <button id="cols4Btn" type="button" onclick="setGridColumns(4)" class="px-2.5 py-1 rounded-lg transition bg-white text-indigo-600 shadow-2xs font-black">4명</button>
+          <button id="cols5Btn" type="button" onclick="setGridColumns(5)" class="px-2.5 py-1 rounded-lg transition text-slate-600 hover:bg-white font-bold">5명</button>
+          <button id="cols6Btn" type="button" onclick="setGridColumns(6)" class="px-2.5 py-1 rounded-lg transition text-slate-600 hover:bg-white font-bold">6명</button>
+        </div>
+
+        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+          <button id="viewTeacherTab" type="button" onclick="switchToTeacherView()" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white shadow-2xs font-black transition">👨‍🏫 교사 뷰</button>
+          <button id="viewStudentTab" type="button" onclick="switchToStudentView()" class="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-white transition font-bold">🎒 학생 뷰</button>
+        </div>
+
+        <button type="button" onclick="openSettingsModal()" class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md shadow-indigo-100 transition cursor-pointer">
+          ⚙️ 학급 설정
+        </button>
+
+        <button type="button" onclick="clearCurrentDateRecords()" class="flex items-center gap-1 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 transition cursor-pointer" title="현재 선택된 날짜의 발표 기록 비우기">
+          🔄 이 날짜 비우기
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- [2] 교사용 관제 메인 그리드 화면 -->
+  <main id="teacherViewSection" class="hidden flex-1 max-w-[1920px] w-full mx-auto p-4 md:p-5">
+    <div id="studentCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
+      <!-- 자바스크립트로 학생 카드 22개 생성 -->
+    </div>
+  </main>
+
+  <!-- [3] 첫 접속 기본 화면: 학생 개인 뷰 로그인 -->
+  <div id="studentLoginSection" class="flex-1 max-w-md w-full mx-auto p-4 pt-12 md:pt-16 flex flex-col items-center">
+    <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl w-full text-center">
+      <div class="w-16 h-16 bg-amber-50 rounded-2xl text-amber-500 text-3xl font-black flex items-center justify-center mx-auto mb-4 border border-amber-100 shadow-xs">
+        🔑
+      </div>
+      <h3 class="text-2xl font-black text-slate-900 mb-1">학생 개인 뷰 로그인</h3>
+      <p class="text-xs font-bold text-slate-400 mb-6">선생님께서 부여해주신 학생 고유번호를 입력하세요.</p>
+      
+      <form onsubmit="handleStudentLogin(event)">
+        <input type="password" id="studentLoginIdInput" placeholder="고유번호 입력" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-center text-lg font-black tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4" autocomplete="off">
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-indigo-200 transition cursor-pointer text-sm">
+          내 통장 확인하기 🚀
+        </button>
+      </form>
+
+      <!-- 선생님 관리 화면으로 돌아가기 (비밀번호 텍스트 완전 은폐) -->
+      <div class="mt-6 pt-4 border-t border-slate-100">
+        <button type="button" onclick="openTeacherAuthModal()" class="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center justify-center gap-1 mx-auto cursor-pointer">
+          🔒 선생님 관리 화면으로 돌아가기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- [4] 학생 전용 독립 대시보드 화면 -->
+  <div id="studentViewSection" class="hidden flex-1 max-w-4xl w-full mx-auto p-4 md:p-6">
+    
+    <!-- 교사 열람 모드 안내 배너 -->
+    <div id="teacherViewingBanner" class="hidden mb-4 bg-indigo-900 text-white px-4 py-3 rounded-2xl flex items-center justify-between shadow-lg">
+      <div class="flex items-center gap-2">
+        <span class="bg-indigo-700 text-indigo-100 text-xs font-bold px-2.5 py-1 rounded-lg">👨‍🏫 교사 관제 모드</span>
+        <span class="text-xs md:text-sm font-bold"><strong id="viewingStudentName">학생</strong> 학생의 개인 발표판 및 통장을 열람 중입니다.</span>
+      </div>
+      <button type="button" onclick="switchToTeacherView()" class="bg-white text-indigo-900 hover:bg-indigo-50 font-black text-xs px-3.5 py-2 rounded-xl transition shadow-xs cursor-pointer">
+        👨‍🏫 교사 뷰로 복귀
+      </button>
+    </div>
+
+    <!-- 학생 상단 프로필 & 날짜 검색 네비게이터 -->
+    <div class="bg-white rounded-3xl p-5 md:p-6 border border-slate-200 shadow-2xs mb-5 flex flex-col gap-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center text-2xl font-black shadow-2xs">
+            🎒
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 id="studentProfileName" class="text-xl md:text-2xl font-black text-slate-900">학생이름</h2>
+              <span id="studentProfileDateBadge" class="bg-indigo-50 text-indigo-700 font-extrabold text-xs px-2.5 py-1 rounded-lg border border-indigo-200">조회일: 오늘</span>
+            </div>
+            <p class="text-xs font-bold text-slate-400 mt-0.5">발표 체크는 선생님께서 입력해주십니다. 날짜별 기록과 통장을 확인해보세요!</p>
+          </div>
+        </div>
+        
+        <!-- 학생 로그아웃 버튼 -->
+        <button id="studentLogoutBtn" type="button" onclick="logoutStudentDash()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs px-3.5 py-2 rounded-xl transition cursor-pointer">
+          로그아웃 🚪
+        </button>
+      </div>
+
+      <!-- ⭐ 학생 전용: 날짜별 발표 및 통장 기록 검색기 ⭐ -->
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100 bg-slate-50/70 p-3 rounded-2xl">
+        <div class="flex items-center gap-1.5 text-xs font-black text-slate-700">
+          <span>🗓️ 날짜별 내 기록 조회:</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5 text-xs font-bold">
+          <select id="studentSelectYear" onchange="handleStudentDateSelectChange()" class="bg-white border border-slate-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500 font-black text-slate-700"></select>
+          <select id="studentSelectMonth" onchange="handleStudentDateSelectChange()" class="bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 font-black text-slate-700"></select>
+          <select id="studentSelectDay" onchange="handleStudentDateSelectChange()" class="bg-white border border-slate-200 rounded-lg px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 font-black text-slate-700"></select>
+          <input type="date" id="studentNativeDatePicker" onchange="handleStudentNativeDatePicked(this.value)" class="hidden">
+          <button type="button" onclick="document.getElementById('studentNativeDatePicker').showPicker()" class="p-1 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-600 transition cursor-pointer" title="달력으로 날짜 선택">📅 달력</button>
+          
+          <div class="flex items-center gap-0.5 bg-white p-0.5 rounded-lg border border-slate-200">
+            <button type="button" onclick="changeStudentDateOffset(-1)" class="px-2 py-0.5 hover:bg-slate-100 rounded text-slate-600 font-black" title="하루 전">◀</button>
+            <button type="button" onclick="setStudentTodayDate()" class="px-2 py-0.5 text-indigo-600 font-black hover:bg-slate-100 rounded" title="오늘로 복귀">오늘</button>
+            <button type="button" onclick="changeStudentDateOffset(1)" class="px-2 py-0.5 hover:bg-slate-100 rounded text-slate-600 font-black" title="하루 뒤">▶</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 햇살 학급 희망 통장 카드 -->
+    <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-3xl p-6 text-white shadow-xl shadow-orange-500/10 mb-5 relative overflow-hidden">
+      <div class="flex items-center justify-between mb-5 relative z-10">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">💳</span>
+          <h3 class="font-black text-lg tracking-tight">햇살 학급 희망 통장</h3>
+        </div>
+        <span class="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold border border-white/30">정상 거래중</span>
+      </div>
+      
+      <div class="grid grid-cols-3 gap-3 relative z-10 text-center">
+        <div class="bg-black/10 backdrop-blur-xs p-3.5 rounded-2xl border border-white/10">
+          <p class="text-xs text-amber-100 font-bold mb-1">현재 사용가능 잔액</p>
+          <p id="dashCurrentPoints" class="text-2xl md:text-3xl font-black text-white">0 P</p>
+        </div>
+        <div class="bg-black/10 backdrop-blur-xs p-3.5 rounded-2xl border border-white/10">
+          <p class="text-xs text-amber-100 font-bold mb-1">누적 적립 포인트</p>
+          <p id="dashTotalEarned" class="text-xl md:text-2xl font-black text-amber-100">0 P</p>
+        </div>
+        <div class="bg-black/10 backdrop-blur-xs p-3.5 rounded-2xl border border-white/10">
+          <p class="text-xs text-amber-100 font-bold mb-1">화폐로 사용한 포인트</p>
+          <p id="dashTotalSpent" class="text-xl md:text-2xl font-black text-amber-200">0 P</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 학생 탭 메뉴 (4개) -->
+    <div class="flex items-center gap-1.5 bg-slate-200/70 p-1.5 rounded-2xl mb-5 text-xs font-bold">
+      <button id="tabBtnBoard" type="button" onclick="switchStudentTab('board')" class="flex-1 py-3 rounded-xl bg-white text-indigo-600 shadow-xs transition text-center font-black cursor-pointer">🎯 내 발표판</button>
+      <button id="tabBtnInventory" type="button" onclick="switchStudentTab('inventory')" class="flex-1 py-3 rounded-xl text-slate-600 hover:bg-white/50 transition text-center font-bold cursor-pointer relative">
+        🎒 내 쿠폰함 <span id="dashInventoryBadge" class="bg-indigo-600 text-white px-1.5 py-0.5 rounded-full text-[10px]">0</span>
+      </button>
+      <button id="tabBtnHistory" type="button" onclick="switchStudentTab('history')" class="flex-1 py-3 rounded-xl text-slate-600 hover:bg-white/50 transition text-center font-bold cursor-pointer">📜 통장 내역</button>
+      <button id="tabBtnShop" type="button" onclick="switchStudentTab('shop')" class="flex-1 py-3 rounded-xl text-slate-600 hover:bg-white/50 transition text-center font-bold cursor-pointer">🛍️ 쿠폰 구매 (상점)</button>
+    </div>
+
+    <!-- 탭 1: 내 발표판 (선택한 날짜 연동) -->
+    <div id="studentTabContentBoard" class="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h4 id="studentDashBoardTitle" class="font-black text-slate-900 text-lg">내 발표 현황판</h4>
+          <p class="text-xs font-bold text-slate-400">발표한 번호는 파란색으로 켜집니다 (9번 초과 시 3칸씩 확장)</p>
+        </div>
+        <div class="flex items-center gap-1.5 text-xs font-bold">
+          <button type="button" onclick="shiftStudentDashWindow(-3)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 font-black cursor-pointer">▲ 이전</button>
+          <span id="studentDashWindowLabel" class="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl border border-indigo-100 font-black">1~9</span>
+          <button type="button" onclick="shiftStudentDashWindow(3)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 font-black cursor-pointer">▼ 다음</button>
+        </div>
+      </div>
+      
+      <div id="studentDashGrid" class="grid grid-cols-3 gap-3 mb-5">
+        <!-- 3x3 박스 렌더링 -->
+      </div>
+      
+      <div id="studentDashSummaryBadge" class="text-center"></div>
+    </div>
+
+    <!-- 탭 2: 내 쿠폰함 (인벤토리) -->
+    <div id="studentTabContentInventory" class="hidden bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs">
+      <h4 class="font-black text-slate-900 text-lg mb-1">내 쿠폰 보관함 🎒</h4>
+      <p class="text-xs text-slate-400 font-bold mb-5">상점에서 구매한 쿠폰을 보관하고, 실제로 쓰고 싶은 날 선생님께 사용을 요청하세요.</p>
+      
+      <!-- 선생님 승인 대기 중 박스 -->
+      <div id="pendingUsageSection" class="hidden mb-6 bg-amber-50 rounded-2xl p-4 border border-amber-200">
+        <h5 class="text-xs font-black text-amber-900 mb-2.5 flex items-center gap-1.5">
+          <span>⏳</span> 선생님 사용 승인 대기 중
+        </h5>
+        <div id="pendingUsageList" class="space-y-2"></div>
+      </div>
+
+      <!-- 보유 중인 쿠폰 리스트 -->
+      <div id="inventoryCardList" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
+    </div>
+
+    <!-- 탭 3: 통장 거래 내역 (날짜 필터 지원) -->
+    <div id="studentTabContentHistory" class="hidden bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div>
+          <h4 class="font-black text-slate-900 text-lg">📜 통장 입출금 거래 명세서</h4>
+          <p class="text-xs font-bold text-slate-400">발표 완료 적립 및 상점 쿠폰 구매 사용 내역</p>
+        </div>
+        <!-- 거래일 필터 -->
+        <div class="flex items-center gap-1.5">
+          <select id="passbookFilterSelect" onchange="renderPassbookHistory()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-black text-slate-700">
+            <option value="CURRENT_DATE">현재 조회일자 내역만 보기</option>
+            <option value="ALL">전체 거래 내역 보기</option>
+          </select>
+        </div>
+      </div>
+      
+      <div id="passbookHistoryList" class="space-y-2 max-h-[420px] overflow-y-auto custom-scrollbar pr-1"></div>
+    </div>
+
+    <!-- 탭 4: 쿠폰 구매 (상점) -->
+    <div id="studentTabContentShop" class="hidden bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs">
+      <h4 class="font-black text-slate-900 text-lg mb-1">🛍️ 교실 포인트 상점</h4>
+      <p class="text-xs text-slate-400 font-bold mb-5">발표로 모은 포인트를 사용하여 원하는 쿠폰을 내 가방에 담아두세요!</p>
+      <div id="shopCouponGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
+    </div>
+
+  </div>
+
+  <!-- [5] 학급 통합 설정 모달 (5개 탭 완벽 배치) -->
+  <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden">
+      
+      <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-xl">⚙️</div>
+          <div>
+            <h3 class="font-black text-lg text-slate-900">학급 통합 설정</h3>
+            <p class="text-xs font-bold text-slate-400">학생 명단 및 고유번호 수정, 학생 뷰 바로가기, 포인트 은행 및 상점 관리</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 font-black text-xl p-2 cursor-pointer">✕</button>
+      </div>
+
+      <!-- 5개 탭 버튼 (스크롤 제거 및 5등분 균등 배치) -->
+      <div class="flex border-b border-slate-100 bg-slate-50/70 p-2 gap-1 text-xs font-black overflow-hidden">
+        <button id="setTabStudents" type="button" onclick="switchSettingsTab('students')" class="flex-1 py-2.5 px-2 rounded-xl bg-white text-indigo-600 shadow-2xs whitespace-nowrap cursor-pointer text-center flex items-center justify-center">👥 학생 & 고유번호</button>
+        <button id="setTabPassbook" type="button" onclick="switchSettingsTab('passbook')" class="flex-1 py-2.5 px-2 rounded-xl text-slate-500 hover:bg-white whitespace-nowrap cursor-pointer text-center flex items-center justify-center">💳 포인트 통장 명세</button>
+        <button id="setTabAdjust" type="button" onclick="switchSettingsTab('adjust')" class="flex-1 py-2.5 px-2 rounded-xl text-slate-500 hover:bg-white whitespace-nowrap cursor-pointer text-center flex items-center justify-center">⚡ 포인트 수동 지급/차감</button>
+        <button id="setTabCoupons" type="button" onclick="switchSettingsTab('coupons')" class="flex-1 py-2.5 px-2 rounded-xl text-slate-500 hover:bg-white whitespace-nowrap cursor-pointer text-center flex items-center justify-center">🏷️ 상점 쿠폰 관리</button>
+        <button id="setTabCouponHistory" type="button" onclick="switchSettingsTab('couponHistory')" class="flex-1 py-2.5 px-2 rounded-xl text-slate-500 hover:bg-white whitespace-nowrap cursor-pointer text-center flex items-center justify-center gap-1">
+          🎟️ 쿠폰 사용 내역
+        </button>
+      </div>
+
+      <!-- 탭 본문 영역 -->
+      <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+        
+        <!-- 탭 1: 학생 명단 -->
+        <div id="setTabContentStudents" class="space-y-4">
+          <form onsubmit="handleAddStudent(event)" class="flex gap-2 mb-4">
+            <input type="text" id="newStudentNameInput" placeholder="새 학생 이름 입력" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-4 py-2 rounded-xl text-xs shadow-md shadow-indigo-100 cursor-pointer">
+              + 학생 추가
+            </button>
+          </form>
+          <div id="settingsStudentList" class="space-y-2"></div>
+        </div>
+
+        <!-- 탭 2: 통장 명세 -->
+        <div id="setTabContentPassbook" class="hidden space-y-3">
+          <div id="settingsPassbookList" class="space-y-2"></div>
+        </div>
+
+        <!-- 탭 3: 포인트 수동 조정 -->
+        <div id="setTabContentAdjust" class="hidden space-y-4">
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <h4 class="font-black text-sm text-slate-900 mb-3">개별 학생 포인트 조정</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="text-xs font-bold text-slate-500 block mb-1">학생 선택</label>
+                <select id="adjustStudentSelect" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold"></select>
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-500 block mb-1">포인트 양 (음수는 차감)</label>
+                <input type="number" id="adjustAmountInput" placeholder="예: 2 또는 -1" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="text-xs font-bold text-slate-500 block mb-1">적용 사유</label>
+              <input type="text" id="adjustReasonInput" placeholder="예: 학급 발표 우수 칭찬 보너스" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold">
+            </div>
+            <button type="button" onclick="handleManualPointAdjust()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 rounded-xl text-xs transition cursor-pointer">
+              포인트 조정 적용하기 ✨
+            </button>
+          </div>
+        </div>
+
+        <!-- 탭 4: 쿠폰 에디터 & 관리 -->
+        <div id="setTabContentCoupons" class="hidden space-y-4">
+          <div id="couponInlineFormBox" class="bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100">
+            <h4 id="couponFormTitle" class="font-black text-indigo-950 text-xs mb-3 flex items-center justify-between">
+              <span>✨ 새 쿠폰 등록하기</span>
+              <button type="button" onclick="resetCouponForm()" class="text-[11px] font-bold text-indigo-600 hover:underline">초기화</button>
+            </h4>
+            <input type="hidden" id="editCouponId">
+            <div class="space-y-3">
+              <div>
+                <label class="text-[11px] font-bold text-slate-500 block mb-1">대표 아이콘 이모지 선택</label>
+                <div class="flex flex-wrap gap-1.5" id="emojiPickerBox">
+                  <button type="button" onclick="selectEmoji('🍬')" class="text-lg p-1.5 bg-white border rounded-lg hover:bg-indigo-100 cursor-pointer">🍬</button>
+                  <button type="button" onclick="selectEmoji('🍪')" class="text-lg p-1.5 bg-white border rounded-lg hover:bg-indigo-100 cursor-pointer">🍪</button>
+                  <button type="button" onclick="selectEmoji('✏️')" class="text-lg p-1.5 bg-white border rounded-lg hover:bg-indigo-100 cursor-pointer">✏️</button>
+                  <button type="button" onclick="selectEmoji('🎨')" class="text-lg p-1.5 bg-white border rounded-lg hover:bg-indigo-100 cursor-pointer">🎨</button>
+                  <button type="button" onclick="selectEmoji('🪑')" class="text-lg p-1.5 bg-white border rounded-lg hover:bg-indigo-100 cursor-pointer">🪑</button>
+                  <button type="button" onclick="selectEmoji('🧹')" class="text-lg p-1.5 bg-white border rounded-lg hover:bg-indigo-100 cursor-pointer">🧹</button>
+                  <button type="button" onclick="selectEmoji('👑')" class="text-lg p-1.5 bg-white border rounded-lg hover:bg-indigo-100 cursor-pointer">👑</button>
+                  <button type="button" onclick="selectEmoji('🎁')" class="text-lg p-1.5 bg-white border rounded-lg hover:bg-indigo-100 cursor-pointer">🎁</button>
+                </div>
+                <input type="hidden" id="couponEmojiInput" value="🍬">
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div class="col-span-2">
+                  <label class="text-[11px] font-bold text-slate-500 block mb-1">쿠폰 이름</label>
+                  <input type="text" id="couponNameInput" placeholder="예: 맛있는 간식 교환권" class="w-full bg-white border rounded-xl px-3 py-2 text-xs font-bold">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-slate-500 block mb-1">필요 포인트 (P)</label>
+                  <input type="number" id="couponPriceInput" value="2" min="1" class="w-full bg-white border rounded-xl px-3 py-2 text-xs font-bold">
+                </div>
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-slate-500 block mb-1">쿠폰 상세 설명</label>
+                <input type="text" id="couponDescInput" placeholder="예: 달콤한 사탕 또는 비타민 간식 1개 교환" class="w-full bg-white border rounded-xl px-3 py-2 text-xs font-bold">
+              </div>
+              <button type="button" onclick="handleSaveCoupon()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 rounded-xl text-xs shadow-md shadow-indigo-100 cursor-pointer">
+                쿠폰 저장 완료 💾
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="font-black text-slate-900 text-xs mb-3">현재 등록된 교실 상점 쿠폰</h4>
+            <div id="settingsCouponList" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- 탭 5: 쿠폰 사용 내역 -->
+        <div id="setTabContentCouponHistory" class="hidden space-y-4">
+          <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200 mb-2">
+            <span class="text-xs font-black text-slate-700">학생 필터:</span>
+            <select id="couponHistoryStudentFilter" onchange="renderCouponHistoryList()" class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none">
+              <option value="ALL">전체 학생 보기</option>
+            </select>
+          </div>
+          <div id="couponHistoryList" class="space-y-2 max-h-[450px] overflow-y-auto custom-scrollbar pr-1"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- [6] 쿠폰 사용 승인 요청 모달 -->
+  <div id="approvalModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-black text-lg text-slate-900 flex items-center gap-2">
+          <span>🔔</span> 쿠폰 사용 승인 요청 목록
+        </h3>
+        <button type="button" onclick="closeApprovalModal()" class="text-slate-400 hover:text-slate-600 font-black cursor-pointer">✕</button>
+      </div>
+      <p class="text-xs font-bold text-slate-400 mb-4">학생들이 사용하고자 알림을 보낸 쿠폰들입니다. [승인]을 누르면 최종 사용 처리됩니다.</p>
+      <div id="approvalModalList" class="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1"></div>
+    </div>
+  </div>
+
+  <!-- [7] 교사 비밀번호 인증 모달 (5658) -->
+  <div id="teacherAuthModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xs w-full p-6 shadow-2xl text-center">
+      <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl font-black mx-auto mb-3">
+        🔒
+      </div>
+      <h3 class="font-black text-slate-900 text-base mb-1">교사 비밀번호 인증</h3>
+      <p class="text-xs font-bold text-slate-400 mb-4">선생님 전용 비밀번호를 입력해주세요.</p>
+      <form onsubmit="handleTeacherAuthSubmit(event)">
+        <input type="password" id="teacherPwInput" placeholder="비밀번호 입력" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-center font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-3">
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2.5 rounded-xl text-xs shadow-md shadow-indigo-100 cursor-pointer">
+          확인
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- [8] 토스트 알림창 -->
+  <div id="toastMessage" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white font-black text-xs px-5 py-3 rounded-2xl shadow-2xl z-50 transition-all duration-300 transform translate-y-4"></div>
+
+
+  <div id="firebaseStatus">☁️ Firebase 연결 중...</div>
+
+  <!-- Firebase: 익명 인증 + Cloud Firestore -->
+  <script src="https://www.gstatic.com/firebasejs/12.3.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.3.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // 22명 학생 가나다 순서 (무작위 4자리 고유번호 부여)
+    const DEFAULT_STUDENTS = [
+      { id: "4829", name: "김서아" }, { id: "7153", name: "김수현" }, { id: "2941", name: "김윤아" },
+      { id: "8360", name: "김태영" }, { id: "1594", name: "김하랑" }, { id: "6278", name: "나예린" },
+      { id: "3415", name: "박민제" }, { id: "9082", name: "박선우" }, { id: "5731", name: "양수빈" },
+      { id: "8246", name: "유소영" }, { id: "1967", name: "이대운" }, { id: "4308", name: "이새봄" },
+      { id: "7512", name: "이서율" }, { id: "3689", name: "이진서" }, { id: "9420", name: "이채원" },
+      { id: "5174", name: "이초은" }, { id: "2836", name: "이태환" }, { id: "6095", name: "이하린" },
+      { id: "8417", name: "한규빈" }, { id: "3729", name: "한유은" }, { id: "5863", name: "현지우" },
+      { id: "7241", name: "황지우" }
+    ];
+
+    // 브라우저 로컬 저장소의 기존 순차 번호(101~122)를 새로운 무작위 고유번호로 자동 동기화
+    if (!localStorage.getItem('board_random_ids_v2')) {
+      localStorage.setItem('board_random_ids_v2', 'true');
+      const oldAccounts = JSON.parse(localStorage.getItem('board_studentAccounts')) || {};
+      const newAccounts = {};
+      DEFAULT_STUDENTS.forEach((st, idx) => {
+        const oldId = String(101 + idx);
+        newAccounts[st.id] = oldAccounts[oldId] || oldAccounts[st.id] || {
+          points: 0, totalEarned: 0, totalSpent: 0, inventory: [], history: []
+        };
+      });
+      localStorage.setItem('board_students', JSON.stringify(DEFAULT_STUDENTS));
+      localStorage.setItem('board_studentAccounts', JSON.stringify(newAccounts));
+    }
+
+    // 기본 교실 상점 쿠폰 목록
+    const DEFAULT_COUPONS = [
+      { id: 'c1', emoji: '🍬', name: '맛있는 간식 교환권', price: 2, desc: '달콤한 사탕 또는 비타민 간식 1개 교환' },
+      { id: 'c2', emoji: '✏️', name: '예쁜 학용품 교환권', price: 4, desc: '캐릭터 연필, 지우개 또는 스티커 교환' },
+      { id: 'c3', emoji: '🪑', name: '원하는 자리 하루 앉기', price: 6, desc: '하루 동안 친구와 함께 원하는 자리 앉기' },
+      { id: 'c4', emoji: '🧹', name: '1일 청소 당번 면제권', price: 8, desc: '오늘의 학급 청소 당번 1회 면제' },
+      { id: 'c5', emoji: '👑', name: '하루 1일 반장/선곡권', price: 10, desc: '아침 음악 선곡 또는 교실 대장 1일 체험' }
+    ];
+
+    // 로컬 스토리지 연동 상태값
+    let students = JSON.parse(localStorage.getItem('board_students')) || DEFAULT_STUDENTS;
+    let recordsByDate = JSON.parse(localStorage.getItem('board_recordsByDate')) || {};
+    let studentAccounts = JSON.parse(localStorage.getItem('board_studentAccounts')) || {};
+    let coupons = JSON.parse(localStorage.getItem('board_coupons')) || DEFAULT_COUPONS;
+    let pendingUsageRequests = JSON.parse(localStorage.getItem('board_pendingUsageRequests')) || [];
+    let completedCouponHistory = JSON.parse(localStorage.getItem('board_completedCouponHistory')) || [];
+
+    let currentDateStr = getFormattedDate(new Date());
+    let currentStudentDateStr = currentDateStr; // 학생 뷰 전용 독립 검색 날짜
+    let currentGridCols = 4;
+    let currentStudentWindowStart = {}; // 학생별 3x3 창 시작점
+    let currentStudentId = null;
+    let isTeacherViewingStudent = false;
+
+    // ===== Firebase 실시간 공용 저장 =====
+    // Google 로그인은 사용하지 않고 Firebase 익명 인증만 자동 사용합니다.
+    const firebaseConfig = {
+      apiKey: "AIzaSyAFAg_NkZ8VLCZKfbOZS7vYdjfoMpCZ1vo",
+      authDomain: "open-class-point.firebaseapp.com",
+      projectId: "open-class-point",
+      storageBucket: "open-class-point.firebasestorage.app",
+      messagingSenderId: "706869188444",
+      appId: "1:706869188444:web:a6602ff2044600d53c1399"
+    };
+        firebase.initializeApp(firebaseConfig);
+    const firebaseAuth = firebase.auth();
+    const firebaseDb = firebase.firestore();
+    const cloudDocRef = firebaseDb.collection("classBoard").doc("main");
+
+    let cloudReady = false;
+    let applyingCloudData = false;
+    let cloudSyncTimer = null;
+
+    function setFirebaseStatus(text) {
+      const el = document.getElementById('firebaseStatus');
+      if (el) el.textContent = text;
+    }
+
+    function buildCloudPayload() {
+      return {
+        students, recordsByDate, studentAccounts, coupons,
+        pendingUsageRequests, completedCouponHistory,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+    }
+
+    function applyCloudPayload(data) {
+      if (!data) return;
+      applyingCloudData = true;
+      try {
+        if (Array.isArray(data.students)) students = data.students;
+        if (data.recordsByDate && typeof data.recordsByDate === 'object') recordsByDate = data.recordsByDate;
+        if (data.studentAccounts && typeof data.studentAccounts === 'object') studentAccounts = data.studentAccounts;
+        if (Array.isArray(data.coupons)) coupons = data.coupons;
+        if (Array.isArray(data.pendingUsageRequests)) pendingUsageRequests = data.pendingUsageRequests;
+        if (Array.isArray(data.completedCouponHistory)) completedCouponHistory = data.completedCouponHistory;
+
+        localStorage.setItem('board_students', JSON.stringify(students));
+      scheduleCloudSync();
+        localStorage.setItem('board_recordsByDate', JSON.stringify(recordsByDate));
+        localStorage.setItem('board_studentAccounts', JSON.stringify(studentAccounts));
+        localStorage.setItem('board_coupons', JSON.stringify(coupons));
+      scheduleCloudSync();
+        localStorage.setItem('board_pendingUsageRequests', JSON.stringify(pendingUsageRequests));
+      scheduleCloudSync();
+        localStorage.setItem('board_completedCouponHistory', JSON.stringify(completedCouponHistory));
+      scheduleCloudSync();
+      } finally {
+        applyingCloudData = false;
+      }
+
+      renderTeacherView();
+      updateApprovalBadge();
+      if (currentStudentId) renderStudentDashboard();
+    }
+
+    async function pushAllToCloud() {
+      if (!cloudReady || applyingCloudData) return;
+      try {
+        await cloudDocRef.set(buildCloudPayload(), { merge: true });
+        setFirebaseStatus("☁️ Firebase 저장 완료");
+      } catch (err) {
+        console.error("Firestore 저장 오류:", err);
+        setFirebaseStatus("⚠️ Firebase 저장 실패");
+        showToast("⚠️ 인터넷 연결을 확인해주세요.");
+      }
+    }
+
+    function scheduleCloudSync() {
+      if (!cloudReady || applyingCloudData) return;
+      clearTimeout(cloudSyncTimer);
+      cloudSyncTimer = setTimeout(pushAllToCloud, 100);
+    }
+
+    async function initializeFirebaseCloud() {
+      try {
+
+        if (!firebaseAuth.currentUser) {
+          await firebaseAuth.signInAnonymously();
+        }
+
+        firebaseDebug(
+          '✅ 3/5 익명 인증 성공\n' +
+          '4/5 Firestore 읽기 테스트 중...\n\n' +
+          'UID: ' + (firebaseAuth.currentUser ? firebaseAuth.currentUser.uid : '(없음)')
+        );
+
+        const snap = await cloudDocRef.get();
+
+        if (snap.exists) {
+          applyCloudPayload(snap.data());
+        } else {
+          await cloudDocRef.set(buildCloudPayload());
+        }
+
+        cloudReady = true;
+
+        cloudDocRef.onSnapshot((docSnap) => {
+          if (!docSnap.exists || docSnap.metadata.hasPendingWrites) return;
+          applyCloudPayload(docSnap.data());
+        }, (err) => {
+        });
+
+        return true;
+      } catch (err) {
+        console.error("Firebase 초기화 오류:", err);
+        return false;
+      }
+    }
+
+
+    // 페이지 로드 시 첫 화면 설정: 학생 로그인 화면 우선 노출
+    window.addEventListener('DOMContentLoaded', async () => {
+      initDateSelectors();
+      initStudentDateSelectors();
+
+      // Firebase 익명 인증 → Firestore 자료 불러오기
+      await initializeFirebaseCloud();
+
+      initStudentAccounts();
+      renderTeacherView();
+      updateApprovalBadge();
+
+      // 학생은 기존 4자리 고유번호로 로그인
+      switchToStudentView();
+    });
+
+    function getFormattedDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    // 교사용 날짜 선택기
+    function initDateSelectors() {
+      const yearSel = document.getElementById('selectYear');
+      const monthSel = document.getElementById('selectMonth');
+      if (!yearSel || !monthSel) return;
+      
+      yearSel.innerHTML = '';
+      const currY = new Date().getFullYear();
+      for (let y = currY - 2; y <= currY + 2; y++) {
+        yearSel.innerHTML += `<option value="${y}">${y}년</option>`;
+      }
+
+      monthSel.innerHTML = '';
+      for (let m = 1; m <= 12; m++) {
+        monthSel.innerHTML += `<option value="${m}">${m}월</option>`;
+      }
+
+      const parts = currentDateStr.split('-');
+      yearSel.value = parseInt(parts[0]);
+      monthSel.value = parseInt(parts[1]);
+      updateDayOptions();
+      document.getElementById('selectDay').value = parseInt(parts[2]);
+    }
+
+    function updateDayOptions() {
+      const yearSel = document.getElementById('selectYear');
+      const monthSel = document.getElementById('selectMonth');
+      const daySel = document.getElementById('selectDay');
+      if (!yearSel || !monthSel || !daySel) return;
+
+      const y = parseInt(yearSel.value);
+      const m = parseInt(monthSel.value);
+      const daysInMonth = new Date(y, m, 0).getDate();
+
+      const prevVal = parseInt(daySel.value) || 1;
+      daySel.innerHTML = '';
+      for (let d = 1; d <= daysInMonth; d++) {
+        daySel.innerHTML += `<option value="${d}">${d}일</option>`;
+      }
+      daySel.value = Math.min(prevVal, daysInMonth);
+    }
+
+    function handleDateSelectChange() {
+      updateDayOptions();
+      const y = document.getElementById('selectYear').value;
+      const m = String(document.getElementById('selectMonth').value).padStart(2, '0');
+      const d = String(document.getElementById('selectDay').value).padStart(2, '0');
+      currentDateStr = `${y}-${m}-${d}`;
+      renderTeacherView();
+      if (currentStudentId && !isTeacherViewingStudent) {
+        currentStudentDateStr = currentDateStr;
+        initStudentDateSelectors();
+        renderStudentDashboard();
+      }
+    }
+
+    function handleNativeDatePicked(val) {
+      if (!val) return;
+      currentDateStr = val;
+      initDateSelectors();
+      renderTeacherView();
+    }
+
+    function changeDateOffset(offset) {
+      const [y, m, d] = currentDateStr.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      dt.setDate(dt.getDate() + offset);
+      currentDateStr = getFormattedDate(dt);
+      initDateSelectors();
+      renderTeacherView();
+    }
+
+    function setTodayDate() {
+      currentDateStr = getFormattedDate(new Date());
+      initDateSelectors();
+      renderTeacherView();
+    }
+
+    // 학생용 전용 날짜 선택기
+    function initStudentDateSelectors() {
+      const yearSel = document.getElementById('studentSelectYear');
+      const monthSel = document.getElementById('studentSelectMonth');
+      const daySel = document.getElementById('studentSelectDay');
+      if (!yearSel || !monthSel || !daySel) return;
+      
+      yearSel.innerHTML = '';
+      const currY = new Date().getFullYear();
+      for (let y = currY - 2; y <= currY + 2; y++) {
+        yearSel.innerHTML += `<option value="${y}">${y}년</option>`;
+      }
+
+      monthSel.innerHTML = '';
+      for (let m = 1; m <= 12; m++) {
+        monthSel.innerHTML += `<option value="${m}">${m}월</option>`;
+      }
+
+      const parts = currentStudentDateStr.split('-');
+      yearSel.value = parseInt(parts[0]);
+      monthSel.value = parseInt(parts[1]);
+      updateStudentDayOptions();
+      daySel.value = parseInt(parts[2]);
+    }
+
+    function updateStudentDayOptions() {
+      const yearSel = document.getElementById('studentSelectYear');
+      const monthSel = document.getElementById('studentSelectMonth');
+      const daySel = document.getElementById('studentSelectDay');
+      if (!yearSel || !monthSel || !daySel) return;
+
+      const y = parseInt(yearSel.value);
+      const m = parseInt(monthSel.value);
+      const daysInMonth = new Date(y, m, 0).getDate();
+
+      const prevVal = parseInt(daySel.value) || 1;
+      daySel.innerHTML = '';
+      for (let d = 1; d <= daysInMonth; d++) {
+        daySel.innerHTML += `<option value="${d}">${d}일</option>`;
+      }
+      daySel.value = Math.min(prevVal, daysInMonth);
+    }
+
+    function handleStudentDateSelectChange() {
+      updateStudentDayOptions();
+      const y = document.getElementById('studentSelectYear').value;
+      const m = String(document.getElementById('studentSelectMonth').value).padStart(2, '0');
+      const d = String(document.getElementById('studentSelectDay').value).padStart(2, '0');
+      currentStudentDateStr = `${y}-${m}-${d}`;
+      renderStudentDashboard();
+    }
+
+    function handleStudentNativeDatePicked(val) {
+      if (!val) return;
+      currentStudentDateStr = val;
+      initStudentDateSelectors();
+      renderStudentDashboard();
+    }
+
+    function changeStudentDateOffset(offset) {
+      const [y, m, d] = currentStudentDateStr.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      dt.setDate(dt.getDate() + offset);
+      currentStudentDateStr = getFormattedDate(dt);
+      initStudentDateSelectors();
+      renderStudentDashboard();
+    }
+
+    function setStudentTodayDate() {
+      currentStudentDateStr = getFormattedDate(new Date());
+      initStudentDateSelectors();
+      renderStudentDashboard();
+    }
+
+    function initStudentAccounts() {
+      students.forEach(st => {
+        if (!studentAccounts[st.id]) {
+          studentAccounts[st.id] = {
+            points: 0,
+            totalEarned: 0,
+            totalSpent: 0,
+            inventory: [],
+            history: [] // 0포인트 개설 내역 없이 순수 거래 내역만 기록
+          };
+        }
+      });
+      saveAccounts();
+    }
+
+    function saveAccounts() {
+      localStorage.setItem('board_studentAccounts', JSON.stringify(studentAccounts));
+      scheduleCloudSync();
+    }
+
+    function saveRecords() {
+      localStorage.setItem('board_recordsByDate', JSON.stringify(recordsByDate));
+      scheduleCloudSync();
+    }
+
+    function getStudentRecord(stId, dateStr = currentDateStr) {
+      if (!recordsByDate[dateStr]) recordsByDate[dateStr] = {};
+      if (!recordsByDate[dateStr][stId]) {
+        recordsByDate[dateStr][stId] = { checked: [] };
+      }
+      return recordsByDate[dateStr][stId];
+    }
+
+    function setGridColumns(cols) {
+      currentGridCols = cols;
+      ['cols4Btn', 'cols5Btn', 'cols6Btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (id === `cols${cols}Btn`) {
+          btn.className = "px-2.5 py-1 rounded-lg transition bg-white text-indigo-600 shadow-2xs font-black";
+        } else {
+          btn.className = "px-2.5 py-1 rounded-lg transition text-slate-600 hover:bg-white font-bold";
+        }
+      });
+
+      const grid = document.getElementById('studentCardsGrid');
+      grid.className = `grid grid-cols-1 sm:grid-cols-2 md:grid-cols-${cols} gap-3.5`;
+    }
+
+    function renderTeacherView() {
+      const grid = document.getElementById('studentCardsGrid');
+      grid.innerHTML = '';
+
+      document.getElementById('studentCountBadge').textContent = `학급 ${students.length}명`;
+
+      students.forEach(st => {
+        const rec = getStudentRecord(st.id, currentDateStr);
+        const windowStart = currentStudentWindowStart[st.id] || 1;
+        const checkedList = rec.checked;
+
+        // 3x3 번호판 셀 구성
+        let cellsHtml = '';
+        for (let num = windowStart; num < windowStart + 9; num++) {
+          const isChecked = checkedList.includes(num);
+          const isNext = !isChecked && (num === 1 || checkedList.includes(num - 1));
+
+          if (isChecked) {
+            cellsHtml += `
+              <button type="button" onclick="toggleCell('${st.id}', ${num})" class="h-11 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white font-black text-sm flex flex-col items-center justify-center shadow-xs shadow-indigo-200 transition active:scale-95 cursor-pointer">
+                <span>${num}</span>
+                <span class="text-[9px]">✓</span>
+              </button>`;
+          } else if (isNext) {
+            cellsHtml += `
+              <button type="button" onclick="toggleCell('${st.id}', ${num})" class="h-11 rounded-xl bg-white border-2 border-indigo-500 text-indigo-600 font-black text-sm flex flex-col items-center justify-center hover:bg-indigo-50 transition active:scale-95 cursor-pointer">
+                <span>${num}</span>
+                <span class="text-[8px] bg-indigo-100 text-indigo-800 px-1 rounded font-black">다음</span>
+              </button>`;
+          } else {
+            cellsHtml += `
+              <button type="button" onclick="toggleCell('${st.id}', ${num})" class="h-11 rounded-xl bg-slate-50 border border-slate-200 text-slate-300 font-black text-sm flex flex-col items-center justify-center hover:bg-slate-100 transition cursor-pointer">
+                <span>${num}</span>
+                <span class="text-[9px]">🔒</span>
+              </button>`;
+          }
+        }
+
+        const maxNum = checkedList.length > 0 ? Math.max(...checkedList) : 0;
+        const nextTargetNum = maxNum + 1;
+
+        // 학생 카드 (포인트 제거, 사용신청 뱃지 제거, [🏠] 집 아이콘 적용)
+        const cardHtml = `
+          <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-2xs hover:shadow-md transition flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="font-black text-slate-900 text-base tracking-tight truncate">${st.name}</span>
+                  <button type="button" onclick="enterStudentDashboardDirect('${st.id}')" class="p-1 rounded-xl bg-indigo-50 hover:bg-indigo-600 hover:text-white border border-indigo-200 text-indigo-700 text-xs font-black transition cursor-pointer flex items-center justify-center shadow-2xs" title="${st.name} 학생 개인 통장 / 발표판 바로가기">
+                    🏠
+                  </button>
+                </div>
+
+                <div class="flex items-center gap-0.5 bg-slate-100 px-1.5 py-0.5 rounded-xl text-[10px] font-black text-slate-600 shrink-0">
+                  <button type="button" onclick="shiftStudentWindow('${st.id}', -3)" class="hover:text-indigo-600 px-0.5" title="이전 3칸">▲</button>
+                  <span>${windowStart}~${windowStart + 8}</span>
+                  <button type="button" onclick="shiftStudentWindow('${st.id}', 3)" class="hover:text-indigo-600 px-0.5" title="다음 3칸">▼</button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-1.5 mb-3 p-1 bg-slate-50 border border-slate-200 rounded-2xl">
+                ${cellsHtml}
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+              <span class="font-bold text-slate-500">${checkedList.length}회 완료</span>
+              <button type="button" onclick="quickNext('${st.id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-black px-2.5 py-1 rounded-xl border border-indigo-200/80 transition cursor-pointer">
+                + ${nextTargetNum}번 체크
+              </button>
+            </div>
+          </div>
+        `;
+        grid.innerHTML += cardHtml;
+      });
+    }
+
+    function toggleCell(stId, num) {
+      const rec = getStudentRecord(stId, currentDateStr);
+      const acc = studentAccounts[stId];
+      const st = students.find(s => s.id === stId);
+      let checked = rec.checked;
+
+      if (checked.includes(num)) {
+        const maxNum = Math.max(...checked);
+        if (num !== maxNum) {
+          showToast(`⚠️ 가장 마지막에 체크한 ${maxNum}번부터 차례대로 취소해주세요!`);
+          return;
+        }
+        rec.checked = checked.filter(n => n !== num);
+        
+        // 포인트 1P 차감 및 통장에서 해당 번호 적립 로그 깔끔히 제거 (취소 로그 남기지 않음)
+        acc.points = Math.max(0, acc.points - 1);
+        acc.totalEarned = Math.max(0, acc.totalEarned - 1);
+        acc.history = acc.history.filter(h => !(h.type === 'EARN' && h.desc.includes(`${currentDateStr} · ${num}번`)));
+        
+        showToast(`↩️ ${st.name} 학생 ${num}번 발표 해제 (-1P)`);
+      } else {
+        const expected = checked.length === 0 ? 1 : Math.max(...checked) + 1;
+        if (num !== expected) {
+          showToast(`⚠️ 앞번호(${expected}번)부터 차례대로 체크해야 합니다!`);
+          return;
+        }
+        checked.push(num);
+        checked.sort((a, b) => a - b);
+
+        const currStart = currentStudentWindowStart[stId] || 1;
+        if (num > currStart + 8) {
+          currentStudentWindowStart[stId] = currStart + 3;
+        }
+
+        // 발표 1회당 1P 적립
+        acc.points += 1;
+        acc.totalEarned += 1;
+        acc.history.unshift({
+          id: 'h_' + Date.now() + Math.random(),
+          type: 'EARN',
+          desc: `발표 완료 (${currentDateStr} · ${num}번)`,
+          amount: 1,
+          balance: acc.points,
+          date: `${currentDateStr} ${new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}`
+        });
+
+        showToast(`👏 ${st.name} 학생 ${num}번 발표 완료! (+1P)`);
+      }
+
+      saveRecords();
+      saveAccounts();
+      renderTeacherView();
+      if (currentStudentId === stId) renderStudentDashboard();
+    }
+
+    function quickNext(stId) {
+      const rec = getStudentRecord(stId, currentDateStr);
+      const nextNum = rec.checked.length === 0 ? 1 : Math.max(...rec.checked) + 1;
+      toggleCell(stId, nextNum);
+    }
+
+    function shiftStudentWindow(stId, delta) {
+      const curr = currentStudentWindowStart[stId] || 1;
+      const next = Math.max(1, curr + delta);
+      currentStudentWindowStart[stId] = next;
+      renderTeacherView();
+    }
+
+    function switchToTeacherView() {
+      isTeacherViewingStudent = false;
+      document.getElementById('teacherHeader').classList.remove('hidden');
+      document.getElementById('teacherViewSection').classList.remove('hidden');
+      document.getElementById('studentViewSection').classList.add('hidden');
+      document.getElementById('studentLoginSection').classList.add('hidden');
+      document.getElementById('teacherViewingBanner').classList.add('hidden');
+      renderTeacherView();
+    }
+
+    function switchToStudentView() {
+      // 학생 첫 화면 진입: 교사 헤더 숨김
+      document.getElementById('teacherHeader').classList.add('hidden');
+      document.getElementById('teacherViewSection').classList.add('hidden');
+      document.getElementById('studentViewSection').classList.add('hidden');
+      document.getElementById('studentLoginSection').classList.remove('hidden');
+    }
+
+    function enterStudentDashboardDirect(stId) {
+      currentStudentId = stId;
+      isTeacherViewingStudent = true;
+      currentStudentDateStr = currentDateStr;
+
+      document.getElementById('teacherHeader').classList.add('hidden');
+      document.getElementById('teacherViewSection').classList.add('hidden');
+      document.getElementById('studentLoginSection').classList.add('hidden');
+      document.getElementById('studentViewSection').classList.remove('hidden');
+
+      document.getElementById('teacherViewingBanner').classList.remove('hidden');
+      document.getElementById('studentLogoutBtn').classList.add('hidden');
+      
+      const st = students.find(s => s.id === stId);
+      document.getElementById('viewingStudentName').textContent = st ? st.name : '학생';
+
+      initStudentDateSelectors();
+      renderStudentDashboard();
+    }
+
+    function handleStudentLogin(e) {
+      e.preventDefault();
+      const input = document.getElementById('studentLoginIdInput').value.trim();
+      const st = students.find(s => s.id === input);
+      
+      if (!st) {
+        showToast('❌ 입력하신 고유번호를 가진 학생이 없습니다.');
+        return;
+      }
+
+      currentStudentId = st.id;
+      isTeacherViewingStudent = false;
+      currentStudentDateStr = currentDateStr;
+      document.getElementById('studentLoginIdInput').value = '';
+      
+      document.getElementById('studentLoginSection').classList.add('hidden');
+      document.getElementById('studentViewSection').classList.remove('hidden');
+      document.getElementById('teacherViewingBanner').classList.add('hidden');
+      document.getElementById('studentLogoutBtn').classList.remove('hidden');
+
+      initStudentDateSelectors();
+      renderStudentDashboard();
+    }
+
+    function logoutStudentDash() {
+      currentStudentId = null;
+      switchToStudentView();
+    }
+
+    function renderStudentLoginChips() {
+      // 빠른 테스트용 학생 버튼 제거됨
+    }
+
+    function renderStudentDashboard() {
+      if (!currentStudentId) return;
+      const st = students.find(s => s.id === currentStudentId);
+      const acc = studentAccounts[currentStudentId] || { points: 0, totalEarned: 0, totalSpent: 0, inventory: [], history: [] };
+
+      document.getElementById('studentProfileName').textContent = st.name;
+      document.getElementById('studentProfileDateBadge').textContent = `조회일: ${currentStudentDateStr}`;
+
+      document.getElementById('dashCurrentPoints').textContent = `${acc.points} P`;
+      document.getElementById('dashTotalEarned').textContent = `${acc.totalEarned} P`;
+      document.getElementById('dashTotalSpent').textContent = `${acc.totalSpent} P`;
+
+      document.getElementById('dashInventoryBadge').textContent = acc.inventory.length;
+
+      renderStudentDashGrid();
+      renderStudentInventory();
+      renderPassbookHistory();
+      renderShopGrid();
+    }
+
+    function switchStudentTab(tab) {
+      ['board', 'inventory', 'history', 'shop'].forEach(t => {
+        const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        const content = document.getElementById(`studentTabContent${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (t === tab) {
+          btn.className = "flex-1 py-3 rounded-xl bg-white text-indigo-600 shadow-xs transition text-center font-black cursor-pointer";
+          content.classList.remove('hidden');
+        } else {
+          btn.className = "flex-1 py-3 rounded-xl text-slate-600 hover:bg-white/50 transition text-center font-bold cursor-pointer";
+          content.classList.add('hidden');
+        }
+      });
+    }
+
+    function renderStudentDashGrid() {
+      const grid = document.getElementById('studentDashGrid');
+      grid.innerHTML = '';
+      const rec = getStudentRecord(currentStudentId, currentStudentDateStr);
+      const windowStart = currentStudentWindowStart[currentStudentId] || 1;
+      
+      document.getElementById('studentDashBoardTitle').textContent = `${currentStudentDateStr} 내 발표 현황판`;
+      document.getElementById('studentDashWindowLabel').textContent = `${windowStart}~${windowStart + 8}`;
+
+      for (let num = windowStart; num < windowStart + 9; num++) {
+        const isChecked = rec.checked.includes(num);
+        if (isChecked) {
+          grid.innerHTML += `
+            <div class="h-24 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex flex-col items-center justify-center font-black shadow-md shadow-indigo-100">
+              <span class="text-2xl">${num}</span>
+              <span class="text-[11px] bg-white/20 px-2 py-0.5 rounded-md mt-1 font-bold">발표 완료 ✓</span>
+            </div>
+          `;
+        } else {
+          grid.innerHTML += `
+            <div class="h-24 rounded-2xl bg-white border border-slate-200 text-slate-400 flex flex-col items-center justify-center font-bold">
+              <span class="text-2xl text-slate-700">${num}</span>
+              <span class="text-[11px] text-slate-400 mt-1 font-medium">대기 중</span>
+            </div>
+          `;
+        }
+      }
+
+      document.getElementById('studentDashSummaryBadge').innerHTML = `
+        <span class="inline-block bg-indigo-50 text-indigo-700 font-black text-xs px-4 py-2 rounded-2xl border border-indigo-100">
+          🔥 ${currentStudentDateStr} 발표 ${rec.checked.length}회 완료 (+${rec.checked.length} P 적립 완료)
+        </span>
+      `;
+    }
+
+    function shiftStudentDashWindow(delta) {
+      const curr = currentStudentWindowStart[currentStudentId] || 1;
+      currentStudentWindowStart[currentStudentId] = Math.max(1, curr + delta);
+      renderStudentDashGrid();
+    }
+
+    function renderStudentInventory() {
+      const acc = studentAccounts[currentStudentId];
+      const pendingList = pendingUsageRequests.filter(r => r.studentId === currentStudentId);
+      
+      const pendingSec = document.getElementById('pendingUsageSection');
+      const pendingBox = document.getElementById('pendingUsageList');
+      if (pendingList.length > 0) {
+        pendingSec.classList.remove('hidden');
+        pendingBox.innerHTML = '';
+        pendingList.forEach(req => {
+          pendingBox.innerHTML += `
+            <div class="bg-white p-3 rounded-2xl border border-amber-200 flex items-center justify-between text-xs font-bold shadow-2xs">
+              <div class="flex items-center gap-2.5">
+                <span class="text-2xl">${req.emoji}</span>
+                <div>
+                  <p class="text-slate-900 font-black">${req.couponName}</p>
+                  <p class="text-[10px] text-amber-600 font-bold">요청 시간: ${req.requestTime}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="bg-amber-100 text-amber-800 text-[11px] font-black px-2.5 py-1 rounded-xl">선생님 확인 중...</span>
+                <button type="button" onclick="cancelUsageRequest('${req.requestId}')" class="bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-xl text-xs font-bold cursor-pointer">요청 취소</button>
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        pendingSec.classList.add('hidden');
+      }
+
+      const container = document.getElementById('inventoryCardList');
+      container.innerHTML = '';
+      if (acc.inventory.length === 0) {
+        container.innerHTML = `<div class="col-span-2 text-center text-xs font-bold text-slate-400 py-10">보유 중인 쿠폰이 없습니다. 상점에서 모은 포인트로 교환해보세요!</div>`;
+        return;
+      }
+
+      acc.inventory.forEach(item => {
+        container.innerHTML += `
+          <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex items-center justify-between shadow-2xs">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">${item.emoji}</span>
+              <div>
+                <h5 class="font-black text-slate-900 text-sm">${item.name}</h5>
+                <p class="text-[11px] font-bold text-slate-400">${item.desc}</p>
+              </div>
+            </div>
+            <button type="button" onclick="requestUseCoupon('${item.itemId}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs px-3 py-2 rounded-xl shadow-md shadow-indigo-100 transition cursor-pointer">
+              선생님께 사용 요청 🚀
+            </button>
+          </div>
+        `;
+      });
+    }
+
+    function requestUseCoupon(itemId) {
+      const acc = studentAccounts[currentStudentId];
+      const idx = acc.inventory.findIndex(i => i.itemId === itemId);
+      if (idx === -1) return;
+
+      const item = acc.inventory[idx];
+      const st = students.find(s => s.id === currentStudentId);
+
+      acc.inventory.splice(idx, 1);
+
+      const reqObj = {
+        requestId: 'req_' + Date.now(),
+        studentId: currentStudentId,
+        studentName: st.name,
+        itemId: item.itemId,
+        couponName: item.name,
+        emoji: item.emoji,
+        price: item.price,
+        requestTime: `${currentDateStr} ${new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}`
+      };
+
+      pendingUsageRequests.push(reqObj);
+      
+      saveAccounts();
+      localStorage.setItem('board_pendingUsageRequests', JSON.stringify(pendingUsageRequests));
+      scheduleCloudSync();
+      
+      updateApprovalBadge();
+      renderStudentDashboard();
+      showToast('🚀 선생님께 쿠폰 사용 승인 요청을 보냈습니다!');
+    }
+
+    function cancelUsageRequest(reqId) {
+      const idx = pendingUsageRequests.findIndex(r => r.requestId === reqId);
+      if (idx === -1) return;
+
+      const req = pendingUsageRequests[idx];
+      const acc = studentAccounts[req.studentId];
+
+      acc.inventory.push({
+        itemId: req.itemId,
+        name: req.couponName,
+        emoji: req.emoji,
+        price: req.price,
+        desc: ''
+      });
+
+      pendingUsageRequests.splice(idx, 1);
+
+      saveAccounts();
+      localStorage.setItem('board_pendingUsageRequests', JSON.stringify(pendingUsageRequests));
+      scheduleCloudSync();
+
+      updateApprovalBadge();
+      renderStudentDashboard();
+      showToast('↩️ 쿠폰 사용 요청이 취소되어 가방으로 돌아왔습니다.');
+    }
+
+    function renderPassbookHistory() {
+      const acc = studentAccounts[currentStudentId];
+      const box = document.getElementById('passbookHistoryList');
+      const filterMode = document.getElementById('passbookFilterSelect').value;
+      box.innerHTML = '';
+
+      let list = acc.history;
+      if (filterMode === 'CURRENT_DATE') {
+        list = list.filter(h => h.date.startsWith(currentStudentDateStr));
+      }
+
+      if (list.length === 0) {
+        box.innerHTML = `<div class="text-center text-xs font-bold text-slate-400 py-10">${filterMode === 'CURRENT_DATE' ? currentStudentDateStr + ' 날짜의 거래 내역이 없습니다.' : '아직 거래 내역이 없습니다.'}</div>`;
+        return;
+      }
+
+      list.forEach(h => {
+        const isEarn = h.type === 'EARN';
+        box.innerHTML += `
+          <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 flex items-center justify-between text-xs font-bold shadow-2xs">
+            <div class="flex items-center gap-3">
+              <span class="${isEarn ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'} px-2.5 py-1 rounded-xl font-black text-[11px]">
+                ${isEarn ? '입금' : '출금'}
+              </span>
+              <div>
+                <p class="text-slate-900 font-black">${h.desc}</p>
+                <p class="text-[10px] text-slate-400 font-bold">${h.date}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="${isEarn ? 'text-emerald-600' : 'text-rose-600'} font-black text-sm">${isEarn ? '+' : '-'}${h.amount} P</p>
+              <p class="text-[10px] text-slate-400 font-bold">잔액: ${h.balance} P</p>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function renderShopGrid() {
+      const box = document.getElementById('shopCouponGrid');
+      box.innerHTML = '';
+      const acc = studentAccounts[currentStudentId];
+
+      coupons.forEach(c => {
+        const canBuy = acc.points >= c.price;
+        box.innerHTML += `
+          <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col justify-between shadow-2xs">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-3xl">${c.emoji}</span>
+                <span class="bg-amber-100 text-amber-900 font-black text-xs px-2.5 py-1 rounded-xl">${c.price} P</span>
+              </div>
+              <h5 class="font-black text-slate-900 text-sm">${c.name}</h5>
+              <p class="text-xs font-bold text-slate-400 mt-1 mb-4">${c.desc}</p>
+            </div>
+            <button type="button" onclick="buyShopCoupon('${c.id}')" ${!canBuy ? 'disabled' : ''} class="${canBuy ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-md shadow-indigo-100' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} font-black text-xs w-full py-2.5 rounded-xl transition">
+              ${canBuy ? '구매하여 가방에 담기 🛍️' : '포인트 부족 🔒'}
+            </button>
+          </div>
+        `;
+      });
+    }
+
+    function buyShopCoupon(couponId) {
+      const c = coupons.find(item => item.id === couponId);
+      const acc = studentAccounts[currentStudentId];
+
+      if (!c || acc.points < c.price) {
+        showToast('❌ 포인트가 부족합니다.');
+        return;
+      }
+
+      acc.points -= c.price;
+      acc.totalSpent += c.price;
+
+      acc.inventory.push({
+        itemId: 'item_' + Date.now(),
+        name: c.name,
+        emoji: c.emoji,
+        price: c.price,
+        desc: c.desc
+      });
+
+      acc.history.unshift({
+        id: 'h_' + Date.now(),
+        type: 'SPEND',
+        desc: `쿠폰 구매 [${c.name}]`,
+        amount: c.price,
+        balance: acc.points,
+        date: `${currentDateStr} ${new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}`
+      });
+
+      saveAccounts();
+      renderStudentDashboard();
+      showToast(`🛍️ ${c.name} 쿠폰이 내 가방에 들어왔습니다!`);
+    }
+
+    function updateApprovalBadge() {
+      const btn = document.getElementById('teacherCouponApprovalBtn');
+      const badge = document.getElementById('approvalBadgeCount');
+      if (pendingUsageRequests.length > 0) {
+        btn.classList.remove('hidden');
+        btn.classList.add('flex');
+        badge.textContent = pendingUsageRequests.length;
+      } else {
+        btn.classList.add('hidden');
+        btn.classList.remove('flex');
+      }
+    }
+
+    function openApprovalModal() {
+      document.getElementById('approvalModal').classList.remove('hidden');
+      const box = document.getElementById('approvalModalList');
+      box.innerHTML = '';
+
+      if (pendingUsageRequests.length === 0) {
+        box.innerHTML = `<div class="text-center text-xs font-bold text-slate-400 py-8">대기 중인 사용 요청이 없습니다.</div>`;
+        return;
+      }
+
+      pendingUsageRequests.forEach(req => {
+        box.innerHTML += `
+          <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between shadow-2xs">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">${req.emoji}</span>
+              <div>
+                <p class="font-black text-slate-900 text-sm">${req.studentName} 학생</p>
+                <p class="font-bold text-indigo-600 text-xs">${req.couponName} (${req.price} P)</p>
+                <p class="text-[10px] text-slate-400 font-bold">${req.requestTime}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="approveCouponRequest('${req.requestId}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-3 py-2 rounded-xl transition shadow-xs cursor-pointer">
+                승인 완료 ✅
+              </button>
+              <button type="button" onclick="rejectCouponRequest('${req.requestId}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-black text-xs px-2.5 py-2 rounded-xl transition cursor-pointer">
+                보류
+              </button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function closeApprovalModal() {
+      document.getElementById('approvalModal').classList.add('hidden');
+    }
+
+    function approveCouponRequest(reqId) {
+      const idx = pendingUsageRequests.findIndex(r => r.requestId === reqId);
+      if (idx === -1) return;
+
+      const req = pendingUsageRequests[idx];
+
+      completedCouponHistory.unshift({
+        id: 'c_hist_' + Date.now(),
+        studentId: req.studentId,
+        studentName: req.studentName,
+        couponName: req.couponName,
+        emoji: req.emoji,
+        price: req.price,
+        completedTime: `${currentDateStr} ${new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}`
+      });
+
+      pendingUsageRequests.splice(idx, 1);
+
+      localStorage.setItem('board_pendingUsageRequests', JSON.stringify(pendingUsageRequests));
+      scheduleCloudSync();
+      localStorage.setItem('board_completedCouponHistory', JSON.stringify(completedCouponHistory));
+      scheduleCloudSync();
+
+      updateApprovalBadge();
+      openApprovalModal();
+      renderTeacherView();
+      if (currentStudentId) renderStudentDashboard();
+      showToast(`✅ ${req.studentName} 학생의 쿠폰 사용이 최종 승인되었습니다.`);
+    }
+
+    function rejectCouponRequest(reqId) {
+      cancelUsageRequest(reqId);
+      openApprovalModal();
+    }
+
+    function openSettingsModal() {
+      document.getElementById('settingsModal').classList.remove('hidden');
+      switchSettingsTab('students');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    function switchSettingsTab(tabName) {
+      const tabs = ['Students', 'Passbook', 'Adjust', 'Coupons', 'CouponHistory'];
+      
+      tabs.forEach(t => {
+        const btn = document.getElementById(`setTab${t}`);
+        const content = document.getElementById(`setTabContent${t}`);
+        
+        if (t.toLowerCase() === tabName.toLowerCase()) {
+          btn.className = "flex-1 py-2.5 px-2 rounded-xl bg-white text-indigo-600 shadow-2xs whitespace-nowrap font-black cursor-pointer text-center flex items-center justify-center";
+          content.classList.remove('hidden');
+        } else {
+          btn.className = "flex-1 py-2.5 px-2 rounded-xl text-slate-500 hover:bg-white whitespace-nowrap font-bold cursor-pointer text-center flex items-center justify-center";
+          content.classList.add('hidden');
+        }
+      });
+
+      if (tabName === 'students') renderSettingsStudentList();
+      if (tabName === 'passbook') renderSettingsPassbookList();
+      if (tabName === 'adjust') renderSettingsAdjustSelect();
+      if (tabName === 'coupons') renderSettingsCouponList();
+      if (tabName === 'couponHistory') renderCouponHistoryList();
+    }
+
+    function renderSettingsStudentList() {
+      const box = document.getElementById('settingsStudentList');
+      box.innerHTML = '';
+
+      students.forEach(st => {
+        box.innerHTML += `
+          <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex items-center justify-between text-xs font-bold">
+            <div class="flex items-center gap-3">
+              <span class="text-slate-900 font-black text-sm">${st.name}</span>
+              <div class="flex items-center gap-1">
+                <span class="text-slate-400">고유번호:</span>
+                <input type="text" id="stIdInput_${st.id}" value="${st.id}" class="w-20 bg-white border rounded-lg px-2 py-1 text-center font-black text-indigo-600">
+                <button type="button" onclick="saveStudentIdChange('${st.id}')" class="bg-indigo-50 text-indigo-600 px-2 py-1 rounded-lg hover:bg-indigo-100 font-black cursor-pointer">저장</button>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="enterStudentDashboardDirect('${st.id}'); closeSettingsModal();" class="bg-indigo-600 text-white px-3 py-1.5 rounded-xl hover:bg-indigo-700 font-black cursor-pointer">개인 뷰 🏠</button>
+              <button type="button" onclick="deleteStudent('${st.id}')" class="bg-rose-50 text-rose-600 px-2.5 py-1.5 rounded-xl hover:bg-rose-100 font-black cursor-pointer">삭제</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function handleAddStudent(e) {
+      e.preventDefault();
+      const input = document.getElementById('newStudentNameInput');
+      const name = input.value.trim();
+      if (!name) return;
+
+      const newId = String(Math.floor(1000 + Math.random() * 9000));
+      students.push({ id: newId, name: name });
+
+      students.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+      localStorage.setItem('board_students', JSON.stringify(students));
+      scheduleCloudSync();
+      initStudentAccounts();
+      renderTeacherView();
+      renderSettingsStudentList();
+      renderStudentLoginChips();
+      input.value = '';
+      showToast(`✨ ${name} 학생이 추가되었습니다.`);
+    }
+
+    function saveStudentIdChange(oldId) {
+      const newId = document.getElementById(`stIdInput_${oldId}`).value.trim();
+      if (!newId || newId === oldId) return;
+
+      const st = students.find(s => s.id === oldId);
+      if (st) st.id = newId;
+
+      if (studentAccounts[oldId]) {
+        studentAccounts[newId] = studentAccounts[oldId];
+        delete studentAccounts[oldId];
+      }
+
+      localStorage.setItem('board_students', JSON.stringify(students));
+      scheduleCloudSync();
+      saveAccounts();
+      renderTeacherView();
+      renderSettingsStudentList();
+      renderStudentLoginChips();
+      showToast('💾 고유번호가 수정되었습니다.');
+    }
+
+    function deleteStudent(stId) {
+      if (!confirm('정말 삭제하시겠습니까?')) return;
+      students = students.filter(s => s.id !== stId);
+      delete studentAccounts[stId];
+      localStorage.setItem('board_students', JSON.stringify(students));
+      scheduleCloudSync();
+      saveAccounts();
+      renderTeacherView();
+      renderSettingsStudentList();
+      renderStudentLoginChips();
+    }
+
+    function renderSettingsPassbookList() {
+      const box = document.getElementById('settingsPassbookList');
+      box.innerHTML = '';
+      students.forEach(st => {
+        const acc = studentAccounts[st.id] || { points: 0, totalEarned: 0, totalSpent: 0 };
+        box.innerHTML += `
+          <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex items-center justify-between text-xs font-bold">
+            <span class="font-black text-slate-900">${st.name}</span>
+            <div class="flex items-center gap-4">
+              <span class="text-indigo-600 font-black">잔액: ${acc.points} P</span>
+              <span class="text-slate-400">누적적립: ${acc.totalEarned} P</span>
+              <span class="text-slate-400">사용액: ${acc.totalSpent} P</span>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function renderSettingsAdjustSelect() {
+      const sel = document.getElementById('adjustStudentSelect');
+      sel.innerHTML = '';
+      students.forEach(st => {
+        sel.innerHTML += `<option value="${st.id}">${st.name}</option>`;
+      });
+    }
+
+    function handleManualPointAdjust() {
+      const stId = document.getElementById('adjustStudentSelect').value;
+      const amt = parseInt(document.getElementById('adjustAmountInput').value) || 0;
+      const reason = document.getElementById('adjustReasonInput').value.trim() || '선생님 수동 조정';
+
+      if (amt === 0) return;
+
+      const acc = studentAccounts[stId];
+      const st = students.find(s => s.id === stId);
+
+      acc.points += amt;
+      if (amt > 0) acc.totalEarned += amt;
+
+      acc.history.unshift({
+        id: 'h_' + Date.now(),
+        type: amt > 0 ? 'EARN' : 'SPEND',
+        desc: reason,
+        amount: Math.abs(amt),
+        balance: acc.points,
+        date: `${currentDateStr} ${new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'})}`
+      });
+
+      saveAccounts();
+      renderTeacherView();
+      showToast(`✨ ${st.name} 학생 포인트가 조정되었습니다 (${amt > 0 ? '+' : ''}${amt}P).`);
+      document.getElementById('adjustAmountInput').value = '';
+      document.getElementById('adjustReasonInput').value = '';
+    }
+
+    function selectEmoji(e) {
+      document.getElementById('couponEmojiInput').value = e;
+      showToast(`이모지 선택: ${e}`);
+    }
+
+    function renderSettingsCouponList() {
+      const box = document.getElementById('settingsCouponList');
+      box.innerHTML = '';
+      coupons.forEach(c => {
+        box.innerHTML += `
+          <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex items-center justify-between text-xs font-bold shadow-2xs">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">${c.emoji}</span>
+              <div>
+                <p class="font-black text-slate-900">${c.name} <span class="text-amber-600 font-black">(${c.price} P)</span></p>
+                <p class="text-[11px] text-slate-400 font-bold">${c.desc}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="editCouponInline('${c.id}')" class="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-xl hover:bg-indigo-100 font-black cursor-pointer">수정</button>
+              <button type="button" onclick="deleteCoupon('${c.id}')" class="bg-rose-50 text-rose-600 px-2.5 py-1.5 rounded-xl hover:bg-rose-100 font-black cursor-pointer">삭제</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function editCouponInline(id) {
+      const c = coupons.find(item => item.id === id);
+      if (!c) return;
+      document.getElementById('editCouponId').value = c.id;
+      document.getElementById('couponEmojiInput').value = c.emoji;
+      document.getElementById('couponNameInput').value = c.name;
+      document.getElementById('couponPriceInput').value = c.price;
+      document.getElementById('couponDescInput').value = c.desc;
+      document.getElementById('couponFormTitle').innerHTML = `<span>✏️ 쿠폰 수정하기</span> <button type="button" onclick="resetCouponForm()" class="text-[11px] font-bold text-indigo-600 hover:underline">취소</button>`;
+    }
+
+    function resetCouponForm() {
+      document.getElementById('editCouponId').value = '';
+      document.getElementById('couponEmojiInput').value = '🍬';
+      document.getElementById('couponNameInput').value = '';
+      document.getElementById('couponPriceInput').value = 2;
+      document.getElementById('couponDescInput').value = '';
+      document.getElementById('couponFormTitle').innerHTML = `<span>✨ 새 쿠폰 등록하기</span>`;
+    }
+
+    function handleSaveCoupon() {
+      const id = document.getElementById('editCouponId').value;
+      const emoji = document.getElementById('couponEmojiInput').value || '🍬';
+      const name = document.getElementById('couponNameInput').value.trim();
+      const price = parseInt(document.getElementById('couponPriceInput').value) || 1;
+      const desc = document.getElementById('couponDescInput').value.trim();
+
+      if (!name) {
+        showToast('⚠️ 쿠폰 이름을 입력하세요.');
+        return;
+      }
+
+      if (id) {
+        const idx = coupons.findIndex(c => c.id === id);
+        if (idx !== -1) {
+          coupons[idx] = { id, emoji, name, price, desc };
+        }
+      } else {
+        coupons.push({
+          id: 'c_' + Date.now(),
+          emoji, name, price, desc
+        });
+      }
+
+      localStorage.setItem('board_coupons', JSON.stringify(coupons));
+      scheduleCloudSync();
+      resetCouponForm();
+      renderSettingsCouponList();
+      showToast('💾 쿠폰 정보가 저장되었습니다.');
+    }
+
+    function deleteCoupon(id) {
+      if (!confirm('쿠폰을 삭제하시겠습니까?')) return;
+      coupons = coupons.filter(c => c.id !== id);
+      localStorage.setItem('board_coupons', JSON.stringify(coupons));
+      scheduleCloudSync();
+      renderSettingsCouponList();
+    }
+
+    function renderCouponHistoryList() {
+      const filterSel = document.getElementById('couponHistoryStudentFilter');
+      const box = document.getElementById('couponHistoryList');
+
+      if (filterSel.children.length <= 1) {
+        filterSel.innerHTML = '<option value="ALL">전체 학생 보기</option>';
+        students.forEach(st => {
+          filterSel.innerHTML += `<option value="${st.id}">${st.name}</option>`;
+        });
+      }
+
+      const selectedStId = filterSel.value;
+      box.innerHTML = '';
+
+      let list = completedCouponHistory;
+      if (selectedStId !== 'ALL') {
+        list = list.filter(h => h.studentId === selectedStId);
+      }
+
+      if (list.length === 0) {
+        box.innerHTML = `<div class="text-center text-xs font-bold text-slate-400 py-12">쿠폰 사용 완료 내역이 없습니다.</div>`;
+        return;
+      }
+
+      list.forEach(item => {
+        box.innerHTML += `
+          <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex items-center justify-between text-xs font-bold shadow-2xs">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">${item.emoji}</span>
+              <div>
+                <p class="font-black text-slate-900">${item.studentName} 학생 - <span class="text-indigo-600 font-extrabold">${item.couponName}</span></p>
+                <p class="text-[10px] text-slate-400 font-bold">승인 완료 시간: ${item.completedTime}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="bg-emerald-100 text-emerald-800 text-[11px] font-black px-2.5 py-1 rounded-xl">사용 완료 ✅</span>
+              <p class="text-[10px] text-slate-400 font-bold mt-1">소진 포인트: ${item.price} P</p>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function clearCurrentDateRecords() {
+      if (!confirm(`정말 ${currentDateStr} 날짜의 발표 체크 기록을 비우시겠습니까?`)) return;
+      delete recordsByDate[currentDateStr];
+      saveRecords();
+      renderTeacherView();
+      showToast('🧹 현재 날짜의 발표 기록이 비워졌습니다.');
+    }
+
+    function openTeacherAuthModal() {
+      document.getElementById('teacherAuthModal').classList.remove('hidden');
+      document.getElementById('teacherPwInput').value = '';
+    }
+
+    function handleTeacherAuthSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('teacherPwInput').value.trim();
+      if (input === '5658') {
+        document.getElementById('teacherAuthModal').classList.add('hidden');
+        switchToTeacherView();
+        showToast('🔓 선생님 관리 화면으로 전환되었습니다.');
+      } else {
+        showToast('❌ 비밀번호가 올바르지 않습니다.');
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastMessage');
+      toast.textContent = msg;
+      toast.classList.remove('hidden', 'translate-y-4', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-4', 'opacity-0');
+        setTimeout(() => toast.classList.add('hidden'), 300);
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
