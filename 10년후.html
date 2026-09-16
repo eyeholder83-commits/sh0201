@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>10년 후 나는 무엇을 할까? - 미래 타임캡슐</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: radial-gradient(circle at 20% 20%, #1e1b4b, #0f172a 75%);
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .title-font {
+            font-family: 'Gowun Dodum', sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+        }
+        .spin-rolling {
+            animation: bounceRolling 0.25s ease infinite alternate;
+        }
+        @keyframes bounceRolling {
+            from { transform: translateY(-4px) scale(0.98); }
+            to { transform: translateY(4px) scale(1.02); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.25); }
+            50% { box-shadow: 0 0 35px rgba(236, 72, 153, 0.5); }
+        }
+        .card-pulse {
+            animation: pulseGlow 2.5s infinite;
+        }
+        @keyframes spinSlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .ai-spinner {
+            animation: spinSlow 2s linear infinite;
+        }
+        .shimmer-bg {
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.8s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body class="text-slate-100 flex flex-col items-center justify-between min-h-screen p-4 sm:p-6 md:p-8 select-none">
+
+    <!-- Ambient Ambient Glows -->
+    <div class="fixed top-10 left-10 w-72 sm:w-96 h-72 sm:h-96 bg-purple-600/15 rounded-full blur-3xl pointer-events-none -z-10"></div>
+    <div class="fixed bottom-10 right-10 w-72 sm:w-96 h-72 sm:h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none -z-10"></div>
+
+    <!-- Header Section -->
+    <header class="w-full max-w-2xl text-center pt-2">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs sm:text-sm font-semibold tracking-wide mb-2">
+            <i class="fa-solid fa-clock-rotate-left"></i> 2036 미래 타임캡슐
+        </div>
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-300 title-font tracking-tight">
+            10년 후 나는 무엇을 할까?
+        </h1>
+
+        <!-- Step Indicator Progress Bar -->
+        <div class="mt-4 flex items-center justify-between gap-1.5 sm:gap-2 max-w-md mx-auto px-2">
+            <div id="dot-step-1" class="flex-1 h-2 rounded-full bg-purple-500 transition-all duration-300"></div>
+            <div id="dot-step-2" class="flex-1 h-2 rounded-full bg-white/20 transition-all duration-300"></div>
+            <div id="dot-step-3" class="flex-1 h-2 rounded-full bg-white/20 transition-all duration-300"></div>
+            <div id="dot-step-4" class="flex-1 h-2 rounded-full bg-white/20 transition-all duration-300"></div>
+            <div id="dot-step-5" class="flex-1 h-2 rounded-full bg-white/20 transition-all duration-300"></div>
+            <div id="dot-step-6" class="flex-1 h-2 rounded-full bg-white/20 transition-all duration-300"></div>
+            <div id="dot-step-7" class="flex-1 h-2 rounded-full bg-white/20 transition-all duration-300"></div>
+        </div>
+        <div id="step-counter-text" class="text-xs text-slate-400 font-medium mt-2">
+            질문 1 / 7
+        </div>
+    </header>
+
+    <!-- Main Container: 1 Question per Screen -->
+    <main class="w-full max-w-xl mx-auto my-auto py-3">
+
+        <!-- ================= 1. 너의 이름은 무엇이니? ================= -->
+        <div id="view-step-1" class="step-view glass-card rounded-3xl p-6 sm:p-8 card-pulse flex flex-col items-center text-center">
+            <span class="w-10 h-10 rounded-full bg-purple-500/30 border border-purple-400/40 flex items-center justify-center text-sm font-bold text-purple-200 mb-3">1</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white title-font mb-2">
+                너의 이름은 무엇이니?
+            </h2>
+            <p class="text-slate-300 text-sm mb-6">
+                우리 반 학생만 참여할 수 있으며, 한 번 참여 후에는 20분을 기다려야 해요.
+            </p>
+
+            <!-- Name Input Field -->
+            <div class="w-full max-w-sm mb-5">
+                <div class="relative flex items-center">
+                    <i class="fa-solid fa-pen-nib absolute left-5 text-purple-300 text-lg"></i>
+                    <input type="text" id="input-student-name" placeholder="여기에 이름을 입력하세요"
+                           autocomplete="off"
+                           oninput="handleNameInput(this.value)"
+                           onkeydown="if(event.key === 'Enter' && isValidStudent(state.studentName) && !getCooldownRemaining(state.studentName)) handleNextStep()"
+                           autofocus
+                           class="w-full py-4 pl-12 pr-4 rounded-2xl bg-black/40 border-2 border-purple-400/40 focus:border-pink-400 focus:outline-none text-white text-lg font-bold placeholder:text-slate-500 text-center shadow-inner transition-all">
+                </div>
+            </div>
+
+            <div id="step1-status" class="text-xs sm:text-sm font-semibold text-pink-300 min-h-[1.5rem] leading-relaxed">
+                이름을 입력하면 다음 질문으로 넘어갈 수 있어요.
+            </div>
+        </div>
+
+        <!-- ================= 2. 나는 누구인가? ================= -->
+        <div id="view-step-2" class="step-view glass-card rounded-3xl p-6 sm:p-8 hidden flex flex-col items-center text-center">
+            <span class="w-10 h-10 rounded-full bg-purple-500/30 border border-purple-400/40 flex items-center justify-center text-sm font-bold text-purple-200 mb-3">2</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white title-font mb-2">
+                나는 누구인가?
+            </h2>
+            <p class="text-slate-300 text-sm mb-6">
+                자신의 모습을 선택해 주세요.
+            </p>
+
+            <div class="grid grid-cols-2 gap-4 w-full max-w-sm">
+                <button id="btn-gender-female" onclick="selectGender('female')" class="gender-btn flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:bg-pink-500/20 hover:border-pink-400 active:scale-95 transition-all cursor-pointer">
+                    <span class="text-5xl mb-2">👩</span>
+                    <span class="text-base font-bold text-slate-200">여자</span>
+                </button>
+                <button id="btn-gender-male" onclick="selectGender('male')" class="gender-btn flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-white/10 bg-white/5 hover:bg-blue-500/20 hover:border-blue-400 active:scale-95 transition-all cursor-pointer">
+                    <span class="text-5xl mb-2">👨</span>
+                    <span class="text-base font-bold text-slate-200">남자</span>
+                </button>
+            </div>
+
+            <div id="step2-status" class="mt-4 text-xs font-semibold text-pink-300 min-h-[1.5rem]">
+                성별을 선택하면 다음 질문으로 갈 수 있어요.
+            </div>
+        </div>
+
+        <!-- ================= 3. 어디에 있을까? ================= -->
+        <div id="view-step-3" class="step-view glass-card rounded-3xl p-6 sm:p-8 hidden flex flex-col items-center text-center">
+            <span class="w-10 h-10 rounded-full bg-indigo-500/30 border border-indigo-400/40 flex items-center justify-center text-sm font-bold text-indigo-200 mb-3">3</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white title-font mb-2">
+                어디에 있을까?
+            </h2>
+            <p class="text-slate-300 text-sm mb-6">
+                10년 뒤 내가 살아갈 우리나라의 장소를 추첨해 보세요!
+            </p>
+
+            <div class="w-full max-w-sm bg-black/40 border-2 border-white/15 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[130px] mb-5 shadow-inner">
+                <div id="place-icon" class="text-5xl mb-2">📍</div>
+                <div id="place-result" class="text-lg font-bold text-slate-300">추첨 버튼을 눌러주세요</div>
+            </div>
+
+            <button onclick="pickPlace()" id="btn-pick-place" class="w-full max-w-sm py-4 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-base shadow-lg shadow-indigo-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-dice text-lg"></i>
+                <span>장소 추첨하기</span>
+            </button>
+        </div>
+
+        <!-- ================= 4. 누구와 있을까? ================= -->
+        <div id="view-step-4" class="step-view glass-card rounded-3xl p-6 sm:p-8 hidden flex flex-col items-center text-center">
+            <span class="w-10 h-10 rounded-full bg-rose-500/30 border border-rose-400/40 flex items-center justify-center text-sm font-bold text-rose-200 mb-3">4</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white title-font mb-2">
+                누구와 있을까?
+            </h2>
+            <p class="text-slate-300 text-sm mb-6">
+                10년 뒤 함께할 소중한 인연을 추첨해 보세요!
+            </p>
+
+            <div class="w-full max-w-sm bg-black/40 border-2 border-white/15 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[130px] mb-5 shadow-inner">
+                <div id="partner-icon" class="text-5xl mb-2">🤝</div>
+                <div id="partner-result" class="text-lg font-bold text-slate-300">추첨 버튼을 눌러주세요</div>
+            </div>
+
+            <button onclick="pickPartner()" id="btn-pick-partner" class="w-full max-w-sm py-4 px-6 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold text-base shadow-lg shadow-rose-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-dice text-lg"></i>
+                <span>누구와 함께일까 추첨하기</span>
+            </button>
+        </div>
+
+        <!-- ================= 5. 무슨 계절일까? ================= -->
+        <div id="view-step-5" class="step-view glass-card rounded-3xl p-6 sm:p-8 hidden flex flex-col items-center text-center">
+            <span class="w-10 h-10 rounded-full bg-emerald-500/30 border border-emerald-400/40 flex items-center justify-center text-sm font-bold text-emerald-200 mb-3">5</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white title-font mb-2">
+                무슨 계절일까?
+            </h2>
+            <p class="text-slate-300 text-sm mb-6">
+                어느 계절 속에서 살아가고 있을까요?
+            </p>
+
+            <div class="w-full max-w-sm bg-black/40 border-2 border-white/15 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[130px] mb-5 shadow-inner">
+                <div id="season-icon" class="text-5xl mb-2">🌤️</div>
+                <div id="season-result" class="text-lg font-bold text-slate-300">추첨 버튼을 눌러주세요</div>
+            </div>
+
+            <button onclick="pickSeason()" id="btn-pick-season" class="w-full max-w-sm py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-base shadow-lg shadow-emerald-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-dice text-lg"></i>
+                <span>계절 추첨하기</span>
+            </button>
+        </div>
+
+        <!-- ================= 6. 무엇을 할까? (추첨) ================= -->
+        <div id="view-step-6" class="step-view glass-card rounded-3xl p-6 sm:p-8 hidden flex flex-col items-center text-center">
+            <span class="w-10 h-10 rounded-full bg-amber-500/30 border border-amber-400/40 flex items-center justify-center text-sm font-bold text-amber-200 mb-3">6</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white title-font mb-2">
+                무엇을 할까?
+            </h2>
+            <p class="text-slate-300 text-sm mb-6">
+                '일을 한다' vs '여가를 즐긴다' 중 운명의 활동을 추첨합니다!
+            </p>
+
+            <div class="w-full max-w-sm bg-black/40 border-2 border-white/15 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[130px] mb-5 shadow-inner">
+                <div id="action-icon" class="text-5xl mb-2">❓</div>
+                <div id="action-result" class="text-lg font-bold text-slate-300">추첨 버튼을 눌러주세요</div>
+            </div>
+
+            <button onclick="pickAction()" id="btn-pick-action" class="w-full max-w-sm py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-base shadow-lg shadow-amber-500/30 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-dice text-lg"></i>
+                <span>활동 추첨하기</span>
+            </button>
+        </div>
+
+        <!-- ================= 7. 어떤 구체적인 일을/여가를 할까? ================= -->
+        <div id="view-step-7" class="step-view glass-card rounded-3xl p-6 sm:p-8 hidden flex flex-col items-center text-center">
+            <span class="w-10 h-10 rounded-full bg-cyan-500/30 border border-cyan-400/40 flex items-center justify-center text-sm font-bold text-cyan-200 mb-3">7</span>
+            <h2 id="step-7-title" class="text-2xl sm:text-3xl font-extrabold text-white title-font mb-2">
+                어떤 일을 할까?
+            </h2>
+            <p id="step-7-subtitle" class="text-slate-300 text-sm mb-4">
+                내가 살고 있는 장소와 계절에 꼭 맞는 일거리를 추첨해 보세요!
+            </p>
+
+            <!-- Condition Badges -->
+            <div class="flex items-center gap-2 mb-4">
+                <span id="badge-q7-place" class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/30 border border-indigo-400/40 text-indigo-200">장소</span>
+                <span id="badge-q7-season" class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/30 border border-emerald-400/40 text-emerald-200">계절</span>
+                <span id="badge-q7-action" class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/30 border border-amber-400/40 text-amber-200">일을 한다</span>
+            </div>
+
+            <!-- Result Slot Box -->
+            <div class="w-full max-w-sm bg-black/40 border-2 border-white/15 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[140px] mb-5 shadow-inner">
+                <div id="detail-icon" class="text-5xl mb-2">🛠️</div>
+                <div id="detail-result" class="text-lg font-bold text-slate-200">추첨 버튼을 눌러주세요</div>
+            </div>
+
+            <button onclick="pickDetailTask()" id="btn-pick-detail" class="w-full max-w-sm py-4 px-6 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-base shadow-lg shadow-cyan-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-dice text-lg"></i>
+                <span id="btn-pick-detail-label">세부 일거리 추첨하기</span>
+            </button>
+        </div>
+
+        <!-- ================= FINAL SUMMARY & CANVAS DRAWING VIEW ================= -->
+        <div id="view-step-8" class="step-view glass-card rounded-3xl p-5 sm:p-7 hidden flex flex-col items-center text-center">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold mb-2">
+                <i class="fa-solid fa-sparkles"></i> 2036년 미래 도착!
+            </div>
+            <h2 id="final-card-title" class="text-2xl sm:text-3xl font-extrabold text-white title-font mb-2">
+                10년 후 나의 미래 그림
+            </h2>
+            <p id="final-card-subtitle" class="text-xs sm:text-sm text-slate-300 mb-4">
+                추첨된 장소와 계절, 일거리를 담은 10년 후 미래 그림 카드입니다.
+            </p>
+
+            <!-- AI Image & Card Container -->
+            <div class="w-full max-w-md bg-slate-950/80 border border-white/15 rounded-2xl p-3 sm:p-4 shadow-2xl mb-4 relative overflow-hidden">
+                
+                <!-- Loading State -->
+                <div id="ai-loading-box" class="flex flex-col items-center justify-center py-14 px-4 shimmer-bg rounded-xl min-h-[380px]">
+                    <div class="relative mb-5">
+                        <div class="w-16 h-16 rounded-full border-4 border-purple-500/30 border-t-purple-400 ai-spinner"></div>
+                        <i class="fa-solid fa-wand-magic-sparkles text-pink-400 text-xl absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></i>
+                    </div>
+                    <div class="text-lg font-bold text-white mb-2">
+                        ✨ 미래 그림을 불러오는 중...
+                    </div>
+                    <p class="text-xs text-purple-200/80 text-center leading-relaxed">
+                        추첨된 장소와 계절, 일거리를 담아<br>
+                        예쁜 일러스트 카드를 완성하고 있어요!
+                    </p>
+                    <div class="mt-4 px-3 py-1 rounded-full bg-white/10 text-[11px] text-slate-300">
+                        잠시만 기다려 주세요
+                    </div>
+                </div>
+
+                <!-- AI Image Output -->
+                <div id="ai-image-box" class="hidden flex flex-col items-center">
+                    <img id="ai-result-img" alt="10년 후 나의 미래 그림" class="w-full h-auto max-h-[420px] object-cover rounded-xl shadow-lg border border-white/20 mb-3 block">
+                    <div id="ai-story-caption" class="text-xs sm:text-sm text-slate-200 font-semibold bg-white/10 px-4 py-2.5 rounded-xl w-full text-center leading-snug">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Fallback Canvas Card -->
+                <canvas id="futureCanvas" width="460" height="560" class="hidden w-full h-auto rounded-xl bg-slate-900"></canvas>
+            </div>
+
+            <div id="ai-fallback-notice" class="hidden text-xs text-amber-300 font-medium mb-3 bg-amber-500/20 px-3 py-1.5 rounded-lg border border-amber-400/30">
+                <i class="fa-solid fa-circle-info mr-1"></i> 현재 브라우저 환경에 맞춰 고품질 일러스트 카드로 생성되었습니다!
+            </div>
+
+            <!-- Action Button: Only Download Image Card -->
+            <div class="w-full max-w-md mb-2">
+                <button id="btn-download-img" onclick="downloadImage()" class="w-full py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-base shadow-lg shadow-emerald-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-download text-lg"></i> 그림 카드 다운로드
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Step Navigation -->
+    <nav class="w-full max-w-xl mx-auto flex items-center justify-between gap-3 pb-2 pt-2">
+        <button id="nav-btn-prev" onclick="handlePrevStep()" class="py-3 px-5 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 font-semibold text-sm transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none flex items-center gap-2">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>이전</span>
+        </button>
+
+        <button id="nav-btn-next" onclick="handleNextStep()" disabled class="py-3.5 px-7 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm sm:text-base shadow-lg shadow-purple-600/30 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center gap-2">
+            <span id="nav-btn-next-text">다음 질문으로</span>
+            <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </nav>
+
+    <script>
+        // Web Audio Synthesizer (Tablet friendly)
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtxInstance = null;
+
+        function getAudioContext() {
+            if (!audioCtxInstance) audioCtxInstance = new AudioCtx();
+            if (audioCtxInstance.state === 'suspended') audioCtxInstance.resume();
+            return audioCtxInstance;
+        }
+
+        function playSound(type) {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(520, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'spin') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(340 + Math.random() * 240, now);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+                    osc.start(now);
+                    osc.stop(now + 0.06);
+                } else if (type === 'win') {
+                    const freqs = [523.25, 659.25, 783.99, 1046.50];
+                    freqs.forEach((f, i) => {
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.connect(g);
+                        g.connect(ctx.destination);
+                        o.frequency.setValueAtTime(f, now + i * 0.07);
+                        g.gain.setValueAtTime(0.08, now + i * 0.07);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.6);
+                        o.start(now + i * 0.07);
+                        o.stop(now + i * 0.07 + 0.6);
+                    });
+                }
+            } catch (e) {}
+        }
+
+        // ================= STATE & DATABASE =================
+        let currentStep = 1; // 1 ~ 7 questions, 8: Final Result Canvas
+
+        // 지정된 우리 반 학생 23명 명단
+        const ALLOWED_STUDENTS = [
+            "김서아", "김수현", "김윤아", "김태영", "김하랑",
+            "나예린", "박민제", "박선우", "양수빈", "유소영",
+            "이대운", "이새봄", "이서율", "이진서", "이채원",
+            "이초은", "이태환", "이하린", "한규빈", "한유은",
+            "현지우", "황지우", "이승찬"
+        ];
+
+        // 20분 쿨다운 관리 (20분 = 1,200,000ms)
+        const COOLDOWN_DURATION = 20 * 60 * 1000;
+        const completionRecords = {};
+        let cooldownTimerInterval = null;
+
+        const state = {
+            studentName: '',   // 학생 이름
+            gender: null,      // 'female' | 'male'
+            place: null,       // '도시' | '산촌' | '농촌' | '어촌'
+            partner: null,     // '대학교 친구들' | '가족들' | '혼자' | '남자친구'/'여자친구'
+            season: null,      // '봄' | '여름' | '가을' | '겨울'
+            action: null,      // '일을 한다' | '여가를 즐긴다'
+            detailTask: null   // 세부 일/여가 항목
+        };
+
+        function isValidStudent(name) {
+            return ALLOWED_STUDENTS.includes(name);
+        }
+
+        function getCooldownRemaining(name) {
+            if (!completionRecords[name]) return 0;
+            const elapsed = Date.now() - completionRecords[name];
+            const remaining = COOLDOWN_DURATION - elapsed;
+            return remaining > 0 ? remaining : 0;
+        }
+
+        function formatTimeRemaining(ms) {
+            const totalSec = Math.ceil(ms / 1000);
+            const min = Math.floor(totalSec / 60);
+            const sec = totalSec % 60;
+            return `${min}분 ${sec < 10 ? '0' : ''}${sec}초`;
+        }
+
+        const PLACES = [
+            { name: '도시', icon: '🏙️', desc: '활기찬 빌딩과 문화가 가득한 도시' },
+            { name: '산촌', icon: '🌲', desc: '맑은 공기와 푸른 숲이 감싸안은 산촌' },
+            { name: '농촌', icon: '🌾', desc: '넓은 들판과 흙내음이 가득한 농촌' },
+            { name: '어촌', icon: '🐟', desc: '시원한 파도와 바닷바람이 부는 어촌' }
+        ];
+
+        const SEASONS = [
+            { name: '봄', icon: '🌸' },
+            { name: '여름', icon: '☀️' },
+            { name: '가을', icon: '🍂' },
+            { name: '겨울', icon: '❄️' }
+        ];
+
+        const ACTIONS = [
+            { name: '일을 한다', icon: '💼', tag: '보람찬 열정과 도전' },
+            { name: '여가를 즐긴다', icon: '🏖️', tag: '행복하고 여유로운 휴식' }
+        ];
+
+        const WORK_DATABASE = {
+            "봄": {
+                "도시": [
+                    "공원과 화단을 가꾼다.",
+                    "화단에 꽃과 나무를 심는다.",
+                    "가로수를 가지치기한다.",
+                    "겨울 동안 망가진 도로를 고친다.",
+                    "건물과 여러 시설을 점검한다.",
+                    "하수구와 배수로를 청소한다.",
+                    "거리에 쌓인 먼지와 쓰레기를 치운다.",
+                    "학교와 공공시설 주변을 정비한다."
+                ],
+                "농촌": [
+                    "논과 밭을 갈아엎는다.",
+                    "농사에 필요한 땅을 고른다.",
+                    "씨앗을 뿌린다.",
+                    "모종을 심는다.",
+                    "볍씨를 싹 틔운다.",
+                    "모내기를 한다.",
+                    "밭에 비료를 준다.",
+                    "과일나무를 가꾼다.",
+                    "농기계를 점검한다.",
+                    "농작물에 필요한 물을 댄다."
+                ],
+                "어촌": [
+                    "봄철 물고기를 잡는다.",
+                    "미역을 거둔다.",
+                    "다시마를 거둔다.",
+                    "조개와 해산물을 채취한다.",
+                    "양식장을 관리한다.",
+                    "어린 물고기를 양식장에 넣어 기른다.",
+                    "고기잡이 그물을 손질한다.",
+                    "배를 점검하고 수리한다.",
+                    "바닷가와 항구를 정비한다.",
+                    "물고기를 잡을 준비를 한다."
+                ],
+                "산촌": [
+                    "봄나물을 캔다.",
+                    "고사리와 두릅을 채취한다.",
+                    "약초를 캔다.",
+                    "어린 나무를 심는다.",
+                    "나무가 잘 자라도록 가꾼다.",
+                    "숲에 난 잡초를 제거한다.",
+                    "산불이 나지 않도록 산을 살핀다.",
+                    "병든 나무를 관리한다.",
+                    "산길과 임도를 정비한다.",
+                    "산에서 나는 임산물을 관리한다."
+                ]
+            },
+            "여름": {
+                "도시": [
+                    "가로수에 물을 준다.",
+                    "공원과 화단을 관리한다.",
+                    "도로를 점검하고 보수한다.",
+                    "하수구를 청소한다.",
+                    "장마에 대비해 배수 시설을 점검한다.",
+                    "침수되기 쉬운 곳을 점검한다.",
+                    "태풍에 대비해 시설물을 점검한다.",
+                    "거리의 쓰레기를 치운다.",
+                    "냉방 시설을 점검한다.",
+                    "방역과 해충 방제 작업을 한다."
+                ],
+                "농촌": [
+                    "논과 밭의 잡초를 뽑는다.",
+                    "농작물에 물을 준다.",
+                    "논에 물을 댄다.",
+                    "농작물에 비료를 준다.",
+                    "병충해를 막는다.",
+                    "벼가 잘 자라도록 관리한다.",
+                    "고추, 토마토 등의 채소를 수확한다.",
+                    "수박, 참외 등의 과일을 수확한다.",
+                    "과일나무를 관리한다.",
+                    "장마와 태풍에 대비한다."
+                ],
+                "어촌": [
+                    "여름철 물고기를 잡는다.",
+                    "오징어와 여러 해산물을 잡는다.",
+                    "양식장의 물고기를 돌본다.",
+                    "양식장에 먹이를 준다.",
+                    "바닷물의 상태를 확인한다.",
+                    "그물과 어구를 관리한다.",
+                    "배를 점검한다.",
+                    "잡은 물고기를 분류한다.",
+                    "잡은 수산물을 신선하게 보관한다.",
+                    "태풍에 대비해 배와 양식장을 안전하게 관리한다."
+                ],
+                "산촌": [
+                    "숲의 나무를 가꾼다.",
+                    "나무 주변의 잡초를 제거한다.",
+                    "병든 나무를 살핀다.",
+                    "산림의 해충을 막는다.",
+                    "약초를 채취한다.",
+                    "여름에 나는 산나물을 채취한다.",
+                    "산불이 나지 않도록 관리한다.",
+                    "장마철 산사태 위험 지역을 살핀다.",
+                    "산길과 배수로를 관리한다.",
+                    "어린 나무가 잘 자라도록 돌본다."
+                ]
+            },
+            "가을": {
+                "도시": [
+                    "거리에 떨어진 낙엽을 치운다.",
+                    "공원에 쌓인 낙엽을 치운다.",
+                    "가로수를 관리한다.",
+                    "화단을 정리한다.",
+                    "도로와 보도를 점검한다.",
+                    "하수구에 쌓인 낙엽을 치운다.",
+                    "겨울철 제설 장비를 준비한다.",
+                    "난방 시설을 점검한다.",
+                    "수도 시설을 점검한다.",
+                    "겨울에 대비해 여러 시설을 정비한다."
+                ],
+                "농촌": [
+                    "벼를 베어 수확한다.",
+                    "벼를 말린다.",
+                    "벼를 탈곡한다.",
+                    "고구마를 캔다.",
+                    "감자를 수확한다.",
+                    "콩을 거둔다.",
+                    "고추를 수확한다.",
+                    "사과와 배를 딴다.",
+                    "수확한 농작물을 말리고 보관한다.",
+                    "다음 농사를 위해 논과 밭을 정리한다."
+                ],
+                "어촌": [
+                    "가을철 물고기를 잡는다.",
+                    "꽃게와 새우 등을 잡는다.",
+                    "조개와 해산물을 채취한다.",
+                    "잡은 물고기를 분류하고 보관한다.",
+                    "김 양식을 준비한다.",
+                    "미역 양식을 준비한다.",
+                    "양식장에 필요한 줄과 그물을 설치한다.",
+                    "어망과 어구를 손질한다.",
+                    "배를 점검한다.",
+                    "겨울철 고기잡이를 준비한다."
+                ],
+                "산촌": [
+                    "밤을 줍는다.",
+                    "잣을 거둔다.",
+                    "도토리를 줍는다.",
+                    "버섯을 채취한다.",
+                    "약초를 채취한다.",
+                    "산에서 나는 열매를 거둔다.",
+                    "나무를 가꾸고 가지치기한다.",
+                    "숲에 쌓인 마른 가지를 정리한다.",
+                    "산불을 예방하기 위해 숲을 관리한다.",
+                    "겨울이 오기 전에 산림 시설을 점검한다."
+                ]
+            },
+            "겨울": {
+                "도시": [
+                    "도로에 쌓인 눈을 치운다.",
+                    "인도에 쌓인 눈을 치운다.",
+                    "얼어붙은 길에 제설제를 뿌린다.",
+                    "수도관이 얼지 않도록 관리한다.",
+                    "난방 시설을 점검한다.",
+                    "폭설에 대비해 제설 장비를 준비한다.",
+                    "건물의 안전 상태를 점검한다.",
+                    "눈 때문에 부러진 나뭇가지를 치운다.",
+                    "도로가 얼었는지 살핀다.",
+                    "겨울철 안전사고가 나지 않도록 시설을 관리한다."
+                ],
+                "농촌": [
+                    "농기계를 손질한다.",
+                    "농기구를 수리한다.",
+                    "다음 해 농사를 계획한다.",
+                    "다음 농사에 사용할 씨앗을 준비한다.",
+                    "비닐하우스에서 채소를 기른다.",
+                    "비닐하우스의 온도를 관리한다.",
+                    "가축이 춥지 않도록 축사를 관리한다.",
+                    "가축에게 먹이를 준다.",
+                    "과일나무를 가지치기한다.",
+                    "눈 때문에 비닐하우스가 무너지지 않도록 관리한다."
+                ],
+                "어촌": [
+                    "김을 기른다.",
+                    "김을 거둔다.",
+                    "미역을 기른다.",
+                    "겨울철 물고기를 잡는다.",
+                    "굴과 조개류를 채취한다.",
+                    "양식장을 관리한다.",
+                    "그물과 어구를 손질한다.",
+                    "배를 점검하고 수리한다.",
+                    "잡은 수산물을 손질하고 보관한다.",
+                    "추운 날씨와 높은 파도에 대비해 시설을 점검한다."
+                ],
+                "산촌": [
+                    "숲과 나무를 관리한다.",
+                    "나무를 가지치기한다.",
+                    "병든 나무와 죽은 나무를 정리한다.",
+                    "산불이 나지 않도록 산을 살핀다.",
+                    "숲에 쌓인 마른 가지를 정리한다.",
+                    "폭설로 쓰러진 나무를 정리한다.",
+                    "산길의 눈을 치운다.",
+                    "임업에 사용하는 도구를 손질한다.",
+                    "다음 해에 심을 나무를 준비한다.",
+                    "봄철 나무 심기와 산림 작업을 준비한다."
+                ]
+            }
+        };
+
+        // 6번 '여가를 즐긴다' 상세 여가 활동 데이터베이스 (4계절 x 4지역 목록 100% 반영)
+        const LEISURE_DATABASE = {
+            "봄": {
+                "도시": [
+                    "공원에서 산책한다.",
+                    "자전거를 탄다.",
+                    "봄꽃을 구경한다.",
+                    "야외에서 운동한다.",
+                    "소풍을 간다."
+                ],
+                "농촌": [
+                    "봄꽃을 구경한다.",
+                    "들판을 산책한다.",
+                    "딸기 따기 체험을 한다.",
+                    "농촌 체험을 한다.",
+                    "자전거를 타며 들길을 둘러본다."
+                ],
+                "어촌": [
+                    "바닷가를 산책한다.",
+                    "낚시를 한다.",
+                    "갯벌 체험을 한다.",
+                    "조개를 잡는다.",
+                    "바닷가의 봄 풍경을 구경한다."
+                ],
+                "산촌": [
+                    "등산을 한다.",
+                    "숲길을 걷는다.",
+                    "봄꽃을 구경한다.",
+                    "숲 체험을 한다.",
+                    "자연을 관찰한다."
+                ]
+            },
+            "여름": {
+                "도시": [
+                    "수영장에서 수영한다.",
+                    "물놀이장에서 물놀이를 한다.",
+                    "공원에서 자전거를 탄다.",
+                    "야외 공연을 관람한다.",
+                    "박물관이나 미술관을 관람한다."
+                ],
+                "농촌": [
+                    "계곡에서 물놀이를 한다.",
+                    "농촌 체험을 한다.",
+                    "옥수수나 과일 따기 체험을 한다.",
+                    "냇가에서 물고기를 관찰한다.",
+                    "캠핑을 한다."
+                ],
+                "어촌": [
+                    "바다에서 수영한다.",
+                    "해수욕을 한다.",
+                    "바다낚시를 한다.",
+                    "갯벌 체험을 한다.",
+                    "배를 타고 바다를 구경한다."
+                ],
+                "산촌": [
+                    "계곡에서 물놀이를 한다.",
+                    "숲에서 캠핑을 한다.",
+                    "숲길을 걷는다.",
+                    "곤충과 식물을 관찰한다.",
+                    "시원한 산속에서 휴식을 즐긴다."
+                ]
+            },
+            "가을": {
+                "도시": [
+                    "공원에서 단풍을 구경한다.",
+                    "자전거를 탄다.",
+                    "야외에서 운동한다.",
+                    "가을 축제를 즐긴다.",
+                    "공원에서 소풍을 즐긴다."
+                ],
+                "농촌": [
+                    "고구마 캐기 체험을 한다.",
+                    "사과나 배 따기 체험을 한다.",
+                    "벼 베기 체험을 한다.",
+                    "들판을 산책한다.",
+                    "농촌의 가을 풍경을 구경한다."
+                ],
+                "어촌": [
+                    "바다낚시를 한다.",
+                    "갯벌 체험을 한다.",
+                    "조개를 잡는다.",
+                    "바닷가를 산책한다.",
+                    "배를 타고 바다를 구경한다."
+                ],
+                "산촌": [
+                    "단풍을 구경한다.",
+                    "등산을 한다.",
+                    "숲길을 걷는다.",
+                    "밤 줍기 체험을 한다.",
+                    "가을 숲을 관찰한다."
+                ]
+            },
+            "겨울": {
+                "도시": [
+                    "눈썰매를 탄다.",
+                    "스케이트를 탄다.",
+                    "눈사람을 만든다.",
+                    "실내 체육 활동을 한다.",
+                    "박물관이나 미술관을 관람한다."
+                ],
+                "농촌": [
+                    "눈썰매를 탄다.",
+                    "눈사람을 만든다.",
+                    "얼음썰매를 탄다.",
+                    "겨울 농촌 체험을 한다.",
+                    "전통놀이를 즐긴다."
+                ],
+                "어촌": [
+                    "겨울 바다를 구경한다.",
+                    "바닷가를 산책한다.",
+                    "겨울 바다낚시를 한다.",
+                    "어촌 체험을 한다.",
+                    "바닷가의 자연을 관찰한다."
+                ],
+                "산촌": [
+                    "눈썰매를 탄다.",
+                    "눈 덮인 숲을 산책한다.",
+                    "겨울 산을 구경한다.",
+                    "겨울 캠핑을 한다.",
+                    "눈놀이를 한다."
+                ]
+            }
+        };
+
+        function updateProgressUI() {
+            for (let i = 1; i <= 7; i++) {
+                const dot = document.getElementById(`dot-step-${i}`);
+                if (dot) {
+                    if (i < currentStep) {
+                        dot.className = "flex-1 h-2 rounded-full bg-purple-400 transition-all duration-300";
+                    } else if (i === currentStep) {
+                        dot.className = "flex-1 h-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 shadow-md shadow-purple-500/50 transition-all duration-300";
+                    } else {
+                        dot.className = "flex-1 h-2 rounded-full bg-white/20 transition-all duration-300";
+                    }
+                }
+            }
+
+            const counterText = document.getElementById('step-counter-text');
+            if (currentStep <= 7) {
+                counterText.textContent = `질문 ${currentStep} / 7`;
+            } else {
+                counterText.textContent = `모든 질문 완료!`;
+            }
+
+            const prevBtn = document.getElementById('nav-btn-prev');
+            prevBtn.disabled = currentStep === 1;
+
+            checkCurrentStepCompleted();
+        }
+
+        function goToStep(step) {
+            currentStep = step;
+
+            for (let i = 1; i <= 7; i++) {
+                const view = document.getElementById(`view-step-${i}`);
+                if (view) view.classList.add('hidden');
+            }
+            document.getElementById('view-step-8').classList.add('hidden');
+
+            if (currentStep <= 7) {
+                const targetView = document.getElementById(`view-step-${currentStep}`);
+                if (targetView) targetView.classList.remove('hidden');
+                document.getElementById('nav-btn-next').classList.remove('hidden');
+                
+                // 7번 화면일 때 배지와 텍스트 초기화
+                if (currentStep === 7) {
+                    setupStep7View();
+                }
+            } else {
+                document.getElementById('view-step-8').classList.remove('hidden');
+                document.getElementById('nav-btn-next').classList.add('hidden');
+                
+                // 결과에 도달하면 해당 학생의 참여 완료 타임스탬프 기록 (20분 쿨다운 시작)
+                if (state.studentName) {
+                    completionRecords[state.studentName] = Date.now();
+                }
+
+                drawFinalCanvas();
+                generateAIImage();
+            }
+
+            updateProgressUI();
+        }
+
+        function handlePrevStep() {
+            if (currentStep > 1) {
+                playSound('click');
+                goToStep(currentStep - 1);
+            }
+        }
+
+        function handleNextStep() {
+            if (currentStep <= 7) {
+                playSound('click');
+                goToStep(currentStep + 1);
+            }
+        }
+
+        function checkCurrentStepCompleted() {
+            const nextBtn = document.getElementById('nav-btn-next');
+            const nextBtnText = document.getElementById('nav-btn-next-text');
+            let isComplete = false;
+
+            const hasValidName = isValidStudent(state.studentName);
+            const remaining = getCooldownRemaining(state.studentName);
+
+            if (currentStep === 1 && hasValidName && remaining <= 0) isComplete = true;
+            if (currentStep === 2 && state.gender) isComplete = true;
+            if (currentStep === 3 && state.place) isComplete = true;
+            if (currentStep === 4 && state.partner) isComplete = true;
+            if (currentStep === 5 && state.season) isComplete = true;
+            if (currentStep === 6 && state.action) isComplete = true;
+            if (currentStep === 7 && state.detailTask) isComplete = true;
+
+            nextBtn.disabled = !isComplete;
+            if (currentStep === 7) {
+                nextBtnText.textContent = "결과 그림 보기";
+            } else {
+                nextBtnText.textContent = "다음 질문으로";
+            }
+        }
+
+        // ================= STEP 1: STUDENT NAME =================
+        function handleNameInput(val) {
+            state.studentName = val.trim();
+            const status = document.getElementById('step1-status');
+
+            if (cooldownTimerInterval) {
+                clearInterval(cooldownTimerInterval);
+                cooldownTimerInterval = null;
+            }
+
+            if (state.studentName.length === 0) {
+                status.className = "text-xs sm:text-sm font-semibold text-pink-300 min-h-[1.5rem] leading-relaxed";
+                status.textContent = "이름을 입력하면 다음 질문으로 넘어갈 수 있어요.";
+                checkCurrentStepCompleted();
+                return;
+            }
+
+            // 1. 우리 반 명단에 없는 경우
+            if (!isValidStudent(state.studentName)) {
+                status.className = "text-xs sm:text-sm font-semibold text-rose-400 min-h-[1.5rem] leading-relaxed";
+                status.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> 우리 반 학생 명단에 없는 이름이에요. 본인의 이름을 정확히 적어주세요.`;
+                checkCurrentStepCompleted();
+                return;
+            }
+
+            // 2. 명단에 있지만 20분 쿨다운이 남아있는 경우
+            const remaining = getCooldownRemaining(state.studentName);
+            if (remaining > 0) {
+                status.className = "text-xs sm:text-sm font-semibold text-amber-300 min-h-[1.5rem] leading-relaxed";
+                status.innerHTML = `⚠️ <span class="font-bold text-white">${state.studentName}</span> 학생은 이미 참여했어요!<br>다시 하려면 <span class="text-pink-400 font-extrabold">${formatTimeRemaining(remaining)}</span> 뒤에 가능해요.`;
+                
+                // 실시간 카운트다운 타이머
+                cooldownTimerInterval = setInterval(() => {
+                    const rem = getCooldownRemaining(state.studentName);
+                    if (rem <= 0) {
+                        clearInterval(cooldownTimerInterval);
+                        cooldownTimerInterval = null;
+                        handleNameInput(state.studentName);
+                    } else {
+                        status.innerHTML = `⚠️ <span class="font-bold text-white">${state.studentName}</span> 학생은 이미 참여했어요!<br>다시 하려면 <span class="text-pink-400 font-extrabold">${formatTimeRemaining(rem)}</span> 뒤에 가능해요.`;
+                    }
+                }, 1000);
+
+                checkCurrentStepCompleted();
+                return;
+            }
+
+            // 3. 정상 승인
+            status.className = "text-xs sm:text-sm font-semibold text-emerald-300 min-h-[1.5rem] leading-relaxed";
+            status.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> 반가워요, <span class="font-extrabold text-white text-base">${state.studentName}</span> 학생! 이제 다음으로 가볼까요?`;
+            checkCurrentStepCompleted();
+        }
+
+        // ================= STEP 2: GENDER =================
+        function selectGender(gender) {
+            playSound('click');
+            state.gender = gender;
+
+            const femaleBtn = document.getElementById('btn-gender-female');
+            const maleBtn = document.getElementById('btn-gender-male');
+            const status = document.getElementById('step2-status');
+
+            if (gender === 'female') {
+                femaleBtn.className = "gender-btn flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-pink-400 bg-pink-500/25 text-pink-200 shadow-lg shadow-pink-500/30 scale-105 transition-all cursor-pointer";
+                maleBtn.className = "gender-btn flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-white/10 bg-white/5 opacity-50 transition-all cursor-pointer";
+                status.innerHTML = "선택 완료: <span class='font-bold text-pink-300'>👩 여자</span>";
+            } else {
+                maleBtn.className = "gender-btn flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-blue-400 bg-blue-500/25 text-blue-200 shadow-lg shadow-blue-500/30 scale-105 transition-all cursor-pointer";
+                femaleBtn.className = "gender-btn flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-white/10 bg-white/5 opacity-50 transition-all cursor-pointer";
+                status.innerHTML = "선택 완료: <span class='font-bold text-blue-300'>👨 남자</span>";
+            }
+
+            if (state.partner === '남자친구' || state.partner === '여자친구') {
+                state.partner = state.gender === 'female' ? '남자친구' : '여자친구';
+            }
+
+            checkCurrentStepCompleted();
+        }
+
+        // ================= STEP 3: PLACE =================
+        let isRollingPlace = false;
+        function pickPlace() {
+            if (isRollingPlace) return;
+            isRollingPlace = true;
+            playSound('click');
+
+            const placeText = document.getElementById('place-result');
+            const placeIcon = document.getElementById('place-icon');
+            const btn = document.getElementById('btn-pick-place');
+            
+            btn.disabled = true;
+            placeText.parentElement.classList.add('spin-rolling');
+
+            let rollCount = 0;
+            const maxRolls = 14;
+            const interval = setInterval(() => {
+                rollCount++;
+                const randomItem = PLACES[Math.floor(Math.random() * PLACES.length)];
+                placeIcon.textContent = randomItem.icon;
+                placeText.textContent = randomItem.name;
+                playSound('spin');
+
+                if (rollCount >= maxRolls) {
+                    clearInterval(interval);
+                    state.place = randomItem.name;
+                    placeText.parentElement.classList.remove('spin-rolling');
+                    placeText.innerHTML = `<span class="text-indigo-300 font-extrabold text-2xl">${randomItem.name}</span><div class="text-xs text-slate-400 mt-1">${randomItem.desc}</div>`;
+                    btn.disabled = false;
+                    isRollingPlace = false;
+                    playSound('win');
+                    state.detailTask = null; // 초기화
+                    checkCurrentStepCompleted();
+                }
+            }, 65);
+        }
+
+        // ================= STEP 4: PARTNER =================
+        let isRollingPartner = false;
+        function pickPartner() {
+            if (isRollingPartner) return;
+            isRollingPartner = true;
+            playSound('click');
+
+            const partnerText = document.getElementById('partner-result');
+            const partnerIcon = document.getElementById('partner-icon');
+            const btn = document.getElementById('btn-pick-partner');
+
+            btn.disabled = true;
+            partnerText.parentElement.classList.add('spin-rolling');
+
+            const loverText = state.gender === 'female' ? '남자친구' : '여자친구';
+            const partnerOptions = [
+                { name: '대학교 친구들', icon: '🎓', desc: '평생을 함께할 든든한 대학 동창들' },
+                { name: '가족들', icon: '🏡', desc: '세상에서 가장 따스한 울타리' },
+                { name: '혼자', icon: '🧘', desc: '온전한 자유와 여유로운 나만의 시간' },
+                { name: loverText, icon: '💑', desc: '언제나 내 곁을 지켜주는 사랑하는 사람' }
+            ];
+
+            let rollCount = 0;
+            const maxRolls = 14;
+            const interval = setInterval(() => {
+                rollCount++;
+                const randomItem = partnerOptions[Math.floor(Math.random() * partnerOptions.length)];
+                partnerIcon.textContent = randomItem.icon;
+                partnerText.textContent = randomItem.name;
+                playSound('spin');
+
+                if (rollCount >= maxRolls) {
+                    clearInterval(interval);
+                    state.partner = randomItem.name;
+                    partnerText.parentElement.classList.remove('spin-rolling');
+                    partnerText.innerHTML = `<span class="text-rose-300 font-extrabold text-2xl">${randomItem.name}</span><div class="text-xs text-slate-400 mt-1">${randomItem.desc}</div>`;
+                    btn.disabled = false;
+                    isRollingPartner = false;
+                    playSound('win');
+                    checkCurrentStepCompleted();
+                }
+            }, 65);
+        }
+
+        // ================= STEP 5: SEASON =================
+        let isRollingSeason = false;
+        function pickSeason() {
+            if (isRollingSeason) return;
+            isRollingSeason = true;
+            playSound('click');
+
+            const seasonText = document.getElementById('season-result');
+            const seasonIcon = document.getElementById('season-icon');
+            const btn = document.getElementById('btn-pick-season');
+
+            btn.disabled = true;
+            seasonText.parentElement.classList.add('spin-rolling');
+
+            let rollCount = 0;
+            const maxRolls = 14;
+            const interval = setInterval(() => {
+                rollCount++;
+                const randomItem = SEASONS[Math.floor(Math.random() * SEASONS.length)];
+                seasonIcon.textContent = randomItem.icon;
+                seasonText.textContent = randomItem.name;
+                playSound('spin');
+
+                if (rollCount >= maxRolls) {
+                    clearInterval(interval);
+                    state.season = randomItem.name;
+                    seasonText.parentElement.classList.remove('spin-rolling');
+                    seasonText.innerHTML = `<span class="text-emerald-300 font-extrabold text-2xl">${randomItem.name}</span>`;
+                    btn.disabled = false;
+                    isRollingSeason = false;
+                    playSound('win');
+                    state.detailTask = null; // 계절 바뀌면 세부일 초기화
+                    checkCurrentStepCompleted();
+                }
+            }, 65);
+        }
+
+        // ================= STEP 6: ACTION =================
+        let isRollingAction = false;
+        function pickAction() {
+            if (isRollingAction) return;
+            isRollingAction = true;
+            playSound('click');
+
+            const actionText = document.getElementById('action-result');
+            const actionIcon = document.getElementById('action-icon');
+            const btn = document.getElementById('btn-pick-action');
+
+            btn.disabled = true;
+            actionText.parentElement.classList.add('spin-rolling');
+
+            let rollCount = 0;
+            const maxRolls = 14;
+            const interval = setInterval(() => {
+                rollCount++;
+                const randomItem = ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
+                actionIcon.textContent = randomItem.icon;
+                actionText.textContent = randomItem.name;
+                playSound('spin');
+
+                if (rollCount >= maxRolls) {
+                    clearInterval(interval);
+                    state.action = randomItem.name;
+                    actionText.parentElement.classList.remove('spin-rolling');
+                    actionText.innerHTML = `<span class="text-amber-300 font-extrabold text-2xl">${randomItem.name}</span><div class="text-xs text-slate-400 mt-1">${randomItem.tag}</div>`;
+                    btn.disabled = false;
+                    isRollingAction = false;
+                    playSound('win');
+                    state.detailTask = null; // 초기화
+                    checkCurrentStepCompleted();
+                }
+            }, 65);
+        }
+
+        // ================= STEP 7: DETAIL TASK =================
+        function setupStep7View() {
+            const isWork = state.action === '일을 한다';
+            document.getElementById('step-7-title').textContent = isWork ? "어떤 일을 할까?" : "어떤 여가를 즐길까?";
+            document.getElementById('step-7-subtitle').textContent = isWork
+                ? `10년 후 [${state.season}] [${state.place}]에서 ${state.studentName} 학생이 맡게 될 멋진 일거리를 추첨해 보세요!`
+                : `10년 후 [${state.season}] [${state.place}]에서 ${state.studentName} 학생이 만끽할 평화로운 여가를 추첨해 보세요!`;
+
+            document.getElementById('badge-q7-place').textContent = `📍 ${state.place}`;
+            document.getElementById('badge-q7-season').textContent = `🌤️ ${state.season}`;
+            document.getElementById('badge-q7-action').textContent = isWork ? `💼 일을 한다` : `🏖️ 여가를 즐긴다`;
+
+            document.getElementById('btn-pick-detail-label').textContent = isWork ? "세부 일거리 추첨하기" : "세부 여가활동 추첨하기";
+            document.getElementById('detail-icon').textContent = isWork ? "🛠️" : "🏖️";
+
+            const taskPool = getTaskPool();
+
+            if (state.detailTask) {
+                document.getElementById('detail-result').innerHTML = `<span class="text-cyan-300 font-extrabold text-xl">${state.detailTask}</span>`;
+            } else {
+                document.getElementById('detail-result').textContent = "추첨 버튼을 눌러주세요";
+            }
+        }
+
+        function getTaskPool() {
+            if (state.action === '일을 한다') {
+                const seasonTasks = WORK_DATABASE[state.season] || WORK_DATABASE['봄'];
+                const placeTasks = seasonTasks[state.place] || seasonTasks['도시'];
+                return placeTasks;
+            } else {
+                const seasonLeisures = LEISURE_DATABASE[state.season] || LEISURE_DATABASE['봄'];
+                const placeLeisures = seasonLeisures[state.place] || seasonLeisures['도시'];
+                return placeLeisures;
+            }
+        }
+
+        let isRollingDetail = false;
+        function pickDetailTask() {
+            if (isRollingDetail) return;
+            isRollingDetail = true;
+            playSound('click');
+
+            const taskPool = getTaskPool();
+            const detailText = document.getElementById('detail-result');
+            const detailIcon = document.getElementById('detail-icon');
+            const btn = document.getElementById('btn-pick-detail');
+
+            btn.disabled = true;
+            detailText.parentElement.classList.add('spin-rolling');
+
+            let rollCount = 0;
+            const maxRolls = 15;
+            const interval = setInterval(() => {
+                rollCount++;
+                const randomItem = taskPool[Math.floor(Math.random() * taskPool.length)];
+                detailIcon.textContent = state.action === '일을 한다' ? '💼' : '☕';
+                detailText.textContent = randomItem;
+                playSound('spin');
+
+                if (rollCount >= maxRolls) {
+                    clearInterval(interval);
+                    state.detailTask = randomItem;
+                    detailText.parentElement.classList.remove('spin-rolling');
+                    detailText.innerHTML = `<span class="text-cyan-300 font-extrabold text-xl">"${randomItem}"</span>`;
+                    btn.disabled = false;
+                    isRollingDetail = false;
+                    playSound('win');
+
+                    if (window.confetti) {
+                        confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+                    }
+                    checkCurrentStepCompleted();
+                }
+            }, 65);
+        }
+
+        // ================= FINAL STEP 8: CANVAS ILLUSTRATION =================
+        function drawRoundedRect(ctx, x, y, width, height, radius, fill, stroke) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            if (fill) ctx.fill();
+            if (stroke) ctx.stroke();
+        }
+
+        function drawPlaceScenery(ctx, x, y, w, h, place) {
+            if (place === '도시') {
+                ctx.fillStyle = "rgba(15, 23, 42, 0.55)";
+                for (let i = 0; i < 8; i++) {
+                    const bh = 130 + ((i * 37) % 110);
+                    const bw = 48 + ((i * 19) % 25);
+                    const bx = x + i * 54;
+                    ctx.fillRect(bx, y + h - bh, bw, bh);
+                    ctx.fillStyle = "#fef08a";
+                    for (let wx = bx + 6; wx < bx + bw - 8; wx += 12) {
+                        for (let wy = y + h - bh + 12; wy < y + h - 18; wy += 20) {
+                            if ((wx + wy) % 5 !== 0) ctx.fillRect(wx, wy, 5, 8);
+                        }
+                    }
+                    ctx.fillStyle = "rgba(15, 23, 42, 0.55)";
+                }
+                ctx.fillStyle = "#334155";
+                ctx.fillRect(x, y + h - 25, w, 25);
+            } else if (place === '산촌') {
+                ctx.fillStyle = "#166534";
+                ctx.beginPath();
+                ctx.moveTo(x - 20, y + h);
+                ctx.lineTo(x + 100, y + h - 190);
+                ctx.lineTo(x + 240, y + h - 80);
+                ctx.lineTo(x + w, y + h);
+                ctx.fill();
+
+                ctx.fillStyle = "#15803d";
+                ctx.beginPath();
+                ctx.moveTo(x + 110, y + h);
+                ctx.lineTo(x + 280, y + h - 220);
+                ctx.lineTo(x + w + 20, y + h - 50);
+                ctx.lineTo(x + w + 20, y + h);
+                ctx.fill();
+
+                // 숲 나무들
+                ctx.fillStyle = "#052e16";
+                for (let tx = x + 20; tx < x + w - 20; tx += 45) {
+                    ctx.beginPath();
+                    ctx.moveTo(tx, y + h - 60);
+                    ctx.lineTo(tx + 18, y + h - 110);
+                    ctx.lineTo(tx + 36, y + h - 60);
+                    ctx.fill();
+                }
+            } else if (place === '농촌') {
+                ctx.fillStyle = "#ca8a04";
+                ctx.beginPath();
+                ctx.ellipse(x + 140, y + h + 20, 260, 140, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = "#eab308";
+                ctx.beginPath();
+                ctx.ellipse(x + 330, y + h + 10, 240, 120, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 시골 이랑 무늬
+                ctx.strokeStyle = "rgba(255,255,255,0.25)";
+                ctx.lineWidth = 3;
+                for (let r = 20; r <= 80; r += 20) {
+                    ctx.beginPath();
+                    ctx.arc(x + 140, y + h + 20, r + 50, Math.PI * 1.1, Math.PI * 1.8);
+                    ctx.stroke();
+                }
+            } else { // 어촌
+                ctx.fillStyle = "#0284c7";
+                ctx.fillRect(x, y + h - 140, w, 140);
+
+                ctx.fillStyle = "#38bdf8";
+                for (let wave = 0; wave < 4; wave++) {
+                    ctx.beginPath();
+                    ctx.arc(x + 60 + wave * 110, y + h - 130, 45, 0, Math.PI, false);
+                    ctx.fill();
+                }
+
+                // 등대
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(x + w - 75, y + h - 210, 26, 80);
+                ctx.fillStyle = "#ef4444";
+                ctx.fillRect(x + w - 75, y + h - 180, 26, 18);
+                ctx.fillRect(x + w - 77, y + h - 216, 30, 8);
+
+                // 갈매기
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x + 80, y + 80, 10, Math.PI, 0);
+                ctx.arc(x + 100, y + 80, 10, Math.PI, 0);
+                ctx.stroke();
+            }
+        }
+
+        function drawWeatherParticles(ctx, x, y, w, h, season) {
+            if (season === '봄') {
+                ctx.fillStyle = "#f472b6";
+                for (let i = 0; i < 24; i++) {
+                    const px = x + ((i * 73) % w);
+                    const py = y + ((i * 91) % (h - 80));
+                    ctx.beginPath();
+                    ctx.ellipse(px, py, 6, 3, 0.4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (season === '여름') {
+                ctx.fillStyle = "rgba(254, 240, 138, 0.35)";
+                ctx.beginPath();
+                ctx.arc(x + w - 45, y + 45, 60, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "rgba(254, 240, 138, 0.6)";
+                ctx.beginPath();
+                ctx.arc(x + w - 45, y + 45, 35, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (season === '가을') {
+                ctx.fillStyle = "#ea580c";
+                for (let i = 0; i < 20; i++) {
+                    const px = x + ((i * 81) % w);
+                    const py = y + ((i * 67) % (h - 70));
+                    ctx.fillRect(px, py, 7, 7);
+                }
+            } else { // 겨울
+                ctx.fillStyle = "#ffffff";
+                for (let i = 0; i < 35; i++) {
+                    const px = x + ((i * 59) % w);
+                    const py = y + ((i * 79) % (h - 50));
+                    ctx.beginPath();
+                    ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawCharacters(ctx, x, y, w, h, gender, partner, action) {
+            const groundY = y + h - 15;
+            if (partner === '혼자') {
+                drawPerson(ctx, x + w / 2, groundY, gender, action, true);
+            } else if (partner && partner.includes('친구')) {
+                drawPerson(ctx, x + w / 2 - 65, groundY, 'female', 'leisure', false);
+                drawPerson(ctx, x + w / 2, groundY, gender, action, true);
+                drawPerson(ctx, x + w / 2 + 65, groundY, 'male', 'leisure', false);
+            } else if (partner && partner.includes('가족')) {
+                const partnerGender = gender === 'female' ? 'male' : 'female';
+                drawPerson(ctx, x + w / 2 - 45, groundY, gender, action, true);
+                drawPerson(ctx, x + w / 2 + 35, groundY, partnerGender, action, false);
+                drawChild(ctx, x + w / 2 - 6, groundY);
+            } else {
+                const partnerGender = gender === 'female' ? 'male' : 'female';
+                drawPerson(ctx, x + w / 2 - 38, groundY, gender, action, true);
+                drawPerson(ctx, x + w / 2 + 38, groundY, partnerGender, action, false);
+            }
+        }
+
+        function drawPerson(ctx, cx, cy, gender, action, isMain) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            const scale = isMain ? 1 : 0.92;
+            ctx.scale(scale, scale);
+
+            const bodyColor = action === '일을 한다' ? '#1e3a8a' : '#059669';
+
+            // 몸통
+            ctx.fillStyle = bodyColor;
+            drawRoundedRect(ctx, -18, -95, 36, 65, 8, true, false);
+
+            // 얼굴
+            ctx.fillStyle = '#fed7aa';
+            ctx.beginPath();
+            ctx.arc(0, -118, 18, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 헤어
+            ctx.fillStyle = gender === 'female' ? '#78350f' : '#1e293b';
+            if (gender === 'female') {
+                ctx.beginPath();
+                ctx.arc(0, -122, 21, Math.PI, 0);
+                ctx.fill();
+                ctx.fillRect(-20, -122, 9, 36);
+                ctx.fillRect(11, -122, 9, 36);
+            } else {
+                ctx.beginPath();
+                ctx.arc(0, -124, 20, Math.PI * 0.85, Math.PI * 0.15);
+                ctx.fill();
+            }
+
+            // 소품
+            if (isMain) {
+                if (action === '일을 한다') {
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fillRect(-14, -58, 28, 18);
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.fillRect(-11, -55, 22, 12);
+                } else {
+                    ctx.fillStyle = '#ef4444';
+                    ctx.beginPath();
+                    ctx.arc(14, -56, 7, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // 다리
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(-13, -30, 9, 30);
+            ctx.fillRect(4, -30, 9, 30);
+
+            ctx.restore();
+        }
+
+        function drawChild(ctx, cx, cy) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(0.62, 0.62);
+
+            ctx.fillStyle = '#f43f5e';
+            drawRoundedRect(ctx, -14, -75, 28, 48, 6, true, false);
+
+            ctx.fillStyle = '#fed7aa';
+            ctx.beginPath();
+            ctx.arc(0, -95, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#eab308';
+            ctx.beginPath();
+            ctx.arc(0, -98, 17, Math.PI, 0);
+            ctx.fill();
+
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(-9, -27, 7, 27);
+            ctx.fillRect(2, -27, 7, 27);
+
+            ctx.restore();
+        }
+
+        function drawFinalCanvas() {
+            try {
+                const canvas = document.getElementById('futureCanvas');
+                const ctx = canvas.getContext('2d');
+                const w = canvas.width;
+                const h = canvas.height;
+
+                const displayName = state.studentName || '나';
+                document.getElementById('final-card-title').textContent = `10년 후 ${displayName}의 미래 그림`;
+
+                // White Polaroid Card BG
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, w, h);
+
+                // Picture Frame Box
+                const pad = 18;
+                const picW = w - pad * 2;
+                const picH = 390;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(pad, pad, picW, picH);
+                ctx.clip();
+
+                // Seasonal Background Gradient
+                let skyGrad = ctx.createLinearGradient(0, pad, 0, pad + picH);
+                if (state.season === '봄') {
+                    skyGrad.addColorStop(0, '#fbcfe8');
+                    skyGrad.addColorStop(1, '#fde68a');
+                } else if (state.season === '여름') {
+                    skyGrad.addColorStop(0, '#38bdf8');
+                    skyGrad.addColorStop(1, '#67e8f9');
+                } else if (state.season === '가을') {
+                    skyGrad.addColorStop(0, '#fb923c');
+                    skyGrad.addColorStop(1, '#fef08a');
+                } else {
+                    skyGrad.addColorStop(0, '#1e293b');
+                    skyGrad.addColorStop(1, '#64748b');
+                }
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(pad, pad, picW, picH);
+
+                // Place Scenery
+                drawPlaceScenery(ctx, pad, pad, picW, picH, state.place);
+
+                // Weather Particles
+                drawWeatherParticles(ctx, pad, pad, picW, picH, state.season);
+
+                // Characters & Companion
+                drawCharacters(ctx, pad, pad, picW, picH, state.gender, state.partner, state.action);
+
+                ctx.restore();
+
+                // Polaroid Bottom Text Section
+                ctx.textAlign = "center";
+                ctx.fillStyle = "#0f172a";
+                ctx.font = "900 20px 'Gowun Dodum', sans-serif";
+                ctx.fillText(`2036년, ${state.season}의 ${state.place}에서`, w / 2, 436);
+
+                ctx.font = "700 15px 'Noto Sans KR', sans-serif";
+                ctx.fillStyle = "#475569";
+                ctx.fillText(`${displayName} 님과 ${state.partner}의 소중한 하루`, w / 2, 468);
+
+                // Highlight Task
+                ctx.font = "bold 15px 'Noto Sans KR', sans-serif";
+                ctx.fillStyle = "#2563eb";
+                ctx.fillText(`“ ${state.detailTask || state.action} ”`, w / 2, 500);
+
+                // Tags
+                ctx.font = "500 12px 'Noto Sans KR', sans-serif";
+                ctx.fillStyle = "#94a3b8";
+                ctx.fillText(`#${displayName} #2036미래 #${state.place} #${state.season} #${state.action}`, w / 2, 532);
+            } catch (err) {
+                console.warn("Canvas draw warning:", err);
+            }
+        }
+
+        let currentAIImageUrl = null;
+        let isGeneratingAI = false;
+
+        async function generateAIImage(force = false) {
+            if (isGeneratingAI) return;
+            if (currentAIImageUrl && !force) return;
+
+            isGeneratingAI = true;
+            const loadingBox = document.getElementById('ai-loading-box');
+            const imageBox = document.getElementById('ai-image-box');
+            const canvasEl = document.getElementById('futureCanvas');
+            const fallbackNotice = document.getElementById('ai-fallback-notice');
+
+            loadingBox.classList.remove('hidden');
+            imageBox.classList.add('hidden');
+            canvasEl.classList.add('hidden');
+            fallbackNotice.classList.add('hidden');
+
+            const name = state.studentName || '나';
+            const genderDesc = state.gender === 'female' ? '20대 후반의 밝고 상냥한 한국인 여성' : '20대 후반의 밝고 듬직한 한국인 남성';
+            
+            const prompt = `A warm, beautiful digital illustration in cozy anime studio animation style.
+Subject: An optimistic young Korean adult (${genderDesc}) named '${name}', spending time happily with '${state.partner}'.
+Setting: In South Korea (대한민국), authentic beautiful scenery of a Korean '${state.place}' area.
+Season & Atmosphere: Clear picturesque ${state.season} season in Korea with wonderful natural ambient light and weather.
+Activity: They are happily doing: "${state.detailTask}".
+Style: Wholesome, heartwarming aesthetic, Studio Ghibli inspired, soft radiant lighting, beautiful painterly background, cheerful emotion, 4k masterwork, safe for all ages. No ugly distortions, no garbled letters.`;
+
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [{ text: prompt }]
+                }],
+                generationConfig: {
+                    responseModalities: ["IMAGE"],
+                    imageConfig: { aspectRatio: "1:1" }
+                }
+            };
+
+            let success = false;
+            let attempts = 0;
+            const maxAttempts = 2;
+            let delay = 1000;
+
+            while (!success && attempts < maxAttempts) {
+                try {
+                    attempts++;
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        const part = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                        if (part && part.inlineData && part.inlineData.data) {
+                            currentAIImageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                            const imgEl = document.getElementById('ai-result-img');
+                            imgEl.src = currentAIImageUrl;
+
+                            const captionEl = document.getElementById('ai-story-caption');
+                            captionEl.innerHTML = `🌸 2036년 <span class="text-pink-300 font-bold">${state.season}</span>의 <span class="text-indigo-300 font-bold">${state.place}</span>에서, <span class="text-emerald-300 font-bold">${name}</span> 님이 <span class="text-rose-300 font-bold">${state.partner}</span>와(과) 함께 <span class="text-cyan-300 font-bold">"${state.detailTask}"</span>`;
+
+                            loadingBox.classList.add('hidden');
+                            imageBox.classList.remove('hidden');
+                            canvasEl.classList.add('hidden');
+                            success = true;
+
+                            if (window.confetti) {
+                                confetti({ particleCount: 70, spread: 70, origin: { y: 0.5 } });
+                            }
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    // Fail gracefully
+                }
+
+                if (!success && attempts < maxAttempts) {
+                    await new Promise(r => setTimeout(r, delay));
+                    delay *= 2;
+                }
+            }
+
+            // API 호출이 불가능한 일반 브라우저 환경에서도 완벽히 그린 Canvas 일러스트를 즉시 표시
+            if (!success) {
+                loadingBox.classList.add('hidden');
+                imageBox.classList.add('hidden');
+                canvasEl.classList.remove('hidden');
+                fallbackNotice.classList.remove('hidden');
+                drawFinalCanvas();
+                if (window.confetti) {
+                    confetti({ particleCount: 60, spread: 60, origin: { y: 0.5 } });
+                }
+            }
+
+            isGeneratingAI = false;
+        }
+
+        function toggleCanvasView() {
+            const canvasEl = document.getElementById('futureCanvas');
+            const imageBox = document.getElementById('ai-image-box');
+            const btn = document.getElementById('btn-toggle-view');
+
+            if (canvasEl.classList.contains('hidden')) {
+                canvasEl.classList.remove('hidden');
+                imageBox.classList.add('hidden');
+                btn.innerHTML = `<i class="fa-solid fa-sparkles"></i> AI 그림 보기`;
+            } else {
+                if (currentAIImageUrl) {
+                    canvasEl.classList.add('hidden');
+                    imageBox.classList.remove('hidden');
+                    btn.innerHTML = `<i class="fa-solid fa-id-card"></i> 기본 카드 보기`;
+                }
+            }
+        }
+
+        function downloadImage() {
+            playSound('click');
+            const name = state.studentName || '나';
+            const link = document.createElement('a');
+            link.download = `10년후미래_${name}_${state.place}_${state.season}.png`;
+
+            if (currentAIImageUrl && !document.getElementById('ai-image-box').classList.contains('hidden')) {
+                link.href = currentAIImageUrl;
+            } else {
+                const canvas = document.getElementById('futureCanvas');
+                link.href = canvas.toDataURL('image/png');
+            }
+            link.click();
+        }
+
+        function copyAIPrompt() {
+            playSound('click');
+            const name = state.studentName || '나';
+            const genderText = state.gender === 'female' ? `20대 후반의 밝고 성실한 한국인 여성 '${name}'` : `20대 후반의 든든하고 성실한 한국인 남성 '${name}'`;
+            const prompt = `[따뜻한 수채화 애니메이션 일러스트]
+- 주인공: ${genderText}과(과) 함께 있는 ${state.partner}
+- 배경 장소: 10년 후 대한민국의 아름다운 ${state.place}의 풍경
+- 계절 및 날씨: 포근하고 청명한 ${state.season}의 날씨와 아름다운 자연광
+- 활동/상황: "${state.detailTask}"을(를) 정성껏 수행하며 미소를 짓고 있는 행복한 모습
+- 화풍: 지브리 스튜디오 감성의 따뜻하고 힐링되는 색감, 섬세한 배경 묘사, 고해상도 디지털 아트`;
+
+            const tempInput = document.createElement('textarea');
+            tempInput.value = prompt;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            const alertBox = document.getElementById('copy-alert');
+            alertBox.classList.remove('hidden');
+            setTimeout(() => {
+                alertBox.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Initial launch
+        window.onload = function() {
+            goToStep(1);
+        };
+    </script>
+</body>
+</html>
