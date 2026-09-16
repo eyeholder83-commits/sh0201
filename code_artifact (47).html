@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>칭찬과 조언 퀴즈</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-amber-50 min-h-screen text-gray-800 antialiased pb-24">
+
+  <!-- 상단 네비게이션 및 헤더 -->
+  <header class="bg-white/80 backdrop-blur sticky top-0 z-20 border-b border-amber-200 shadow-sm">
+    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <span class="text-2xl">🌟</span>
+        <h1 class="text-lg font-bold text-amber-900">칭찬과 조언 나누기 퀴즈</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="answered-count" class="text-sm font-semibold text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
+          진행: 0 / 10
+        </span>
+      </div>
+    </div>
+    <!-- 진행률 바 -->
+    <div class="w-full bg-amber-100 h-1.5">
+      <div id="progress-bar" class="bg-amber-500 h-1.5 transition-all duration-300" style="width: 0%"></div>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 pt-6 space-y-6">
+    <!-- 안내 배너 -->
+    <div class="bg-gradient-to-r from-amber-400 to-orange-400 text-white rounded-2xl p-6 shadow-md">
+      <h2 class="text-xl font-extrabold mb-1">바른 마음, 고운 말 배움터 ✏️</h2>
+      <p class="text-amber-50 text-sm">
+        문제를 꼼꼼히 읽고 가장 알맞은 보기를 선택한 후, 아래의 <strong>[채점하기]</strong> 버튼을 눌러 점수를 확인해 보세요!
+      </p>
+    </div>
+
+    <!-- 결과 리포트 카드 (채점 후 표시) -->
+    <div id="result-card" class="hidden bg-white border-2 border-amber-300 rounded-2xl p-6 shadow-lg text-center transition-all">
+      <div id="score-badge" class="inline-block px-4 py-1.5 rounded-full text-sm font-bold mb-3"></div>
+      <h3 class="text-3xl font-extrabold text-gray-900 mb-2" id="score-text">0점</h3>
+      <p class="text-gray-600 mb-6" id="score-feedback"></p>
+      <div class="flex justify-center gap-3">
+        <button onclick="resetQuiz()" class="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl shadow-md transition">
+          🔄 다시 풀기
+        </button>
+      </div>
+    </div>
+
+    <!-- 문제 목록 컨테이너 -->
+    <div id="quiz-container" class="space-y-6"></div>
+  </main>
+
+  <!-- 하단 고정 채점 바 -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 p-4 shadow-lg z-30">
+    <div class="max-w-3xl mx-auto flex items-center justify-between gap-4">
+      <div class="text-xs sm:text-sm text-gray-500">
+        모든 문제에 답을 선택하고 채점해 보세요.
+      </div>
+      <button id="submit-btn" onclick="gradeQuiz()" class="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-lg rounded-xl shadow-md active:scale-95 transition transform">
+        ✨ 채점하기
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        id: 1,
+        question: "‘칭찬’에 대한 설명으로 알맞은 것은 무엇인가요?",
+        options: [
+          "친구의 잘못을 혼내는 것",
+          "친구의 좋은 점이나 노력하는 점을 높이 평가해 주는 것",
+          "친구에게 내가 하고 싶은 말을 하는 것",
+          "친구의 비밀을 다른 사람에게 알려 주는 것"
+        ],
+        answer: 1,
+        explanation: "칭찬은 친구의 장점이나 잘한 일, 노력한 점을 인정하고 높이 평가해 주는 따뜻한 말입니다."
+      },
+      {
+        id: 2,
+        question: "‘조언’에 대한 설명으로 알맞은 것은 무엇인가요?",
+        options: [
+          "어려움이 있을 때 도움이 되도록 말로 알려 주는 것",
+          "친구를 재미있게 놀리는 것",
+          "친구의 좋은 점을 찾아 말하는 것",
+          "내가 좋아하는 것을 자랑하는 것"
+        ],
+        answer: 0,
+        explanation: "조언은 상대방이 겪고 있는 문제를 해결하거나 어려움을 이겨낼 수 있도록 돕는 실질적인 안내와 권유입니다."
+      },
+      {
+        id: 3,
+        question: "칭찬하는 방법으로 알맞지 않은 것은 무엇인가요?",
+        options: [
+          "열심히 노력하는 점을 찾아 칭찬한다.",
+          "좋은 점을 진심으로 칭찬한다.",
+          "칭찬하는 까닭을 함께 이야기한다.",
+          "실제보다 아주 많이 부풀려서 칭찬한다."
+        ],
+        answer: 3,
+        explanation: "실제보다 과장하거나 부풀려 칭찬하면 진심이 느껴지지 않고 거짓처럼 들릴 수 있습니다."
+      },
+      {
+        id: 4,
+        question: "친구가 줄넘기를 계속 연습해서 10개를 성공했습니다. 가장 알맞은 칭찬은 무엇인가요?",
+        options: [
+          "“그 정도는 누구나 할 수 있어.”",
+          "“계속 연습해서 성공했구나. 포기하지 않고 노력한 점이 멋져.”",
+          "“나는 20개도 할 수 있어.”",
+          "“다음에는 더 많이 해야 해.”"
+        ],
+        answer: 1,
+        explanation: "줄넘기를 포기하지 않고 꾸준히 연습한 '노력의 과정'과 그 까닭을 구체적으로 칭찬한 말이 가장 좋습니다."
+      },
+      {
+        id: 5,
+        question: "다음 중 칭찬하는 점과 그 까닭이 잘 드러난 말은 무엇인가요?",
+        options: [
+          "“너 최고야!”",
+          "“그냥 잘했어.”",
+          "“친구가 힘들 때 먼저 도와줘서 참 친절한 것 같아.”",
+          "“오늘 기분 좋아 보여.”"
+        ],
+        answer: 2,
+        explanation: "'친구가 힘들 때 먼저 도와줘서(까닭)'와 '친절하다(칭찬점)'가 명확하게 표현되었습니다."
+      },
+      {
+        id: 6,
+        question: "친구가 자꾸 준비물을 잊어버려 걱정하고 있습니다. 가장 알맞은 조언은 무엇인가요?",
+        options: [
+          "“넌 왜 맨날 잊어버려?”",
+          "“나랑 상관없어.”",
+          "“속상했겠다. 자기 전에 준비물을 미리 가방에 넣어 보면 어떨까?”",
+          "“다시는 학교에 오지 마.”"
+        ],
+        answer: 2,
+        explanation: "친구의 속상한 마음에 먼저 공감하고, 준비물을 미리 챙기는 구체적인 실천 방법을 부드럽게 제안하였습니다."
+      },
+      {
+        id: 7,
+        question: "조언하는 방법으로 알맞지 않은 것은 무엇인가요?",
+        options: [
+          "걱정하는 마음을 담아 말한다.",
+          "문제를 해결할 수 있는 방법을 알려 준다.",
+          "상대의 마음에 공감하고 격려한다.",
+          "상대의 잘못을 놀리며 말한다."
+        ],
+        answer: 3,
+        explanation: "조언할 때는 비난하거나 놀리는 태도를 버리고, 상대방을 위하는 배려의 태도를 가져야 합니다."
+      },
+      {
+        id: 8,
+        question: "친구가 수학 문제가 어렵다며 포기하려고 합니다. 가장 알맞은 조언은 무엇인가요?",
+        options: [
+          "“그것도 못 풀어?”",
+          "“어려워서 속상하겠다. 문제를 천천히 다시 읽어 보면 어떨까? 넌 할 수 있어.”",
+          "“수학은 원래 어려워.”",
+          "“그냥 답을 보고 써.”"
+        ],
+        answer: 1,
+        explanation: "어려워하는 감정에 공감하고 문제를 천천히 읽어보자는 해결책과 함께 용기를 주는 조언입니다."
+      },
+      {
+        id: 9,
+        question: "다음 중 ‘칭찬’에 해당하는 말은 무엇인가요?",
+        options: [
+          "“걱정되겠다. 선생님께 도움을 부탁해 봐.”",
+          "“매일 책을 읽으려고 노력하는 모습이 정말 멋져.”",
+          "“다음부터는 준비물을 미리 챙겨 봐.”",
+          "“속상했겠다. 다시 한번 해 보자.”"
+        ],
+        answer: 1,
+        explanation: "독서를 꾸준히 하려는 긍정적인 행동과 노력을 높이 평가한 전형적인 칭찬입니다."
+      },
+      {
+        id: 10,
+        question: "다음 중 ‘조언’에 해당하는 말은 무엇인가요?",
+        options: [
+          "“친구에게 먼저 사과해 보면 어떨까? 그러면 다시 사이좋게 지낼 수 있을 거야.”",
+          "“친구를 잘 도와주는 모습이 참 친절해.”",
+          "“끝까지 달리는 모습이 멋졌어.”",
+          "“글씨를 또박또박 써서 읽기가 편해.”"
+        ],
+        answer: 0,
+        explanation: "다툰 상황에서 화해할 수 있는 구체적인 행동(먼저 사과하기)을 부드럽게 권유하는 조언입니다."
+      }
+    ];
+
+    const userAnswers = {};
+    let isGraded = false;
+
+    function renderQuestions() {
+      const container = document.getElementById("quiz-container");
+      container.innerHTML = "";
+
+      questions.forEach((q, index) => {
+        const card = document.createElement("div");
+        card.id = `q-card-${index}`;
+        card.className = "bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm transition-all";
+
+        const optHtml = q.options.map((opt, optIndex) => `
+          <label class="opt-label flex items-start gap-3 p-3.5 rounded-xl border border-gray-200 hover:bg-amber-50/50 hover:border-amber-300 cursor-pointer transition" data-q="${index}" data-opt="${optIndex}">
+            <input type="radio" name="q_${index}" value="${optIndex}" class="mt-1 w-4 h-4 text-amber-500 focus:ring-amber-400" onchange="selectOption(${index}, ${optIndex})" ${userAnswers[index] === optIndex ? 'checked' : ''} ${isGraded ? 'disabled' : ''}>
+            <span class="text-sm sm:text-base text-gray-700 leading-relaxed font-medium">
+              <span class="font-bold text-gray-400 mr-1.5">${['①', '②', '③', '④'][optIndex]}</span>${opt}
+            </span>
+          </label>
+        `).join("");
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-3">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800">
+              문제 ${q.id}
+            </span>
+            <span id="feedback-badge-${index}" class="hidden text-xs font-bold px-2 py-0.5 rounded-full"></span>
+          </div>
+          <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-4">${q.question}</h3>
+          <div class="space-y-2.5">${optHtml}</div>
+          <div id="explanation-${index}" class="hidden mt-4 pt-3 border-t border-dashed border-gray-200 text-xs sm:text-sm text-gray-600 bg-amber-50/60 p-3 rounded-lg">
+            <strong class="text-amber-900 block mb-1">💡 풀이 및 핵심 포인트:</strong>
+            ${q.explanation}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      updateProgress();
+    }
+
+    function selectOption(qIndex, optIndex) {
+      if (isGraded) return;
+      userAnswers[qIndex] = optIndex;
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const answeredCount = Object.keys(userAnswers).length;
+      document.getElementById("answered-count").textContent = `진행: ${answeredCount} / ${questions.length}`;
+      const percentage = (answeredCount / questions.length) * 100;
+      document.getElementById("progress-bar").style.width = `${percentage}%`;
+    }
+
+    function gradeQuiz() {
+      isGraded = true;
+      let score = 0;
+
+      questions.forEach((q, index) => {
+        const chosen = userAnswers[index];
+        const card = document.getElementById(`q-card-${index}`);
+        const badge = document.getElementById(`feedback-badge-${index}`);
+        const exp = document.getElementById(`explanation-${index}`);
+        const optLabels = card.querySelectorAll(".opt-label");
+
+        badge.classList.remove("hidden");
+        exp.classList.remove("hidden");
+
+        if (chosen === q.answer) {
+          score += 10;
+          badge.textContent = "정답! 👏";
+          badge.className = "text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700";
+          card.classList.add("border-green-300", "bg-green-50/20");
+        } else {
+          badge.textContent = "오답 😢";
+          badge.className = "text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700";
+          card.classList.add("border-red-300", "bg-red-50/20");
+        }
+
+        // 보기 강조 표시
+        optLabels.forEach((lbl, oIdx) => {
+          if (oIdx === q.answer) {
+            lbl.classList.add("bg-green-100", "border-green-500", "font-bold");
+          } else if (oIdx === chosen && chosen !== q.answer) {
+            lbl.classList.add("bg-red-100", "border-red-400", "line-through");
+          }
+        });
+      });
+
+      // 점수 카드 표시
+      const resultCard = document.getElementById("result-card");
+      resultCard.classList.remove("hidden");
+
+      const scoreBadge = document.getElementById("score-badge");
+      const scoreText = document.getElementById("score-text");
+      const scoreFeedback = document.getElementById("score-feedback");
+
+      scoreText.textContent = `${score}점 / 100점`;
+
+      if (score === 100) {
+        scoreBadge.textContent = "만점입니다! 🎉";
+        scoreBadge.className = "inline-block px-4 py-1.5 rounded-full text-sm font-bold mb-3 bg-emerald-100 text-emerald-700";
+        scoreFeedback.textContent = "칭찬과 조언의 올바른 방법과 따뜻한 마음을 완벽하게 이해하고 계시네요!";
+        confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+      } else if (score >= 80) {
+        scoreBadge.textContent = "우수해요! 👍";
+        scoreBadge.className = "inline-block px-4 py-1.5 rounded-full text-sm font-bold mb-3 bg-blue-100 text-blue-700";
+        scoreFeedback.textContent = "대부분의 내용을 아주 잘 이해하고 있습니다. 틀린 문제의 설명을 확인해 보세요.";
+      } else {
+        scoreBadge.textContent = "조금 더 연습해 볼까요? 💪";
+        scoreBadge.className = "inline-block px-4 py-1.5 rounded-full text-sm font-bold mb-3 bg-amber-100 text-amber-700";
+        scoreFeedback.textContent = "해설을 꼼꼼히 읽고 다시 풀기를 통해 완벽하게 마스터해 보세요!";
+      }
+
+      document.getElementById("submit-btn").disabled = true;
+      document.getElementById("submit-btn").classList.add("opacity-50", "cursor-not-allowed");
+      resultCard.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function resetQuiz() {
+      for (const key in userAnswers) {
+        delete userAnswers[key];
+      }
+      isGraded = false;
+      document.getElementById("result-card").classList.add("hidden");
+      const submitBtn = document.getElementById("submit-btn");
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+      renderQuestions();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // 초기 실행
+    renderQuestions();
+  </script>
+</body>
+</html>
