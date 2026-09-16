@@ -1,0 +1,2121 @@
+<!DOCTYPE html>
+<html lang="ko" class="w-full h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>초등학교 공개수업 실시간 감성 소통 칠판</title>
+  <!-- Tailwind CSS & Google Font 로드 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <!-- 정자체 고딕 폰트 적용 (흘림체 전면 배제) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      font-family: 'Pretendard', 'Noto Sans KR', sans-serif !important;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    @keyframes starPulse {
+      0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 10px rgba(253, 224, 71, 0.95)) drop-shadow(0 0 20px rgba(234, 179, 8, 0.6));
+      }
+      50% {
+        transform: scale(1.18);
+        filter: drop-shadow(0 0 18px rgba(254, 240, 138, 1)) drop-shadow(0 0 32px rgba(245, 158, 11, 0.85));
+      }
+    }
+    .star-entity-glow {
+      animation: starPulse 3s ease-in-out infinite;
+      cursor: pointer;
+    }
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.6);
+    }
+  </style>
+</head>
+<body class="relative w-full h-full bg-[#050814] select-none text-slate-100 overflow-hidden">
+
+  <!-- 배경 감성 밤하늘 -->
+  <div id="blackboardSky" class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-b from-[#060a1f] via-[#09102c] to-[#040612]"></div>
+    <div class="absolute w-[600px] h-[600px] -top-32 -left-32 bg-indigo-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute w-[550px] h-[550px] top-1/2 right-0 bg-purple-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute w-[500px] h-[500px] -bottom-20 left-1/3 bg-blue-600/10 rounded-full blur-3xl"></div>
+    <div id="ambientStarsContainer" class="absolute inset-0"></div>
+  </div>
+
+  <!-- 외부 커스텀 BGM 오디오 엘리먼트 -->
+  <audio id="externalBgmAudio" loop preload="auto" class="hidden"></audio>
+
+  <!-- 0. 첫 화면 (포털 로비 화면: 전자칠판, 교사리모컨, 학생배움, 학부모응원) -->
+  <section id="viewPortal" class="relative z-20 w-full h-full flex flex-col justify-between overflow-y-auto px-4 py-6 md:p-8">
+    <header class="text-center pt-2 md:pt-4">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/80 text-amber-300 text-xs font-bold mb-3 shadow-lg">
+        <span class="animate-pulse">✨</span>
+        <span>초등학교 공개수업 실시간 감성 소통 시스템</span>
+      </div>
+      <h1 class="text-2xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-300 tracking-tight">
+        우리에게 영향을 준 사람들
+      </h1>
+      <p class="text-xs md:text-sm text-slate-400 mt-2 font-medium">
+        원하시는 참여 방식을 선택해 주세요. 각 기기별 전용 링크가 준비되어 있습니다.
+      </p>
+    </header>
+
+    <!-- 4개 역할 카드 버튼 그리드 -->
+    <div class="max-w-5xl mx-auto w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 my-auto py-6">
+      
+      <!-- 1. 전자칠판 버튼 카드 -->
+      <div class="relative group rounded-3xl p-5 bg-slate-900/85 hover:bg-slate-900 border border-amber-500/40 hover:border-amber-400 shadow-xl hover:shadow-amber-500/10 transition-all flex flex-col justify-between">
+        <div class="flex flex-col gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-2xl border border-amber-500/30">
+            🖥️
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-black text-white">전자칠판</h2>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">교실 전면</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+              교실 큰 화면에 띄우는 메인 밤하늘 무대입니다. 부유 카드, 별 모이기 8단계, BGM을 감상합니다.
+            </p>
+          </div>
+        </div>
+        <div class="pt-5 flex flex-col gap-2">
+          <button onclick="switchView('board')" class="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 transition active:scale-95 flex items-center justify-center gap-1.5">
+            <span>칠판 화면 열기</span>
+            <span>➔</span>
+          </button>
+          <button onclick="copyRoleLink('board')" class="w-full py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-bold transition">
+            칠판 링크 복사
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. 교사리모컨 버튼 카드 -->
+      <div class="relative group rounded-3xl p-5 bg-slate-900/85 hover:bg-slate-900 border border-indigo-500/40 hover:border-indigo-400 shadow-xl hover:shadow-indigo-500/10 transition-all flex flex-col justify-between">
+        <div class="flex flex-col gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-2xl border border-indigo-500/30">
+            📱
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-black text-white">교사 리모컨</h2>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">교사 스마트폰</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+              선생님 폰으로 칠판을 원격 관리하고, 칭찬·안내 글을 직접 칠판에 띄우며 링크/QR을 관리합니다.
+            </p>
+          </div>
+        </div>
+        <div class="pt-5 flex flex-col gap-2">
+          <button onclick="switchView('teacher')" class="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs shadow-lg shadow-indigo-500/20 transition active:scale-95 flex items-center justify-center gap-1.5">
+            <span>리모컨 열기</span>
+            <span>➔</span>
+          </button>
+          <button onclick="copyRoleLink('teacher')" class="w-full py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-bold transition">
+            리모컨 링크 복사
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. 학생배움 버튼 카드 -->
+      <div class="relative group rounded-3xl p-5 bg-slate-900/85 hover:bg-slate-900 border border-emerald-500/40 hover:border-emerald-400 shadow-xl hover:shadow-emerald-500/10 transition-all flex flex-col justify-between">
+        <div class="flex flex-col gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-2xl border border-emerald-500/30">
+            🎒
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-black text-white">학생 배움</h2>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">태블릿 전용</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+              학생들이 각자 태블릿으로 22명 명단에서 이름을 고르고, 사진 촬영/미리보기와 소감을 작성합니다.
+            </p>
+          </div>
+        </div>
+        <div class="pt-5 flex flex-col gap-2">
+          <button onclick="switchView('student')" class="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs shadow-lg shadow-emerald-500/20 transition active:scale-95 flex items-center justify-center gap-1.5">
+            <span>학생 작성 화면</span>
+            <span>➔</span>
+          </button>
+          <button onclick="copyRoleLink('student')" class="w-full py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-bold transition">
+            학생 링크 복사
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. 학부모응원 버튼 카드 -->
+      <div class="relative group rounded-3xl p-5 bg-slate-900/85 hover:bg-slate-900 border border-rose-500/40 hover:border-rose-400 shadow-xl hover:shadow-rose-500/10 transition-all flex flex-col justify-between">
+        <div class="flex flex-col gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-300 flex items-center justify-center text-2xl border border-rose-500/30">
+            💌
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-black text-white">학부모 응원</h2>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">스마트폰 전용</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+              참관 중인 학부모님이 스마트폰으로 자녀를 격려하는 사랑의 응원 편지를 전자칠판에 띄웁니다.
+            </p>
+          </div>
+        </div>
+        <div class="pt-5 flex flex-col gap-2">
+          <button onclick="switchView('parent')" class="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white font-black text-xs shadow-lg shadow-rose-500/20 transition active:scale-95 flex items-center justify-center gap-1.5">
+            <span>응원 작성 화면</span>
+            <span>➔</span>
+          </button>
+          <button onclick="copyRoleLink('parent')" class="w-full py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-bold transition">
+            학부모 링크 복사
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 하단 빠른 안내 문구 -->
+    <footer class="text-center py-2 text-[11px] text-slate-400">
+      교사 리모컨에서 각 학생 및 학부모용 즉시 접속 QR 코드를 열어 카메라로 바로 스캔할 수 있습니다.
+    </footer>
+  </section>
+
+  <!-- 1. 전자칠판 메인 화면 -->
+  <main id="viewBoard" class="hidden relative z-10 w-full h-full flex flex-col justify-between">
+    <!-- 상단 헤더: 홈 첫 화면 버튼, 감성 BGM, 교사 리모컨 -->
+    <header class="w-full px-6 py-3.5 flex items-center justify-between backdrop-blur-md bg-slate-950/40 border-b border-slate-800/60 z-20">
+      <div class="flex items-center gap-3">
+        <button onclick="switchView('portal')" title="첫 화면으로 돌아가기" class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shadow-md">
+          <span>🏠</span>
+          <span>첫 화면</span>
+        </button>
+        <span class="text-2xl animate-pulse">🌟</span>
+        <div>
+          <h1 class="text-lg md:text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-300">
+            우리에게 영향을 준 사람들
+          </h1>
+          <p class="text-[11px] text-slate-400 font-medium">초등학교 공개수업 실시간 감성 소통 칠판</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <button id="btnBgmToggle" onclick="toggleBgm()" class="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 text-xs font-bold flex items-center gap-2 transition active:scale-95 shadow-md">
+          <span id="bgmIcon">🎵</span>
+          <span id="bgmText">감성 BGM 켜기</span>
+        </button>
+        <button onclick="switchView('teacher')" class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-indigo-500/20 transition active:scale-95">
+          <span>📱</span>
+          <span>교사 리모컨</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 카드 및 별들이 부유하는 메인 칠판 무대 -->
+    <div id="floatingStage" class="relative flex-1 w-full h-full overflow-hidden"></div>
+
+    <!-- 좌측 하단 사이드바: 나눈 사람들 + 별 추가하기(x2배) + 8단계 대형 순환 버튼 -->
+    <aside class="absolute bottom-4 left-5 z-20 flex flex-col gap-2 w-52 md:w-56">
+      <div class="backdrop-blur-xl bg-slate-900/85 border border-slate-700/70 rounded-2xl p-2.5 shadow-2xl flex flex-col gap-2 max-h-[55vh]">
+        <div class="flex items-center justify-between pb-1.5 border-b border-slate-800 px-1">
+          <div class="flex items-center gap-1.5">
+            <span class="text-sm">🌱</span>
+            <span class="text-[11px] font-bold text-slate-200">나눈 사람들</span>
+          </div>
+          <span id="leftListCountBadge" class="text-[10px] font-black text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded-full">
+            28명
+          </span>
+        </div>
+
+        <!-- 나눈 사람들 목록 (학생 + 학부모 + 교사) -->
+        <div id="leftParticipantList" class="flex flex-col gap-1.5 overflow-y-auto pr-1 flex-1 max-h-40 text-[11px]"></div>
+
+        <!-- 액션 버튼 그룹: 1. 별 2배 추가하기, 2. 8단계 대형 모이기 -->
+        <div class="pt-1.5 border-t border-slate-800/80 flex flex-col gap-1.5">
+          <button id="btnDuplicateStars" onclick="duplicateStars()" class="w-full py-1.5 px-2 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-[11px] flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition active:scale-95">
+            <span>⭐</span>
+            <span>별 추가하기 (×2배)</span>
+          </button>
+
+          <button id="btnGatherFormation" onclick="cycleGatherFormation()" class="w-full py-2 px-2 rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-purple-600 hover:from-rose-400 hover:to-purple-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-pink-500/30 transition active:scale-95">
+            <span id="formationBtnIcon">✨</span>
+            <span id="formationBtnLabel">별들 모이기</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 우측 하단 참여 현황 미니 배지 -->
+    <footer class="absolute bottom-4 right-5 z-20 flex items-center gap-2 pointer-events-none">
+      <div class="px-3.5 py-1.5 rounded-xl backdrop-blur-md bg-slate-900/80 border border-slate-700/60 text-[11px] text-slate-300 font-bold shadow-lg">
+        참여 학생: <span id="statStudentCount" class="text-emerald-400 font-extrabold">22명</span> · 학부모 응원: <span id="statParentCount" class="text-rose-400 font-extrabold">6명</span>
+      </div>
+    </footer>
+  </main>
+
+  <!-- 2. 학생 태블릿 작성 화면 -->
+  <section id="viewStudent" class="hidden absolute inset-0 z-30 w-full h-full bg-slate-950 flex flex-col justify-between overflow-y-auto">
+    <header class="w-full px-6 py-4 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🎒</span>
+        <div>
+          <h2 class="text-base md:text-lg font-bold text-emerald-300">학생 배움 이야기 나눔터</h2>
+          <p class="text-xs text-slate-400">오늘의 소중한 배움과 사진을 전자칠판에 띄워보아요</p>
+        </div>
+      </div>
+      <div class="px-3 py-1.5 rounded-xl bg-slate-900/90 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+        <span>📺</span>
+        <span>교실 앞 칠판 확인</span>
+      </div>
+    </header>
+
+    <div class="w-full max-w-xl mx-auto px-5 py-6 flex-1 flex flex-col justify-center">
+      <form id="formStudent" onsubmit="handleStudentFormSubmit(event)" class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">내 이름 선택</label>
+          <select id="studentAuthorSelect" required class="w-full px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 text-white font-bold text-sm focus:outline-none focus:border-emerald-500">
+            <option value="" disabled selected>우리 반 명단에서 이름을 골라주세요</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">그림찍기</label>
+          <input type="file" id="studentPhotoInput" accept="image/*" onchange="handleStudentPhotoChange(event)" class="w-full text-xs text-slate-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer bg-slate-800/50 rounded-2xl p-2 border border-slate-700" />
+          
+          <!-- 선택한 사진 즉시 미리보기 박스 -->
+          <div id="studentPhotoPreviewBox" class="hidden mt-2 relative w-full rounded-2xl overflow-hidden bg-slate-950/80 border border-slate-700/80 p-2 flex flex-col items-center">
+            <div class="relative w-full max-h-52 rounded-xl overflow-hidden flex items-center justify-center bg-slate-900/60">
+              <img id="studentPhotoPreviewImg" src="" alt="선택한 사진 미리보기" class="w-full max-h-52 object-contain rounded-xl" />
+              <button type="button" onclick="clearStudentPhotoPreview()" class="absolute top-2 right-2 px-2.5 py-1 rounded-xl bg-slate-900/80 hover:bg-rose-600 text-rose-200 hover:text-white text-[11px] font-bold backdrop-blur-md border border-slate-700/80 shadow-md transition active:scale-95 flex items-center gap-1">
+                <span>✕</span>
+                <span>사진 지우기</span>
+              </button>
+            </div>
+            <p class="text-[10px] text-emerald-400 font-bold mt-1.5 flex items-center gap-1">
+              <span>✨</span>
+              <span id="studentPhotoFileName">사진이 준비되었습니다.</span>
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">메시지</label>
+          <textarea id="studentMessageInput" rows="3" required placeholder="오늘 수업에서 가장 신기했거나 즐거웠던 점을 적어보세요..." class="w-full px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 text-white text-sm font-medium focus:outline-none focus:border-emerald-500 resize-none"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <button type="button" onclick="resetStudentForm()" class="w-full py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition active:scale-95">
+            ✕ 내용 지우기
+          </button>
+          <button type="submit" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition active:scale-95">
+            칠판으로 슝 날려보내기 ✨
+          </button>
+        </div>
+      </form>
+
+      <!-- 학생 전송 완료 후 나타나는 감사 카드 및 다시 쓰기 박스 -->
+      <div id="studentThankYouBox" class="hidden bg-slate-900 border border-emerald-500/40 rounded-3xl p-8 shadow-2xl flex flex-col items-center justify-center text-center gap-5 transition-all duration-300">
+        <div id="studentThanksMsg" class="flex flex-col items-center gap-3 transition-opacity duration-500">
+          <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-3xl border border-emerald-500/30">
+            ✨
+          </div>
+          <h3 class="text-2xl font-black text-white">감사합니다!</h3>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            소중한 배움 소감이 전자칠판으로 전송되었습니다.<br/>
+            <span class="text-emerald-400 font-bold">교실 앞 전자칠판</span>을 확인해 보세요!
+          </p>
+        </div>
+
+        <div id="studentRetryAction" class="hidden flex flex-col items-center gap-3 transition-opacity duration-500">
+          <button type="button" onclick="showStudentFormAgain()" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-sm shadow-lg shadow-emerald-500/30 transition active:scale-95 flex items-center gap-2">
+            <span>✍️</span>
+            <span>다시 쓰기</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 학부모 스마트폰 응원 화면 -->
+  <section id="viewParent" class="hidden absolute inset-0 z-30 w-full h-full bg-slate-950 flex flex-col justify-between overflow-y-auto">
+    <header class="w-full px-6 py-4 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">💌</span>
+        <div>
+          <h2 class="text-base md:text-lg font-bold text-rose-300">학부모 사랑의 격려 편지</h2>
+          <p class="text-xs text-slate-400">자녀의 멋진 배움 활동을 지켜보며 따뜻한 응원을 보내주세요</p>
+        </div>
+      </div>
+      <div class="px-3 py-1.5 rounded-xl bg-slate-900/90 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+        <span>📺</span>
+        <span>교실 앞 칠판 확인</span>
+      </div>
+    </header>
+
+    <div class="w-full max-w-xl mx-auto px-5 py-6 flex-1 flex flex-col justify-center">
+      <form id="formParent" onsubmit="handleParentFormSubmit(event)" class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">보내시는 분</label>
+          <input type="text" id="parentAuthorInput" required placeholder="예: 철수 엄마" class="w-full px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 text-white font-bold text-sm focus:outline-none focus:border-rose-500" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">아이들에게 보내는 글</label>
+          <textarea id="parentMessageInput" rows="4" required placeholder="스스로 즐겁게 공부하는 모습이 참 대견하구나..." class="w-full px-4 py-3 rounded-2xl bg-slate-800 border border-slate-700 text-white text-sm font-medium focus:outline-none focus:border-rose-500 resize-none"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <button type="button" onclick="resetParentForm()" class="w-full py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition active:scale-95">
+            ✕ 내용 지우기
+          </button>
+          <button type="submit" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white font-extrabold text-sm shadow-lg shadow-rose-500/20 transition active:scale-95">
+            메시지 보내기 💖
+          </button>
+        </div>
+      </form>
+
+      <!-- 학부모 전송 완료 후 나타나는 감사 카드 및 다시 쓰기 박스 -->
+      <div id="parentThankYouBox" class="hidden bg-slate-900 border border-rose-500/40 rounded-3xl p-8 shadow-2xl flex flex-col items-center justify-center text-center gap-5 transition-all duration-300">
+        <div id="parentThanksMsg" class="flex flex-col items-center gap-3 transition-opacity duration-500">
+          <div class="w-16 h-16 rounded-full bg-rose-500/20 text-rose-300 flex items-center justify-center text-3xl border border-rose-500/30">
+            💖
+          </div>
+          <h3 class="text-2xl font-black text-white">감사합니다!</h3>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            따뜻한 응원 편지가 전자칠판으로 전송되었습니다.<br/>
+            <span class="text-rose-400 font-bold">교실 앞 전자칠판</span>을 확인해 보세요!
+          </p>
+        </div>
+
+        <div id="parentRetryAction" class="hidden flex flex-col items-center gap-3 transition-opacity duration-500">
+          <button type="button" onclick="showParentFormAgain()" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white font-extrabold text-sm shadow-lg shadow-rose-500/30 transition active:scale-95 flex items-center gap-2">
+            <span>✍️</span>
+            <span>다시 쓰기</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 교사용 스마트폰 리모컨 화면 -->
+  <section id="viewTeacher" class="hidden absolute inset-0 z-30 w-full h-full bg-slate-950 flex flex-col justify-between overflow-y-auto">
+    <header class="w-full px-6 py-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button onclick="switchView('portal')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">
+          🏠 첫 화면
+        </button>
+        <span class="text-2xl">📱</span>
+        <div>
+          <h2 class="text-base md:text-lg font-bold text-indigo-300">수업 진행 교사 전용 스마트폰 리모컨</h2>
+          <p class="text-xs text-slate-400">전자칠판 제어, 교사 안내글 전송 및 학생/학부모 참여 링크 관리</p>
+        </div>
+      </div>
+      <button onclick="switchView('board')" class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-black transition active:scale-95 shadow-md">
+        칠판 화면으로 이동 ➔
+      </button>
+    </header>
+
+    <div class="w-full max-w-2xl mx-auto px-5 py-6 flex-1 flex flex-col gap-6">
+      
+      <!-- 신규 기능: 교사의 안내 & 칭찬 메시지 칠판 전송기 -->
+      <div class="bg-slate-900 border border-amber-500/40 rounded-3xl p-5 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">👑</span>
+            <h3 class="text-sm font-bold text-amber-300">교사 안내 & 칭찬 메시지 전송</h3>
+          </div>
+          <span class="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full font-bold">선생님 전용 카드</span>
+        </div>
+        <form onsubmit="handleTeacherMessageSubmit(event)" class="flex flex-col gap-2.5">
+          <textarea id="teacherMessageInput" rows="2" required placeholder="예: 우리 반 친구들 모두 스스로 멋진 질문을 찾아내어 참 자랑스럽습니다! ✨" class="w-full px-3.5 py-2.5 rounded-2xl bg-slate-800 border border-slate-700 text-white text-xs font-medium focus:outline-none focus:border-amber-500 resize-none"></textarea>
+          <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-1.5">
+            <span>📢</span>
+            <span>전자칠판에 선생님 메시지 띄우기</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- 1. 학생 태블릿 접속 링크 & QR -->
+      <div class="bg-slate-900 border border-emerald-500/30 rounded-3xl p-5 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🎒</span>
+            <h3 class="text-sm font-bold text-emerald-300">학생 배움 참여 (태블릿 전용)</h3>
+          </div>
+          <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-bold">22명 명단 선택기</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="studentLinkInput" readonly class="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-300 font-mono select-all focus:outline-none" />
+          <button onclick="copyParticipationLink('student')" class="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs whitespace-nowrap transition active:scale-95">
+            링크 복사
+          </button>
+        </div>
+        <div class="flex items-center gap-2 pt-1">
+          <button onclick="openCustomQrModal('student')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95">
+            <span>📷</span>
+            <span>학생 전용 QR 열기</span>
+          </button>
+          <button onclick="switchView('student')" class="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
+            직접 열기
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. 학부모 스마트폰 접속 링크 & QR -->
+      <div class="bg-slate-900 border border-rose-500/30 rounded-3xl p-5 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">💌</span>
+            <h3 class="text-sm font-bold text-rose-300">학부모 응원 참여 (스마트폰 전용)</h3>
+          </div>
+          <span class="text-[10px] text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full font-bold">자녀 격려 편지</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="parentLinkInput" readonly class="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-300 font-mono select-all focus:outline-none" />
+          <button onclick="copyParticipationLink('parent')" class="px-3.5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs whitespace-nowrap transition active:scale-95">
+            링크 복사
+          </button>
+        </div>
+        <div class="flex items-center gap-2 pt-1">
+          <button onclick="openCustomQrModal('parent')" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 border border-rose-500/30 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95">
+            <span>📷</span>
+            <span>학부모 전용 QR 열기</span>
+          </button>
+          <button onclick="switchView('parent')" class="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
+            직접 열기
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. 교사 리모컨 전용 링크 복사 도구 -->
+      <div class="bg-slate-900 border border-indigo-500/30 rounded-3xl p-5 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🔗</span>
+            <h3 class="text-sm font-bold text-indigo-300">교사 리모컨 자체 링크</h3>
+          </div>
+          <span class="text-[10px] text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full font-bold">선생님 폰 보관용</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="teacherLinkInput" readonly class="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-300 font-mono select-all focus:outline-none" />
+          <button onclick="copyParticipationLink('teacher')" class="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs whitespace-nowrap transition active:scale-95">
+            링크 복사
+          </button>
+        </div>
+      </div>
+
+      <!-- 신규: BGM 커스텀 링크 및 추천곡 설정기 -->
+      <div class="bg-slate-900 border border-purple-500/40 rounded-3xl p-5 shadow-xl flex flex-col gap-3.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🎶</span>
+            <h3 class="text-sm font-bold text-purple-300">배경음악(BGM) 설정</h3>
+          </div>
+          <span id="currentBgmTypeBadge" class="text-[10px] text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-full font-bold">
+            자체 오르골 모드
+          </span>
+        </div>
+
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+          선생님 기기에 저장된 음악 파일(MP3 등)을 선택하시면 전자칠판의 배경음악으로 바로 재생됩니다.
+        </p>
+
+        <!-- 음악 파일 업로드 UI -->
+        <div class="flex flex-col sm:flex-row items-center gap-2">
+          <label class="flex-1 w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:border-purple-400 text-xs text-slate-300 cursor-pointer transition">
+            <span id="bgmFileNameDisplay" class="truncate text-slate-400 font-medium">🎵 음악 파일(MP3, WAV 등)을 선택하세요</span>
+            <span class="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-[11px] whitespace-nowrap transition ml-2 shadow-md">파일 찾기</span>
+            <input type="file" id="teacherBgmFileInput" accept="audio/*" onchange="handleTeacherBgmFile(event)" class="hidden" />
+          </label>
+          <button type="button" onclick="clearCustomBgm()" title="기본 오르골로 초기화" class="w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition whitespace-nowrap border border-slate-700">
+            기본 복구
+          </button>
+        </div>
+
+        <!-- 추천 감성 BGM 프리셋 버튼들 -->
+        <div class="pt-1 flex flex-col gap-1.5">
+          <span class="text-[11px] font-bold text-slate-400">💡 추천 감성 공개수업 BGM 바로 적용:</span>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button type="button" onclick="setPresetBgm('piano')" class="py-2 px-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-[11px] text-purple-200 font-bold flex items-center justify-center gap-1.5 transition active:scale-95">
+              <span>🎹</span>
+              <span>잔잔한 피아노</span>
+            </button>
+            <button type="button" onclick="setPresetBgm('acoustic')" class="py-2 px-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-[11px] text-amber-200 font-bold flex items-center justify-center gap-1.5 transition active:scale-95">
+              <span>🎸</span>
+              <span>포근한 어쿠스틱</span>
+            </button>
+            <button type="button" onclick="setPresetBgm('musicbox')" class="py-2 px-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-[11px] text-teal-200 font-bold flex items-center justify-center gap-1.5 transition active:scale-95">
+              <span>🧸</span>
+              <span>동화 오르골</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. 수업 제어 도구 -->
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4">
+        <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+          <span>⚙️</span>
+          <span>칠판 흐름 및 배경음악 제어</span>
+        </h3>
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="toggleBgm()" class="py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition active:scale-95">
+            <span>🎵</span>
+            <span id="remoteBgmLabel">BGM 토글</span>
+          </button>
+          <button onclick="resetCardPositions()" class="py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition active:scale-95">
+            <span>🔄</span>
+            <span>카드 위치 고르게 섞기</span>
+          </button>
+        </div>
+        <button onclick="clearAllBoardItems()" class="w-full py-3 rounded-2xl bg-gradient-to-r from-rose-700 via-rose-600 to-red-600 hover:from-rose-600 hover:to-red-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-rose-950/40 transition active:scale-95 border border-rose-500/40">
+          <span>🗑️</span>
+          <span>칠판의 모든 글과 사진 전체 삭제</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 카드 상세 발표 모달 -->
+  <div id="detailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-slate-950/70 backdrop-blur-md transition-all duration-300">
+    <div class="relative w-full max-w-3xl bg-slate-900/95 border border-slate-700/80 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col gap-5 text-slate-100 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between gap-3 pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <span id="modalRoleBadge" class="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            🌱 학생의 이야기
+          </span>
+          <h2 id="modalAuthor" class="text-2xl md:text-3xl font-black text-white tracking-tight">
+            김서아
+          </h2>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 학생용: 별 변환 버튼 -->
+          <button id="modalStarBtn" onclick="toggleCurrentModalStar()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/30 transition active:scale-95">
+            <span>⭐</span>
+            <span id="modalStarBtnText">밤하늘의 별로 띄우기</span>
+          </button>
+
+          <!-- 학생 및 학부모 공통: 사라지기 버튼 -->
+          <button id="modalDisappearBtn" onclick="disappearCurrentModalItem()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-rose-500/30 transition active:scale-95">
+            <span>💨</span>
+            <span>사라지기</span>
+          </button>
+
+          <button onclick="closeDetailModal()" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-lg transition active:scale-95">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div id="modalPhotoContainer" class="w-full max-h-[46vh] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center">
+        <img id="modalPhoto" src="" alt="활동 사진" class="w-full h-full object-contain max-h-[46vh]" />
+      </div>
+
+      <div class="p-5 md:p-6 rounded-2xl bg-slate-950/60 border border-slate-800/80">
+        <p id="modalMessage" class="text-lg md:text-xl font-bold leading-relaxed text-slate-100 whitespace-pre-line">
+          수업 내용이 여기에 표시됩니다.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 전송 전 재확인 모달 -->
+  <div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-5 bg-slate-950/80 backdrop-blur-sm">
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl flex flex-col gap-4 text-center">
+      <div id="confirmModalIcon" class="text-4xl animate-bounce">🎒✨</div>
+      <h3 class="text-base font-extrabold text-white">진짜로 작성이 끝났나요?</h3>
+      <p id="confirmModalDesc" class="text-xs text-slate-300 leading-relaxed">
+        이름과 소감이 올바른지 한 번 더 확인해보세요.<br/>[확인]을 누르면 전자칠판에 바로 띄워집니다!
+      </p>
+      <div class="grid grid-cols-2 gap-2.5 pt-2">
+        <button onclick="closeConfirmModal(false)" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
+          다시 검토하기
+        </button>
+        <button id="confirmModalSubmitBtn" onclick="closeConfirmModal(true)" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition active:scale-95 shadow-lg shadow-emerald-500/20">
+          네, 전송할게요! 🚀
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 독립형 QR 모달 -->
+  <div id="qrModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-5 bg-slate-950/80 backdrop-blur-md">
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl flex flex-col items-center gap-4 text-center">
+      <div class="flex items-center justify-between w-full">
+        <h3 id="qrModalTitle" class="text-base font-extrabold text-white">참여 QR</h3>
+        <button onclick="closeQrModal()" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+      </div>
+      <div class="p-4 bg-white rounded-2xl shadow-inner flex items-center justify-center min-w-[190px] min-h-[190px]" id="qrCanvasContainer"></div>
+      <p id="qrModalDesc" class="text-xs text-slate-300 leading-relaxed">
+        카메라로 QR 코드를 비추면<br/>별도의 로그인 없이 즉시 참여 화면이 열립니다.
+      </p>
+      <button onclick="closeQrModal()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition">
+        창 닫기
+      </button>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col gap-2"></div>
+
+  <script>
+    // 우리 반 22명 학생 전체 명단 (번호 없음, 가나다순)
+    var CLASS_STUDENTS = [
+      '김서아', '김수현', '김윤아', '김태영', '김하랑', '나예린',
+      '박민제', '박선우', '양수빈', '유소영', '이대운', '이새봄',
+      '이서율', '이진서', '이채원', '이초은', '이태환', '이하린',
+      '한규빈', '한유은', '현지우', '황지우'
+    ];
+
+    // 학부모 6명 참여 예시 명단
+    var PARENT_SEEDS = [
+      { author: '서아 엄마', message: '눈망울이 초롱초롱한 우리 반 친구들 모두 참 대견하고 사랑스럽습니다 ❤️ 끝까지 화이팅!' },
+      { author: '태영 아빠', message: '스스로 질문하고 탐구하는 모습이 정말 멋지네요. 훌륭한 수업 감사합니다 👍' },
+      { author: '새봄 엄마', message: '뒤에서 지켜보는데 가슴이 뭉클합니다. 우리 새봄이와 친구들 모두 최고예요 ✨' },
+      { author: '진서 아빠', message: '친구들과 웃으며 배려하고 돕는 모습이 참 보기 좋습니다. 응원합니다!' },
+      { author: '하린 엄마', message: '선생님 말씀에 귀 기울이고 씩씩하게 발표하는 하린이 칭찬해요 🌸' },
+      { author: '지우 아빠', message: '교실 가득 밝은 에너지가 넘치네요! 우리 아이들의 꿈을 늘 응원할게요 👏' }
+    ];
+
+    // 학생 22명 활동 사진 샘플 6종
+    var SAMPLE_PHOTOS = [
+      'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1588072432836-e10032774350?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&auto=format&fit=crop&q=80'
+    ];
+
+    // 전역 상태 관리
+    var state = {
+      items: [],
+      formationMode: 'free',
+      audioPlaying: false,
+      audioDuck: 1.0,
+      audioCtx: null,
+      bgmTimer: null,
+      customBgmUrl: '',
+      selectedItem: null,
+      pendingSubmit: null,
+      clientRole: null, // 기기 역할 잠금 ('student', 'parent')
+      lastTimestamp: 0
+    };
+
+    var firebaseConfig = {
+      apiKey: "AIzaSyCj780iCfoPACITdB3qqbsNnmHuI28N4Kc",
+      authDomain: "open-class-0201.firebaseapp.com",
+      projectId: "open-class-0201",
+      storageBucket: "open-class-0201.firebasestorage.app",
+      messagingSenderId: "17512868112",
+      appId: "1:17512868112:web:9908982122108fa5941d95"
+    };
+    var db = null;
+    var messagesRef = null;
+
+    function initFirebase() {
+      try {
+        if (!window.firebase) throw new Error('Firebase SDK를 불러오지 못했습니다.');
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        messagesRef = db.collection('openClassMessages');
+        var role = new URLSearchParams(window.location.search).get('role');
+        if (role === 'board' || role === 'teacher' || !role) {
+          messagesRef.orderBy('createdAt', 'asc').onSnapshot(function(snapshot) {
+            snapshot.docChanges().forEach(function(change) {
+              if (change.type === 'added') addFirestoreItem(change.doc.id, change.doc.data());
+              if (change.type === 'removed') removeLocalItem(change.doc.id);
+            });
+          }, function(err) { console.error(err); showToast('⚠️ 실시간 연결을 확인해주세요.'); });
+        }
+      } catch (err) { console.error(err); showToast('⚠️ Firebase 연결에 실패했습니다.'); }
+    }
+
+    function addFirestoreItem(id, data) {
+      for (var i = 0; i < state.items.length; i++) if (state.items[i].id === id) return;
+      var stage = document.getElementById('floatingStage');
+      var stageW = stage && stage.clientWidth > 100 ? stage.clientWidth : window.innerWidth;
+      var stageH = stage && stage.clientHeight > 100 ? stage.clientHeight : window.innerHeight;
+      var item = {
+        id: id, role: data.role || 'parent', author: data.author || '익명', message: data.message || '',
+        photoUrl: data.photoUrl || null, isStar: false,
+        x: 80 + Math.random() * Math.max(150, stageW - 320), y: 80 + Math.random() * Math.max(150, stageH - 260),
+        vx: (Math.random() - 0.5) * 50, vy: (Math.random() - 0.5) * 50,
+        rot: (Math.random() - 0.5) * 6, waveOffset: Math.random() * Math.PI * 2, domElement: null
+      };
+      item.domElement = createEntityDOM(item);
+      if (stage) stage.appendChild(item.domElement);
+      state.items.push(item); updateStats(); updateLeftParticipantList(); playChime();
+    }
+
+    function removeLocalItem(id) {
+      for (var i = state.items.length - 1; i >= 0; i--) {
+        if (state.items[i].id === id) {
+          if (state.items[i].domElement) state.items[i].domElement.remove();
+          state.items.splice(i, 1);
+        }
+      }
+      updateStats(); updateLeftParticipantList();
+    }
+
+    function saveMessage(data) {
+      if (!messagesRef) return Promise.reject(new Error('Firebase가 아직 연결되지 않았습니다.'));
+      data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      return messagesRef.add(data);
+    }
+
+    function compressImage(file) {
+      return new Promise(function(resolve, reject) {
+        if (!file) return resolve(null);
+        var reader = new FileReader(); reader.onerror = reject;
+        reader.onload = function(e) {
+          var img = new Image(); img.onerror = reject;
+          img.onload = function() {
+            var scale = Math.min(1, 800 / Math.max(img.width, img.height));
+            var canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(img.width * scale)); canvas.height = Math.max(1, Math.round(img.height * scale));
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.65));
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function populateStudentSelect() {
+      var sel = document.getElementById('studentAuthorSelect');
+      if (!sel) return;
+      sel.innerHTML = '<option value="" disabled selected>우리 반 명단에서 이름을 골라주세요</option>';
+      for (var i = 0; i < CLASS_STUDENTS.length; i++) {
+        var opt = document.createElement('option');
+        opt.value = CLASS_STUDENTS[i];
+        opt.textContent = CLASS_STUDENTS[i];
+        sel.appendChild(opt);
+      }
+    }
+
+    function initAmbientStars() {
+      var c = document.getElementById('ambientStarsContainer');
+      if (!c) return;
+      c.innerHTML = '';
+      for (var i = 0; i < 70; i++) {
+        var s = document.createElement('div');
+        var size = 1 + Math.random() * 2.5;
+        s.className = 'absolute rounded-full bg-white pointer-events-none';
+        s.style.width = size + 'px';
+        s.style.height = size + 'px';
+        s.style.left = (Math.random() * 100) + '%';
+        s.style.top = (Math.random() * 100) + '%';
+        s.style.opacity = (0.2 + Math.random() * 0.7).toString();
+        s.style.filter = 'blur(' + (Math.random() * 0.8) + 'px)';
+        c.appendChild(s);
+      }
+    }
+
+    function initSeedData() {
+      var stage = document.getElementById('floatingStage');
+      var stageW = stage && stage.clientWidth > 100 ? stage.clientWidth : window.innerWidth;
+      var stageH = stage && stage.clientHeight > 100 ? stage.clientHeight : window.innerHeight;
+
+      // 1. 학생 22명 카드 (전원 활동 사진 포함)
+      for (var i = 0; i < CLASS_STUDENTS.length; i++) {
+        var name = CLASS_STUDENTS[i];
+        var seed = {
+          id: 'student_' + (i + 1),
+          role: 'student',
+          author: name,
+          message: name + ' 학생이 정성껏 배움을 기록한 관찰 소감입니다. 친구들과 협력하여 즐겁게 탐구했어요! 🌱',
+          photoUrl: SAMPLE_PHOTOS[i % SAMPLE_PHOTOS.length],
+          isStar: false,
+          x: 70 + Math.random() * Math.max(160, stageW - 320),
+          y: 70 + Math.random() * Math.max(140, stageH - 260),
+          vx: (Math.random() - 0.5) * 55,
+          vy: (Math.random() - 0.5) * 55,
+          rot: (Math.random() - 0.5) * 6,
+          waveOffset: Math.random() * Math.PI * 2,
+          domElement: null
+        };
+        var el = createEntityDOM(seed);
+        seed.domElement = el;
+        if (stage) stage.appendChild(el);
+        state.items.push(seed);
+      }
+
+      // 2. 학부모 6명 응원 카드
+      for (var j = 0; j < PARENT_SEEDS.length; j++) {
+        var p = PARENT_SEEDS[j];
+        var parentSeed = {
+          id: 'parent_' + (j + 1),
+          role: 'parent',
+          author: p.author,
+          message: p.message,
+          photoUrl: null,
+          isStar: false,
+          x: 80 + Math.random() * Math.max(160, stageW - 320),
+          y: 80 + Math.random() * Math.max(140, stageH - 260),
+          vx: (Math.random() - 0.5) * 50,
+          vy: (Math.random() - 0.5) * 50,
+          rot: (Math.random() - 0.5) * 6,
+          waveOffset: Math.random() * Math.PI * 2,
+          domElement: null
+        };
+        var parentEl = createEntityDOM(parentSeed);
+        parentSeed.domElement = parentEl;
+        if (stage) stage.appendChild(parentEl);
+        state.items.push(parentSeed);
+      }
+
+      updateStats();
+      updateLeftParticipantList();
+    }
+
+    function createEntityDOM(item) {
+      var el = document.createElement('div');
+      el.id = 'entity_' + item.id;
+      el.className = 'absolute cursor-pointer transition-transform duration-100 will-change-transform';
+      renderEntityInner(el, item);
+      return el;
+    }
+
+    function renderEntityInner(el, item) {
+      if (item.isStar) {
+        el.style.zIndex = '5';
+        el.innerHTML = '<div class="relative flex flex-col items-center justify-center p-2 group" onclick="openDetailModal(\'' + item.id + '\', event)">' +
+          '<div class="star-entity-glow w-10 h-10 flex items-center justify-center text-3xl select-none">⭐</div>' +
+          '<div class="absolute -bottom-4 px-2 py-0.5 rounded-full bg-slate-900/90 border border-amber-400/40 text-[10px] font-black text-amber-300 whitespace-nowrap shadow-md">' +
+            item.author +
+          '</div>' +
+        '</div>';
+      } else {
+        el.style.zIndex = '15';
+        var isParent = item.role === 'parent';
+        var isTeacher = item.role === 'teacher';
+        
+        var cardBg = isTeacher
+          ? 'bg-gradient-to-b from-slate-900/95 to-indigo-950/90 border-amber-400/80 shadow-amber-500/20'
+          : (isParent
+            ? 'bg-slate-900/90 border-rose-500/40 shadow-rose-950/40'
+            : 'bg-slate-900/90 border-emerald-500/40 shadow-emerald-950/40');
+
+        var roleIcon = isTeacher ? '👑' : (isParent ? '💌' : '🌱');
+        var roleBadgeClass = isTeacher
+          ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+          : (isParent ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300');
+        var roleText = isTeacher ? '선생님' : (isParent ? '학부모' : '학생');
+
+        var topActionBtn = '';
+        if (item.role === 'student') {
+          topActionBtn = '<button onclick="toggleCardStar(\'' + item.id + '\', event)" title="밤하늘의 별로 띄우기" class="w-6 h-6 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center justify-center text-xs font-black shadow-md transition active:scale-90">⭐</button>';
+        }
+
+        var photoMarkup = item.photoUrl
+          ? '<div class="w-full h-24 mb-2 rounded-xl overflow-hidden bg-slate-950 border border-slate-800"><img src="' + item.photoUrl + '" alt="활동 사진" class="w-full h-full object-cover" /></div>'
+          : '';
+
+        el.innerHTML = '<div class="w-56 md:w-60 p-3 rounded-2xl border backdrop-blur-md shadow-xl transition hover:scale-105 ' + cardBg + '" onclick="openDetailModal(\'' + item.id + '\', event)">' +
+          '<div class="flex items-center justify-between mb-2">' +
+            '<div class="flex items-center gap-1.5">' +
+              '<span class="text-xs">' + roleIcon + '</span>' +
+              '<span class="text-xs font-black text-white">' + item.author + '</span>' +
+              '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full ' + roleBadgeClass + '">' +
+                roleText +
+              '</span>' +
+            '</div>' +
+            topActionBtn +
+          '</div>' +
+          photoMarkup +
+          '<p class="text-xs font-semibold text-slate-200 line-clamp-2 leading-snug">' + item.message + '</p>' +
+        '</div>';
+      }
+    }
+
+    function updatePhysicsLoop(timestamp) {
+      if (!state.lastTimestamp) state.lastTimestamp = timestamp;
+      var dt = Math.min((timestamp - state.lastTimestamp) / 1000, 0.1);
+      state.lastTimestamp = timestamp;
+
+      var stage = document.getElementById('floatingStage');
+      var stageW = stage && stage.clientWidth > 100 ? stage.clientWidth : window.innerWidth;
+      var stageH = stage && stage.clientHeight > 100 ? stage.clientHeight : window.innerHeight;
+      var totalItems = state.items.length;
+
+      for (var i = 0; i < state.items.length; i++) {
+        var item = state.items[i];
+        if (!item.domElement) continue;
+
+        if (state.formationMode !== 'free') {
+          var target = getFormationTarget(i, totalItems, state.formationMode, stageW, stageH, timestamp);
+          item.x += (target.x - item.x) * 4.5 * dt;
+          item.y += (target.y - item.y) * 4.5 * dt;
+        } else {
+          item.x += item.vx * dt;
+          item.y += item.vy * dt;
+
+          var marginW = item.isStar ? 40 : 250;
+          var marginH = item.isStar ? 40 : 180;
+
+          if (item.x < 30) { item.x = 30; item.vx = Math.abs(item.vx); }
+          if (item.x > stageW - marginW) { item.x = stageW - marginW; item.vx = -Math.abs(item.vx); }
+          if (item.y < 30) { item.y = 30; item.vy = Math.abs(item.vy); }
+          if (item.y > stageH - marginH) { item.y = stageH - marginH; item.vy = -Math.abs(item.vy); }
+        }
+
+        var waveAmp = (state.formationMode === 'wave') ? 1 : 4;
+        var wave = Math.sin(timestamp * 0.002 + item.waveOffset) * waveAmp;
+        item.domElement.style.transform = 'translate3d(' + item.x + 'px, ' + (item.y + wave) + 'px, 0px) rotate(' + item.rot + 'deg)';
+      }
+
+      requestAnimationFrame(updatePhysicsLoop);
+    }
+
+    function getFormationTarget(index, total, mode, stageW, stageH, timestamp) {
+      if (!timestamp) timestamp = 0;
+      var cx = stageW / 2;
+      var cy = (stageH / 2) - 10;
+      var minDim = Math.min(stageW, stageH);
+
+      if (mode === 'heart') {
+        var t = (index / Math.max(1, total)) * Math.PI * 2;
+        var r = minDim * 0.022;
+        var hx = 16 * Math.pow(Math.sin(t), 3);
+        var hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+        return { x: cx + hx * r, y: cy + hy * r };
+
+      } else if (mode === 'sprout') {
+        var scale = minDim * 0.38;
+        var stemCount = Math.max(2, Math.floor(total * 0.35));
+        if (index < stemCount) {
+          var sy = (index / (stemCount - 1)) * 0.45;
+          return { x: cx, y: cy + 0.25 * scale - sy * scale };
+        } else {
+          var leafIndex = index - stemCount;
+          var leafTotal = total - stemCount;
+          var isLeft = leafIndex % 2 === 0;
+          var u = leafIndex / Math.max(1, leafTotal - 1);
+          var lx = (isLeft ? -1 : 1) * Math.sin(u * Math.PI) * 0.32;
+          var ly = -0.2 * scale + Math.cos(u * Math.PI) * 0.18 * scale;
+          return { x: cx + lx * scale, y: cy + ly };
+        }
+
+      } else if (mode === 'foot') {
+        var scaleFoot = minDim * 0.44;
+        var ankleCount = Math.max(2, Math.min(5, Math.round(total * 0.12)));
+        var outlineCount = Math.max(1, total - ankleCount);
+
+        if (index < ankleCount) {
+          var uFoot = (ankleCount === 1) ? 0.5 : index / (ankleCount - 1);
+          var ax = -0.22 - 0.04 * uFoot;
+          var ay = -0.12 + 0.12 * uFoot;
+          return { x: cx + ax * scaleFoot, y: cy + ay * scaleFoot };
+        } else {
+          var oIdx = index - ankleCount;
+          var tFoot = oIdx / Math.max(1, outlineCount - 1);
+          var outlinePoints = [
+            { x: -0.18, y: -0.65 },
+            { x: -0.28, y: -0.40 },
+            { x: -0.44, y: -0.15 },
+            { x: -0.52, y:  0.00 },
+            { x: -0.48, y:  0.14 },
+            { x: -0.34, y:  0.28 },
+            { x: -0.14, y:  0.42 },
+            { x:  0.12, y:  0.46 },
+            { x:  0.30, y:  0.46 },
+            { x:  0.32, y:  0.38 },
+            { x:  0.22, y:  0.35 },
+            { x:  0.12, y:  0.33 },
+            { x: -0.02, y:  0.15 },
+            { x: -0.10, y: -0.10 },
+            { x: -0.03, y: -0.38 },
+            { x:  0.06, y: -0.65 }
+          ];
+
+          var numSegs = outlinePoints.length - 1;
+          var globalT = tFoot * numSegs;
+          var seg = Math.min(Math.floor(globalT), numSegs - 1);
+          var localT = globalT - seg;
+
+          var p0 = outlinePoints[seg];
+          var p1 = outlinePoints[seg + 1];
+          var smooth = localT * localT * (3 - 2 * localT);
+          var nx = p0.x + (p1.x - p0.x) * smooth;
+          var ny = p0.y + (p1.y - p0.y) * smooth;
+
+          return { x: cx + nx * scaleFoot, y: cy + ny * scaleFoot };
+        }
+
+      } else if (mode === 'mountain') {
+        var scaleW = stageW * 0.44;
+        var scaleH = minDim * 0.48;
+        var tMount = index / Math.max(1, total - 1);
+        var normX = (tMount - 0.5) * 2.0;
+
+        var centerPeak = Math.max(0, 1.0 - Math.abs(normX) * 1.65);
+        var leftPeak = Math.max(0, 0.72 - Math.abs(normX + 0.52) * 1.8);
+        var rightPeak = Math.max(0, 0.65 - Math.abs(normX - 0.55) * 1.7);
+        var ridgeH = Math.max(centerPeak, leftPeak, rightPeak);
+
+        var isRidgeLine = (index % 3 !== 0);
+        var depthRatio = isRidgeLine ? 1.0 : (0.45 + 0.5 * ((index * 7) % 10) / 10);
+
+        var targetY = (cy + scaleH * 0.32) - (ridgeH * scaleH * depthRatio);
+        var targetX = cx + (normX * scaleW);
+        return { x: targetX, y: targetY };
+
+      } else if (mode === 'wave') {
+        var scaleWaveW = stageW * 0.42;
+        var waveAmplitude = minDim * 0.09;
+        var layer = index % 3;
+        var layerOffsetsY = [minDim * 0.22, minDim * 0.08, -minDim * 0.06];
+        var layerSpeeds = [0.0028, 0.0021, 0.0015];
+        var layerFreqs = [2.2, 2.8, 3.2];
+
+        var itemsInLayer = Math.max(1, Math.floor(total / 3));
+        var layerIndex = Math.floor(index / 3);
+        var uWave = (layerIndex / Math.max(1, itemsInLayer - 1));
+        var waveX = (uWave - 0.5) * 2.0 * scaleWaveW;
+
+        var timeFactor = timestamp * layerSpeeds[layer];
+        var phase = (uWave * Math.PI * 2 * layerFreqs[layer]) - timeFactor;
+        var waveForm = Math.sin(phase) + 0.35 * Math.sin(phase * 2 - Math.PI / 4);
+
+        return { x: cx + waveX, y: cy + layerOffsetsY[layer] - (waveForm * waveAmplitude) };
+
+      } else if (mode === 'umbrella') {
+        var scaleUmb = minDim * 0.42;
+        var domeCount = Math.max(4, Math.floor(total * 0.65));
+        var handleCount = Math.max(2, total - domeCount);
+
+        if (index < domeCount) {
+          var tUmb = index / Math.max(1, domeCount - 1);
+          var theta = Math.PI * (1 - tUmb);
+          var domeX = Math.cos(theta) * 0.48;
+          var domeY = -0.15 - Math.sin(theta) * 0.35;
+          var scallop = Math.sin(theta * 3) * 0.04;
+          return { x: cx + domeX * scaleUmb, y: cy + (domeY + scallop) * scaleUmb };
+        } else {
+          var hIdx = index - domeCount;
+          var uUmb = hIdx / Math.max(1, handleCount - 1);
+          if (uUmb < 0.65) {
+            var syUmb = -0.15 + (uUmb / 0.65) * 0.45;
+            return { x: cx, y: cy + syUmb * scaleUmb };
+          } else {
+            var jNorm = (uUmb - 0.65) / 0.35;
+            var jAngle = Math.PI * jNorm;
+            var jx = Math.sin(jAngle) * 0.08;
+            var jy = 0.30 + (1 - Math.cos(jAngle)) * 0.06;
+            return { x: cx + jx * scaleUmb, y: cy + jy * scaleUmb };
+          }
+        }
+
+      } else if (mode === 'tree') {
+        var scaleTree = minDim * 0.42;
+        var trunkCount = Math.max(2, Math.round(total * 0.12));
+        var foliageCount = Math.max(1, total - trunkCount);
+
+        if (index < trunkCount) {
+          var ty = (trunkCount === 1) ? 0.5 : index / (trunkCount - 1);
+          return { x: cx, y: cy + (0.34 + ty * 0.12) * scaleTree };
+        } else {
+          var fIdx = index - trunkCount;
+          var tTree = fIdx / Math.max(1, foliageCount - 1);
+          var tier = Math.min(3, Math.floor(tTree * 4));
+          var tLocal = (tTree * 4) - tier;
+
+          var tierTopY = [-0.55, -0.32, -0.10, 0.12];
+          var tierBotY = [-0.34, -0.12,  0.10, 0.34];
+          var tierMaxW = [ 0.18,  0.30,  0.42, 0.54];
+
+          var curY = tierTopY[tier] + tLocal * (tierBotY[tier] - tierTopY[tier]);
+          var curW = tierMaxW[tier] * (0.35 + 0.65 * tLocal);
+          var side = (fIdx % 2 === 0) ? -1 : 1;
+
+          return { x: cx + side * curW * scaleTree, y: cy + curY * scaleTree };
+        }
+
+      } else if (mode === 'bigstar') {
+        var scaleStar = minDim * 0.45;
+        var starPoints = [];
+        for (var sp = 0; sp < 10; sp++) {
+          var ang = (sp * Math.PI / 5) - (Math.PI / 2);
+          var rStar = (sp % 2 === 0) ? 0.48 : 0.20;
+          starPoints.push({
+            x: Math.cos(ang) * rStar,
+            y: Math.sin(ang) * rStar
+          });
+        }
+        starPoints.push(starPoints[0]);
+
+        var tStar = index / Math.max(1, total);
+        var numStarSegs = 10;
+        var globalStarT = (tStar * numStarSegs) % numStarSegs;
+        var segStar = Math.floor(globalStarT);
+        var localStarT = globalStarT - segStar;
+
+        var ptA = starPoints[segStar];
+        var ptB = starPoints[segStar + 1];
+        var nxStar = ptA.x + (ptB.x - ptA.x) * localStarT;
+        var nyStar = ptA.y + (ptB.y - ptA.y) * localStarT;
+
+        return { x: cx + nxStar * scaleStar, y: cy + nyStar * scaleStar };
+      }
+
+      return { x: cx, y: cy };
+    }
+
+    function cycleGatherFormation() {
+      playChime();
+      for (var i = 0; i < state.items.length; i++) {
+        var it = state.items[i];
+        if (it.role === 'student' && !it.isStar) {
+          it.isStar = true;
+          if (it.domElement) renderEntityInner(it.domElement, it);
+        }
+      }
+
+      var icon = document.getElementById('formationBtnIcon');
+      var label = document.getElementById('formationBtnLabel');
+      var btn = document.getElementById('btnGatherFormation');
+
+      if (state.formationMode === 'free') {
+        state.formationMode = 'heart';
+        if (icon) icon.textContent = '❤️';
+        if (label) label.textContent = '새싹 모양 모이기';
+        if (btn) btn.className = 'w-full py-2 px-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/30 transition active:scale-95';
+        showToast('❤️ 1단계: 별들이 모여 사랑스러운 하트 모양을 만들었습니다!');
+
+      } else if (state.formationMode === 'heart') {
+        state.formationMode = 'sprout';
+        if (icon) icon.textContent = '🌱';
+        if (label) label.textContent = '발 모양 모이기';
+        if (btn) btn.className = 'w-full py-2 px-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30 transition active:scale-95';
+        showToast('🌱 2단계: 별들이 모여 파릇파릇한 새싹 모양을 만들었습니다!');
+
+      } else if (state.formationMode === 'sprout') {
+        state.formationMode = 'foot';
+        if (icon) icon.textContent = '🦶';
+        if (label) label.textContent = '산 모양 모이기';
+        if (btn) btn.className = 'w-full py-2 px-2 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/30 transition active:scale-95';
+        showToast('🦶 3단계: 별들이 모여 힘차게 나아가는 발 모양을 완성했습니다!');
+
+      } else if (state.formationMode === 'foot') {
+        state.formationMode = 'mountain';
+        if (icon) icon.textContent = '⛰️';
+        if (label) label.textContent = '바다 파도 모이기';
+        if (btn) btn.className = 'w-full py-2 px-2 rounded-xl bg-gradient-to-r from-amber-600 via-emerald-700 to-teal-800 hover:from-amber-500 hover:to-teal-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-900/30 transition active:scale-95';
+        showToast('⛰️ 4단계: 별들이 모여 웅장한 세 봉우리 산맥을 완성했습니다!');
+
+      } else if (state.formationMode === 'mountain') {
+        state.formationMode = 'wave';
+        if (icon) icon.textContent = '🌊';
+        if (label) label.textContent = '우산 모양 모이기';
+        if (btn) btn.className = 'w-full py-2 px-2 rounded-xl bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 hover:from-blue-500 hover:to-teal-300 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/30 transition active:scale-95';
+        showToast('🌊 5단계: 별들이 모여 일렁이는 푸른 바다 파도를 완성했습니다!');
+
+      } else if (state.formationMode === 'wave') {
+        state.formationMode = 'umbrella';
+        if (icon) icon.textContent = '☂️';
+        if (label) label.textContent = '나무 모양 모이기';
+        if (btn) btn.className = 'w-full py-2 px-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:to-purple-400 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-purple-500/30 transition active:scale-95';
+        showToast('☂️ 6단계: 별들이 모여 둥근 돔과 손잡이가 달린 우산을 완성했습니다!');
+
+      } else if (state.formationMode === 'umbrella') {
+        state.formationMode = 'tree';
+        if (icon) icon.textContent = '🌲';
+        if (label) label.textContent = '별 모양 모이기';
+        if (btn) btn.className = 'w-full py-2 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-700/30 transition active:scale-95';
+        showToast('🌲 7단계: 별들이 모여 4단 상록수 전나무 트리를 완성했습니다!');
+
+      } else if (state.formationMode === 'tree') {
+        state.formationMode = 'bigstar';
+        if (icon) icon.textContent = '⭐';
+        if (label) label.textContent = '자유 유영하기';
+        if (btn) btn.className = 'w-full py-2 px-2 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/30 transition active:scale-95';
+        showToast('⭐ 8단계: 작은 별들이 하나로 모여 밤하늘을 밝히는 커다란 별을 완성했습니다!');
+
+      } else {
+        state.formationMode = 'free';
+        for (var k = 0; k < state.items.length; k++) {
+          state.items[k].vx = (Math.random() - 0.5) * 55;
+          state.items[k].vy = (Math.random() - 0.5) * 55;
+        }
+        if (icon) icon.textContent = '✨';
+        if (label) label.textContent = '별들 모이기';
+        if (btn) btn.className = 'w-full py-2 px-2 rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-purple-600 hover:from-rose-400 hover:to-purple-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-pink-500/30 transition active:scale-95';
+        showToast('🌌 별들이 다시 밤하늘을 자유롭게 유영합니다.');
+      }
+    }
+
+    function duplicateStars() {
+      playChime();
+      var stage = document.getElementById('floatingStage');
+      if (!stage) return;
+
+      for (var i = 0; i < state.items.length; i++) {
+        var it = state.items[i];
+        if (it.role === 'student' && !it.isStar) {
+          it.isStar = true;
+          if (it.domElement) renderEntityInner(it.domElement, it);
+        }
+      }
+
+      var currentList = state.items.slice();
+      for (var idx = 0; idx < currentList.length; idx++) {
+        var baseItem = currentList[idx];
+        var copy = {
+          id: 'dup_' + Date.now() + '_' + idx,
+          role: baseItem.role,
+          author: baseItem.author,
+          message: baseItem.message,
+          photoUrl: baseItem.photoUrl,
+          x: baseItem.x + (Math.random() - 0.5) * 40,
+          y: baseItem.y + (Math.random() - 0.5) * 40,
+          vx: (Math.random() - 0.5) * 55,
+          vy: (Math.random() - 0.5) * 55,
+          rot: (Math.random() - 0.5) * 6,
+          waveOffset: Math.random() * Math.PI * 2,
+          isStar: true,
+          domElement: null
+        };
+        var el = createEntityDOM(copy);
+        copy.domElement = el;
+        stage.appendChild(el);
+        state.items.push(copy);
+      }
+
+      updateStats();
+      showToast('⭐ 밤하늘의 별이 2배로 증가했습니다! (총 ' + state.items.length + '개)');
+    }
+
+    function toggleCardStar(id, evt) {
+      if (evt) evt.stopPropagation();
+      playChime();
+      var item = null;
+      for (var i = 0; i < state.items.length; i++) {
+        if (state.items[i].id === id) { item = state.items[i]; break; }
+      }
+      if (!item) return;
+      item.isStar = !item.isStar;
+      if (item.domElement) renderEntityInner(item.domElement, item);
+      updateLeftParticipantList();
+      showToast(item.isStar ? '⭐ ' + item.author + ' 학생의 글이 별이 되어 빛납니다.' : '📄 ' + item.author + ' 학생의 별이 카드로 돌아왔습니다.');
+    }
+
+    function disappearCard(id, evt) {
+      if (evt) evt.stopPropagation();
+      if (messagesRef && id.indexOf('dup_') !== 0) {
+        messagesRef.doc(id).delete().catch(function(err) { console.error(err); showToast('⚠️ 삭제하지 못했습니다.'); });
+        return;
+      }
+      playChime();
+      var idx = -1;
+      for (var i = 0; i < state.items.length; i++) {
+        if (state.items[i].id === id) { idx = i; break; }
+      }
+      if (idx === -1) return;
+      var item = state.items[idx];
+
+      if (item.domElement) {
+        item.domElement.style.transition = 'all 0.5s ease-out';
+        item.domElement.style.opacity = '0';
+        item.domElement.style.transform += ' scale(0.5)';
+        setTimeout(function() {
+          if (item.domElement) item.domElement.remove();
+        }, 500);
+      }
+
+      state.items.splice(idx, 1);
+      updateStats();
+      updateLeftParticipantList();
+      showToast('💨 ' + item.author + ' 님의 카드가 사라졌습니다.');
+    }
+
+    function disappearParentCard(id, evt) {
+      disappearCard(id, evt);
+    }
+
+    function deleteCard(id, evt) {
+      disappearCard(id, evt);
+    }
+
+    function toggleCurrentModalStar() {
+      if (!state.selectedItem) return;
+      toggleCardStar(state.selectedItem.id, null);
+      closeDetailModal();
+    }
+
+    function disappearCurrentModalItem() {
+      if (!state.selectedItem) return;
+      disappearCard(state.selectedItem.id, null);
+      closeDetailModal();
+    }
+
+    function disappearCurrentModalParent() {
+      disappearCurrentModalItem();
+    }
+
+    function deleteCurrentModalCard() {
+      disappearCurrentModalItem();
+    }
+
+    function openDetailModal(id, evt) {
+      if (evt) evt.stopPropagation();
+      var item = null;
+      for (var i = 0; i < state.items.length; i++) {
+        if (state.items[i].id === id) { item = state.items[i]; break; }
+      }
+      if (!item) return;
+
+      state.selectedItem = item;
+      setAudioDuck(0.25);
+
+      var modal = document.getElementById('detailModal');
+      var author = document.getElementById('modalAuthor');
+      var badge = document.getElementById('modalRoleBadge');
+      var msg = document.getElementById('modalMessage');
+      var photoBox = document.getElementById('modalPhotoContainer');
+      var photo = document.getElementById('modalPhoto');
+      var starBtn = document.getElementById('modalStarBtn');
+      var starBtnText = document.getElementById('modalStarBtnText');
+      var disappearBtn = document.getElementById('modalDisappearBtn');
+
+      author.textContent = item.author;
+      msg.textContent = item.message;
+
+      var isParent = item.role === 'parent';
+      var isTeacher = item.role === 'teacher';
+
+      if (isTeacher) {
+        badge.textContent = '👑 선생님 말씀';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        starBtn.classList.add('hidden');
+        disappearBtn.classList.remove('hidden');
+      } else if (isParent) {
+        badge.textContent = '💌 학부모 응원 편지';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/30';
+        starBtn.classList.add('hidden');
+        disappearBtn.classList.remove('hidden');
+      } else {
+        badge.textContent = '🌱 학생의 이야기';
+        badge.className = 'px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        starBtn.classList.remove('hidden');
+        disappearBtn.classList.remove('hidden');
+        starBtnText.textContent = item.isStar ? '별 ➔ 카드로 복귀' : '밤하늘의 별로 띄우기';
+      }
+
+      if (item.photoUrl) {
+        photoBox.classList.remove('hidden');
+        photo.src = item.photoUrl;
+      } else {
+        photoBox.classList.add('hidden');
+        photo.src = '';
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+      var modal = document.getElementById('detailModal');
+      if (modal) modal.classList.add('hidden');
+      state.selectedItem = null;
+      setAudioDuck(1.0);
+    }
+
+    function updateStats() {
+      var stuCount = 0;
+      var parCount = 0;
+      for (var i = 0; i < state.items.length; i++) {
+        if (state.items[i].role === 'student') stuCount++;
+        else if (state.items[i].role === 'parent') parCount++;
+      }
+
+      var elStu = document.getElementById('statStudentCount');
+      var elPar = document.getElementById('statParentCount');
+      if (elStu) elStu.textContent = stuCount + '명';
+      if (elPar) elPar.textContent = parCount + '명';
+
+      var badge = document.getElementById('leftListCountBadge');
+      if (badge) badge.textContent = (stuCount + parCount) + '명';
+    }
+
+    function updateLeftParticipantList() {
+      var list = document.getElementById('leftParticipantList');
+      if (!list) return;
+      list.innerHTML = '';
+
+      for (var i = 0; i < state.items.length; i++) {
+        (function(item) {
+          var row = document.createElement('button');
+          row.className = 'w-full px-2 py-1.5 rounded-xl bg-slate-800/60 hover:bg-slate-700/80 border border-slate-700/40 flex items-center justify-between text-left transition active:scale-95';
+          row.onclick = function(e) { openDetailModal(item.id, e); };
+
+          var isTeacher = item.role === 'teacher';
+          var isParent = item.role === 'parent';
+          var roleIcon = isTeacher ? '👑' : (isParent ? '💌' : (item.isStar ? '⭐' : '🎒'));
+          var roleBadge = isTeacher
+            ? '<span class="text-[8px] text-amber-300 bg-amber-500/20 px-1 py-0.2 rounded border border-amber-500/30">선생님</span>'
+            : (isParent
+              ? '<span class="text-[8px] text-rose-300 bg-rose-500/20 px-1 py-0.2 rounded">학부모</span>'
+              : '<span class="text-[8px] text-emerald-300 bg-emerald-500/20 px-1 py-0.2 rounded">학생</span>');
+
+          row.innerHTML = '<div class="flex items-center gap-1.5 truncate">' +
+            '<span class="text-xs">' + roleIcon + '</span>' +
+            '<span class="text-[11px] font-bold text-slate-100 truncate">' + item.author + '</span>' +
+          '</div>' + roleBadge;
+          list.appendChild(row);
+        })(state.items[i]);
+      }
+    }
+
+    function switchView(viewName) {
+      // 학생 또는 학부모 기기인 경우 칠판, 로비, 교사화면 접근 전면 차단
+      if (state.clientRole === 'student' && viewName !== 'student') return;
+      if (state.clientRole === 'parent' && viewName !== 'parent') return;
+
+      document.getElementById('viewPortal').classList.toggle('hidden', viewName !== 'portal');
+      document.getElementById('viewBoard').classList.toggle('hidden', viewName !== 'board');
+      document.getElementById('viewStudent').classList.toggle('hidden', viewName !== 'student');
+      document.getElementById('viewParent').classList.toggle('hidden', viewName !== 'parent');
+      document.getElementById('viewTeacher').classList.toggle('hidden', viewName !== 'teacher');
+
+      if (viewName === 'teacher') {
+        updateTeacherLinks();
+      }
+    }
+
+    function resetStudentForm() {
+      var form = document.getElementById('formStudent');
+      if (form) form.reset();
+      clearStudentPhotoPreview();
+    }
+
+    function resetParentForm() {
+      var form = document.getElementById('formParent');
+      if (form) form.reset();
+    }
+
+    function showStudentFormAgain() {
+      var formS = document.getElementById('formStudent');
+      var thanksBoxS = document.getElementById('studentThankYouBox');
+      var msgS = document.getElementById('studentThanksMsg');
+      var retryS = document.getElementById('studentRetryAction');
+
+      if (thanksBoxS) thanksBoxS.classList.add('hidden');
+      if (msgS) {
+        msgS.classList.remove('hidden');
+        msgS.style.opacity = '1';
+      }
+      if (retryS) {
+        retryS.classList.add('hidden');
+        retryS.style.opacity = '0';
+      }
+      if (formS) {
+        formS.classList.remove('hidden');
+        formS.style.opacity = '1';
+      }
+      resetStudentForm();
+    }
+
+    function showParentFormAgain() {
+      var formP = document.getElementById('formParent');
+      var thanksBoxP = document.getElementById('parentThankYouBox');
+      var msgP = document.getElementById('parentThanksMsg');
+      var retryP = document.getElementById('parentRetryAction');
+
+      if (thanksBoxP) thanksBoxP.classList.add('hidden');
+      if (msgP) {
+        msgP.classList.remove('hidden');
+        msgP.style.opacity = '1';
+      }
+      if (retryP) {
+        retryP.classList.add('hidden');
+        retryP.style.opacity = '0';
+      }
+      if (formP) {
+        formP.classList.remove('hidden');
+        formP.style.opacity = '1';
+      }
+      resetParentForm();
+    }
+
+    function updateTeacherLinks() {
+      var base = window.location.href.split('?')[0];
+      var stuLink = base + '?role=student';
+      var parLink = base + '?role=parent';
+      var teaLink = base + '?role=teacher';
+
+      var elStu = document.getElementById('studentLinkInput');
+      var elPar = document.getElementById('parentLinkInput');
+      var elTea = document.getElementById('teacherLinkInput');
+      if (elStu) elStu.value = stuLink;
+      if (elPar) elPar.value = parLink;
+      if (elTea) elTea.value = teaLink;
+    }
+
+    function copyRoleLink(role) {
+      var base = window.location.href.split('?')[0];
+      var link = base + '?role=' + role;
+      copyTextToClipboard(link);
+      var roleName = (role === 'board') ? '전자칠판' : (role === 'teacher' ? '교사 리모컨' : (role === 'student' ? '학생 배움' : '학부모 응원'));
+      showToast('📋 ' + roleName + ' 전용 링크가 복사되었습니다!');
+    }
+
+    function copyParticipationLink(type) {
+      var base = window.location.href.split('?')[0];
+      var link = base + '?role=' + type;
+      copyTextToClipboard(link);
+      var typeName = (type === 'student') ? '학생 태블릿' : (type === 'parent' ? '학부모 스마트폰' : '교사 리모컨');
+      showToast('📋 ' + typeName + ' 참여 링크가 복사되었습니다!');
+    }
+
+    function copyTextToClipboard(text) {
+      var input = document.createElement('input');
+      input.value = text;
+      document.body.appendChild(input);
+      input.select();
+      try {
+        document.execCommand('copy');
+      } catch (err) {}
+      document.body.removeChild(input);
+    }
+
+    function openCustomQrModal(type) {
+      var modal = document.getElementById('qrModal');
+      var title = document.getElementById('qrModalTitle');
+      var desc = document.getElementById('qrModalDesc');
+      var container = document.getElementById('qrCanvasContainer');
+
+      var isStudent = type === 'student';
+      title.textContent = isStudent ? '🎒 학생 배움 참여 QR' : '💌 학부모 응원 참여 QR';
+      desc.innerHTML = isStudent
+        ? '태블릿 카메라로 QR 코드를 비추면<br/>별도 로그인 없이 학생 작성 화면이 열립니다.'
+        : '스마트폰 카메라로 QR 코드를 비추면<br/>자녀 응원 편지 작성 화면이 열립니다.';
+
+      var base = window.location.href.split('?')[0];
+      var link = base + '?role=' + type;
+
+      container.innerHTML = '';
+      var img = document.createElement('img');
+      img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=' + encodeURIComponent(link);
+      img.alt = '참여 QR 코드';
+      img.className = 'w-[170px] h-[170px] rounded-lg shadow-sm';
+      img.onerror = function() {
+        container.innerHTML = '<div class="text-xs text-slate-800 font-bold p-3 text-center">직접 접속 링크:<br/><span class="text-indigo-600 font-mono text-[10px] break-all">' + link + '</span></div>';
+      };
+      container.appendChild(img);
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+      document.getElementById('qrModal').classList.add('hidden');
+    }
+
+    function handleStudentPhotoChange(event) {
+      var file = event.target.files && event.target.files[0];
+      var previewBox = document.getElementById('studentPhotoPreviewBox');
+      var previewImg = document.getElementById('studentPhotoPreviewImg');
+      var fileNameLabel = document.getElementById('studentPhotoFileName');
+
+      if (file && file.type.startsWith('image/')) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          previewImg.src = e.target.result;
+          if (fileNameLabel) fileNameLabel.textContent = file.name + ' (' + Math.round(file.size / 1024) + 'KB)';
+          previewBox.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        clearStudentPhotoPreview();
+      }
+    }
+
+    function clearStudentPhotoPreview() {
+      var input = document.getElementById('studentPhotoInput');
+      var previewBox = document.getElementById('studentPhotoPreviewBox');
+      var previewImg = document.getElementById('studentPhotoPreviewImg');
+      if (input) input.value = '';
+      if (previewImg) previewImg.src = '';
+      if (previewBox) previewBox.classList.add('hidden');
+    }
+
+    function handleStudentFormSubmit(e) {
+      e.preventDefault();
+      var author = document.getElementById('studentAuthorSelect').value;
+      var msg = document.getElementById('studentMessageInput').value.trim();
+      var photoFile = document.getElementById('studentPhotoInput').files[0];
+
+      if (!author || !msg) {
+        showToast('⚠️ 이름과 소감을 모두 작성해주세요.');
+        return;
+      }
+
+      state.pendingSubmit = {
+        role: 'student',
+        author: author,
+        message: msg,
+        photoFile: photoFile
+      };
+
+      var icon = document.getElementById('confirmModalIcon');
+      var desc = document.getElementById('confirmModalDesc');
+      var btn = document.getElementById('confirmModalSubmitBtn');
+      if (icon) icon.textContent = '🎒✨';
+      if (desc) desc.innerHTML = '이름과 소감이 올바른지 한 번 더 확인해보세요.<br/>[확인]을 누르면 전자칠판에 바로 띄워집니다!';
+      if (btn) {
+        btn.className = 'w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition active:scale-95 shadow-lg shadow-emerald-500/20';
+        btn.innerHTML = '네, 전송할게요! 🚀';
+      }
+
+      document.getElementById('confirmModal').classList.remove('hidden');
+    }
+
+    function handleParentFormSubmit(e) {
+      e.preventDefault();
+      var author = document.getElementById('parentAuthorInput').value.trim();
+      var msg = document.getElementById('parentMessageInput').value.trim();
+
+      if (!author || !msg) {
+        showToast('⚠️ 성함과 응원 메시지를 작성해주세요.');
+        return;
+      }
+
+      state.pendingSubmit = {
+        role: 'parent',
+        author: author,
+        message: msg
+      };
+
+      var icon = document.getElementById('confirmModalIcon');
+      var desc = document.getElementById('confirmModalDesc');
+      var btn = document.getElementById('confirmModalSubmitBtn');
+      if (icon) icon.textContent = '💌💖';
+      if (desc) desc.innerHTML = '보내시는 분과 응원 편지가 올바른지 한 번 더 확인해보세요.<br/>[확인]을 누르면 전자칠판에 바로 띄워집니다!';
+      if (btn) {
+        btn.className = 'w-full py-3 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-black text-xs transition active:scale-95 shadow-lg shadow-rose-500/20';
+        btn.innerHTML = '네, 전송할게요! 💖';
+      }
+
+      document.getElementById('confirmModal').classList.remove('hidden');
+    }
+
+    function handleTeacherMessageSubmit(e) {
+      e.preventDefault();
+      var input = document.getElementById('teacherMessageInput');
+      var msg = input.value.trim();
+      if (!msg) return;
+
+      saveMessage({ role: 'teacher', author: '선생님', message: msg, photoUrl: null })
+        .then(function() { showToast('📢 선생님의 말씀이 전자칠판에 띄워졌습니다!'); input.value = ''; })
+        .catch(function(err) { console.error(err); showToast('⚠️ 전송하지 못했습니다.'); });
+    }
+
+    function closeConfirmModal(confirmed) {
+      document.getElementById('confirmModal').classList.add('hidden');
+      if (!confirmed || !state.pendingSubmit) {
+        state.pendingSubmit = null;
+        return;
+      }
+
+      var pending = state.pendingSubmit;
+      state.pendingSubmit = null;
+
+      if (pending.role === 'parent') {
+        saveMessage({ role: 'parent', author: pending.author, message: pending.message, photoUrl: null })
+          .then(function() { showToast('💖 전자칠판으로 전송되었습니다! 교실 앞 칠판을 확인해주세요.'); })
+          .catch(function(err) { console.error(err); showToast('⚠️ 전송하지 못했습니다. 다시 시도해주세요.'); });
+        
+        // 작성 창 숨기고 감사합니다 표시 ➔ 2.5초 후 감사합니다 사라지고 [다시 쓰기] 버튼 등장
+        var formP = document.getElementById('formParent');
+        var thanksBoxP = document.getElementById('parentThankYouBox');
+        var msgP = document.getElementById('parentThanksMsg');
+        var retryP = document.getElementById('parentRetryAction');
+
+        if (formP) formP.classList.add('hidden');
+        if (thanksBoxP) thanksBoxP.classList.remove('hidden');
+        if (msgP) {
+          msgP.classList.remove('hidden');
+          msgP.style.opacity = '1';
+        }
+        if (retryP) retryP.classList.add('hidden');
+
+        setTimeout(function() {
+          if (msgP) {
+            msgP.style.opacity = '0';
+            setTimeout(function() {
+              msgP.classList.add('hidden');
+              if (retryP) {
+                retryP.classList.remove('hidden');
+                retryP.style.opacity = '0';
+                setTimeout(function() { retryP.style.opacity = '1'; }, 50);
+              }
+            }, 400);
+          }
+        }, 2500);
+
+        return;
+      }
+
+      var author = pending.author;
+      var message = pending.message;
+      var photoFile = pending.photoFile;
+
+      var onReady = function(photoUrl) {
+        saveMessage({ role: 'student', author: author, message: message, photoUrl: photoUrl })
+          .then(function() { showToast('🚀 전자칠판으로 전송되었습니다! 교실 앞 칠판을 확인해주세요 ✨'); })
+          .catch(function(err) { console.error(err); showToast('⚠️ 전송하지 못했습니다. 다시 시도해주세요.'); });
+
+        // 작성 창 숨기고 감사합니다 표시 ➔ 2.5초 후 감사합니다 사라지고 [다시 쓰기] 버튼 등장
+        var formS = document.getElementById('formStudent');
+        var thanksBoxS = document.getElementById('studentThankYouBox');
+        var msgS = document.getElementById('studentThanksMsg');
+        var retryS = document.getElementById('studentRetryAction');
+
+        if (formS) formS.classList.add('hidden');
+        if (thanksBoxS) thanksBoxS.classList.remove('hidden');
+        if (msgS) {
+          msgS.classList.remove('hidden');
+          msgS.style.opacity = '1';
+        }
+        if (retryS) retryS.classList.add('hidden');
+
+        setTimeout(function() {
+          if (msgS) {
+            msgS.style.opacity = '0';
+            setTimeout(function() {
+              msgS.classList.add('hidden');
+              if (retryS) {
+                retryS.classList.remove('hidden');
+                retryS.style.opacity = '0';
+                setTimeout(function() { retryS.style.opacity = '1'; }, 50);
+              }
+            }, 400);
+          }
+        }, 2500);
+
+        clearStudentPhotoPreview();
+      };
+
+      if (photoFile) {
+        showToast('📷 사진을 전송하기 좋게 준비하고 있습니다...');
+        compressImage(photoFile).then(onReady).catch(function(err) { console.error(err); showToast('⚠️ 사진을 처리하지 못했습니다.'); });
+      } else {
+        onReady(null);
+      }
+    }
+
+    function resetCardPositions() {
+      var stage = document.getElementById('floatingStage');
+      var stageW = stage && stage.clientWidth > 100 ? stage.clientWidth : window.innerWidth;
+      var stageH = stage && stage.clientHeight > 100 ? stage.clientHeight : window.innerHeight;
+
+      for (var i = 0; i < state.items.length; i++) {
+        var it = state.items[i];
+        it.x = 80 + Math.random() * Math.max(150, stageW - 320);
+        it.y = 80 + Math.random() * Math.max(150, stageH - 260);
+        it.vx = (Math.random() - 0.5) * 55;
+        it.vy = (Math.random() - 0.5) * 55;
+      }
+      showToast('🔄 카드의 위치를 고르게 섞었습니다.');
+    }
+
+    function clearAllBoardItems() {
+      if (!state.items || state.items.length === 0) {
+        showToast('⚠️ 삭제할 글이나 사진이 없습니다.');
+        return;
+      }
+      var count = state.items.length;
+      if (messagesRef) {
+        messagesRef.get().then(function(snapshot) {
+          var batch = db.batch();
+          snapshot.forEach(function(doc) { batch.delete(doc.ref); });
+          return batch.commit();
+        }).then(function() {
+          showToast('🗑️ 칠판의 모든 글과 사진(' + count + '개)이 전체 삭제되었습니다.');
+        }).catch(function(err) { console.error(err); showToast('⚠️ 전체 삭제에 실패했습니다.'); });
+        return;
+      }
+      for (var i = 0; i < state.items.length; i++) {
+        var item = state.items[i];
+        if (item && item.domElement) {
+          item.domElement.remove();
+        }
+      }
+      state.items = [];
+      state.formationMode = 'free';
+
+      var icon = document.getElementById('formationBtnIcon');
+      var label = document.getElementById('formationBtnLabel');
+      var btn = document.getElementById('btnGatherFormation');
+      if (icon) icon.textContent = '✨';
+      if (label) label.textContent = '별들 모이기';
+      if (btn) btn.className = 'w-full py-2 px-2 rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-purple-600 hover:from-rose-400 hover:to-purple-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-pink-500/30 transition active:scale-95';
+
+      updateStats();
+      updateLeftParticipantList();
+      playChime();
+      showToast('🗑️ 칠판의 모든 글과 사진(' + count + '개)이 전체 삭제되었습니다.');
+    }
+
+    function playChime() {
+      try {
+        var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        var ctx = new AudioContextClass();
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.35);
+
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+      } catch (e) {}
+    }
+
+    function toggleBgm() {
+      state.audioPlaying = !state.audioPlaying;
+      var icon = document.getElementById('bgmIcon');
+      var txt = document.getElementById('bgmText');
+      var remoteTxt = document.getElementById('remoteBgmLabel');
+
+      if (state.audioPlaying) {
+        if (icon) icon.textContent = '⏸️';
+        if (txt) txt.textContent = 'BGM 일시정지';
+        if (remoteTxt) remoteTxt.textContent = 'BGM 끄기';
+        startAmbientBgm();
+        showToast(state.customBgmUrl ? '🎶 설정하신 배경음악이 재생됩니다.' : '🎵 감성 배경음악이 재생됩니다.');
+      } else {
+        if (icon) icon.textContent = '🎵';
+        if (txt) txt.textContent = '감성 BGM 켜기';
+        if (remoteTxt) remoteTxt.textContent = 'BGM 켜기';
+        stopAmbientBgm();
+        showToast('🔇 배경음악이 멈추었습니다.');
+      }
+    }
+
+    function setAudioDuck(val) {
+      state.audioDuck = val;
+      var audio = document.getElementById('externalBgmAudio');
+      if (audio) {
+        audio.volume = Math.max(0.05, 0.45 * val);
+      }
+    }
+
+    function startAmbientBgm() {
+      var audio = document.getElementById('externalBgmAudio');
+      // 1. 커스텀 링크가 설정되어 있을 경우 외부 오디오 재생
+      if (state.customBgmUrl && audio) {
+        audio.src = state.customBgmUrl;
+        audio.volume = 0.45 * state.audioDuck;
+        var playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(function(err) {
+            console.warn('외부 BGM 재생 실패, 내장 오르골로 전환:', err);
+            showToast('⚠️ 오디오 링크 재생 불가로 기본 오르골로 재생합니다.');
+            playProceduralChimes();
+          });
+        }
+        return;
+      }
+
+      // 2. 외부 링크가 없으면 기본 내장 오르골 신디사이저 재생
+      playProceduralChimes();
+    }
+
+    function playProceduralChimes() {
+      try {
+        var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        if (!state.audioCtx) state.audioCtx = new AudioContextClass();
+        if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
+
+        var notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+        if (state.bgmTimer) clearInterval(state.bgmTimer);
+
+        state.bgmTimer = setInterval(function() {
+          if (!state.audioPlaying || !state.audioCtx || state.customBgmUrl) return;
+          var osc = state.audioCtx.createOscillator();
+          var gain = state.audioCtx.createGain();
+
+          osc.type = 'triangle';
+          var note = notes[Math.floor(Math.random() * notes.length)];
+          osc.frequency.setValueAtTime(note, state.audioCtx.currentTime);
+
+          var vol = 0.04 * state.audioDuck;
+          gain.gain.setValueAtTime(vol, state.audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, state.audioCtx.currentTime + 2.2);
+
+          osc.connect(gain);
+          gain.connect(state.audioCtx.destination);
+
+          osc.start();
+          osc.stop(state.audioCtx.currentTime + 2.3);
+        }, 1100);
+      } catch (e) {}
+    }
+
+    function stopAmbientBgm() {
+      var audio = document.getElementById('externalBgmAudio');
+      if (audio) {
+        audio.pause();
+      }
+      if (state.bgmTimer) {
+        clearInterval(state.bgmTimer);
+        state.bgmTimer = null;
+      }
+    }
+
+    function handleTeacherBgmFile(event) {
+      var file = event.target.files && event.target.files[0];
+      if (!file) return;
+      var objectUrl = URL.createObjectURL(file);
+      var displayName = file.name;
+      var displayLabel = document.getElementById('bgmFileNameDisplay');
+      if (displayLabel) {
+        displayLabel.textContent = '🎵 ' + displayName;
+        displayLabel.className = 'truncate text-purple-300 font-bold';
+      }
+      setCustomBgmUrl(objectUrl, displayName);
+    }
+
+    function setPresetBgm(preset) {
+      var presets = {
+        piano: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=piano-moment-9835.mp3',
+        acoustic: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=acoustic-guitars-ambient-11887.mp3',
+        musicbox: 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_12b0c44439.mp3?filename=music-box-ambient-6019.mp3'
+      };
+      var names = {
+        piano: '잔잔한 피아노',
+        acoustic: '포근한 어쿠스틱',
+        musicbox: '동화 오르골'
+      };
+      var url = presets[preset];
+      var input = document.getElementById('customBgmInput');
+      if (input) input.value = url;
+      setCustomBgmUrl(url, names[preset]);
+    }
+
+    function setCustomBgmUrl(url, displayName) {
+      state.customBgmUrl = url;
+      var badge = document.getElementById('currentBgmTypeBadge');
+      if (badge) {
+        badge.textContent = '🎵 ' + (displayName || '외부 링크 모드');
+        badge.className = 'text-[10px] text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full font-bold border border-emerald-500/30';
+      }
+
+      var audio = document.getElementById('externalBgmAudio');
+      if (audio) {
+        audio.src = url;
+      }
+
+      if (state.audioPlaying) {
+        stopAmbientBgm();
+        startAmbientBgm();
+      }
+      showToast('🎶 배경음악이 [' + (displayName || '지정 음원') + ']으로 설정되었습니다!');
+    }
+
+    function clearCustomBgm() {
+      state.customBgmUrl = '';
+      var fileInput = document.getElementById('teacherBgmFileInput');
+      if (fileInput) fileInput.value = '';
+      var displayLabel = document.getElementById('bgmFileNameDisplay');
+      if (displayLabel) {
+        displayLabel.textContent = '🎵 음악 파일(MP3, WAV 등)을 선택하세요';
+        displayLabel.className = 'truncate text-slate-400 font-medium';
+      }
+
+      var badge = document.getElementById('currentBgmTypeBadge');
+      if (badge) {
+        badge.textContent = '자체 오르골 모드';
+        badge.className = 'text-[10px] text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-full font-bold';
+      }
+
+      var audio = document.getElementById('externalBgmAudio');
+      if (audio) {
+        audio.pause();
+        audio.removeAttribute('src');
+      }
+
+      if (state.audioPlaying) {
+        stopAmbientBgm();
+        startAmbientBgm();
+      }
+      showToast('🧸 기본 감성 오르골 모드로 복구되었습니다.');
+    }
+
+    function showToast(msg) {
+      var c = document.getElementById('toastContainer');
+      if (!c) return;
+      var t = document.createElement('div');
+      t.className = 'px-4 py-2.5 rounded-2xl bg-slate-900/95 border border-slate-700 text-white font-bold text-xs shadow-2xl transition-all duration-300';
+      t.textContent = msg;
+      c.appendChild(t);
+      setTimeout(function() {
+        t.style.opacity = '0';
+        t.style.transform = 'translateY(10px)';
+        setTimeout(function() { t.remove(); }, 300);
+      }, 2600);
+    }
+
+    function startApp() {
+      populateStudentSelect();
+      initAmbientStars();
+      initFirebase();
+
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var roleParam = params.get('role');
+        if (roleParam === 'board') {
+          switchView('board');
+        } else if (roleParam === 'student') {
+          state.clientRole = 'student'; // 학생 기기 전용 잠금
+          switchView('student');
+        } else if (roleParam === 'parent') {
+          state.clientRole = 'parent'; // 학부모 기기 전용 잠금
+          switchView('parent');
+        } else if (roleParam === 'teacher') {
+          switchView('teacher');
+        } else {
+          // 기본 첫 화면(포털 로비)
+          switchView('portal');
+        }
+      } catch (e) {
+        switchView('portal');
+      }
+
+      requestAnimationFrame(updatePhysicsLoop);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startApp);
+    } else {
+      startApp();
+    }
+  </script>
+</body>
+</html>
