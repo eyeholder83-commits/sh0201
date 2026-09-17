@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>고운 말 실천 퀴즈</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@500;700;800&display=swap" rel="stylesheet">
+  <!-- Confetti library for celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .font-kids {
+      font-family: 'Jua', sans-serif;
+    }
+    .option-card:hover {
+      transform: translateY(-2px);
+    }
+    .option-card:active {
+      transform: scale(0.98);
+    }
+    input[type="radio"]:checked + span,
+    input[type="checkbox"]:checked + span {
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+    .has-checked:has(input:checked) {
+      border-color: #38bdf8;
+      background-color: #f0f9ff;
+      box-shadow: 0 4px 12px -2px rgba(56, 189, 248, 0.25);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-amber-100 via-sky-50 to-emerald-50 text-slate-800 min-h-screen py-8 px-4 sm:px-6">
+
+  <main class="max-w-2xl mx-auto bg-white/95 backdrop-blur rounded-3xl shadow-xl border-4 border-amber-300 p-6 sm:p-8">
+    <!-- 헤더 영역 -->
+    <header class="text-center pb-6 border-b-2 border-dashed border-amber-200">
+      <div class="inline-flex items-center justify-center gap-2 bg-amber-100 text-amber-800 text-sm font-bold px-4 py-1.5 rounded-full mb-3 shadow-inner">
+        <span>✨</span> 바르고 고운 말을 써요! <span>🌱</span>
+      </div>
+      <h1 id="pageMainTitle" class="font-kids text-3xl sm:text-4xl text-amber-900 tracking-wide drop-shadow-sm">
+        🌈 고운 말 실천 퀴즈 🎈
+      </h1>
+      <p id="pageSubTitle" class="text-slate-500 font-medium text-sm sm:text-base mt-2">
+        문제를 꼼꼼히 읽고 알맞은 답을 골라보세요!
+      </p>
+
+      <!-- 1페이지 / 2페이지 / 3페이지 전환 탭 네비게이션 -->
+      <nav class="flex justify-center gap-2 sm:gap-3 mt-5 flex-wrap">
+        <button type="button" id="tabBtn1" onclick="switchPage(1)" class="font-kids px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl text-sm sm:text-base border-2 border-amber-400 bg-amber-400 text-white shadow-md transition transform active:scale-95 flex items-center gap-1.5">
+          <span>🌸</span> 1탄: 고운 말
+        </button>
+        <button type="button" id="tabBtn2" onclick="switchPage(2)" class="font-kids px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl text-sm sm:text-base border-2 border-slate-200 bg-slate-100 text-slate-400 opacity-60 cursor-not-allowed shadow-sm transition flex items-center gap-1.5" title="1탄을 다 맞아야(100점) 열려요!">
+          <span id="tab2LockIcon">🔒</span> 2탄: 칭찬과 조언
+        </button>
+        <button type="button" id="tabBtn3" onclick="switchPage(3)" class="font-kids px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl text-sm sm:text-base border-2 border-slate-200 bg-slate-100 text-slate-400 opacity-60 cursor-not-allowed shadow-sm transition flex items-center gap-1.5" title="2탄을 다 맞아야(100점) 열려요!">
+          <span id="tab3LockIcon">🔒</span> 3탄: 과제를 선생님에게 제출하기
+        </button>
+      </nav>
+    </header>
+
+    <!-- 1페이지: 고운 말 실천 퀴즈 -->
+    <form id="quizForm" class="space-y-8 mt-6">
+
+      <!-- 1번 문제 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-sky-200 bg-sky-50/40 transition-all duration-200" data-q="1">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-sky-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">1</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            고운 말의 뜻으로 알맞은 것은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 cursor-pointer transition">
+            <input type="radio" name="q1" value="1" class="w-5 h-5 accent-sky-500">
+            <span class="text-slate-700">① 다른 사람의 마음을 헤아려 부드럽게 하는 말</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 cursor-pointer transition">
+            <input type="radio" name="q1" value="2" class="w-5 h-5 accent-sky-500">
+            <span class="text-slate-700">② 친구를 놀리는 말</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 cursor-pointer transition">
+            <input type="radio" name="q1" value="3" class="w-5 h-5 accent-sky-500">
+            <span class="text-slate-700">③ 큰 소리로 화내는 말</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 cursor-pointer transition">
+            <input type="radio" name="q1" value="4" class="w-5 h-5 accent-sky-500">
+            <span class="text-slate-700">④ 욕설을 사용하는 말</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 2번 문제 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-emerald-200 bg-emerald-50/40 transition-all duration-200" data-q="2">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-emerald-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">2</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            고운 말로 대화하는 방법으로 알맞은 것은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-300 cursor-pointer transition">
+            <input type="radio" name="q2" value="1" class="w-5 h-5 accent-emerald-500">
+            <span class="text-slate-700">① 상대의 기분을 살펴 말합니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-300 cursor-pointer transition">
+            <input type="radio" name="q2" value="2" class="w-5 h-5 accent-emerald-500">
+            <span class="text-slate-700">② 친구의 말을 듣지 않습니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-300 cursor-pointer transition">
+            <input type="radio" name="q2" value="3" class="w-5 h-5 accent-emerald-500">
+            <span class="text-slate-700">③ 내 생각만 계속 말합니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-300 cursor-pointer transition">
+            <input type="radio" name="q2" value="4" class="w-5 h-5 accent-emerald-500">
+            <span class="text-slate-700">④ 친구를 놀리며 말합니다.</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 3번 문제 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-amber-200 bg-amber-50/40 transition-all duration-200" data-q="3">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-amber-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">3</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            친구가 나를 도와주었을 때 알맞은 말은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-300 cursor-pointer transition">
+            <input type="radio" name="q3" value="1" class="w-5 h-5 accent-amber-500">
+            <span class="text-slate-700">① 왜 이것밖에 못 해?</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-300 cursor-pointer transition">
+            <input type="radio" name="q3" value="2" class="w-5 h-5 accent-amber-500">
+            <span class="text-slate-700">② 고마워. 네가 도와줘서 기뻐.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-300 cursor-pointer transition">
+            <input type="radio" name="q3" value="3" class="w-5 h-5 accent-amber-500">
+            <span class="text-slate-700">③ 저리 가.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-300 cursor-pointer transition">
+            <input type="radio" name="q3" value="4" class="w-5 h-5 accent-amber-500">
+            <span class="text-slate-700">④ 나도 할 수 있었어.</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 4번 문제 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-purple-200 bg-purple-50/40 transition-all duration-200" data-q="4">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-purple-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">4</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            고운 말로 대화할 때 자신의 기분을 말하는 방법으로 알맞은 것은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-purple-300 cursor-pointer transition">
+            <input type="radio" name="q4" value="1" class="w-5 h-5 accent-purple-500">
+            <span class="text-slate-700">① 화를 내며 말합니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-purple-300 cursor-pointer transition">
+            <input type="radio" name="q4" value="2" class="w-5 h-5 accent-purple-500">
+            <span class="text-slate-700">② 자신의 기분을 살펴본 뒤 말합니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-purple-300 cursor-pointer transition">
+            <input type="radio" name="q4" value="3" class="w-5 h-5 accent-purple-500">
+            <span class="text-slate-700">③ 욕설을 사용합니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-purple-300 cursor-pointer transition">
+            <input type="radio" name="q4" value="4" class="w-5 h-5 accent-purple-500">
+            <span class="text-slate-700">④ 아무 말도 하지 않습니다.</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 5번 문제 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-rose-200 bg-rose-50/40 transition-all duration-200" data-q="5">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-rose-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">5</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            친구가 자신의 이야기를 할 때 어떻게 해야 하나요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-rose-300 cursor-pointer transition">
+            <input type="radio" name="q5" value="1" class="w-5 h-5 accent-rose-500">
+            <span class="text-slate-700">① 말을 끊습니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-rose-300 cursor-pointer transition">
+            <input type="radio" name="q5" value="2" class="w-5 h-5 accent-rose-500">
+            <span class="text-slate-700">② 다른 곳을 봅니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-rose-300 cursor-pointer transition">
+            <input type="radio" name="q5" value="3" class="w-5 h-5 accent-rose-500">
+            <span class="text-slate-700">③ 공감하며 잘 들어줍니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-rose-300 cursor-pointer transition">
+            <input type="radio" name="q5" value="4" class="w-5 h-5 accent-rose-500">
+            <span class="text-slate-700">④ 친구를 놀립니다.</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 6번 문제 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-indigo-200 bg-indigo-50/40 transition-all duration-200" data-q="6">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-indigo-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">6</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            공감의 뜻으로 알맞은 것은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-300 cursor-pointer transition">
+            <input type="radio" name="q6" value="1" class="w-5 h-5 accent-indigo-500">
+            <span class="text-slate-700">① 다른 사람의 생각과 마음을 자신도 그렇게 느끼는 것</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-300 cursor-pointer transition">
+            <input type="radio" name="q6" value="2" class="w-5 h-5 accent-indigo-500">
+            <span class="text-slate-700">② 친구보다 먼저 말하는 것</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-300 cursor-pointer transition">
+            <input type="radio" name="q6" value="3" class="w-5 h-5 accent-indigo-500">
+            <span class="text-slate-700">③ 큰 소리로 이야기하는 것</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-300 cursor-pointer transition">
+            <input type="radio" name="q6" value="4" class="w-5 h-5 accent-indigo-500">
+            <span class="text-slate-700">④ 자신의 생각만 말하는 것</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 7번 문제 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-teal-200 bg-teal-50/40 transition-all duration-200" data-q="7">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-teal-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">7</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            다음 중 고운 말로 대화하는 모습이 <u class="text-rose-600 decoration-rose-400 decoration-2">아닌</u> 것은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-teal-300 cursor-pointer transition">
+            <input type="radio" name="q7" value="1" class="w-5 h-5 accent-teal-500">
+            <span class="text-slate-700">① 친구의 말을 잘 들어 줍니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-teal-300 cursor-pointer transition">
+            <input type="radio" name="q7" value="2" class="w-5 h-5 accent-teal-500">
+            <span class="text-slate-700">② 상대의 기분을 생각합니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-teal-300 cursor-pointer transition">
+            <input type="radio" name="q7" value="3" class="w-5 h-5 accent-teal-500">
+            <span class="text-slate-700">③ 친구에게 욕설을 합니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-teal-300 cursor-pointer transition">
+            <input type="radio" name="q7" value="4" class="w-5 h-5 accent-teal-500">
+            <span class="text-slate-700">④ 고마운 마음을 표현합니다.</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 8번 문제 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-cyan-200 bg-cyan-50/40 transition-all duration-200" data-q="8">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-cyan-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">8</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            비속어의 뜻으로 알맞은 것은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-cyan-300 cursor-pointer transition">
+            <input type="radio" name="q8" value="1" class="w-5 h-5 accent-cyan-500">
+            <span class="text-slate-700">① 상대를 칭찬하는 말</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-cyan-300 cursor-pointer transition">
+            <input type="radio" name="q8" value="2" class="w-5 h-5 accent-cyan-500">
+            <span class="text-slate-700">② 예절에 어긋나거나 대상을 낮추어 사용하는 말</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-cyan-300 cursor-pointer transition">
+            <input type="radio" name="q8" value="3" class="w-5 h-5 accent-cyan-500">
+            <span class="text-slate-700">③ 고마움을 나타내는 말</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-cyan-300 cursor-pointer transition">
+            <input type="radio" name="q8" value="4" class="w-5 h-5 accent-cyan-500">
+            <span class="text-slate-700">④ 상대를 위로하는 말</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 9번 문제 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-orange-200 bg-orange-50/40 transition-all duration-200" data-q="9">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-orange-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">9</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            친구가 실수해서 속상해하고 있습니다. 가장 알맞은 말은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-orange-300 cursor-pointer transition">
+            <input type="radio" name="q9" value="1" class="w-5 h-5 accent-orange-500">
+            <span class="text-slate-700">① 그것도 못 해?</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-orange-300 cursor-pointer transition">
+            <input type="radio" name="q9" value="2" class="w-5 h-5 accent-orange-500">
+            <span class="text-slate-700">② 네가 잘못했잖아.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-orange-300 cursor-pointer transition">
+            <input type="radio" name="q9" value="3" class="w-5 h-5 accent-orange-500">
+            <span class="text-slate-700">③ 속상했겠다. 다음에는 잘할 수 있을 거야.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-orange-300 cursor-pointer transition">
+            <input type="radio" name="q9" value="4" class="w-5 h-5 accent-orange-500">
+            <span class="text-slate-700">④ 나는 한 번에 잘했는데!</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 10번 문제 (복수 선택) -->
+      <section class="question-block p-5 rounded-2xl border-2 border-pink-200 bg-pink-50/40 transition-all duration-200" data-q="10">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-pink-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">10</span>
+          <div>
+            <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+              고운 말로 대화하기 위해 해야 할 행동으로 알맞은 것을 <span class="text-pink-600 underline decoration-pink-300">모두</span> 고르세요.
+            </h2>
+            <span class="text-xs text-pink-600 font-semibold bg-pink-100 px-2 py-0.5 rounded-md mt-1 inline-block">여러 개 선택 가능!</span>
+          </div>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-pink-300 cursor-pointer transition">
+            <input type="checkbox" name="q10" value="1" class="w-5 h-5 rounded accent-pink-500">
+            <span class="text-slate-700">① 친구의 말을 잘 듣기</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-pink-300 cursor-pointer transition">
+            <input type="checkbox" name="q10" value="2" class="w-5 h-5 rounded accent-pink-500">
+            <span class="text-slate-700">② 상대의 기분 생각하기</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-pink-300 cursor-pointer transition">
+            <input type="checkbox" name="q10" value="3" class="w-5 h-5 rounded accent-pink-500">
+            <span class="text-slate-700">③ 욕설 사용하기</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-pink-300 cursor-pointer transition">
+            <input type="checkbox" name="q10" value="4" class="w-5 h-5 rounded accent-pink-500">
+            <span class="text-slate-700">④ 상황에 알맞은 말 하기</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-pink-300 cursor-pointer transition">
+            <input type="checkbox" name="q10" value="5" class="w-5 h-5 rounded accent-pink-500">
+            <span class="text-slate-700">⑤ 고마운 마음 표현하기</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 하단 채점 및 점수 확인 -->
+      <div class="pt-6 border-t-2 border-dashed border-amber-200 flex flex-col items-center gap-5">
+        <div class="flex gap-3 w-full sm:w-auto">
+          <button type="submit" class="font-kids flex-1 sm:flex-none text-xl px-10 py-3.5 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-2xl shadow-lg shadow-orange-200 active:scale-95 transition transform">
+            ✨ 채점하기! 🎯
+          </button>
+          <button type="button" id="resetBtn" class="font-kids text-lg px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition active:scale-95">
+            🔄 다시 풀기
+          </button>
+        </div>
+
+        <!-- 결과 카드 (초기 숨김) -->
+        <div id="resultBox" class="w-full text-center p-6 bg-amber-50 rounded-2xl border-2 border-amber-300 shadow-sm hidden">
+          <div id="badgeEmoji" class="text-5xl mb-2 animate-bounce">🌟</div>
+          <div id="finalScore" class="font-kids text-3xl sm:text-4xl text-amber-900"></div>
+          <p id="scoreComment" class="text-slate-600 font-bold mt-2 text-base"></p>
+          <div id="nextBtnWrapper1" class="mt-5 pt-4 border-t border-amber-200 hidden">
+            <button type="button" onclick="switchPage(2)" class="font-kids inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-lg px-6 py-3 rounded-2xl shadow-md transform hover:scale-105 active:scale-95 transition">
+              <span>🚀 2탄(칭찬과 조언) 도전하기! ➡️</span>
+            </button>
+          </div>
+          <p id="retryGuide1" class="text-rose-600 font-bold text-sm mt-3 hidden">
+            ⚠️ 10문제를 모두 맞혀야 2탄이 열려요! 틀린 문제를 다시 골라보세요! 💪
+          </p>
+        </div>
+      </div>
+    </form>
+
+    <!-- 2페이지: 칭찬과 조언 실천 퀴즈 -->
+    <form id="quizForm2" class="space-y-8 mt-6 hidden">
+
+      <!-- 2페이지 1번 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-sky-200 bg-sky-50/40 transition-all duration-200" data-q="1">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-sky-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">1</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            칭찬하기의 뜻으로 알맞은 것은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 cursor-pointer transition">
+            <input type="radio" name="p2_q1" value="1" class="w-5 h-5 accent-sky-500">
+            <span class="text-slate-700">① 상대의 잘하는 점이나 좋은 점을 이야기해 주는 것</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 cursor-pointer transition">
+            <input type="radio" name="p2_q1" value="2" class="w-5 h-5 accent-sky-500">
+            <span class="text-slate-700">② 상대의 잘못을 크게 말하는 것</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 cursor-pointer transition">
+            <input type="radio" name="p2_q1" value="3" class="w-5 h-5 accent-sky-500">
+            <span class="text-slate-700">③ 상대에게 화를 내는 것</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 cursor-pointer transition">
+            <input type="radio" name="p2_q1" value="4" class="w-5 h-5 accent-sky-500">
+            <span class="text-slate-700">④ 상대의 말을 듣지 않는 것</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 2페이지 2번 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-emerald-200 bg-emerald-50/40 transition-all duration-200" data-q="2">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-emerald-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">2</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            조언하기의 뜻으로 알맞은 것은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-300 cursor-pointer transition">
+            <input type="radio" name="p2_q2" value="1" class="w-5 h-5 accent-emerald-500">
+            <span class="text-slate-700">① 친구를 놀리는 것</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-300 cursor-pointer transition">
+            <input type="radio" name="p2_q2" value="2" class="w-5 h-5 accent-emerald-500">
+            <span class="text-slate-700">② 어려움이 있을 때 해결 방법을 알려 주어 도와주는 것</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-300 cursor-pointer transition">
+            <input type="radio" name="p2_q2" value="3" class="w-5 h-5 accent-emerald-500">
+            <span class="text-slate-700">③ 친구에게 명령하는 것</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-300 cursor-pointer transition">
+            <input type="radio" name="p2_q2" value="4" class="w-5 h-5 accent-emerald-500">
+            <span class="text-slate-700">④ 친구의 비밀을 다른 사람에게 말하는 것</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 2페이지 3번 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-amber-200 bg-amber-50/40 transition-all duration-200" data-q="3">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-amber-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">3</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            다음 중 칭찬하는 말로 가장 알맞은 것은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-300 cursor-pointer transition">
+            <input type="radio" name="p2_q3" value="1" class="w-5 h-5 accent-amber-500">
+            <span class="text-slate-700">① 너는 그림을 끝까지 완성하려고 노력하는 모습이 정말 멋져.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-300 cursor-pointer transition">
+            <input type="radio" name="p2_q3" value="2" class="w-5 h-5 accent-amber-500">
+            <span class="text-slate-700">② 그것도 못 하니?</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-300 cursor-pointer transition">
+            <input type="radio" name="p2_q3" value="3" class="w-5 h-5 accent-amber-500">
+            <span class="text-slate-700">③ 빨리 좀 해.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-300 cursor-pointer transition">
+            <input type="radio" name="p2_q3" value="4" class="w-5 h-5 accent-amber-500">
+            <span class="text-slate-700">④ 나는 너보다 더 잘해.</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 2페이지 4번 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-purple-200 bg-purple-50/40 transition-all duration-200" data-q="4">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-purple-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">4</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            칭찬할 때 알맞은 방법이 <u class="text-rose-600 decoration-rose-400 decoration-2">아닌</u> 것은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-purple-300 cursor-pointer transition">
+            <input type="radio" name="p2_q4" value="1" class="w-5 h-5 accent-purple-500">
+            <span class="text-slate-700">① 열심히 노력하는 점을 찾아 칭찬합니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-purple-300 cursor-pointer transition">
+            <input type="radio" name="p2_q4" value="2" class="w-5 h-5 accent-purple-500">
+            <span class="text-slate-700">② 좋은 점을 진심으로 칭찬합니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-purple-300 cursor-pointer transition">
+            <input type="radio" name="p2_q4" value="3" class="w-5 h-5 accent-purple-500">
+            <span class="text-slate-700">③ 칭찬하는 점과 그 까닭을 말합니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-purple-300 cursor-pointer transition">
+            <input type="radio" name="p2_q4" value="4" class="w-5 h-5 accent-purple-500">
+            <span class="text-slate-700">④ 사실이 아닌 것을 크게 부풀려 말합니다.</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 2페이지 5번 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-rose-200 bg-rose-50/40 transition-all duration-200" data-q="5">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-rose-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">5</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            친구가 모르는 것을 물어볼 때마다 친절하게 알려 주었습니다. 가장 알맞은 칭찬은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-rose-300 cursor-pointer transition">
+            <input type="radio" name="p2_q5" value="1" class="w-5 h-5 accent-rose-500">
+            <span class="text-slate-700">① 너는 참 친절해. 모르는 것을 물어보면 잘 알려 주잖아.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-rose-300 cursor-pointer transition">
+            <input type="radio" name="p2_q5" value="2" class="w-5 h-5 accent-rose-500">
+            <span class="text-slate-700">② 너는 공부를 제일 잘해.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-rose-300 cursor-pointer transition">
+            <input type="radio" name="p2_q5" value="3" class="w-5 h-5 accent-rose-500">
+            <span class="text-slate-700">③ 너는 항상 완벽해.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-rose-300 cursor-pointer transition">
+            <input type="radio" name="p2_q5" value="4" class="w-5 h-5 accent-rose-500">
+            <span class="text-slate-700">④ 너는 실수를 한 번도 안 해.</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 2페이지 6번 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-indigo-200 bg-indigo-50/40 transition-all duration-200" data-q="6">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-indigo-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">6</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            친구가 사물함을 열었을 때 물건이 자꾸 쏟아져 고민하고 있습니다. 가장 알맞은 조언은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-300 cursor-pointer transition">
+            <input type="radio" name="p2_q6" value="1" class="w-5 h-5 accent-indigo-500">
+            <span class="text-slate-700">① 그냥 내버려 둬.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-300 cursor-pointer transition">
+            <input type="radio" name="p2_q6" value="2" class="w-5 h-5 accent-indigo-500">
+            <span class="text-slate-700">② 물건을 정리해서 넣어 두는 게 어때?</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-300 cursor-pointer transition">
+            <input type="radio" name="p2_q6" value="3" class="w-5 h-5 accent-indigo-500">
+            <span class="text-slate-700">③ 왜 그렇게 지저분해?</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-300 cursor-pointer transition">
+            <input type="radio" name="p2_q6" value="4" class="w-5 h-5 accent-indigo-500">
+            <span class="text-slate-700">④ 네가 알아서 해.</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 2페이지 7번 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-teal-200 bg-teal-50/40 transition-all duration-200" data-q="7">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-teal-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">7</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            조언할 때 가장 중요한 태도는 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-teal-300 cursor-pointer transition">
+            <input type="radio" name="p2_q7" value="1" class="w-5 h-5 accent-teal-500">
+            <span class="text-slate-700">① 상대를 무시하며 말하기</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-teal-300 cursor-pointer transition">
+            <input type="radio" name="p2_q7" value="2" class="w-5 h-5 accent-teal-500">
+            <span class="text-slate-700">② 상대를 도와주려는 마음으로 존중하며 말하기</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-teal-300 cursor-pointer transition">
+            <input type="radio" name="p2_q7" value="3" class="w-5 h-5 accent-teal-500">
+            <span class="text-slate-700">③ 큰 소리로 명령하기</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-teal-300 cursor-pointer transition">
+            <input type="radio" name="p2_q7" value="4" class="w-5 h-5 accent-teal-500">
+            <span class="text-slate-700">④ 자신의 생각만 말하기</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 2페이지 8번 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-cyan-200 bg-cyan-50/40 transition-all duration-200" data-q="8">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-cyan-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">8</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            친구가 줄넘기를 잘하지 못해 속상해합니다. 가장 알맞은 조언은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-cyan-300 cursor-pointer transition">
+            <input type="radio" name="p2_q8" value="1" class="w-5 h-5 accent-cyan-500">
+            <span class="text-slate-700">① 넌 줄넘기를 못하네.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-cyan-300 cursor-pointer transition">
+            <input type="radio" name="p2_q8" value="2" class="w-5 h-5 accent-cyan-500">
+            <span class="text-slate-700">② 그냥 포기해.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-cyan-300 cursor-pointer transition">
+            <input type="radio" name="p2_q8" value="3" class="w-5 h-5 accent-cyan-500">
+            <span class="text-slate-700">③ 날마다 조금씩 줄넘기 연습을 해 보면 어떨까?</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-cyan-300 cursor-pointer transition">
+            <input type="radio" name="p2_q8" value="4" class="w-5 h-5 accent-cyan-500">
+            <span class="text-slate-700">④ 나는 너보다 잘해.</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 2페이지 9번 -->
+      <section class="question-block p-5 rounded-2xl border-2 border-orange-200 bg-orange-50/40 transition-all duration-200" data-q="9">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-orange-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">9</span>
+          <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+            칭찬이나 조언을 주고받으면 좋은 점이 <u class="text-rose-600 decoration-rose-400 decoration-2">아닌</u> 것은 무엇인가요?
+          </h2>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-orange-300 cursor-pointer transition">
+            <input type="radio" name="p2_q9" value="1" class="w-5 h-5 accent-orange-500">
+            <span class="text-slate-700">① 기분이 좋아질 수 있습니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-orange-300 cursor-pointer transition">
+            <input type="radio" name="p2_q9" value="2" class="w-5 h-5 accent-orange-500">
+            <span class="text-slate-700">② 내가 노력해야 할 점을 알 수 있습니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-orange-300 cursor-pointer transition">
+            <input type="radio" name="p2_q9" value="3" class="w-5 h-5 accent-orange-500">
+            <span class="text-slate-700">③ 상대에게 위로를 해 줄 수 있습니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-orange-300 cursor-pointer transition">
+            <input type="radio" name="p2_q9" value="4" class="w-5 h-5 accent-orange-500">
+            <span class="text-slate-700">④ 서로 더 멀어질 수 있습니다.</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 2페이지 10번 (복수 선택) -->
+      <section class="question-block p-5 rounded-2xl border-2 border-pink-200 bg-pink-50/40 transition-all duration-200" data-q="10">
+        <div class="flex items-start gap-3 mb-3">
+          <span class="font-kids bg-pink-400 text-white w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-sm flex-shrink-0">10</span>
+          <div>
+            <h2 class="font-bold text-base sm:text-lg text-slate-800 pt-0.5">
+              칭찬이나 조언을 주고받으면 좋은 점으로 알맞은 것을 <span class="text-pink-600 underline decoration-pink-300">모두</span> 고르세요.
+            </h2>
+            <span class="text-xs text-pink-600 font-semibold bg-pink-100 px-2 py-0.5 rounded-md mt-1 inline-block">여러 개 선택 가능!</span>
+          </div>
+        </div>
+        <div class="space-y-2.5 pt-1">
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-pink-300 cursor-pointer transition">
+            <input type="checkbox" name="p2_q10" value="1" class="w-5 h-5 rounded accent-pink-500">
+            <span class="text-slate-700">① 기분이 좋아질 수 있습니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-pink-300 cursor-pointer transition">
+            <input type="checkbox" name="p2_q10" value="2" class="w-5 h-5 rounded accent-pink-500">
+            <span class="text-slate-700">② 내가 노력해야 할 점을 알 수 있습니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-pink-300 cursor-pointer transition">
+            <input type="checkbox" name="p2_q10" value="3" class="w-5 h-5 rounded accent-pink-500">
+            <span class="text-slate-700">③ 상대에게 위로를 해 줄 수 있습니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-pink-300 cursor-pointer transition">
+            <input type="checkbox" name="p2_q10" value="4" class="w-5 h-5 rounded accent-pink-500">
+            <span class="text-slate-700">④ 말하는 사람과 더 가까워질 수 있습니다.</span>
+          </label>
+          <label class="option-card has-checked flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-pink-300 cursor-pointer transition">
+            <input type="checkbox" name="p2_q10" value="5" class="w-5 h-5 rounded accent-pink-500">
+            <span class="text-slate-700">⑤ 상대를 속상하게 만들 수 있습니다.</span>
+          </label>
+        </div>
+        <div class="result-msg mt-3 text-sm font-bold hidden p-3 rounded-xl"></div>
+      </section>
+
+      <!-- 2페이지 하단 채점 및 점수 확인 -->
+      <div class="pt-6 border-t-2 border-dashed border-amber-200 flex flex-col items-center gap-5">
+        <div class="flex gap-3 w-full sm:w-auto">
+          <button type="submit" class="font-kids flex-1 sm:flex-none text-xl px-10 py-3.5 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-2xl shadow-lg shadow-orange-200 active:scale-95 transition transform">
+            ✨ 채점하기! 🎯
+          </button>
+          <button type="button" id="resetBtn2" class="font-kids text-lg px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition active:scale-95">
+            🔄 다시 풀기
+          </button>
+        </div>
+
+        <!-- 결과 카드 (초기 숨김) -->
+        <div id="resultBox2" class="w-full text-center p-6 bg-amber-50 rounded-2xl border-2 border-amber-300 shadow-sm hidden">
+          <div id="badgeEmoji2" class="text-5xl mb-2 animate-bounce">🌟</div>
+          <div id="finalScore2" class="font-kids text-3xl sm:text-4xl text-amber-900"></div>
+          <p id="scoreComment2" class="text-slate-600 font-bold mt-2 text-base"></p>
+          <div id="nextBtnWrapper2" class="mt-5 pt-4 border-t border-amber-200 hidden">
+            <button type="button" onclick="switchPage(3)" class="font-kids inline-flex items-center gap-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white text-lg px-6 py-3 rounded-2xl shadow-md transform hover:scale-105 active:scale-95 transition">
+              <span>📝 3탄: 과제를 선생님에게 제출하기 ➡️</span>
+            </button>
+          </div>
+          <p id="retryGuide2" class="text-rose-600 font-bold text-sm mt-3 hidden">
+            ⚠️ 10문제를 모두 맞혀야 3탄이 열려요! 틀린 문제를 다시 골라보세요! 💪
+          </p>
+        </div>
+      </div>
+    </form>
+
+    <!-- 3페이지: 과제를 선생님에게 제출하기 (임베드) -->
+    <section id="quizPage3" class="mt-6 hidden">
+      <div class="p-4 sm:p-6 bg-sky-50/50 rounded-2xl border-2 border-sky-300 shadow-sm space-y-4">
+        <div class="flex items-center gap-2 pb-2 border-b border-sky-200">
+          <span class="text-2xl">📋</span>
+          <h2 class="font-kids text-xl text-sky-900">과제를 선생님에게 제출하기</h2>
+        </div>
+        
+        <div class="w-full bg-white rounded-xl overflow-hidden border-2 border-sky-200 shadow-inner">
+          <iframe 
+            id="googleFormIframe"
+            src="https://docs.google.com/forms/d/e/1FAIpQLSdBXY7O-5XNN_hExe2b4jx1gyUKfKerrIJPTEO-mKufCVlAFQ/viewform?embedded=true" 
+            width="100%" 
+            height="850" 
+            class="w-full border-0 rounded-xl block min-h-[650px] sm:min-h-[850px]"
+            loading="lazy">
+            로드 중…
+          </iframe>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let isPage1Completed = false;
+    let isPage2Completed = false;
+
+    const correctAnswers = {
+      1: "1",
+      2: "1",
+      3: "2",
+      4: "2",
+      5: "3",
+      6: "1",
+      7: "3",
+      8: "2",
+      9: "3",
+      10: ["1", "2", "4", "5"]
+    };
+
+    const correctAnswersPage2 = {
+      1: "1",
+      2: "2",
+      3: "1",
+      4: "4",
+      5: "1",
+      6: "2",
+      7: "2",
+      8: "3",
+      9: "4",
+      10: ["1", "2", "3", "4"]
+    };
+
+    // 탭 버튼 스타일 갱신 함수
+    function updateTabStyles(currentPage) {
+      const tab1 = document.getElementById('tabBtn1');
+      const tab2 = document.getElementById('tabBtn2');
+      const tab3 = document.getElementById('tabBtn3');
+      const lock2 = document.getElementById('tab2LockIcon');
+      const lock3 = document.getElementById('tab3LockIcon');
+
+      const activeClass = 'font-kids px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl text-sm sm:text-base border-2 border-amber-400 bg-amber-400 text-white shadow-md transition transform active:scale-95 flex items-center gap-1.5 cursor-pointer';
+      const unlockedClass = 'font-kids px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl text-sm sm:text-base border-2 border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 shadow-sm transition transform active:scale-95 flex items-center gap-1.5 cursor-pointer';
+      const lockedClass = 'font-kids px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl text-sm sm:text-base border-2 border-slate-200 bg-slate-100 text-slate-400 opacity-60 cursor-not-allowed shadow-sm transition flex items-center gap-1.5';
+
+      // 1탄 탭
+      tab1.className = (currentPage === 1) ? activeClass : unlockedClass;
+
+      // 2탄 탭
+      if (!isPage1Completed) {
+        tab2.className = lockedClass;
+        lock2.textContent = '🔒';
+      } else {
+        tab2.className = (currentPage === 2) ? activeClass : unlockedClass;
+        lock2.textContent = '🌼';
+      }
+
+      // 3탄 탭
+      if (!isPage2Completed) {
+        tab3.className = lockedClass;
+        lock3.textContent = '🔒';
+      } else {
+        tab3.className = (currentPage === 3) ? activeClass : unlockedClass;
+        lock3.textContent = '📝';
+      }
+    }
+
+    // 알림 메시지 모달/토스트
+    function showGuideToast(message) {
+      const existingToast = document.getElementById('guideToast');
+      if (existingToast) existingToast.remove();
+
+      const toast = document.createElement('div');
+      toast.id = 'guideToast';
+      toast.className = 'fixed top-6 left-1/2 -translate-x-1/2 bg-rose-600 text-white font-kids text-sm sm:text-base px-6 py-3 rounded-2xl shadow-xl z-50 animate-bounce flex items-center gap-2 border-2 border-white';
+      toast.innerHTML = `<span>⚠️</span> <span>${message}</span>`;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.5s';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+      }, 2500);
+    }
+
+    // 1페이지 / 2페이지 / 3페이지 전환 함수
+    function switchPage(pageNumber) {
+      if (pageNumber === 2 && !isPage1Completed) {
+        showGuideToast('1탄 문제를 다 맞아야(100점 만점) 2탄을 풀 수 있어요! 다시 풀어보세요! 💪');
+        return;
+      }
+      if (pageNumber === 3 && !isPage2Completed) {
+        showGuideToast('2탄 문제를 다 맞아야(100점 만점) 3탄을 열 수 있어요! 다시 풀어보세요! 💪');
+        return;
+      }
+
+      const pageTitle = document.getElementById('pageMainTitle');
+      const pageSub = document.getElementById('pageSubTitle');
+      const form1 = document.getElementById('quizForm');
+      const form2 = document.getElementById('quizForm2');
+      const page3 = document.getElementById('quizPage3');
+
+      form1.classList.add('hidden');
+      form2.classList.add('hidden');
+      page3.classList.add('hidden');
+
+      if (pageNumber === 1) {
+        form1.classList.remove('hidden');
+        pageTitle.textContent = '🌈 고운 말 실천 퀴즈 🎈';
+        pageSub.textContent = '문제를 꼼꼼히 읽고 알맞은 답을 골라보세요!';
+      } else if (pageNumber === 2) {
+        form2.classList.remove('hidden');
+        pageTitle.textContent = '🌻 칭찬과 조언 실천 퀴즈 🎈';
+        pageSub.textContent = '칭찬과 조언에 대해 꼼꼼히 읽고 알맞은 답을 골라보세요!';
+      } else if (pageNumber === 3) {
+        page3.classList.remove('hidden');
+        pageTitle.textContent = '📝 과제를 선생님에게 제출하기 🎈';
+        pageSub.textContent = '아래 과제를 정성껏 작성하여 선생님에게 제출해 보세요!';
+      }
+
+      updateTabStyles(pageNumber);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    const form = document.getElementById('quizForm');
+    const resultBox = document.getElementById('resultBox');
+    const finalScoreEl = document.getElementById('finalScore');
+    const scoreCommentEl = document.getElementById('scoreComment');
+    const badgeEmojiEl = document.getElementById('badgeEmoji');
+    const resetBtn = document.getElementById('resetBtn');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      let score = 0;
+
+      // 1 ~ 9번 객관식 채점
+      for (let i = 1; i <= 9; i++) {
+        const selected = form.querySelector(`input[name="q${i}"]:checked`);
+        const block = form.querySelector(`section[data-q="${i}"]`);
+        const resultMsg = block.querySelector('.result-msg');
+        resultMsg.className = 'result-msg mt-3 text-sm font-bold p-3 rounded-xl';
+
+        if (selected && selected.value === correctAnswers[i]) {
+          score++;
+          resultMsg.classList.add('bg-emerald-100', 'text-emerald-800', 'border', 'border-emerald-300');
+          resultMsg.innerHTML = '⭕ <strong>정답이에요! 참 잘했어요! 🎉</strong>';
+        } else {
+          resultMsg.classList.add('bg-rose-100', 'text-rose-800', 'border', 'border-rose-300');
+          resultMsg.innerHTML = '❌ <strong>틀렸어요! 다시 한번 꼼꼼하게 생각해 보세요! 🤔</strong>';
+        }
+        resultMsg.classList.remove('hidden');
+      }
+
+      // 10번 복수 선택 채점
+      const checkedBoxes = Array.from(form.querySelectorAll('input[name="q10"]:checked')).map(cb => cb.value);
+      const block10 = form.querySelector('section[data-q="10"]');
+      const resultMsg10 = block10.querySelector('.result-msg');
+      resultMsg10.className = 'result-msg mt-3 text-sm font-bold p-3 rounded-xl';
+
+      const isQ10Correct = checkedBoxes.length === correctAnswers[10].length &&
+        correctAnswers[10].every(val => checkedBoxes.includes(val));
+
+      if (isQ10Correct) {
+        score++;
+        resultMsg10.classList.add('bg-emerald-100', 'text-emerald-800', 'border', 'border-emerald-300');
+        resultMsg10.innerHTML = '⭕ <strong>정답이에요! 알맞은 것을 모두 잘 찾았어요! 🎉</strong>';
+      } else {
+        resultMsg10.classList.add('bg-rose-100', 'text-rose-800', 'border', 'border-rose-300');
+        resultMsg10.innerHTML = '❌ <strong>틀렸어요! 알맞은 보기를 다시 골라보세요! 🤔</strong>';
+      }
+      resultMsg10.classList.remove('hidden');
+
+      // 점수 집계 및 초등학생 맞춤형 피드백 표시
+      finalScoreEl.textContent = `${score * 10}점 (10문제 중 ${score}문제 정답!)`;
+
+      const nextBtnWrapper1 = document.getElementById('nextBtnWrapper1');
+      const retryGuide1 = document.getElementById('retryGuide1');
+
+      if (score === 10) {
+        badgeEmojiEl.textContent = '👑';
+        scoreCommentEl.textContent = '와우! 100점 만점! 고운 말 지킴이 대장이에요! 2탄이 열렸어요! 🥳💖';
+        isPage1Completed = true;
+        nextBtnWrapper1.classList.remove('hidden');
+        retryGuide1.classList.add('hidden');
+        triggerConfetti();
+      } else {
+        isPage1Completed = false;
+        nextBtnWrapper1.classList.add('hidden');
+        retryGuide1.classList.remove('hidden');
+        if (score >= 8) {
+          badgeEmojiEl.textContent = '🌟';
+          scoreCommentEl.textContent = '아쉬워요! 거의 다 맞혔어요. 틀린 문제를 다시 고쳐 100점에 도전해 봐요! 👍✨';
+          triggerConfettiMini();
+        } else if (score >= 5) {
+          badgeEmojiEl.textContent = '🐥';
+          scoreCommentEl.textContent = '참 잘했어요! 틀린 문제를 다시 고민해서 다 맞혀봐요! 💪😊';
+        } else {
+          badgeEmojiEl.textContent = '🌱';
+          scoreCommentEl.textContent = '차근차근 다시 풀어보며 100점에 도전해 봐요! 힘내요! 🎈';
+        }
+      }
+
+      updateTabStyles(1);
+
+      resultBox.classList.remove('hidden');
+      resultBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    // 2페이지 퀴즈 제출 및 채점
+    const form2 = document.getElementById('quizForm2');
+    const resultBox2 = document.getElementById('resultBox2');
+    const finalScoreEl2 = document.getElementById('finalScore2');
+    const scoreCommentEl2 = document.getElementById('scoreComment2');
+    const badgeEmojiEl2 = document.getElementById('badgeEmoji2');
+    const resetBtn2 = document.getElementById('resetBtn2');
+
+    form2.addEventListener('submit', function (e) {
+      e.preventDefault();
+      let score = 0;
+
+      // 2페이지 1 ~ 9번 채점
+      for (let i = 1; i <= 9; i++) {
+        const selected = form2.querySelector(`input[name="p2_q${i}"]:checked`);
+        const block = form2.querySelector(`section[data-q="${i}"]`);
+        const resultMsg = block.querySelector('.result-msg');
+        resultMsg.className = 'result-msg mt-3 text-sm font-bold p-3 rounded-xl';
+
+        if (selected && selected.value === correctAnswersPage2[i]) {
+          score++;
+          resultMsg.classList.add('bg-emerald-100', 'text-emerald-800', 'border', 'border-emerald-300');
+          resultMsg.innerHTML = '⭕ <strong>정답이에요! 참 잘했어요! 🎉</strong>';
+        } else {
+          resultMsg.classList.add('bg-rose-100', 'text-rose-800', 'border', 'border-rose-300');
+          resultMsg.innerHTML = '❌ <strong>틀렸어요! 다시 한번 꼼꼼하게 생각해 보세요! 🤔</strong>';
+        }
+        resultMsg.classList.remove('hidden');
+      }
+
+      // 2페이지 10번 채점 (복수 정답: 1, 2, 3, 4)
+      const checkedBoxes = Array.from(form2.querySelectorAll('input[name="p2_q10"]:checked')).map(cb => cb.value);
+      const block10 = form2.querySelector('section[data-q="10"]');
+      const resultMsg10 = block10.querySelector('.result-msg');
+      resultMsg10.className = 'result-msg mt-3 text-sm font-bold p-3 rounded-xl';
+
+      const isQ10Correct = checkedBoxes.length === correctAnswersPage2[10].length &&
+        correctAnswersPage2[10].every(val => checkedBoxes.includes(val));
+
+      if (isQ10Correct) {
+        score++;
+        resultMsg10.classList.add('bg-emerald-100', 'text-emerald-800', 'border', 'border-emerald-300');
+        resultMsg10.innerHTML = '⭕ <strong>정답이에요! 알맞은 것을 모두 잘 찾았어요! 🎉</strong>';
+      } else {
+        resultMsg10.classList.add('bg-rose-100', 'text-rose-800', 'border', 'border-rose-300');
+        resultMsg10.innerHTML = '❌ <strong>틀렸어요! 알맞은 보기를 다시 골라보세요! 🤔</strong>';
+      }
+      resultMsg10.classList.remove('hidden');
+
+      // 2페이지 점수 집계 및 초등학생 맞춤형 피드백
+      finalScoreEl2.textContent = `${score * 10}점 (10문제 중 ${score}문제 정답!)`;
+
+      const nextBtnWrapper2 = document.getElementById('nextBtnWrapper2');
+      const retryGuide2 = document.getElementById('retryGuide2');
+
+      if (score === 10) {
+        badgeEmojiEl2.textContent = '👑';
+        scoreCommentEl2.textContent = '와우! 100점 만점! 칭찬과 조언의 달인이에요! 3탄이 열렸어요! 🥳💖';
+        isPage2Completed = true;
+        nextBtnWrapper2.classList.remove('hidden');
+        retryGuide2.classList.add('hidden');
+        triggerConfetti();
+      } else {
+        isPage2Completed = false;
+        nextBtnWrapper2.classList.add('hidden');
+        retryGuide2.classList.remove('hidden');
+        if (score >= 8) {
+          badgeEmojiEl2.textContent = '🌟';
+          scoreCommentEl2.textContent = '아쉬워요! 조금만 더 생각해서 틀린 문제를 고쳐 100점을 채워봐요! 👍✨';
+          triggerConfettiMini();
+        } else if (score >= 5) {
+          badgeEmojiEl2.textContent = '🐥';
+          scoreCommentEl2.textContent = '참 잘했어요! 틀린 문제를 고쳐서 다 맞혀봐요! 💪😊';
+        } else {
+          badgeEmojiEl2.textContent = '🌱';
+          scoreCommentEl2.textContent = '다시 한 번 차근차근 읽어보고 100점에 도전해 봐요! 🎈';
+        }
+      }
+
+      updateTabStyles(2);
+
+      resultBox2.classList.remove('hidden');
+      resultBox2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    // 팡파레 효과 함수
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    function triggerConfettiMini() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    // 다시 풀기 초기화 (1페이지)
+    resetBtn.addEventListener('click', function () {
+      form.reset();
+      form.querySelectorAll('.result-msg').forEach(el => el.classList.add('hidden'));
+      resultBox.classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // 다시 풀기 초기화 (2페이지)
+    resetBtn2.addEventListener('click', function () {
+      form2.reset();
+      form2.querySelectorAll('.result-msg').forEach(el => el.classList.add('hidden'));
+      resultBox2.classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // 최초 탭 상태 초기화
+    updateTabStyles(1);
+  </script>
+</body>
+</html>
