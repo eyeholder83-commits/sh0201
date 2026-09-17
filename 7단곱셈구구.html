@@ -1,0 +1,2404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>초등 2학년 곱셈구구 & 비밀 키워드</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&family=Noto+Sans+KR:wght@500;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
+      background: radial-gradient(circle at 50% 0%, #eff6ff 0%, #e0f2fe 40%, #f1f5f9 100%);
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .font-jua {
+      font-family: 'Jua', sans-serif;
+    }
+
+    /* 숫자 입력칸 스타일 */
+    .num-input {
+      border: 2.5px solid #38bdf8;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: 800;
+      color: #0369a1;
+      background-color: #ffffff;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .num-input:focus {
+      border-color: #0284c7;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+      transform: scale(1.03);
+    }
+    .num-input.correct {
+      border-color: #22c55e !important;
+      background-color: #f0fdf4 !important;
+      color: #15803d !important;
+    }
+    .num-input.wrong {
+      border-color: #ef4444 !important;
+      background-color: #fef2f2 !important;
+      color: #b91c1c !important;
+      animation: shake 0.3s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    @keyframes modalPop {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .animate-modal {
+      animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes softFloat {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-3px) scale(1.03); }
+    }
+
+    .animate-float {
+      animation: softFloat 2.2s infinite ease-in-out;
+    }
+
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #certificate-print-area, #certificate-print-area * {
+        visibility: visible;
+      }
+      #certificate-print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        box-shadow: none;
+        border: 4px double #0284c7;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col items-center justify-between p-2 sm:p-5 relative overflow-x-hidden">
+
+  <!-- Confetti Canvas for Celebrations -->
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
+
+  <header class="w-full max-w-5xl bg-white/95 backdrop-blur-md rounded-3xl shadow-sm border border-sky-200/80 p-3 sm:p-4 mb-3">
+    <div class="flex items-center justify-between gap-2 mb-2 px-1">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl animate-float">🌟</span>
+        <h1 class="font-jua text-base sm:text-xl text-sky-900 tracking-tight">초등 2학년 2학기 · 곱셈구구 탐험 & 비밀 키워드</h1>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <!-- Student Badge -->
+        <div id="header-student-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-sky-50 border border-sky-300 rounded-full text-xs font-jua text-sky-800">
+          <span>👤</span>
+          <span id="header-student-name" class="font-bold">학생 미등록</span>
+          <span id="header-letters-count" class="text-amber-600 font-bold ml-1">(0/6)</span>
+        </div>
+
+        <!-- Sound Button -->
+        <button id="sound-btn" onclick="toggleSound()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-xs sm:text-sm font-jua text-slate-700 transition-colors shadow-xs active:scale-95 cursor-pointer">
+          <span id="sound-icon">🔊</span>
+          <span id="sound-label" class="hidden sm:inline">효과음</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step Navigation Tabs (Total 8 tabs: Cover + 5 Learning Pages + 40s Challenge + Keyword) -->
+    <nav class="grid grid-cols-4 sm:grid-cols-8 gap-1 text-center font-jua text-xs sm:text-sm" aria-label="단계 탐색">
+      <button onclick="setPage(1)" id="tab-1" class="py-2 px-1 rounded-xl transition-all duration-150 cursor-pointer">📖 표지</button>
+      <button onclick="setPage(2)" id="tab-2" class="py-2 px-1 rounded-xl transition-all duration-150 cursor-pointer">📄 1. 뛰어 세기</button>
+      <button onclick="setPage(3)" id="tab-3" class="py-2 px-1 rounded-xl transition-all duration-150 cursor-pointer">🎲 2. 구간 거리</button>
+      <button onclick="setPage(4)" id="tab-4" class="py-2 px-1 rounded-xl transition-all duration-150 cursor-pointer">✨ 3. 곱셈 원리</button>
+      <button onclick="setPage(5)" id="tab-5" class="py-2 px-1 rounded-xl transition-all duration-150 cursor-pointer">⚪ 4. 묶어 세기</button>
+      <button onclick="setPage(6)" id="tab-6" class="py-2 px-1 rounded-xl transition-all duration-150 cursor-pointer">🔢 5. 곱셈 완성</button>
+      <button onclick="setPage(7)" id="tab-7" class="py-2 px-1 rounded-xl transition-all duration-150 text-rose-600 font-bold cursor-pointer">⏱️ 6. 40초</button>
+      <button onclick="setPage(8)" id="tab-8" class="py-2 px-1 rounded-xl transition-all duration-150 text-amber-600 font-bold cursor-pointer">🎁 7. 키워드</button>
+    </nav>
+  </header>
+
+  <main class="w-full max-w-5xl bg-white rounded-3xl shadow-sm border border-slate-200/90 p-4 sm:p-7 flex-1 flex flex-col items-center justify-between min-h-[580px]">
+    <!-- Dynamic Learning Screen Container -->
+    <div id="page-content" class="w-full flex flex-col items-center flex-1 justify-start pt-1"></div>
+
+    <!-- Bottom Step Navigation Controls -->
+    <div id="bottom-nav" class="w-full pt-4 mt-4 border-t border-slate-100 flex items-center justify-between font-jua text-sm sm:text-base">
+      <button id="prev-step-btn" onclick="goPrevPage()" class="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all disabled:opacity-30 disabled:hover:bg-slate-100 cursor-pointer">
+        <span>◀</span> <span>이전 단계</span>
+      </button>
+      <span id="page-indicator" class="text-slate-400 font-bold">1 / 8 단계</span>
+      <button id="next-step-btn" onclick="goNextPage()" class="flex items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white shadow-xs transition-all active:scale-95 disabled:opacity-30 cursor-pointer">
+        <span>다음 단계</span> <span>▶</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- Success / Celebration Modal -->
+  <div id="success-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border-4 border-sky-400 text-center animate-modal relative">
+      <div id="modal-badge-icon" class="text-6xl mb-2 animate-float">🎉👑</div>
+      <div id="modal-badge-label" class="inline-block bg-sky-100 text-sky-800 text-xs font-bold px-3 py-1 rounded-full mb-2">단계 마스터 배지 & 비밀 글자 획득!</div>
+      <h3 id="modal-title" class="font-jua text-2xl sm:text-3xl text-sky-700 mb-2">대단해요! 정답 성공! 🎉</h3>
+      <p id="modal-desc" class="text-slate-600 text-sm sm:text-base font-medium mb-6 leading-relaxed whitespace-pre-line">곱셈구구를 완벽하게 이해하고 있어요!</p>
+      
+      <div class="flex flex-col gap-2">
+        <button id="modal-next-btn" onclick="handleModalNextStep()" class="w-full py-3.5 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-jua text-lg rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2">
+          <span>다음 단계로 출발! 🚀</span>
+        </button>
+        <button onclick="closeModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-jua text-sm rounded-xl transition-all cursor-pointer">
+          이 단계 더 연습하기 🔄
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Alert / Warning Notice Modal -->
+  <div id="notice-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-xl border-2 border-amber-400 text-center animate-modal relative">
+      <div class="text-4xl mb-2">💡</div>
+      <h4 class="font-jua text-xl text-amber-900 mb-2 font-bold">안내</h4>
+      <p id="notice-modal-msg" class="text-slate-600 font-jua text-sm sm:text-base mb-5 whitespace-pre-line"></p>
+      <button onclick="closeNoticeModal()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-jua text-base rounded-xl transition-all active:scale-95 cursor-pointer">
+        확인
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const STUDENT_DB = {
+      '김서아': '마음이참예뻐',
+      '김수현': '수학을잘해요',
+      '김윤아': '생각이참깊어',
+      '김태영': '도전을잘해요',
+      '김하랑': '용기가참멋져',
+      '나예린': '글씨를잘써요',
+      '박민제': '질문을잘해요',
+      '박선우': '끝까지노력해',
+      '양수빈': '웃음이참밝아',
+      '유소영': '노래를잘해요',
+      '이대운': '책임감이좋아',
+      '이새봄': '친구말잘들어',
+      '이서율': '책읽기잘해요',
+      '이진서': '춤추는게멋져',
+      '이채원': '그림을잘그려',
+      '이초은': '만들기참잘해',
+      '이태환': '약속을잘지켜',
+      '이하린': '발표를잘해요',
+      '한규빈': '정리를잘해요',
+      '한유은': '배려가참좋아',
+      '현지우': '친구를잘도와',
+      '황지우': '인사를잘해요',
+      '이승찬': '대한민국선생'
+    };
+
+    let currentStudent = '';
+    let studentTargetSentence = '';
+    let unlockedLetters = {};
+    let currentPage = 1;
+    let nextTargetPage = 0;
+
+    // 1단계 (뛰어 세기) 연속 정답 스트릭 & 카드 빈칸 배치 상태
+    let p1Streak = 0;
+    let p1CardLayout = [];
+
+    // 2단계 (구간 거리) 연속 정답 스트릭 상태
+    let p2Streak = 0;
+
+    // 3단계 (곱셈 원리) 연속 정답 스트릭 상태
+    let p3Streak = 0;
+
+    // 4단계 (묶어 세기) 연속 정답 스트릭 상태
+    let p4Streak = 0;
+
+    // 5단계 (곱셈 완성) 연속 정답 스트릭 상태
+    let p5Streak = 0;
+
+    function randomizeP1() {
+      generateP1CardLayout();
+      renderPage1();
+    }
+
+    function generateP1CardLayout() {
+      // 4개 행 (1, 2, 3, 4) 중 3개 행에 각각 'dan(7)', 'multiplier', 'product' 빈칸을 하나씩 부여
+      // 나머지 1개 행은 빈칸 없음(none)
+      const roles = ['dan', 'multiplier', 'product', 'none'];
+      roles.sort(() => Math.random() - 0.5);
+
+      p1CardLayout = [1, 2, 3, 4].map((m, idx) => ({
+        multiplier: m,
+        product: 7 * m,
+        blankType: roles[idx]
+      }));
+    }
+
+    function showNoticeModal(message) {
+      const modal = document.getElementById('notice-modal');
+      const msgEl = document.getElementById('notice-modal-msg');
+      if (modal && msgEl) {
+        msgEl.innerText = message;
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeNoticeModal() {
+      const modal = document.getElementById('notice-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function registerStudent(name) {
+      const trimmed = name ? name.trim() : '';
+      if (!trimmed) {
+        showNoticeModal('🔒 이름을 입력하거나 명단에서 선택해 주세요!\n이름을 등록해야 다음 단계로 나아갈 수 있습니다.');
+        return false;
+      }
+
+      const prevStudent = currentStudent;
+      currentStudent = trimmed;
+      studentTargetSentence = STUDENT_DB[trimmed] || '최고의우리친구';
+
+      if (prevStudent !== currentStudent) {
+        for (const step in unlockedLetters) {
+          const charIdx = parseInt(step, 10) - 1;
+          unlockedLetters[step] = studentTargetSentence.charAt(charIdx) || '★';
+        }
+      }
+
+      const badge = document.getElementById('header-student-badge');
+      const sName = document.getElementById('header-student-name');
+      if (badge && sName) {
+        badge.classList.remove('hidden');
+        sName.innerText = currentStudent;
+      }
+      updateHeaderLettersTracker();
+      return true;
+    }
+
+    function awardKeywordLetter(stepNum) {
+      if (!currentStudent) {
+        currentStudent = '친구';
+        studentTargetSentence = '최고의우리친구';
+      }
+      const charIndex = stepNum - 1;
+      const letter = studentTargetSentence.charAt(charIndex) || '★';
+      unlockedLetters[stepNum] = letter;
+      updateHeaderLettersTracker();
+      return letter;
+    }
+
+    function updateHeaderLettersTracker() {
+      const countEl = document.getElementById('header-letters-count');
+      const count = Object.keys(unlockedLetters).length;
+      if (countEl) countEl.innerText = `(${count}/6)`;
+    }
+
+    let audioCtx = null;
+    let isMuted = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleSound() {
+      isMuted = !isMuted;
+      const icon = document.getElementById('sound-icon');
+      const label = document.getElementById('sound-label');
+      if (isMuted) {
+        icon.innerText = '🔇';
+        label.innerText = '음소거';
+      } else {
+        icon.innerText = '🔊';
+        label.innerText = '효과음';
+        initAudio();
+        playSound('correct');
+      }
+    }
+
+    function playSound(type) {
+      if (isMuted) return;
+      try {
+        initAudio();
+        if (!audioCtx) return;
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'correct') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.setValueAtTime(659.25, now + 0.08);
+          osc.frequency.setValueAtTime(783.99, now + 0.16);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+          osc.start(now);
+          osc.stop(now + 0.36);
+        } else if (type === 'wrong') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.setValueAtTime(160, now + 0.12);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === 'fanfare') {
+          const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+          notes.forEach((freq, idx) => {
+            const noteOsc = audioCtx.createOscillator();
+            const noteGain = audioCtx.createGain();
+            noteOsc.connect(noteGain);
+            noteGain.connect(audioCtx.destination);
+            const startTime = now + idx * 0.09;
+            noteOsc.frequency.setValueAtTime(freq, startTime);
+            noteGain.gain.setValueAtTime(0.2, startTime);
+            noteGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+            noteOsc.start(startTime);
+            noteOsc.stop(startTime + 0.3);
+          });
+        }
+      } catch (e) {
+        console.warn('Audio not available', e);
+      }
+    }
+
+    function triggerConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#0284c7', '#38bdf8', '#f59e0b', '#10b981', '#ec4899', '#6366f1'];
+
+      for (let i = 0; i < 90; i++) {
+        particles.push({
+          x: canvas.width * 0.5,
+          y: canvas.height * 0.4,
+          r: Math.random() * 6 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: (Math.random() - 0.5) * 16,
+          vy: (Math.random() - 0.75) * 16,
+          alpha: 1,
+          decay: Math.random() * 0.015 + 0.01
+        });
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let active = false;
+        particles.forEach(p => {
+          if (p.alpha > 0) {
+            active = true;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.38;
+            p.alpha -= p.decay;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        });
+        if (active) {
+          requestAnimationFrame(render);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      render();
+    }
+
+    function renderCoverPage() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+      
+      const studentOptions = Object.keys(STUDENT_DB).map(name => `
+        <option value="${name}" ${currentStudent === name ? 'selected' : ''}>${name}</option>
+      `).join('');
+
+      const slotsHtml = [1, 2, 3, 4, 5, 6].map(num => {
+        const letter = unlockedLetters[num];
+        if (letter) {
+          return `
+            <div class="flex flex-col items-center">
+              <span class="text-[10px] text-amber-700 font-bold mb-0.5">${num}단계</span>
+              <div class="w-10 h-12 sm:w-12 sm:h-14 rounded-xl bg-gradient-to-b from-amber-200 to-amber-300 border-2 border-amber-400 text-amber-950 font-jua text-xl sm:text-2xl flex items-center justify-center font-bold shadow-xs">
+                ${letter}
+              </div>
+            </div>
+          `;
+        }
+        return `
+          <div class="flex flex-col items-center">
+            <span class="text-[10px] text-slate-400 font-medium mb-0.5">${num}단계</span>
+            <div class="w-10 h-12 sm:w-12 sm:h-14 rounded-xl bg-slate-100 border-2 border-slate-200 text-slate-400 font-jua text-sm sm:text-base flex items-center justify-center font-bold shadow-inner">
+              ${num}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center justify-center py-3 px-2 text-center max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-5 py-2 bg-emerald-100 text-emerald-900 rounded-full font-jua text-sm sm:text-base mb-3 shadow-xs border border-emerald-300">
+            <span>✨</span> <span>초등 수학 2학년 2학기 · 곱셈구구 탐험</span>
+          </div>
+          
+          <h2 class="font-jua text-3xl sm:text-5xl text-slate-900 tracking-tight mb-2 drop-shadow-xs">
+            곱셈구구 & 비밀 키워드
+          </h2>
+          
+          <p class="font-jua text-slate-700 text-base sm:text-xl mb-4 font-medium">
+            뛰어 세기부터 40초 챌린지까지 도전하고 6개의 비밀 글자를 모아 보물 키워드를 완성하세요! 🚀
+          </p>
+
+          <!-- Student Name Registration Card -->
+          <div class="w-full bg-white rounded-3xl p-5 border-2 border-emerald-400 shadow-sm mb-4 flex flex-col items-center">
+            <div class="font-jua text-slate-800 text-base sm:text-lg mb-3 flex items-center gap-2 font-bold">
+              <span>👤</span> <span>학생의 이름을 입력하거나 선택해 주세요 (필수):</span>
+            </div>
+            
+            <div class="w-full max-w-md flex items-center gap-2 mb-2">
+              <input 
+                type="text" 
+                id="cover-student-input" 
+                value="${currentStudent}" 
+                placeholder="이름 입력 (예: 김서아)" 
+                class="flex-1 h-12 px-4 rounded-2xl border-2 border-emerald-400 focus:outline-none focus:ring-4 focus:ring-emerald-200 font-jua text-base sm:text-lg text-center bg-emerald-50/30 text-emerald-950 placeholder:text-slate-400"
+              />
+              <select 
+                id="cover-student-select" 
+                onchange="onSelectStudent(this.value)" 
+                class="h-12 px-3 rounded-2xl border-2 border-slate-300 bg-slate-50 font-jua text-sm sm:text-base text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer"
+              >
+                <option value="">명단에서 선택 ∨</option>
+                ${studentOptions}
+              </select>
+            </div>
+            <p class="font-jua text-xs sm:text-sm text-rose-600 font-bold">
+              🔒 표지에 이름을 써야 다음 단계로 나아갈 수 있어요!
+            </p>
+          </div>
+
+          <!-- Challenge Rule Banner -->
+          <div class="inline-flex items-center justify-center flex-wrap gap-2 px-5 py-2.5 bg-rose-50 border-2 border-rose-200 text-rose-700 rounded-2xl font-jua text-xs sm:text-sm mb-4 shadow-2xs leading-relaxed">
+            <span class="font-black text-sm sm:text-base">🚨 [도전 규칙]</span> 
+            <span>1~5단계 학습 미션을 풀고 1~5번째 글자를 얻은 뒤, 6단계 40초 챌린지를 성공하면 6번째 글자까지 모두 열립니다!</span>
+          </div>
+
+          <!-- Secret 6-letter Keyword Slot Collection -->
+          <div class="w-full bg-white rounded-2xl p-4 sm:p-5 border-2 border-emerald-300 shadow-xs flex flex-col items-center mb-5">
+            <span class="text-xs sm:text-sm font-jua text-slate-600 font-bold mb-3">
+              나의 6글자 키워드 수집 현황
+            </span>
+            <div class="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+              ${slotsHtml}
+            </div>
+          </div>
+
+          <!-- Start Button -->
+          <button onclick="handleStartFromCover()" class="py-3.5 px-10 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-jua text-xl sm:text-2xl rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+            <span>🚀 1단계 뛰어 세기 시작하기</span>
+          </button>
+        </div>
+      `;
+
+      const inp = document.getElementById('cover-student-input');
+      if (inp) {
+        inp.addEventListener('keydown', e => {
+          if (e.key === 'Enter') handleStartFromCover();
+        });
+      }
+    }
+
+    function onSelectStudent(val) {
+      if (val) {
+        const inp = document.getElementById('cover-student-input');
+        if (inp) inp.value = val;
+        registerStudent(val);
+        renderCoverPage();
+      }
+    }
+
+    function handleStartFromCover() {
+      const inp = document.getElementById('cover-student-input');
+      const name = inp ? inp.value.trim() : '';
+      if (!name) {
+        showNoticeModal('🔒 이름을 입력하거나 명단에서 선택해 주세요!\n이름을 등록해야 다음 단계로 나아갈 수 있습니다.');
+        if (inp) inp.focus();
+        return;
+      }
+      registerStudent(name);
+      setPage(2, true);
+    }
+
+    function renderPage1() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      if (!p1CardLayout || p1CardLayout.length !== 4) {
+        generateP1CardLayout();
+      }
+
+      const rowsHtml = p1CardLayout.map((row, idx) => {
+        const topPositions = ['top-[21px]', 'top-[121px]', 'top-[221px]', 'top-[321px]'];
+        const topClass = topPositions[idx];
+        const m = row.multiplier;
+        const prod = row.product;
+
+        let content = '';
+        if (row.blankType === 'dan') {
+          // 7 자리가 네모
+          content = `
+            <input type="text" maxlength="2" data-ans="7" class="p1-input num-input w-12 h-11 text-2xl" />
+            <span class="text-3xl font-black text-slate-800 whitespace-nowrap">× ${m} ＝ ${prod}</span>
+          `;
+        } else if (row.blankType === 'multiplier') {
+          // 곱하는 수 자리가 네모
+          content = `
+            <span class="text-3xl font-black text-slate-800 whitespace-nowrap">7 ×</span>
+            <input type="text" maxlength="2" data-ans="${m}" class="p1-input num-input w-12 h-11 text-2xl" />
+            <span class="text-3xl font-black text-slate-800 whitespace-nowrap">＝ ${prod}</span>
+          `;
+        } else if (row.blankType === 'product') {
+          // 계산결과 자리가 네모
+          content = `
+            <span class="text-3xl font-black text-slate-800 whitespace-nowrap">7 × ${m} ＝</span>
+            <input type="text" maxlength="2" data-ans="${prod}" class="p1-input num-input w-16 h-11 text-2xl" />
+          `;
+        } else {
+          // 빈칸 없음 (완전한 식)
+          content = `
+            <span class="text-3xl font-black tracking-wider text-slate-800 whitespace-nowrap">7 × ${m} ＝ ${prod}</span>
+          `;
+        }
+
+        return `
+          <div class="absolute left-0 ${topClass} w-[230px] h-[58px] bg-[#ecf8e5] border border-[#d2f0c2] rounded-2xl flex items-center justify-center gap-1.5 px-3 shadow-sm z-10">
+            ${content}
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="w-full max-w-4xl p-2 sm:p-4 flex flex-col items-center">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 w-full">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-blue-600"></div>
+              <h2 class="text-xl md:text-2xl font-black tracking-tight text-slate-800">
+                네모 안에 알맞은 수를 써넣으세요.
+              </h2>
+            </div>
+            
+            <div class="flex items-center gap-2 bg-sky-50 px-3.5 py-1.5 rounded-2xl border border-sky-200">
+              <span class="text-xs sm:text-sm font-jua text-slate-600 font-bold">⭐ 연속 성공:</span>
+              <span id="p1-streak-stars" class="text-amber-500 font-bold tracking-widest text-base sm:text-lg">
+                ${'★'.repeat(p1Streak)}${'☆'.repeat(5 - p1Streak)}
+              </span>
+              <span class="text-xs sm:text-sm font-jua font-bold text-sky-800">(${p1Streak}/5)</span>
+            </div>
+          </div>
+
+          <div class="w-full overflow-x-auto pb-4">
+            <div class="min-w-[840px] flex items-start justify-between gap-6">
+
+              <!-- [왼쪽 열] 4개 수직선 트랙 (그림 원형 유지) -->
+              <div class="w-[470px] h-[400px] flex flex-col justify-start">
+                
+                <!-- 트랙 1 -->
+                <div class="h-[100px] flex items-center">
+                  <svg viewBox="0 0 460 95" class="w-full h-full overflow-visible">
+                    <rect x="0" y="58" width="170" height="24" rx="6" fill="#c7eeff" />
+                    
+                    <g transform="translate(18, 12)">
+                      <rect x="13" y="18" width="6" height="30" fill="#8c6239" />
+                      <rect x="0" y="0" width="32" height="22" rx="4" fill="#a06e48" />
+                      <text x="16" y="15" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="900">출발</text>
+                    </g>
+
+                    <path d="M 34 50 Q 82 24, 130 50" fill="none" stroke="#db2777" stroke-width="2.5" stroke-dasharray="4 3"/>
+                    <text x="82" y="32" text-anchor="middle" fill="#db2777" font-size="12" font-weight="800">7 cm</text>
+
+                    <line x1="130" y1="44" x2="130" y2="70" stroke="#facc15" stroke-width="3" />
+                    <circle cx="130" cy="30" r="14" fill="#f1ece1" stroke="#c8bca7" stroke-width="2"/>
+                    <text x="130" y="35" text-anchor="middle" fill="#334155" font-size="15" font-weight="900">1</text>
+
+                    <circle cx="34" cy="67" r="14" fill="#f97316" fill-opacity="0.25" stroke="#f97316" stroke-width="2"/>
+                    <circle cx="130" cy="67" r="14" fill="#f97316" stroke="#ea580c" stroke-width="2.5"/>
+
+                    <line x1="34" y1="78" x2="122" y2="78" stroke="#0284c7" stroke-width="3.5" />
+                    <polygon points="128,78 120,74 120,82" fill="#0284c7" />
+                  </svg>
+                </div>
+
+                <!-- 트랙 2 -->
+                <div class="h-[100px] flex items-center">
+                  <svg viewBox="0 0 460 95" class="w-full h-full overflow-visible">
+                    <rect x="0" y="58" width="265" height="24" rx="6" fill="#c7eeff" />
+
+                    <path d="M 34 50 Q 82 24, 130 50" fill="none" stroke="#db2777" stroke-width="2.5" stroke-dasharray="4 3"/>
+                    <text x="82" y="32" text-anchor="middle" fill="#db2777" font-size="12" font-weight="800">7 cm</text>
+                    <path d="M 130 50 Q 178 24, 226 50" fill="none" stroke="#db2777" stroke-width="2.5" stroke-dasharray="4 3"/>
+                    <text x="178" y="32" text-anchor="middle" fill="#db2777" font-size="12" font-weight="800">7 cm</text>
+
+                    <line x1="130" y1="44" x2="130" y2="70" stroke="#facc15" stroke-width="3" />
+                    <circle cx="130" cy="30" r="14" fill="#f1ece1" stroke="#c8bca7" stroke-width="2"/>
+                    <text x="130" y="35" text-anchor="middle" fill="#334155" font-size="15" font-weight="900">1</text>
+
+                    <line x1="226" y1="44" x2="226" y2="70" stroke="#facc15" stroke-width="3" />
+                    <circle cx="226" cy="30" r="14" fill="#f1ece1" stroke="#c8bca7" stroke-width="2"/>
+                    <text x="226" y="35" text-anchor="middle" fill="#334155" font-size="15" font-weight="900">2</text>
+
+                    <circle cx="34" cy="67" r="14" fill="#10b981" fill-opacity="0.25" stroke="#10b981" stroke-width="2"/>
+                    <circle cx="226" cy="67" r="14" fill="#10b981" stroke="#059669" stroke-width="2.5"/>
+
+                    <line x1="34" y1="78" x2="218" y2="78" stroke="#0284c7" stroke-width="3.5" />
+                    <polygon points="224,78 216,74 216,82" fill="#0284c7" />
+                  </svg>
+                </div>
+
+                <!-- 트랙 3 -->
+                <div class="h-[100px] flex items-center">
+                  <svg viewBox="0 0 460 95" class="w-full h-full overflow-visible">
+                    <rect x="0" y="58" width="360" height="24" rx="6" fill="#c7eeff" />
+
+                    <path d="M 34 50 Q 82 24, 130 50" fill="none" stroke="#db2777" stroke-width="2.5" stroke-dasharray="4 3"/>
+                    <text x="82" y="32" text-anchor="middle" fill="#db2777" font-size="12" font-weight="800">7 cm</text>
+                    <path d="M 130 50 Q 178 24, 226 50" fill="none" stroke="#db2777" stroke-width="2.5" stroke-dasharray="4 3"/>
+                    <text x="178" y="32" text-anchor="middle" fill="#db2777" font-size="12" font-weight="800">7 cm</text>
+                    <path d="M 226 50 Q 274 24, 322 50" fill="none" stroke="#db2777" stroke-width="2.5" stroke-dasharray="4 3"/>
+                    <text x="274" y="32" text-anchor="middle" fill="#db2777" font-size="12" font-weight="800">7 cm</text>
+
+                    <line x1="130" y1="44" x2="130" y2="70" stroke="#facc15" stroke-width="3" />
+                    <circle cx="130" cy="30" r="14" fill="#f1ece1" stroke="#c8bca7" stroke-width="2"/>
+                    <text x="130" y="35" text-anchor="middle" fill="#334155" font-size="15" font-weight="900">1</text>
+
+                    <line x1="226" y1="44" x2="226" y2="70" stroke="#facc15" stroke-width="3" />
+                    <circle cx="226" cy="30" r="14" fill="#f1ece1" stroke="#c8bca7" stroke-width="2"/>
+                    <text x="226" y="35" text-anchor="middle" fill="#334155" font-size="15" font-weight="900">2</text>
+
+                    <line x1="322" y1="44" x2="322" y2="70" stroke="#facc15" stroke-width="3" />
+                    <circle cx="322" cy="30" r="14" fill="#f1ece1" stroke="#c8bca7" stroke-width="2"/>
+                    <text x="322" y="35" text-anchor="middle" fill="#334155" font-size="15" font-weight="900">3</text>
+
+                    <circle cx="34" cy="67" r="14" fill="#8b5cf6" fill-opacity="0.25" stroke="#8b5cf6" stroke-width="2"/>
+                    <circle cx="322" cy="67" r="14" fill="#8b5cf6" stroke="#7c3aed" stroke-width="2.5"/>
+
+                    <line x1="34" y1="78" x2="314" y2="78" stroke="#0284c7" stroke-width="3.5" />
+                    <polygon points="320,78 312,74 312,82" fill="#0284c7" />
+                  </svg>
+                </div>
+
+                <!-- 트랙 4 -->
+                <div class="h-[100px] flex items-center">
+                  <svg viewBox="0 0 460 95" class="w-full h-full overflow-visible">
+                    <rect x="0" y="58" width="455" height="24" rx="6" fill="#c7eeff" />
+
+                    <path d="M 34 50 Q 82 24, 130 50" fill="none" stroke="#db2777" stroke-width="2.5" stroke-dasharray="4 3"/>
+                    <text x="82" y="32" text-anchor="middle" fill="#db2777" font-size="12" font-weight="800">7 cm</text>
+                    <path d="M 130 50 Q 178 24, 226 50" fill="none" stroke="#db2777" stroke-width="2.5" stroke-dasharray="4 3"/>
+                    <text x="178" y="32" text-anchor="middle" fill="#db2777" font-size="12" font-weight="800">7 cm</text>
+                    <path d="M 226 50 Q 274 24, 322 50" fill="none" stroke="#db2777" stroke-width="2.5" stroke-dasharray="4 3"/>
+                    <text x="274" y="32" text-anchor="middle" fill="#db2777" font-size="12" font-weight="800">7 cm</text>
+                    <path d="M 322 50 Q 370 24, 418 50" fill="none" stroke="#db2777" stroke-width="2.5" stroke-dasharray="4 3"/>
+                    <text x="370" y="32" text-anchor="middle" fill="#db2777" font-size="12" font-weight="800">7 cm</text>
+
+                    <line x1="130" y1="44" x2="130" y2="70" stroke="#facc15" stroke-width="3" />
+                    <circle cx="130" cy="30" r="14" fill="#f1ece1" stroke="#c8bca7" stroke-width="2"/>
+                    <text x="130" y="35" text-anchor="middle" fill="#334155" font-size="15" font-weight="900">1</text>
+
+                    <line x1="226" y1="44" x2="226" y2="70" stroke="#facc15" stroke-width="3" />
+                    <circle cx="226" cy="30" r="14" fill="#f1ece1" stroke="#c8bca7" stroke-width="2"/>
+                    <text x="226" y="35" text-anchor="middle" fill="#334155" font-size="15" font-weight="900">2</text>
+
+                    <line x1="322" y1="44" x2="322" y2="70" stroke="#facc15" stroke-width="3" />
+                    <circle cx="322" cy="30" r="14" fill="#f1ece1" stroke="#c8bca7" stroke-width="2"/>
+                    <text x="322" y="35" text-anchor="middle" fill="#334155" font-size="15" font-weight="900">3</text>
+
+                    <line x1="418" y1="44" x2="418" y2="70" stroke="#facc15" stroke-width="3" />
+                    <circle cx="418" cy="30" r="14" fill="#f1ece1" stroke="#c8bca7" stroke-width="2"/>
+                    <text x="418" y="35" text-anchor="middle" fill="#334155" font-size="15" font-weight="900">4</text>
+
+                    <circle cx="34" cy="67" r="14" fill="#06b6d4" fill-opacity="0.25" stroke="#06b6d4" stroke-width="2"/>
+                    <circle cx="418" cy="67" r="14" fill="#06b6d4" stroke="#0891b2" stroke-width="2.5"/>
+
+                    <line x1="34" y1="78" x2="410" y2="78" stroke="#0284c7" stroke-width="3.5" />
+                    <polygon points="416,78 408,74 408,82" fill="#0284c7" />
+                  </svg>
+                </div>
+
+              </div>
+
+              <!-- [오른쪽 열] 7단 곱셈 카드(네모 3개) + 연속 C곡선 화살표 + 화살표 옆 ＋ [ ] -->
+              <div class="relative w-[370px] h-[400px] shrink-0">
+                <!-- C곡선 화살표 (원형 유지) -->
+                <svg class="absolute inset-0 w-full h-full pointer-events-none z-20" viewBox="0 0 370 400">
+                  <path d="M 230 50 C 278 50, 278 150, 243 150" fill="none" stroke="#0ea5e9" stroke-width="3.5" stroke-linecap="round"/>
+                  <polygon points="230,150 245,142 245,158" fill="#0ea5e9"/>
+
+                  <path d="M 230 150 C 278 150, 278 250, 243 250" fill="none" stroke="#0ea5e9" stroke-width="3.5" stroke-linecap="round"/>
+                  <polygon points="230,250 245,242 245,258" fill="#0ea5e9"/>
+
+                  <path d="M 230 250 C 278 250, 278 350, 243 350" fill="none" stroke="#0ea5e9" stroke-width="3.5" stroke-linecap="round"/>
+                  <polygon points="230,350 245,342 245,358" fill="#0ea5e9"/>
+                </svg>
+
+                <!-- 4개 곱셈 카드 (정확히 3개 줄에 7, 곱하는 수, 계산결과 네모가 각각 1개씩 위치) -->
+                ${rowsHtml}
+
+                <!-- 화살표 옆 ＋ [ ] 입력칸 3개 (원형 유지) -->
+                <div class="absolute left-[278px] top-[100px] -translate-y-1/2 flex items-center gap-2 z-10">
+                  <span class="text-2xl font-black text-slate-600 select-none">＋</span>
+                  <input type="text" maxlength="2" data-ans="7" class="p1-input num-input w-14 h-14 text-2xl rounded-xl shadow-sm" />
+                </div>
+
+                <div class="absolute left-[278px] top-[200px] -translate-y-1/2 flex items-center gap-2 z-10">
+                  <span class="text-2xl font-black text-slate-600 select-none">＋</span>
+                  <input type="text" maxlength="2" data-ans="7" class="p1-input num-input w-14 h-14 text-2xl rounded-xl shadow-sm" />
+                </div>
+
+                <div class="absolute left-[278px] top-[300px] -translate-y-1/2 flex items-center gap-2 z-10">
+                  <span class="text-2xl font-black text-slate-600 select-none">＋</span>
+                  <input type="text" maxlength="2" data-ans="7" class="p1-input num-input w-14 h-14 text-2xl rounded-xl shadow-sm" />
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+          <div class="mt-8 pt-6 border-t border-slate-100 flex flex-wrap items-center justify-end gap-3 w-full">
+            <button onclick="resetP1Inputs()" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+              다시 쓰기
+            </button>
+            <button onclick="randomizeP1()" class="px-5 py-2.5 rounded-xl font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer flex items-center gap-1.5">
+              <span>🎲</span> <span>새로운 문제</span>
+            </button>
+            <button onclick="checkP1Answers()" class="px-7 py-2.5 rounded-xl font-extrabold text-white bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-200 transition-all cursor-pointer">
+              정답 확인
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function resetP1Inputs() {
+      const inputs = document.querySelectorAll('.p1-input');
+      inputs.forEach(input => {
+        input.value = '';
+        input.classList.remove('correct', 'wrong');
+      });
+      const firstInput = document.querySelector('.p1-input');
+      if (firstInput) firstInput.focus();
+    }
+
+    function checkP1Answers() {
+      const inputs = document.querySelectorAll('.p1-input');
+      let allFilled = true;
+      let allCorrect = true;
+
+      inputs.forEach(input => {
+        const expected = input.getAttribute('data-ans').trim();
+        const value = input.value.trim();
+
+        input.classList.remove('correct', 'wrong');
+
+        if (value === '') {
+          allFilled = false;
+          allCorrect = false;
+        } else if (value === expected) {
+          input.classList.add('correct');
+        } else {
+          input.classList.add('wrong');
+          allCorrect = false;
+        }
+      });
+
+      if (!allFilled) {
+        playSound('wrong');
+        showNoticeModal('⚠️ 아직 입력하지 않은 빈칸이 있어요!\n모든 네모칸에 알맞은 수를 적어주세요.');
+        return;
+      }
+
+      if (allCorrect) {
+        playSound('correct');
+        p1Streak++;
+        const starsEl = document.getElementById('p1-streak-stars');
+        if (starsEl) {
+          starsEl.innerText = '★'.repeat(p1Streak) + '☆'.repeat(5 - p1Streak);
+        }
+
+        if (p1Streak >= 5) {
+          playSound('fanfare');
+          triggerConfetti();
+          const letter = awardKeywordLetter(1);
+          p1Streak = 0;
+          openSuccessModal({
+            title: `1단계 5연속 정답 성공! 🎉`,
+            badge: `1단계 마스터 배지 & 비밀 글자 획득!`,
+            desc: `축하합니다! 5번 연속으로 모두 정확하게 맞혔습니다!\n[1번째 비밀 글자: '${letter}']을 획득했습니다!\n다음 2단계(구간 거리)로 이동해 보세요! 🚀`,
+            nextPageNum: 3
+          });
+        } else {
+          showNoticeModal(`🎉 정답입니다! (${p1Streak}/5 성공)\n연속 5번 성공을 향해 다음 문제로 이동합니다! 🚀`);
+          setTimeout(() => {
+            generateP1CardLayout();
+            renderPage1();
+          }, 800);
+        }
+      } else {
+        playSound('wrong');
+        p1Streak = 0;
+        showNoticeModal('❌ 빨간색으로 표시된 칸에 틀린 답이 있어요!\n연속 성공이 0으로 리셋됩니다. 새로운 문제로 다시 도전해 보세요!');
+        setTimeout(() => {
+          generateP1CardLayout();
+          renderPage1();
+        }, 1200);
+      }
+    }
+
+    const p2Colors = [
+      { fill: '#f97316', stroke: '#ea580c', bg: '#ffedd5', text: '#c2410c' },
+      { fill: '#10b981', stroke: '#059669', bg: '#d1fae5', text: '#047857' },
+      { fill: '#8b5cf6', stroke: '#7c3aed', bg: '#ede9fe', text: '#6d28d9' },
+      { fill: '#06b6d4', stroke: '#0891b2', bg: '#cffafe', text: '#0e7490' },
+      { fill: '#f43f5e', stroke: '#e11d48', bg: '#ffe4e6', text: '#be123c' },
+    ];
+
+    function createSVGTrack(start, end, themeColor) {
+      const maxTicks = 9;
+      const svgWidth = 600;
+      const leftMargin = 40;
+      const stepWidth = (svgWidth - 80) / maxTicks;
+      const trackY = 70;
+      const getX = (i) => leftMargin + i * stepWidth;
+
+      let svgHtml = `
+        <svg viewBox="0 0 ${svgWidth} 105" class="w-full h-auto overflow-visible">
+          <rect x="${leftMargin - 15}" y="${trackY - 8}" width="${maxTicks * stepWidth + 30}" height="16" rx="8" fill="#e2e8f0" />
+          <rect x="${getX(start)}" y="${trackY - 8}" width="${getX(end) - getX(start)}" height="16" fill="#bae6fd" />
+      `;
+
+      for (let i = 0; i <= maxTicks; i++) {
+        const x = getX(i);
+        const isStart = (i === start);
+        const isEnd = (i === end);
+        const inRange = (i >= start && i <= end);
+
+        svgHtml += `<line x1="${x}" y1="${trackY - 26}" x2="${x}" y2="${trackY}" stroke="${inRange ? '#f59e0b' : '#cbd5e1'}" stroke-width="${inRange ? 3 : 2}" />`;
+
+        const circleFill = isStart || isEnd ? '#ffffff' : (inRange ? '#fef3c7' : '#f8fafc');
+        const circleStroke = isStart || isEnd ? '#0284c7' : (inRange ? '#f59e0b' : '#94a3b8');
+        const textColor = isStart || isEnd ? '#0369a1' : (inRange ? '#b45309' : '#64748b');
+
+        svgHtml += `
+          <circle cx="${x}" cy="${trackY - 38}" r="13" fill="${circleFill}" stroke="${circleStroke}" stroke-width="${isStart || isEnd ? 2.5 : 1.5}"/>
+          <text x="${x}" y="${trackY - 33}" text-anchor="middle" fill="${textColor}" font-size="${i === 0 ? '10' : '13'}" font-weight="900">
+            ${i === 0 ? '출발' : i}
+          </text>
+        `;
+      }
+
+      for (let i = start; i < end; i++) {
+        const x1 = getX(i);
+        const x2 = getX(i + 1);
+        const midX = (x1 + x2) / 2;
+        svgHtml += `
+          <path d="M ${x1} ${trackY - 24} Q ${midX} ${trackY - 48}, ${x2} ${trackY - 24}" fill="none" stroke="#db2777" stroke-width="2.5" stroke-dasharray="4 3"/>
+          <text x="${midX}" y="${trackY - 50}" text-anchor="middle" fill="#db2777" font-size="11" font-weight="800">7 cm</text>
+        `;
+      }
+
+      const startX = getX(start);
+      const endX = getX(end);
+
+      svgHtml += `<circle cx="${startX}" cy="${trackY}" r="12" fill="${themeColor.fill}" fill-opacity="0.3" stroke="${themeColor.stroke}" stroke-width="2"/>`;
+      svgHtml += `<circle cx="${endX}" cy="${trackY}" r="13" fill="${themeColor.fill}" stroke="${themeColor.stroke}" stroke-width="2.5"/>`;
+
+      svgHtml += `
+        <line x1="${startX}" y1="${trackY + 18}" x2="${endX - 7}" y2="${trackY + 18}" stroke="#0284c7" stroke-width="3" />
+        <polygon points="${endX},${trackY + 18} ${endX - 8},${trackY + 14} ${endX - 8},${trackY + 22}" fill="#0284c7" />
+      `;
+
+      svgHtml += `</svg>`;
+      return svgHtml;
+    }
+
+    function renderPage2() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="w-full max-w-4xl p-2 sm:p-4 flex flex-col items-center">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 w-full">
+            <div>
+              <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-emerald-600"></div>
+                <div class="w-8 h-8 rounded-lg border-2 border-emerald-400 bg-emerald-50 flex items-center justify-center font-black text-emerald-600">2</div>
+                <h2 class="text-xl md:text-2xl font-black tracking-tight text-slate-800">
+                  구간 이동 거리 구하기
+                </h2>
+              </div>
+              <p class="text-slate-500 text-sm mt-1.5 ml-6">
+                시작 팻말에서 도착 팻말까지 <b>7 cm씩</b> 뛰어 세어 이동한 거리와 곱셈식을 완성하세요.
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2 bg-emerald-50 px-3.5 py-1.5 rounded-2xl border border-emerald-200">
+              <span class="text-xs sm:text-sm font-jua text-slate-600 font-bold">⭐ 연속 성공:</span>
+              <span id="p2-streak-stars" class="text-amber-500 font-bold tracking-widest text-base sm:text-lg">
+                ${'★'.repeat(p2Streak)}${'☆'.repeat(5 - p2Streak)}
+              </span>
+              <span id="p2-streak-count" class="text-xs sm:text-sm font-jua font-bold text-emerald-800">(${p2Streak}/5)</span>
+            </div>
+          </div>
+
+          <div id="randomProblemsContainer" class="space-y-8 w-full"></div>
+
+          <div class="mt-10 pt-6 border-t border-slate-100 flex flex-wrap items-center justify-end gap-3 w-full">
+            <button onclick="resetP2Inputs()" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+              다시 쓰기
+            </button>
+            <button onclick="generateRandomProblemSet()" class="px-5 py-2.5 rounded-xl font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer flex items-center gap-1.5">
+              <span>🎲</span> <span>새로운 문제</span>
+            </button>
+            <button onclick="checkP2Answers()" class="px-7 py-2.5 rounded-xl font-extrabold text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-200 transition-all cursor-pointer">
+              정답 확인
+            </button>
+          </div>
+        </div>
+      `;
+
+      generateRandomProblemSet();
+    }
+
+    function generateRandomProblemSet() {
+      const container = document.getElementById('randomProblemsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      for (let idx = 1; idx <= 2; idx++) {
+        // 1~8칸 사이에서 독립적으로 무작위 칸 수 선택 (예측 불가능)
+        const jumpCount = Math.floor(Math.random() * 8) + 1;
+        const maxStart = 9 - jumpCount;
+        const start = Math.floor(Math.random() * (maxStart + 1));
+        const end = start + jumpCount;
+        const themeColor = p2Colors[(idx - 1) % p2Colors.length];
+        const totalDistance = 7 * jumpCount;
+        const startLabel = start === 0 ? '출발(0)' : `${start}번`;
+        const endLabel = `${end}번`;
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-50/70 rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm';
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2 mb-4">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-xl bg-emerald-600 text-white font-black text-sm flex items-center justify-center shadow-sm">
+                Q${idx}
+              </span>
+              <p class="text-base font-bold text-slate-800">
+                <span class="text-sky-700 font-extrabold bg-sky-100 px-2 py-0.5 rounded-md">${startLabel}</span> 팻말에서 
+                <span class="text-emerald-700 font-extrabold bg-emerald-100 px-2 py-0.5 rounded-md">${endLabel}</span> 팻말까지 이동한 거리
+              </p>
+            </div>
+            <span class="text-xs font-bold text-slate-500 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+              한 번에 7 cm씩 점프 (총 ${jumpCount}칸)
+            </span>
+          </div>
+
+          <div class="w-full bg-white rounded-xl p-3 border border-slate-200/80 mb-5 overflow-x-auto">
+            ${createSVGTrack(start, end, themeColor)}
+          </div>
+
+          <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 w-full">
+            <div class="flex-1 bg-white py-3 px-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden">
+              <div class="flex items-center justify-center gap-1 sm:gap-1.5 whitespace-nowrap text-sm sm:text-base md:text-[17px] font-bold text-slate-700 select-none">
+                <input type="text" maxlength="2" data-ans="${start}" class="p2-input num-input w-10 h-10 sm:w-11 sm:h-10 text-lg shrink-0" />
+                <span class="shrink-0">에서</span>
+                <input type="text" maxlength="2" data-ans="${end}" class="p2-input num-input w-10 h-10 sm:w-11 sm:h-10 text-lg shrink-0" />
+                <span class="shrink-0">까지 가려면</span>
+                <input type="text" maxlength="2" data-ans="${jumpCount}" class="p2-input num-input w-10 h-10 sm:w-11 sm:h-10 text-lg shrink-0" />
+                <span class="shrink-0">칸을 더 가야한다.</span>
+              </div>
+            </div>
+
+            <div class="shrink-0 bg-[#ecf8e5] py-3 px-4 rounded-xl border border-[#cbeec0] flex items-center justify-center gap-2 shadow-sm text-base sm:text-lg font-black text-slate-800 whitespace-nowrap">
+              <span class="shrink-0">7 ×</span>
+              <input type="text" maxlength="2" data-ans="${jumpCount}" class="p2-input num-input w-11 h-10 text-lg shrink-0" />
+              <span class="shrink-0">＝</span>
+              <input type="text" maxlength="3" data-ans="${totalDistance}" class="p2-input num-input w-14 h-10 text-lg shrink-0" />
+              <span class="text-slate-700 font-extrabold text-sm sm:text-base shrink-0">cm</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      }
+
+      const firstInput = document.querySelector('.p2-input');
+      if (firstInput) firstInput.focus();
+    }
+
+    function resetP2Inputs() {
+      const inputs = document.querySelectorAll('.p2-input');
+      inputs.forEach(input => {
+        input.value = '';
+        input.classList.remove('correct', 'wrong');
+      });
+      const firstInput = document.querySelector('.p2-input');
+      if (firstInput) firstInput.focus();
+    }
+
+    function checkP2Answers() {
+      const inputs = document.querySelectorAll('.p2-input');
+      let allFilled = true;
+      let allCorrect = true;
+
+      inputs.forEach(input => {
+        const expected = input.getAttribute('data-ans').trim();
+        const value = input.value.trim();
+
+        input.classList.remove('correct', 'wrong');
+
+        if (value === '') {
+          allFilled = false;
+          allCorrect = false;
+        } else if (value === expected) {
+          input.classList.add('correct');
+        } else {
+          input.classList.add('wrong');
+          allCorrect = false;
+        }
+      });
+
+      if (!allFilled) {
+        playSound('wrong');
+        showNoticeModal('⚠️ 아직 입력하지 않은 빈칸이 있어요!\n모든 네모칸에 알맞은 수를 적어주세요.');
+        return;
+      }
+
+      if (allCorrect) {
+        playSound('correct');
+        p2Streak++;
+        const starsEl = document.getElementById('p2-streak-stars');
+        const countEl = document.getElementById('p2-streak-count');
+        if (starsEl) starsEl.innerText = '★'.repeat(p2Streak) + '☆'.repeat(5 - p2Streak);
+        if (countEl) countEl.innerText = `(${p2Streak}/5)`;
+
+        if (p2Streak >= 5) {
+          playSound('fanfare');
+          triggerConfetti();
+          const letter = awardKeywordLetter(2);
+          p2Streak = 0;
+          openSuccessModal({
+            title: `2단계 5연속 정답 성공! 🎉`,
+            badge: `2단계 마스터 배지 & 비밀 글자 획득!`,
+            desc: `축하합니다! 5번 연속으로 모두 정확하게 맞혔습니다!\n[2번째 비밀 글자: '${letter}']을 획득했습니다!\n다음 3단계(곱셈 원리)로 이동해 보세요! 🚀`,
+            nextPageNum: 4
+          });
+        } else {
+          showNoticeModal(`🎉 정답입니다! (${p2Streak}/5 성공)\n연속 5번 성공을 향해 다음 문제로 이동합니다! 🚀`);
+          setTimeout(() => {
+            generateRandomProblemSet();
+          }, 800);
+        }
+      } else {
+        playSound('wrong');
+        p2Streak = 0;
+        const starsEl = document.getElementById('p2-streak-stars');
+        const countEl = document.getElementById('p2-streak-count');
+        if (starsEl) starsEl.innerText = '★'.repeat(p2Streak) + '☆'.repeat(5 - p2Streak);
+        if (countEl) countEl.innerText = `(${p2Streak}/5)`;
+
+        showNoticeModal('❌ 빨간색으로 표시된 칸에 틀린 답이 있어요!\n연속 성공이 0으로 리셋됩니다. 새로운 문제로 다시 도전해 보세요!');
+        setTimeout(() => {
+          generateRandomProblemSet();
+        }, 1200);
+      }
+    }
+
+    function renderPage3() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="w-full max-w-4xl p-2 sm:p-4 flex flex-col items-center">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 w-full">
+            <div>
+              <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-indigo-600"></div>
+                <div class="w-8 h-8 rounded-lg border-2 border-indigo-400 bg-indigo-50 flex items-center justify-center font-black text-indigo-600">3</div>
+                <h2 class="text-xl md:text-2xl font-black tracking-tight text-slate-800">
+                  곱셈의 원리와 뛰어 세기
+                </h2>
+              </div>
+              <p class="text-slate-500 text-sm mt-1.5 ml-6">
+                앞의 곱에 <b>7을 더하여 다음 곱을 계산하는 규칙</b>을 수직선과 문장의 빈칸에 채워보세요.
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2 bg-indigo-50 px-3.5 py-1.5 rounded-2xl border border-indigo-200">
+              <span class="text-xs sm:text-sm font-jua text-slate-600 font-bold">⭐ 연속 성공:</span>
+              <span id="p3-streak-stars" class="text-amber-500 font-bold tracking-widest text-base sm:text-lg">
+                ${'★'.repeat(p3Streak)}${'☆'.repeat(5 - p3Streak)}
+              </span>
+              <span id="p3-streak-count" class="text-xs sm:text-sm font-jua font-bold text-indigo-800">(${p3Streak}/5)</span>
+            </div>
+          </div>
+
+          <div id="page3ProblemsContainer" class="space-y-10 w-full"></div>
+
+          <div class="mt-10 pt-6 border-t border-slate-100 flex flex-wrap items-center justify-end gap-3 w-full">
+            <button onclick="resetP3Inputs()" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+              다시 쓰기
+            </button>
+            <button onclick="generatePage3Problems()" class="px-5 py-2.5 rounded-xl font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer flex items-center gap-1.5">
+              <span>🎲</span> <span>새로운 문제</span>
+            </button>
+            <button onclick="checkP3Answers()" class="px-7 py-2.5 rounded-xl font-extrabold text-white bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-200 transition-all cursor-pointer">
+              정답 확인
+            </button>
+          </div>
+        </div>
+      `;
+
+      generatePage3Problems();
+    }
+
+    function generatePage3Problems() {
+      const container = document.getElementById('page3ProblemsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const possibleN = [2, 3, 4, 5, 6, 7, 8];
+      possibleN.sort(() => Math.random() - 0.5);
+      const chosen = [possibleN[0], possibleN[1]];
+
+      chosen.forEach((N, idx) => {
+        const nextN = N + 1;
+        const baseMul = 7 * N;
+        const targetMul = 7 * nextN;
+
+        const totalSteps = nextN + 1;
+        const svgWidth = 660;
+        const leftMargin = 40;
+        const rightMargin = 40;
+        const stepWidth = (svgWidth - leftMargin - rightMargin) / (totalSteps - 0.5);
+        const trackY = 95;
+        const getX = (i) => leftMargin + i * stepWidth;
+
+        let svg = `<svg viewBox="0 0 ${svgWidth} 175" class="w-full h-auto overflow-visible">`;
+
+        const startX = getX(0);
+        const midTargetX = getX(N);
+        const bigArcMidX = (startX + midTargetX) / 2;
+        const bigArcPeakY = 32;
+
+        svg += `
+          <path d="M ${startX} ${trackY - 5} Q ${bigArcMidX} ${bigArcPeakY - 10}, ${midTargetX} ${trackY - 5}" fill="none" stroke="#0284c7" stroke-width="2.5" />
+          <polygon points="${midTargetX},${trackY - 4} ${midTargetX - 7},${trackY - 13} ${midTargetX - 2},${trackY - 15}" fill="#0284c7" />
+
+          <rect x="${bigArcMidX - 65}" y="${bigArcPeakY - 18}" width="130" height="30" rx="8" fill="#ffffff" stroke="#e0f2fe" stroke-width="1.5" />
+          <text x="${bigArcMidX}" y="${bigArcPeakY + 3}" text-anchor="middle" fill="#0f172a" font-size="18" font-weight="900">
+            7 × ${N} ＝ ${baseMul}
+          </text>
+        `;
+
+        const lineEndX = getX(totalSteps - 1) + 20;
+        svg += `<line x1="${startX}" y1="${trackY}" x2="${lineEndX}" y2="${trackY}" stroke="#334155" stroke-width="2.5" stroke-linecap="round" />`;
+
+        for (let i = 0; i < totalSteps; i++) {
+          const x = getX(i);
+          svg += `<line x1="${x}" y1="${trackY - 8}" x2="${x}" y2="${trackY + 8}" stroke="#334155" stroke-width="2" />`;
+
+          if (i < nextN) {
+            const nextX = getX(i + 1);
+            const mX = (x + nextX) / 2;
+            const isTargetJump = (i === N);
+            const strokeColor = isTargetJump ? '#db2777' : '#ec4899';
+            const strokeW = isTargetJump ? '3' : '2.2';
+
+            svg += `
+              <path d="M ${x} ${trackY} Q ${mX} ${trackY - 26}, ${nextX} ${trackY}" fill="none" stroke="${strokeColor}" stroke-width="${strokeW}" />
+              <polygon points="${nextX},${trackY} ${nextX - 7},${trackY - 5} ${nextX - 5},${trackY - 1}" fill="${strokeColor}" />
+            `;
+          }
+        }
+
+        for (let i = 0; i <= N; i++) {
+          const x = getX(i);
+          svg += `
+            <text x="${x}" y="${trackY + 35}" text-anchor="middle" fill="#0f172a" font-size="18" font-weight="800">
+              ${7 * i}
+            </text>
+          `;
+        }
+
+        const nextX = getX(nextN);
+        const lastMidX = (midTargetX + nextX) / 2;
+
+        svg += `
+          <foreignObject x="${lastMidX - 30}" y="${trackY - 78}" width="95" height="52">
+            <div xmlns="http://www.w3.org/1999/xhtml" class="flex items-center gap-1.5">
+              <span class="text-2xl font-black text-slate-700">＋</span>
+              <input type="text" maxlength="2" data-ans="7" class="p3-input num-input w-12 h-11 text-xl shadow-sm" />
+            </div>
+          </foreignObject>
+
+          <foreignObject x="${nextX - 32}" y="${trackY + 12}" width="68" height="48">
+            <div xmlns="http://www.w3.org/1999/xhtml">
+              <input type="text" maxlength="2" data-ans="${targetMul}" class="p3-input num-input w-full h-11 text-xl shadow-sm" />
+            </div>
+          </foreignObject>
+        `;
+
+        svg += `</svg>`;
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-50/75 rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm';
+        card.innerHTML = `
+          <div class="flex items-center gap-3 mb-5">
+            <span class="w-9 h-9 md:w-10 md:h-10 rounded-2xl bg-indigo-600 text-white font-black text-lg md:text-xl flex items-center justify-center shadow-md shrink-0">
+              ${idx + 1}
+            </span>
+            <span class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">
+              수직선을 보고 빈칸을 채워 <span class="text-indigo-600 font-black underline underline-offset-4 decoration-indigo-300">7 × ${nextN}</span>의 값을 구하세요.
+            </span>
+          </div>
+
+          <div class="w-full bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-inner overflow-x-auto mb-6">
+            ${svg}
+          </div>
+
+          <div class="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-5 text-center">
+            <p class="text-lg md:text-xl font-bold text-slate-800 flex flex-wrap items-center justify-center gap-1 sm:gap-2">
+              <span>7 × ${N}에</span>
+              <input type="text" maxlength="2" data-ans="7" class="p3-input num-input w-14 h-12 text-xl" />
+              <span>을/를 더하여</span>
+              <span class="font-extrabold text-indigo-700 bg-white px-3 py-1 rounded-xl border border-indigo-200 shadow-sm">7 × ${nextN}</span>
+              <span>을 계산했어.</span>
+            </p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      const firstInput = document.querySelector('.p3-input');
+      if (firstInput) firstInput.focus();
+    }
+
+    function resetP3Inputs() {
+      const inputs = document.querySelectorAll('.p3-input');
+      inputs.forEach(input => {
+        input.value = '';
+        input.classList.remove('correct', 'wrong');
+      });
+      const firstInput = document.querySelector('.p3-input');
+      if (firstInput) firstInput.focus();
+    }
+
+    function checkP3Answers() {
+      const inputs = document.querySelectorAll('.p3-input');
+      let allFilled = true;
+      let allCorrect = true;
+
+      inputs.forEach(input => {
+        const expected = input.getAttribute('data-ans').trim();
+        const value = input.value.trim();
+
+        input.classList.remove('correct', 'wrong');
+
+        if (value === '') {
+          allFilled = false;
+          allCorrect = false;
+        } else if (value === expected) {
+          input.classList.add('correct');
+        } else {
+          input.classList.add('wrong');
+          allCorrect = false;
+        }
+      });
+
+      if (!allFilled) {
+        playSound('wrong');
+        showNoticeModal('⚠️ 아직 입력하지 않은 빈칸이 있어요!\n모든 네모칸에 알맞은 수를 적어주세요.');
+        return;
+      }
+
+      if (allCorrect) {
+        playSound('correct');
+        p3Streak++;
+        const starsEl = document.getElementById('p3-streak-stars');
+        const countEl = document.getElementById('p3-streak-count');
+        if (starsEl) starsEl.innerText = '★'.repeat(p3Streak) + '☆'.repeat(5 - p3Streak);
+        if (countEl) countEl.innerText = `(${p3Streak}/5)`;
+
+        if (p3Streak >= 5) {
+          playSound('fanfare');
+          triggerConfetti();
+          const letter = awardKeywordLetter(3);
+          p3Streak = 0;
+          openSuccessModal({
+            title: `3단계 5연속 정답 성공! 🎉`,
+            badge: `3단계 마스터 배지 & 비밀 글자 획득!`,
+            desc: `축하합니다! 5번 연속으로 모두 정확하게 맞혔습니다!\n[3번째 비밀 글자: '${letter}']을 획득했습니다!\n다음 4단계(묶어 세기)로 이동해 보세요! 🚀`,
+            nextPageNum: 5
+          });
+        } else {
+          showNoticeModal(`🎉 정답입니다! (${p3Streak}/5 성공)\n연속 5번 성공을 향해 다음 문제로 이동합니다! 🚀`);
+          setTimeout(() => {
+            generatePage3Problems();
+          }, 800);
+        }
+      } else {
+        playSound('wrong');
+        p3Streak = 0;
+        const starsEl = document.getElementById('p3-streak-stars');
+        const countEl = document.getElementById('p3-streak-count');
+        if (starsEl) starsEl.innerText = '★'.repeat(p3Streak) + '☆'.repeat(5 - p3Streak);
+        if (countEl) countEl.innerText = `(${p3Streak}/5)`;
+
+        showNoticeModal('❌ 빨간색으로 표시된 칸에 틀린 답이 있어요!\n연속 성공이 0으로 리셋됩니다. 새로운 문제로 다시 도전해 보세요!');
+        setTimeout(() => {
+          generatePage3Problems();
+        }, 1200);
+      }
+    }
+
+    function renderPage4() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="w-full max-w-4xl p-2 sm:p-4 flex flex-col items-center">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 w-full">
+            <div>
+              <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-teal-600"></div>
+                <div class="w-8 h-8 rounded-lg border-2 border-teal-400 bg-teal-50 flex items-center justify-center font-black text-teal-600">4</div>
+                <h2 class="text-xl md:text-2xl font-black tracking-tight text-slate-800">
+                  묶어 세어 곱셈식 만들기
+                </h2>
+              </div>
+              <p class="text-slate-500 text-sm mt-1.5 ml-6">
+                바둑알 묶음을 세어 <b>7개씩 몇 줄</b>인지 확인하고 곱셈식을 완성하세요.
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2 bg-teal-50 px-3.5 py-1.5 rounded-2xl border border-teal-200">
+              <span class="text-xs sm:text-sm font-jua text-slate-600 font-bold">⭐ 연속 성공:</span>
+              <span id="p4-streak-stars" class="text-amber-500 font-bold tracking-widest text-base sm:text-lg">
+                ${'★'.repeat(p4Streak)}${'☆'.repeat(5 - p4Streak)}
+              </span>
+              <span id="p4-streak-count" class="text-xs sm:text-sm font-jua font-bold text-teal-800">(${p4Streak}/5)</span>
+            </div>
+          </div>
+
+          <div id="page4ProblemsContainer" class="w-full flex flex-col items-center justify-center py-2"></div>
+
+          <div class="mt-8 pt-6 border-t border-slate-100 flex flex-wrap items-center justify-end gap-3 w-full">
+            <button onclick="resetInputs('p4-input')" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+              다시 쓰기
+            </button>
+            <button onclick="generatePage4Problems()" class="px-5 py-2.5 rounded-xl font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer flex items-center gap-1.5">
+              <span>🎲</span> <span>새로운 문제</span>
+            </button>
+            <button onclick="checkP4Answers()" class="px-7 py-2.5 rounded-xl font-extrabold text-white bg-teal-500 hover:bg-teal-600 shadow-lg shadow-teal-200 transition-all cursor-pointer">
+              정답 확인
+            </button>
+          </div>
+        </div>
+      `;
+
+      generatePage4Problems();
+    }
+
+    function generatePage4Problems() {
+      const container = document.getElementById('page4ProblemsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      // 한 묶음에 7개씩, 1~9묶음 무작위
+      const rows = 7; 
+      const cols = Math.floor(Math.random() * 9) + 1; // 1~9묶음 무작위
+      const total = rows * cols;
+
+      const dotRadius = 12;
+      const spacingX = 36;
+      const spacingY = 34;
+      const padX = 26;
+      const padY = 26;
+
+      const svgWidth = padX * 2 + (cols - 1) * spacingX;
+      const svgHeight = padY * 2 + (rows - 1) * spacingY;
+      const capWidth = dotRadius * 2 + 8;
+      const capHeight = (rows - 1) * spacingY + (dotRadius * 2) + 12;
+
+      let capsulesSvg = '';
+      for (let c = 0; c < cols; c++) {
+        const cx = padX + c * spacingX;
+        const topY = padY - dotRadius - 6;
+        capsulesSvg += `
+          <rect x="${cx - capWidth / 2}" y="${topY}" width="${capWidth}" height="${capHeight}" rx="${capWidth / 2}" fill="#bae6fd" />
+        `;
+      }
+
+      let stonesSvg = '';
+      for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+          const cx = padX + c * spacingX;
+          const cy = padY + r * spacingY;
+          stonesSvg += `
+            <circle cx="${cx}" cy="${cy}" r="${dotRadius}" fill="url(#p4StoneGrad)" />
+            <ellipse cx="${cx - 3}" cy="${cy - 3.5}" rx="${dotRadius * 0.45}" ry="${dotRadius * 0.28}" fill="#ffffff" opacity="0.75" />
+          `;
+        }
+      }
+
+      const svg = `
+        <svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" style="max-width: 100%; height: auto; display: block;" class="select-none drop-shadow-sm">
+          <defs>
+            <radialGradient id="p4StoneGrad" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#475569" />
+              <stop offset="35%" stop-color="#1e293b" />
+              <stop offset="85%" stop-color="#0f172a" />
+              <stop offset="100%" stop-color="#020617" />
+            </radialGradient>
+          </defs>
+
+          <rect x="4" y="4" width="${svgWidth - 8}" height="${svgHeight - 8}" rx="20" fill="#ffffff" stroke="#7a8d67" stroke-width="4.5" />
+          ${capsulesSvg}
+          ${stonesSvg}
+        </svg>
+      `;
+
+      const problemDiv = document.createElement('div');
+      problemDiv.className = 'w-full flex flex-col items-center justify-center gap-6 py-3 px-2';
+      problemDiv.innerHTML = `
+        <!-- 상단 바둑알 그림 (한 묶음에 7개, 1~9묶음) -->
+        <div class="shrink-0 flex items-center justify-center p-3 bg-slate-50/70 rounded-3xl border border-slate-200 overflow-x-auto max-w-full">
+          ${svg}
+        </div>
+
+        <!-- 그림 아래 문장 및 수식 (글씨 크기 적정화) -->
+        <div class="w-full max-w-xl bg-teal-50/50 border border-teal-200/80 rounded-2xl p-5 flex flex-col items-center gap-4 text-slate-800 select-none shadow-xs">
+          <!-- 1행: 나는 7개씩 [ ] 줄 있다고 생각하여 -->
+          <div class="flex items-center justify-center gap-2 text-base sm:text-lg md:text-xl font-medium tracking-tight flex-wrap">
+            <span>나는 <b class="font-extrabold text-teal-800 text-lg sm:text-xl md:text-2xl">7</b>개씩</span>
+            <input type="text" maxlength="2" data-ans="${cols}" class="p4-input num-input w-12 h-11 sm:w-14 sm:h-12 text-lg sm:text-xl rounded-xl shadow-xs shrink-0" />
+            <span>줄 있다고 생각하여</span>
+          </div>
+
+          <!-- 2행: 7 × [ ] ＝ [ ] (으)로 계산했어. -->
+          <div class="flex items-center justify-center gap-2 text-base sm:text-lg md:text-xl font-medium tracking-tight flex-wrap">
+            <span class="font-extrabold text-teal-800 text-lg sm:text-xl md:text-2xl">7</span>
+            <span class="font-bold">×</span>
+            <input type="text" maxlength="2" data-ans="${cols}" class="p4-input num-input w-12 h-11 sm:w-14 sm:h-12 text-lg sm:text-xl rounded-xl shadow-xs shrink-0" />
+            <span class="font-bold">＝</span>
+            <input type="text" maxlength="3" data-ans="${total}" class="p4-input num-input w-16 h-11 sm:w-20 sm:h-12 text-lg sm:text-xl rounded-xl shadow-xs shrink-0" />
+            <span>(으)로 계산했어.</span>
+          </div>
+        </div>
+      `;
+
+      container.appendChild(problemDiv);
+
+      const firstInput = document.querySelector('.p4-input');
+      if (firstInput) firstInput.focus();
+    }
+
+    function checkP4Answers() {
+      const inputs = document.querySelectorAll('.p4-input');
+      let allFilled = true;
+      let allCorrect = true;
+
+      inputs.forEach(input => {
+        const expected = input.getAttribute('data-ans').trim();
+        const value = input.value.trim();
+
+        input.classList.remove('correct', 'wrong');
+
+        if (value === '') {
+          allFilled = false;
+          allCorrect = false;
+        } else if (value === expected) {
+          input.classList.add('correct');
+        } else {
+          input.classList.add('wrong');
+          allCorrect = false;
+        }
+      });
+
+      if (!allFilled) {
+        playSound('wrong');
+        showNoticeModal('⚠️ 아직 입력하지 않은 빈칸이 있어요!\n모든 네모칸에 알맞은 수를 적어주세요.');
+        return;
+      }
+
+      if (allCorrect) {
+        playSound('correct');
+        p4Streak++;
+        const starsEl = document.getElementById('p4-streak-stars');
+        const countEl = document.getElementById('p4-streak-count');
+        if (starsEl) starsEl.innerText = '★'.repeat(p4Streak) + '☆'.repeat(5 - p4Streak);
+        if (countEl) countEl.innerText = `(${p4Streak}/5)`;
+
+        if (p4Streak >= 5) {
+          playSound('fanfare');
+          triggerConfetti();
+          const letter = awardKeywordLetter(4);
+          p4Streak = 0;
+          openSuccessModal({
+            title: `4단계 5연속 정답 성공! 🎉`,
+            badge: `4단계 마스터 배지 & 비밀 글자 획득!`,
+            desc: `축하합니다! 5번 연속으로 모두 정확하게 맞혔습니다!\n[4번째 비밀 글자: '${letter}']을 획득했습니다!\n다음 5단계(곱셈 완성)로 이동해 보세요! 🚀`,
+            nextPageNum: 6
+          });
+        } else {
+          showNoticeModal(`🎉 정답입니다! (${p4Streak}/5 성공)\n연속 5번 성공을 향해 다음 문제로 이동합니다! 🚀`);
+          setTimeout(() => {
+            generatePage4Problems();
+          }, 800);
+        }
+      } else {
+        playSound('wrong');
+        p4Streak = 0;
+        const starsEl = document.getElementById('p4-streak-stars');
+        const countEl = document.getElementById('p4-streak-count');
+        if (starsEl) starsEl.innerText = '★'.repeat(p4Streak) + '☆'.repeat(5 - p4Streak);
+        if (countEl) countEl.innerText = `(${p4Streak}/5)`;
+
+        showNoticeModal('❌ 빨간색으로 표시된 칸에 틀린 답이 있어요!\n연속 성공이 0으로 리셋됩니다. 새로운 문제로 다시 도전해 보세요!');
+        setTimeout(() => {
+          generatePage4Problems();
+        }, 1200);
+      }
+    }
+
+    function renderPage5() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="w-full max-w-4xl p-2 sm:p-4 flex flex-col items-center">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 w-full">
+            <div>
+              <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-violet-600"></div>
+                <div class="w-8 h-8 rounded-lg border-2 border-violet-400 bg-violet-50 flex items-center justify-center font-black text-violet-600">5</div>
+                <h2 class="text-xl md:text-2xl font-black tracking-tight text-slate-800">
+                  7단 곱셈식 완성하기
+                </h2>
+              </div>
+              <p class="text-slate-500 text-sm mt-1.5 ml-6">
+                곱셈식을 보고 <b>곱하는 수</b> 또는 <b>계산 결과</b>의 빈칸에 알맞은 수를 써넣으세요.
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2 bg-violet-50 px-3.5 py-1.5 rounded-2xl border border-violet-200">
+              <span class="text-xs sm:text-sm font-jua text-slate-600 font-bold">⭐ 연속 성공:</span>
+              <span id="p5-streak-stars" class="text-amber-500 font-bold tracking-widest text-base sm:text-lg">
+                ${'★'.repeat(p5Streak)}${'☆'.repeat(5 - p5Streak)}
+              </span>
+              <span id="p5-streak-count" class="text-xs sm:text-sm font-jua font-bold text-violet-800">(${p5Streak}/5)</span>
+            </div>
+          </div>
+
+          <div id="page5ProblemsContainer" class="space-y-4 max-w-xl mx-auto w-full"></div>
+
+          <div class="mt-10 pt-6 border-t border-slate-100 flex flex-wrap items-center justify-end gap-3 w-full">
+            <button onclick="resetInputs('p5-input')" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+              다시 쓰기
+            </button>
+            <button onclick="generatePage5Problems()" class="px-5 py-2.5 rounded-xl font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 transition-colors cursor-pointer flex items-center gap-1.5">
+              <span>🎲</span> <span>새로운 문제</span>
+            </button>
+            <button onclick="checkP5Answers()" class="px-7 py-2.5 rounded-xl font-extrabold text-white bg-violet-600 hover:bg-violet-700 shadow-lg shadow-violet-200 transition-all cursor-pointer">
+              정답 확인
+            </button>
+          </div>
+        </div>
+      `;
+
+      generatePage5Problems();
+    }
+
+    function generatePage5Problems() {
+      const container = document.getElementById('page5ProblemsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+      numbers.sort(() => Math.random() - 0.5);
+      const selected = numbers.slice(0, 5);
+
+      selected.forEach((multiplier, index) => {
+        const product = 7 * multiplier;
+        const isMultiplierBlank = Math.random() < 0.5;
+
+        const card = document.createElement('div');
+        card.className = 'flex items-center justify-start gap-4 sm:gap-6 p-4 md:p-5 bg-slate-50/90 rounded-2xl border border-slate-200/90 shadow-sm hover:border-violet-300 transition-colors';
+
+        const formulaHtml = isMultiplierBlank
+          ? `
+            <span class="text-2xl md:text-3xl font-black text-slate-800 whitespace-nowrap">7 ×</span>
+            <input type="text" maxlength="2" data-ans="${multiplier}" class="p5-input num-input w-16 h-12 text-2xl" placeholder=" " />
+            <span class="text-2xl md:text-3xl font-black text-slate-800 whitespace-nowrap">＝ ${product}</span>
+          `
+          : `
+            <span class="text-2xl md:text-3xl font-black text-slate-800 whitespace-nowrap">7 × ${multiplier} ＝</span>
+            <input type="text" maxlength="2" data-ans="${product}" class="p5-input num-input w-20 h-12 text-2xl" placeholder=" " />
+          `;
+
+        card.innerHTML = `
+          <div class="flex items-center shrink-0">
+            <span class="w-9 h-9 rounded-xl bg-violet-600 text-white font-black text-base flex items-center justify-center shadow-sm">
+              ${index + 1}
+            </span>
+          </div>
+
+          <div class="flex-1 bg-[#ecf8e5] border border-[#cbeec0] rounded-2xl px-5 py-3 flex items-center justify-center gap-3 shadow-sm">
+            ${formulaHtml}
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      const firstInput = document.querySelector('.p5-input');
+      if (firstInput) firstInput.focus();
+    }
+
+    function checkP5Answers() {
+      const inputs = document.querySelectorAll('.p5-input');
+      let allFilled = true;
+      let allCorrect = true;
+
+      inputs.forEach(input => {
+        const expected = input.getAttribute('data-ans').trim();
+        const value = input.value.trim();
+
+        input.classList.remove('correct', 'wrong');
+
+        if (value === '') {
+          allFilled = false;
+          allCorrect = false;
+        } else if (value === expected) {
+          input.classList.add('correct');
+        } else {
+          input.classList.add('wrong');
+          allCorrect = false;
+        }
+      });
+
+      if (!allFilled) {
+        playSound('wrong');
+        showNoticeModal('⚠️ 아직 입력하지 않은 빈칸이 있어요!\n모든 네모칸에 알맞은 수를 적어주세요.');
+        return;
+      }
+
+      if (allCorrect) {
+        playSound('correct');
+        p5Streak++;
+        const starsEl = document.getElementById('p5-streak-stars');
+        const countEl = document.getElementById('p5-streak-count');
+        if (starsEl) starsEl.innerText = '★'.repeat(p5Streak) + '☆'.repeat(5 - p5Streak);
+        if (countEl) countEl.innerText = `(${p5Streak}/5)`;
+
+        if (p5Streak >= 5) {
+          playSound('fanfare');
+          triggerConfetti();
+          const letter = awardKeywordLetter(5);
+          p5Streak = 0;
+          openSuccessModal({
+            title: `5단계 5연속 정답 성공! 🎉`,
+            badge: `5단계 마스터 배지 & 비밀 글자 획득!`,
+            desc: `축하합니다! 5번 연속으로 모든 문제를 정확하게 풀었습니다!\n[5번째 비밀 글자: '${letter}']을 획득했습니다!\n다음 6단계(40초 챌린지)로 이동해 보세요! 🚀`,
+            nextPageNum: 7
+          });
+        } else {
+          showNoticeModal(`🎉 정답입니다! (${p5Streak}/5 성공)\n연속 5번 성공을 향해 다음 문제로 이동합니다! 🚀`);
+          setTimeout(() => {
+            generatePage5Problems();
+          }, 800);
+        }
+      } else {
+        playSound('wrong');
+        p5Streak = 0;
+        const starsEl = document.getElementById('p5-streak-stars');
+        const countEl = document.getElementById('p5-streak-count');
+        if (starsEl) starsEl.innerText = '★'.repeat(p5Streak) + '☆'.repeat(5 - p5Streak);
+        if (countEl) countEl.innerText = `(${p5Streak}/5)`;
+
+        showNoticeModal('❌ 빨간색으로 표시된 칸에 틀린 답이 있어요!\n연속 성공이 0으로 리셋됩니다. 새로운 5문제로 다시 도전해 보세요!');
+        setTimeout(() => {
+          generatePage5Problems();
+        }, 1200);
+      }
+    }
+
+    function checkUnifiedAnswers(inputClass, stepNum, nextStepPage) {
+      const inputs = document.querySelectorAll(`.${inputClass}`);
+      let allFilled = true;
+      let allCorrect = true;
+
+      inputs.forEach(input => {
+        const expected = input.getAttribute('data-ans').trim();
+        const value = input.value.trim();
+
+        input.classList.remove('correct', 'wrong');
+
+        if (value === '') {
+          allFilled = false;
+          allCorrect = false;
+        } else if (value === expected) {
+          input.classList.add('correct');
+        } else {
+          input.classList.add('wrong');
+          allCorrect = false;
+        }
+      });
+
+      if (!allFilled) {
+        playSound('wrong');
+        showNoticeModal('⚠️ 아직 입력하지 않은 빈칸이 있어요!\n모든 네모칸에 알맞은 수를 적어주세요.');
+        return;
+      }
+
+      if (allCorrect) {
+        playSound('fanfare');
+        triggerConfetti();
+        const letter = awardKeywordLetter(stepNum);
+        openSuccessModal({
+          title: `${stepNum}단계 정답 통과! 🎉`,
+          badge: `${stepNum}단계 마스터 배지 & 비밀 글자 획득!`,
+          desc: `축하합니다! ${stepNum}단계의 모든 문제를 정확하게 풀었습니다!\n[${stepNum}번째 비밀 글자: '${letter}']을 획득했습니다!\n다음 단계로 이동해 계속 도전해 보세요! 🚀`,
+          nextPageNum: nextStepPage
+        });
+      } else {
+        playSound('wrong');
+        showNoticeModal('❌ 빨간색으로 표시된 칸에 틀린 답이 있어요!\n차근차근 다시 계산해보고 수정해 보세요!');
+      }
+    }
+
+    function resetInputs(inputClass) {
+      const inputs = document.querySelectorAll(`.${inputClass}`);
+      inputs.forEach(input => {
+        input.value = '';
+        input.classList.remove('correct', 'wrong');
+      });
+    }
+
+    let p8Questions = [];
+    let p8IsStarted = false;
+    let p8TimerId = null;
+    let p8StartTime = 0;
+    let p8ElapsedTime = 0;
+    let p8IsFinished = false;
+
+    function generateP8Questions() {
+      const dans = [2, 3, 4, 5, 6, 7, 8];
+      const qList = [];
+      const usedPairs = new Set();
+
+      while (qList.length < 10) {
+        const dan = dans[Math.floor(Math.random() * dans.length)];
+        const mult = Math.floor(Math.random() * 9) + 1;
+        const key = `${dan}x${mult}`;
+        if (!usedPairs.has(key)) {
+          usedPairs.add(key);
+          qList.push({ dan, mult, ans: dan * mult });
+        }
+      }
+      return qList;
+    }
+
+    function renderPage6() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      if (!p8IsStarted) {
+        container.innerHTML = `
+          <div class="w-full flex flex-col items-center justify-center py-6 px-4 text-center max-w-xl">
+            <div class="inline-flex items-center gap-2 px-5 py-2 bg-rose-100 text-rose-900 rounded-full font-jua text-sm sm:text-base mb-4 border border-rose-300 shadow-2xs">
+              <span>⏱️</span> <span>6단계 · 2단부터 8단까지 스피드 챌린지</span>
+            </div>
+            
+            <h2 class="font-jua text-3xl sm:text-4xl text-slate-900 mb-3 drop-shadow-xs">
+              🔥 40초 스피드 곱셈 10제
+            </h2>
+            
+            <p class="font-jua text-slate-600 text-base sm:text-lg mb-6 leading-relaxed">
+              [🚀 문제 시작] 버튼을 누르는 순간 10문제가 공개되고 타이머가 작동합니다!<br>
+              <strong>40.0초 이내</strong>에 10문제를 모두 맞히면 <strong>마지막 6번째 비밀 글자</strong>를 받아요!
+            </p>
+
+            <div class="w-full bg-slate-50 border-2 border-dashed border-slate-300 rounded-3xl p-6 mb-7 flex flex-col items-center gap-3">
+              <div class="text-4xl animate-float">⏱️ ➡️ 🎯</div>
+              <div class="text-sm sm:text-base font-jua text-slate-700">
+                • 출제 범위: <strong>2단부터 8단까지</strong> 무작위 10문제<br>
+                • 40초가 넘어도 멈추지 않고 끝까지 풀 수 있어요!<br>
+                • 답을 적고 <kbd class="px-2 py-0.5 bg-white border border-slate-300 rounded-md font-mono text-xs shadow-2xs">Enter</kbd>를 누르면 다음 칸으로 이동해요!
+              </div>
+            </div>
+
+            <button onclick="startP8Challenge()" class="py-4 px-12 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-jua text-xl sm:text-2xl rounded-3xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-3 animate-pulse cursor-pointer">
+              <span>🚀 문제 시작!</span>
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      const timeDisplay = p8ElapsedTime.toFixed(1);
+      const isOverTime = p8ElapsedTime > 40.0;
+      const isWarning = p8ElapsedTime >= 30.0;
+
+      let timerColorClass = 'text-sky-600 border-sky-300 bg-sky-50';
+      if (isOverTime) timerColorClass = 'text-rose-600 border-rose-400 bg-rose-50';
+      else if (isWarning) timerColorClass = 'text-amber-600 border-amber-400 bg-amber-50';
+
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center">
+          <div class="w-full max-w-2xl flex flex-wrap items-center justify-between gap-3 mb-5 p-3.5 rounded-2xl bg-white border-2 border-slate-200 shadow-xs">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl sm:text-3xl">⏱️</span>
+              <div class="font-jua text-2xl sm:text-3xl px-4 py-1.5 rounded-2xl border-2 ${timerColorClass} font-mono tracking-wider shadow-inner transition-colors">
+                <span id="p8-timer-display">${timeDisplay}</span><span class="text-base sm:text-xl font-normal">초</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span class="text-xs sm:text-sm font-jua text-slate-500">
+                ${isOverTime ? '🚨 40초 초과 (끝까지 도전해 보세요!)' : (isWarning ? '⚡ 30초 돌파! 힘내요!' : '🎯 목표: 40.0초 이내!')}
+              </span>
+              <button onclick="resetP8Challenge()" class="py-2 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-jua text-xs sm:text-sm rounded-xl transition-all active:scale-95 cursor-pointer">
+                🔄 다시 시작
+              </button>
+            </div>
+          </div>
+
+          <div class="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+            ${p8Questions.map((q, idx) => `
+              <div id="p8-card-${idx}" class="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100/80 rounded-2xl border border-slate-200 shadow-2xs transition-all">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-7 h-7 rounded-full bg-white border border-slate-300 font-jua text-xs text-slate-600 flex items-center justify-center font-bold shadow-2xs">
+                    ${idx + 1}
+                  </span>
+                  <span class="font-jua text-xl sm:text-2xl text-slate-800 font-black tracking-wide">
+                    ${q.dan} × ${q.mult} =
+                  </span>
+                </div>
+                <input 
+                  type="number" 
+                  id="p8-ans-${idx}" 
+                  inputmode="numeric" 
+                  maxlength="2" 
+                  placeholder="?" 
+                  class="w-16 h-12 text-center font-black text-2xl text-sky-700 bg-white border-2 border-sky-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-sky-200 shadow-inner transition-all"
+                />
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="flex flex-col items-center gap-3">
+            <button onclick="checkP8Answer()" class="py-3.5 px-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-jua text-xl rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+              <span>🎯 채점하기</span>
+            </button>
+            <div id="p8-feedback" class="font-jua text-base sm:text-lg text-center min-h-[28px]"></div>
+          </div>
+        </div>
+      `;
+
+      p8Questions.forEach((_, idx) => {
+        const inp = document.getElementById(`p8-ans-${idx}`);
+        if (inp) {
+          inp.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+              if (idx < p8Questions.length - 1) {
+                const next = document.getElementById(`p8-ans-${idx + 1}`);
+                if (next) next.focus();
+              } else {
+                checkP8Answer();
+              }
+            }
+          });
+        }
+      });
+
+      const firstInput = document.getElementById('p8-ans-0');
+      if (firstInput) firstInput.focus();
+    }
+
+    function startP8Challenge() {
+      p8Questions = generateP8Questions();
+      p8IsStarted = true;
+      p8IsFinished = false;
+      p8ElapsedTime = 0;
+      p8StartTime = Date.now();
+
+      renderPage6();
+      playSound('correct');
+
+      if (p8TimerId) clearInterval(p8TimerId);
+      p8TimerId = setInterval(() => {
+        p8ElapsedTime = (Date.now() - p8StartTime) / 1000;
+        const disp = document.getElementById('p8-timer-display');
+        if (disp) {
+          disp.innerText = p8ElapsedTime.toFixed(1);
+          const box = disp.parentElement;
+          if (box) {
+            if (p8ElapsedTime > 40.0) {
+              box.className = 'font-jua text-2xl sm:text-3xl px-4 py-1.5 rounded-2xl border-2 text-rose-600 border-rose-400 bg-rose-50 font-mono tracking-wider shadow-inner transition-colors';
+            } else if (p8ElapsedTime >= 30.0) {
+              box.className = 'font-jua text-2xl sm:text-3xl px-4 py-1.5 rounded-2xl border-2 text-amber-600 border-amber-400 bg-amber-50 font-mono tracking-wider shadow-inner transition-colors';
+            }
+          }
+        }
+      }, 100);
+    }
+
+    function resetP8Challenge() {
+      if (p8TimerId) {
+        clearInterval(p8TimerId);
+        p8TimerId = null;
+      }
+      p8IsStarted = false;
+      p8ElapsedTime = 0;
+      p8IsFinished = false;
+      renderPage6();
+    }
+
+    function checkP8Answer() {
+      if (p8IsFinished) return;
+
+      const feedback = document.getElementById('p8-feedback');
+      const allValues = p8Questions.map((_, i) => document.getElementById(`p8-ans-${i}`)?.value.trim());
+
+      if (allValues.every(v => v === '')) {
+        if (feedback) {
+          feedback.className = 'font-jua text-base sm:text-lg text-center text-amber-600';
+          feedback.innerText = '⚠️ 답을 하나도 적지 않았어요! 먼저 문제를 풀어보세요.';
+        }
+        return;
+      }
+
+      if (allValues.some(v => v === '')) {
+        if (feedback) {
+          feedback.className = 'font-jua text-base sm:text-lg text-center text-amber-600';
+          feedback.innerText = '⚠️ 아직 풀지 않은 빈칸이 있어요! 모든 문제를 채워주세요.';
+        }
+        return;
+      }
+
+      clearInterval(p8TimerId);
+      p8TimerId = null;
+      p8IsFinished = true;
+
+      const recordedTime = p8ElapsedTime.toFixed(1);
+      let correctCount = 0;
+
+      p8Questions.forEach((q, idx) => {
+        const inp = document.getElementById(`p8-ans-${idx}`);
+        const card = document.getElementById(`p8-card-${idx}`);
+        const val = parseInt(allValues[idx], 10);
+        if (val === q.ans) {
+          correctCount++;
+          if (inp) inp.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+          if (card) card.classList.add('border-emerald-300', 'bg-emerald-50/50');
+        } else {
+          if (inp) inp.classList.add('border-rose-400', 'bg-rose-50', 'text-rose-600');
+          if (card) card.classList.add('border-rose-300', 'bg-rose-50/50');
+        }
+      });
+
+      const isSuccess = (correctCount === 10) && (p8ElapsedTime <= 40.0);
+
+      if (isSuccess) {
+        playSound('fanfare');
+        triggerConfetti();
+        // 6번째 비밀 글자 지급
+        const letter6 = awardKeywordLetter(6);
+        if (feedback) {
+          feedback.className = 'font-jua text-lg sm:text-xl text-center text-emerald-600 font-bold';
+          feedback.innerText = `🎉 대성공! 기록: ${recordedTime}초 (10/10 정답) 완벽한 곱셈구구 마스터!`;
+        }
+        openSuccessModal({
+          title: '스피드 챌린지 클리어! 🏆',
+          badge: '스피드 마스터 배지 & 6번째 보물 열쇠 획득!',
+          desc: `기록: ${recordedTime}초! 40초 내 10문제 올 클리어!\n[6번째 마지막 비밀 글자: '${letter6}']을 획득했습니다!\n이제 '7. 키워드' 단계에서 6글자 최종 보물을 열어보세요!`,
+          nextPageNum: 8
+        });
+      } else {
+        playSound('wrong');
+        if (feedback) {
+          feedback.className = 'font-jua text-base sm:text-lg text-center text-rose-500';
+          if (p8ElapsedTime > 40.0 && correctCount === 10) {
+            feedback.innerText = `⏱️ ${recordedTime}초로 아쉽게 40초를 넘겼어요! (10문제 정답) 조금만 더 빠르게 다시 도전해 보세요!`;
+          } else if (p8ElapsedTime <= 40.0) {
+            feedback.innerText = `❌ ${recordedTime}초에 풀었지만 ${10 - correctCount}문제가 틀렸어요! 빨간색 문제를 확인하고 다시 도전해 보세요!`;
+          } else {
+            feedback.innerText = `❌ 기록: ${recordedTime}초, 정답: ${correctCount}/10개. 다시 연습하면 분명 40초 안에 통과할 수 있어요!`;
+          }
+        }
+      }
+    }
+
+    function renderPage7() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+      
+      const missingSteps = [1, 2, 3, 4, 5, 6].filter(i => !unlockedLetters[i]);
+      const collectedCount = 6 - missingSteps.length;
+      const isAllCollected = collectedCount === 6;
+
+      const lettersClues = [1, 2, 3, 4, 5, 6].map(i => {
+        const char = unlockedLetters[i];
+        const isFound = !!char;
+        return `
+          <div class="flex flex-col items-center">
+            <span class="text-[11px] font-jua ${isFound ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold'} mb-1">${i}단계</span>
+            <div class="w-11 h-13 sm:w-12 sm:h-14 rounded-2xl ${isFound ? 'bg-gradient-to-b from-amber-100 to-amber-200 border-2 border-amber-400 text-amber-950 shadow-sm scale-105' : 'bg-slate-100 border-2 border-dashed border-slate-300 text-slate-400'} font-jua text-xl sm:text-2xl flex items-center justify-center font-black transition-all">
+              ${isFound ? char : '🔒'}
+            </div>
+            ${!isFound ? `<button onclick="setPage(${i + 1})" class="mt-1 px-2 py-0.5 bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 rounded-lg text-[10px] font-jua transition-all cursor-pointer">도전하기</button>` : '<span class="text-[10px] text-emerald-600 font-jua mt-1 font-bold">획득 완료</span>'}
+          </div>
+        `;
+      }).join('');
+
+      if (!isAllCollected) {
+        container.innerHTML = `
+          <div class="w-full flex flex-col items-center justify-center py-4 px-2 text-center max-w-xl">
+            <div class="inline-flex items-center gap-2 px-5 py-2 bg-rose-100 text-rose-900 rounded-full font-jua text-sm sm:text-base mb-3 border border-rose-300 shadow-2xs">
+              <span>🔒</span> <span>보물 상자가 굳게 잠겨 있습니다</span>
+            </div>
+
+            <h2 class="font-jua text-3xl sm:text-4xl text-slate-900 mb-2 drop-shadow-xs">
+              ${currentStudent ? `👑 ${currentStudent} 학생의 잠긴 보물 상자` : '👑 잠긴 보물 상자'}
+            </h2>
+
+            <p class="font-jua text-rose-600 text-base sm:text-lg mb-4 font-bold leading-relaxed">
+              비밀 글자를 모두 모으지 않으면 암호를 열 수 없어요!<br>
+              <span class="text-slate-600 font-medium text-sm sm:text-base">1~5단계 학습과 6단계 40초 챌린지를 성공하여 6개의 글자를 모두 모아오세요.</span>
+            </p>
+
+            <div class="w-full bg-white rounded-3xl p-5 border-2 border-slate-200 shadow-sm mb-5 flex flex-col items-center">
+              <div class="w-full flex items-center justify-between mb-3 px-1">
+                <span class="text-xs sm:text-sm font-jua text-slate-700 font-bold">
+                  비밀 글자 수집 현황
+                </span>
+                <span class="font-jua text-sm sm:text-base px-3 py-1 bg-amber-50 border border-amber-300 rounded-full text-amber-800 font-bold">
+                  ${collectedCount} / 6개 완료
+                </span>
+              </div>
+              
+              <div class="flex items-center justify-center gap-2 sm:gap-3 flex-wrap mb-2">
+                ${lettersClues}
+              </div>
+            </div>
+
+            <div class="w-full bg-rose-50/70 rounded-2xl p-4 border-2 border-dashed border-rose-300 flex flex-col items-center gap-2 mb-4">
+              <div class="text-3xl">⛔</div>
+              <p class="font-jua text-rose-700 text-base font-bold">
+                아직 모든 비밀 글자를 획득하지 않아 입력창이 열리지 않아요!
+              </p>
+              <button onclick="setPage(7)" class="mt-2 px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-base font-jua shadow-sm cursor-pointer transition-all active:scale-95">
+                ⏱️ 40초 챌린지 도전하러 가기
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center justify-center py-4 px-2 text-center max-w-xl">
+          <div class="inline-flex items-center gap-2 px-5 py-2 bg-emerald-100 text-emerald-900 rounded-full font-jua text-sm sm:text-base mb-3 border border-emerald-300 shadow-2xs">
+            <span>🔓</span> <span>모든 비밀 글자 수집 완료! 봉인 해제</span>
+          </div>
+
+          <h2 class="font-jua text-3xl sm:text-4xl text-slate-900 mb-2 drop-shadow-xs">
+            👑 ${currentStudent} 학생의 보물 상자
+          </h2>
+
+          <p class="font-jua text-slate-600 text-base sm:text-lg mb-5 leading-relaxed">
+            축하합니다! <strong>6개의 비밀 글자</strong>를 모두 모았습니다.<br>
+            모은 글자를 알맞은 순서대로 입력하여 최종 보물을 열어보세요!
+          </p>
+
+          <div class="w-full bg-white rounded-3xl p-5 border-2 border-emerald-400 shadow-sm mb-5 flex flex-col items-center">
+            <span class="text-xs sm:text-sm font-jua text-emerald-800 font-bold mb-3">
+              수집 완료된 6글자 보물 열쇠 (6/6)
+            </span>
+            <div class="flex items-center justify-center gap-2 sm:gap-3 flex-wrap mb-1">
+              ${lettersClues}
+            </div>
+          </div>
+
+          <div class="w-full bg-slate-50 rounded-2xl p-5 border border-slate-200 flex flex-col items-center gap-3 mb-5 shadow-xs">
+            <label for="p10-final-input" class="font-jua text-base sm:text-lg text-slate-800 font-bold">
+              🗝️ 6글자 비밀 키워드를 입력하세요:
+            </label>
+            <input 
+              type="text" 
+              id="p10-final-input" 
+              maxlength="6" 
+              placeholder="모은 6글자 입력" 
+              autocomplete="off"
+              class="w-full max-w-sm h-14 text-center font-jua text-2xl text-amber-900 bg-white border-2 border-amber-400 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-200 shadow-inner transition-all tracking-widest font-black placeholder:text-slate-300 placeholder:font-normal placeholder:text-lg"
+            />
+          </div>
+
+          <button onclick="checkP10Answer()" class="py-3.5 px-12 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-jua text-xl rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+            <span>🏆 최종 보물 열기!</span>
+          </button>
+
+          <div id="p10-feedback" class="mt-4 font-jua text-base sm:text-lg text-center min-h-[30px]"></div>
+
+          <!-- Printable Master Certificate -->
+          <div id="certificate-print-area" class="hidden w-full bg-gradient-to-b from-amber-50 to-white border-4 border-amber-400 rounded-3xl p-6 sm:p-8 mt-6 shadow-xl flex-col items-center text-center">
+            <div class="text-4xl mb-2">📜 🌟 🎓</div>
+            <h3 class="font-jua text-2xl sm:text-3xl text-amber-900 mb-1">곱셈구구 탐험 마스터 인증서</h3>
+            <p class="font-jua text-sm text-amber-700 mb-4">초등학교 2학년 2학기 곱셈구구 과정</p>
+            
+            <div class="w-full py-4 border-y-2 border-dashed border-amber-300 my-2">
+              <p class="font-jua text-xl sm:text-2xl text-slate-800 mb-2">
+                학생 성명: <strong class="text-sky-700 underline underline-offset-4 decoration-sky-400">${currentStudent}</strong>
+              </p>
+              <p class="font-jua text-slate-600 text-sm sm:text-base leading-relaxed">
+                위 학생은 곱셈구구 과정과 40초 스피드 챌린지를 우수한 실력으로 마스터하고,<br>
+                비밀 보물 키워드 <strong class="text-amber-800 text-lg sm:text-xl font-black">[ ${studentTargetSentence} ]</strong>을<br>
+                성공적으로 완성하였으므로 이 상장을 수여합니다.
+              </p>
+            </div>
+
+            <div class="w-full flex items-center justify-between text-xs sm:text-sm font-jua text-slate-500 mt-4 px-2">
+              <span>인증 일자: ${new Date().toLocaleDateString('ko-KR')}</span>
+              <button onclick="window.print()" class="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-xs transition-all cursor-pointer">
+                🖨️ 인증서 인쇄하기
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const inp = document.getElementById('p10-final-input');
+      if (inp) {
+        inp.addEventListener('keydown', e => {
+          if (e.key === 'Enter') checkP10Answer();
+        });
+        inp.focus();
+      }
+    }
+
+    function checkP10Answer() {
+      const missingSteps = [1, 2, 3, 4, 5, 6].filter(i => !unlockedLetters[i]);
+      if (missingSteps.length > 0) {
+        showNoticeModal(`🔒 아직 비밀 글자를 다 모으지 못했어요!\n현재 ${6 - missingSteps.length}/6개 수집됨.\n학습 미션과 40초 스피드 챌린지를 먼저 성공해야 합니다.`);
+        return;
+      }
+
+      const inp = document.getElementById('p10-final-input');
+      const feedback = document.getElementById('p10-feedback');
+      if (!inp) return;
+
+      const userVal = inp.value.trim().replace(/\s+/g, '');
+      const targetVal = studentTargetSentence.replace(/\s+/g, '');
+
+      if (!userVal) {
+        if (feedback) {
+          feedback.className = 'mt-4 font-jua text-base text-amber-600';
+          feedback.innerText = '⚠️ 비밀 키워드를 입력해 주세요!';
+        }
+        inp.focus();
+        return;
+      }
+
+      if (userVal === targetVal) {
+        playSound('fanfare');
+        triggerConfetti();
+        if (feedback) {
+          feedback.className = 'mt-4 font-jua text-xl text-emerald-600 font-bold';
+          feedback.innerText = `🎉 대성공! 완벽한 정답입니다! "${studentTargetSentence}"`;
+        }
+
+        const cert = document.getElementById('certificate-print-area');
+        if (cert) {
+          cert.classList.remove('hidden');
+          cert.classList.add('flex');
+        }
+
+        openSuccessModal({
+          title: '🎉 모든 모험 완료! 챔피언! 🎉',
+          badge: '최종 보물 인증서 발급 완료!',
+          desc: `축하합니다! ${currentStudent} 학생은 모든 곱셈구구 미션과 40초 챌린지를 클리어하여 보물 키워드 ["${studentTargetSentence}"]를 완성했습니다!\n화면 아래의 인증서를 확인해 보세요! 🎓✨`,
+          nextPageNum: 1
+        });
+      } else {
+        playSound('wrong');
+        if (feedback) {
+          feedback.className = 'mt-4 font-jua text-base text-rose-500';
+          feedback.innerText = `❌ 아직 일치하지 않아요! 모은 6글자를 순서대로 차근차근 이어 써보세요!`;
+        }
+      }
+    }
+
+    function openSuccessModal({ title, badge, desc, nextPageNum }) {
+      const modal = document.getElementById('success-modal');
+      const titleEl = document.getElementById('modal-title');
+      const badgeEl = document.getElementById('modal-badge-label');
+      const descEl = document.getElementById('modal-desc');
+      const nextBtn = document.getElementById('modal-next-btn');
+
+      if (titleEl) titleEl.innerText = title;
+      if (badgeEl) badgeEl.innerText = badge;
+      if (descEl) descEl.innerText = desc;
+      nextTargetPage = nextPageNum;
+
+      if (nextBtn) {
+        if (nextTargetPage === 1) {
+          nextBtn.innerHTML = '<span>처음 화면으로 돌아가기 🏠</span>';
+        } else if (nextTargetPage === 8) {
+          nextBtn.innerHTML = '<span>비밀 키워드 열러 가기! 🎁</span>';
+        } else {
+          nextBtn.innerHTML = `<span>다음 단계로 출발! 🚀</span>`;
+        }
+      }
+
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function handleModalNextStep() {
+      const modal = document.getElementById('success-modal');
+      if (modal) modal.classList.add('hidden');
+      if (nextTargetPage > 0) {
+        setPage(nextTargetPage, true);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('success-modal').classList.add('hidden');
+    }
+
+    function setPage(num, forceRandom = true) {
+      if (num > 1 && !currentStudent) {
+        showNoticeModal('🔒 이름을 먼저 등록해야 다음 단계로 나아갈 수 있어요!\n표지에서 이름을 입력하거나 명단에서 선택해 주세요.');
+        if (currentPage !== 1) {
+          setPage(1, false);
+        } else {
+          const inp = document.getElementById('cover-student-input');
+          if (inp) inp.focus();
+        }
+        return;
+      }
+
+      if (currentPage === 7 && p8TimerId) {
+        clearInterval(p8TimerId);
+        p8TimerId = null;
+      }
+
+      currentPage = num;
+
+      for (let i = 1; i <= 8; i++) {
+        const tab = document.getElementById(`tab-${i}`);
+        if (tab) {
+          if (i === num) {
+            tab.className = "py-2 px-1 rounded-xl bg-sky-600 text-white shadow-xs font-bold border-2 border-sky-700 cursor-pointer";
+          } else {
+            tab.className = "py-2 px-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium border-2 border-transparent cursor-pointer";
+          }
+        }
+      }
+
+      const pageIndicator = document.getElementById('page-indicator');
+      if (pageIndicator) {
+        pageIndicator.innerText = `${num} / 8 단계`;
+      }
+
+      const prevBtn = document.getElementById('prev-step-btn');
+      const nextBtn = document.getElementById('next-step-btn');
+      if (prevBtn) prevBtn.disabled = (num === 1);
+      if (nextBtn) nextBtn.disabled = (num === 8);
+
+      if (num === 1) renderCoverPage();
+      else if (num === 2) {
+        if (forceRandom) generateP1CardLayout();
+        renderPage1();
+      }
+      else if (num === 3) renderPage2();
+      else if (num === 4) renderPage3();
+      else if (num === 5) renderPage4();
+      else if (num === 6) renderPage5();
+      else if (num === 7) {
+        p8IsStarted = false;
+        renderPage6();
+      } else if (num === 8) {
+        renderPage7();
+      }
+    }
+
+    function goPrevPage() {
+      if (currentPage > 1) {
+        setPage(currentPage - 1, false);
+      }
+    }
+
+    function goNextPage() {
+      if (currentPage === 1 && !currentStudent) {
+        const inp = document.getElementById('cover-student-input');
+        const name = inp ? inp.value.trim() : '';
+        if (!name) {
+          showNoticeModal('🔒 이름을 먼저 등록해야 다음 단계로 나아갈 수 있어요!\n표지에서 이름을 입력하거나 명단에서 선택해 주세요.');
+          if (inp) inp.focus();
+          return;
+        }
+        registerStudent(name);
+      }
+      if (currentPage < 8) {
+        setPage(currentPage + 1, false);
+      }
+    }
+
+    window.onload = function() {
+      setPage(1, true);
+    };
+  </script>
+</body>
+</html>
