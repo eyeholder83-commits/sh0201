@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마음의 선물 릴레이 - 익명 칭찬 & 추리 게임</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Pretendard Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Canvas Confetti for celebrations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Firebase Realtime Database (교사-학생 실시간 연동) -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fdf4ff',
+                            100: '#fae8ff',
+                            500: '#d946ef',
+                            600: '#c026d3',
+                            700: '#a21caf',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pop-card {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .pop-card:hover {
+            transform: translateY(-2px);
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        .shake {
+            animation: shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; }
+            .printable-card { break-inside: avoid; page-break-inside: avoid; margin-bottom: 24px; border: 1.5px solid #cbd5e1 !important; }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50/80 via-rose-50/60 to-amber-50/80 min-h-full text-slate-800 flex flex-col selection:bg-pink-200">
+
+    <!-- App Navigation Header -->
+    <header class="bg-white/85 backdrop-blur-md border-b border-indigo-100/70 sticky top-0 z-40 px-4 py-3 shadow-sm no-print">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="handleLogoClick()">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-md shadow-pink-200 ring-2 ring-white">
+                    <i class="fa-solid fa-gift text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-base sm:text-lg font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            마음의 선물 릴레이
+                        </h1>
+                        <span id="role-pill-badge" class="bg-indigo-100 text-indigo-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-indigo-200">
+                            학생 홈
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500">비밀 친구에게 마음을 전하고 추리하는 우리 반 릴레이</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <span id="connection-status" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold" title="교사 컴퓨터와 학생 태블릿의 실시간 연결 상태">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    연결 중
+                </span>
+                <!-- Sound Toggle -->
+                <button id="sound-toggle-btn" onclick="toggleSound()" class="p-2 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all text-sm" title="효과음 켜기/끄기">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+                <!-- Teacher Auth Button -->
+                <button id="teacher-nav-btn" onclick="openTeacherAuthModal()" class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95">
+                    <i class="fa-solid fa-key text-amber-300"></i>
+                    <span id="teacher-nav-btn-text">선생님 교사뷰</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Interactive Container -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+
+        <!-- Notification Toast Banner -->
+        <div id="toast" class="fixed top-16 right-4 z-50 transform translate-x-full transition-transform duration-300 bg-slate-900/95 backdrop-blur text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 text-sm border border-slate-800 pointer-events-none">
+            <div id="toast-icon-box" class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">
+                <i id="toast-icon" class="fa-solid fa-check"></i>
+            </div>
+            <span id="toast-message" class="font-medium">알림 메시지입니다.</span>
+        </div>
+
+        <!-- POPUP 1: 학생 개인 점수 결과 팝업 -->
+        <div id="student-score-modal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-indigo-100 text-center space-y-5 fade-in relative overflow-hidden">
+                <!-- Top Decorative Badge -->
+                <div class="w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-3xl shadow-lg" id="score-popup-icon-box">
+                    <span id="score-popup-emoji">🎉</span>
+                </div>
+
+                <div>
+                    <span id="score-popup-badge" class="inline-block px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase mb-1">
+                        추리 결과 발표
+                    </span>
+                    <h3 class="text-xl sm:text-2xl font-black text-slate-900" id="score-popup-title">김서아 학생의 점수</h3>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1" id="score-popup-subtitle">나에게 온 칭찬 편지의 발신인을 맞췄을까요?</p>
+                </div>
+
+                <!-- Big Score Callout -->
+                <div id="score-popup-callout" class="p-4 rounded-2xl border text-center space-y-1">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Guess vs Actual Breakdown -->
+                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-left space-y-2.5 text-xs">
+                    <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                        <span class="text-slate-500 font-semibold">💌 실제 편지 발신인</span>
+                        <span id="score-popup-actual-sender" class="font-black text-pink-600 text-sm">-</span>
+                    </div>
+                    <div id="score-popup-guesses-list" class="space-y-1.5">
+                        <!-- 1st, 2nd, 3rd guess comparison -->
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="closeStudentScoreModal()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-indigo-200">
+                        확인 완료
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- POPUP 2: 교사용 학급 전체 학생 순위 & 점수 현황 팝업 -->
+        <div id="class-score-modal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-indigo-100 overflow-hidden fade-in">
+                <!-- Header -->
+                <div class="px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white flex justify-between items-center">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center text-lg shadow-sm">
+                            <i class="fa-solid fa-trophy text-amber-300"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-base sm:text-lg">학급 전체 학생 추리 점수 발표</h3>
+                            <p class="text-xs text-white/80">정답 공개 스위치 작동에 따른 전체 학생 순위 및 획득 점수 집계</p>
+                        </div>
+                    </div>
+                    <button onclick="closeClassScoreModal()" class="text-white/80 hover:text-white p-2 text-lg">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Stats summary banner -->
+                <div class="grid grid-cols-3 gap-2 p-4 bg-slate-50 border-b border-slate-200 text-center">
+                    <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs">
+                        <span class="text-[10px] text-slate-400 font-bold block">1순위 적중 (3점)</span>
+                        <span id="stat-rank1-count" class="text-base font-black text-amber-600">0명</span>
+                    </div>
+                    <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs">
+                        <span class="text-[10px] text-slate-400 font-bold block">2·3순위 적중</span>
+                        <span id="stat-rank23-count" class="text-base font-black text-indigo-600">0명</span>
+                    </div>
+                    <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs">
+                        <span class="text-[10px] text-slate-400 font-bold block">학급 최고 득점</span>
+                        <span id="stat-max-score" class="text-base font-black text-emerald-600">3점</span>
+                    </div>
+                </div>
+
+                <!-- Students Score Table -->
+                <div id="class-score-table-container" class="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-2.5">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Footer -->
+                <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs">
+                    <span class="text-slate-400">💡 1순위 3점 / 2순위 2점 / 3순위 1점</span>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openPrintModal()" class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition-all">
+                            <i class="fa-solid fa-print mr-1"></i>카드 인쇄
+                        </button>
+                        <button onclick="closeClassScoreModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-sm transition-all">
+                            닫기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEACHER PASSCODE AUTH MODAL (비밀번호: 5658) -->
+        <div id="teacher-auth-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+            <div id="auth-modal-card" class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-indigo-100 text-center space-y-4">
+                <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl mx-auto flex items-center justify-center text-xl shadow-inner">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-extrabold text-slate-900">교사 인증</h3>
+                    <p class="text-xs text-slate-500 mt-1">학생 명단 관리 및 비밀 매칭 생성을 위해 교사 비밀번호를 입력해주세요.</p>
+                </div>
+                <div class="space-y-2">
+                    <input type="password" id="teacher-password-input" maxlength="10" placeholder="비밀번호 4자리" class="w-full text-center tracking-widest text-lg font-black py-3 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all" onkeydown="if(event.key==='Enter') verifyTeacherPassword()">
+                    <p id="auth-error-msg" class="text-xs text-rose-500 font-bold hidden flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>비밀번호가 올바르지 않습니다.</span>
+                    </p>
+                </div>
+                <div class="flex space-x-2 pt-2">
+                    <button onclick="closeTeacherAuthModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-all">취소</button>
+                    <button onclick="verifyTeacherPassword()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-indigo-200">인증 후 접속</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STUDENT VIEW: DEFAULT HOME VIEW -->
+        <section id="stage-student-home" class="fade-in max-w-2xl mx-auto w-full">
+            
+            <!-- STEP A: Student Name Login Gate -->
+            <div id="student-login-box" class="bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-xl border border-white/60 text-center space-y-6">
+                <div class="w-16 h-16 bg-gradient-to-tr from-pink-500 to-indigo-600 text-white rounded-3xl mx-auto flex items-center justify-center text-2xl shadow-lg shadow-pink-200">
+                    <i class="fa-solid fa-user-tag"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-black text-slate-900">우리 반 마음의 선물</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">접속할 학생의 이름을 입력하고 입장해주세요.</p>
+                </div>
+
+                <div class="space-y-3 max-w-sm mx-auto">
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-4 top-3.5 text-slate-400"></i>
+                        <input type="text" id="student-name-input" list="student-name-list" autocomplete="off" placeholder="내 이름을 선택하거나 입력하세요" class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all" onkeydown="if(event.key==='Enter') enterAsStudent()">
+                        <datalist id="student-name-list"></datalist>
+                    </div>
+                    <button onclick="enterAsStudent()" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-95 text-white font-extrabold rounded-2xl text-sm transition-all shadow-lg shadow-indigo-200 flex items-center justify-center space-x-2 active:scale-98">
+                        <i class="fa-solid fa-door-open"></i>
+                        <span>내 방으로 입장하기</span>
+                    </button>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                    <span>💡 등록된 이름으로 접속해야 매칭이 연결됩니다.</span>
+                    <button onclick="fillSampleStudentName()" class="text-indigo-600 font-bold hover:underline">명단 첫 이름 넣기</button>
+                </div>
+            </div>
+
+            <!-- STEP B: Student Personal Action Dashboard (After entering name) -->
+            <div id="student-dashboard" class="hidden space-y-5 fade-in">
+                <!-- Top User Banner -->
+                <div class="bg-white/90 backdrop-blur-md rounded-3xl p-5 sm:p-6 shadow-md border border-white/60 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg font-black">
+                            <span id="current-user-avatar">김</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h3 id="current-user-name" class="text-lg font-black text-slate-900">김서아</h3>
+                                <span class="text-xs text-slate-400">학생의 서랍</span>
+                            </div>
+                            <p class="text-xs text-slate-500">아래 4개의 버튼을 눌러 마음을 전하고 추리해보세요!</p>
+                        </div>
+                    </div>
+                    <button onclick="exitStudentSession()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition-all">
+                        <i class="fa-solid fa-arrow-right-from-bracket mr-1"></i>이름 변경
+                    </button>
+                </div>
+
+                <!-- 4 Action Buttons Matrix -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <!-- Button 1: 비밀 친구 (칭찬글 쓰기) -->
+                    <button id="btn-action-target" onclick="toggleStudentSection('write')" class="p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-28 shadow-xs">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[11px] font-bold text-indigo-800">1. 비밀 친구</span>
+                            <i class="fa-solid fa-heart text-pink-500 text-xs"></i>
+                        </div>
+                        <div>
+                            <div id="btn-target-name" class="text-base font-black text-slate-900 truncate">-</div>
+                            <span id="btn-target-sub" class="text-[10px] text-slate-500 font-medium">칭찬글 쓰기</span>
+                        </div>
+                    </button>
+
+                    <!-- Button 2: 나에게 온 칭찬 편지 -->
+                    <button id="btn-action-letter" onclick="toggleStudentSection('letter')" class="p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-28 shadow-xs">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[11px] font-bold text-rose-800">2. 도착한 편지</span>
+                            <i class="fa-solid fa-envelope-open-text text-rose-500 text-xs"></i>
+                        </div>
+                        <div>
+                            <div id="btn-letter-status" class="text-base font-black text-slate-900">미도착</div>
+                            <span id="btn-letter-sub" class="text-[10px] text-slate-500 font-medium">내게 온 편지 확인</span>
+                        </div>
+                    </button>
+
+                    <!-- Button 3: 추리하기 (1~3순위) -->
+                    <button id="btn-action-guess" onclick="toggleStudentSection('guess')" class="p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-28 shadow-xs">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[11px] font-bold text-amber-800">3. 추리하기</span>
+                            <i class="fa-solid fa-magnifying-glass text-amber-500 text-xs"></i>
+                        </div>
+                        <div>
+                            <div id="btn-guess-status" class="text-base font-black text-slate-900">추리 대기</div>
+                            <span id="btn-guess-sub" class="text-[10px] text-slate-500 font-medium">1~3순위 선택</span>
+                        </div>
+                    </button>
+
+                    <!-- Button 4: 확인 (정답 공개) -->
+                    <button id="btn-action-confirm" onclick="toggleStudentSection('confirm')" class="p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-28 shadow-xs">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[11px] font-bold text-teal-800">4. 확인</span>
+                            <i class="fa-solid fa-circle-check text-teal-500 text-xs"></i>
+                        </div>
+                        <div>
+                            <div id="btn-confirm-status" class="text-base font-black text-slate-900">비공개</div>
+                            <span id="btn-confirm-sub" class="text-[10px] text-slate-500 font-medium">발신인 확인</span>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- EXPANDABLE PANEL 1: Write Compliment to Secret Target -->
+                <div id="panel-write" class="hidden fade-in bg-white rounded-3xl p-5 sm:p-6 shadow-xl border border-indigo-100 space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-6 h-6 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-pen-nib"></i>
+                            </span>
+                            <h4 class="font-bold text-slate-800 text-sm">
+                                <span id="write-target-name-display" class="text-indigo-600 font-black">-</span> 학생에게 보내는 비밀 칭찬글
+                            </h4>
+                        </div>
+                        <span id="char-counter" class="text-xs text-slate-400">0자</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <textarea id="student-compliment-textarea" oninput="updateCharCount()" rows="4" class="w-full rounded-2xl border border-slate-200 p-4 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm leading-relaxed transition-all shadow-inner bg-slate-50/50" placeholder="친구의 따뜻한 점, 고마웠던 순간을 정성껏 적어보세요. 내 이름은 비밀로 전달됩니다!"></textarea>
+                        
+                        <div class="flex justify-between items-center pt-1">
+                            <span class="text-xs text-slate-400">💡 언제든 내용을 수정하여 다시 전송할 수 있습니다.</span>
+                            <button onclick="submitStudentCompliment()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-indigo-200 flex items-center space-x-1.5 active:scale-95">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>비밀 편지 전송</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EXPANDABLE PANEL 2: Received Compliment Letters -->
+                <div id="panel-letter" class="hidden fade-in bg-white rounded-3xl p-5 sm:p-6 shadow-xl border border-rose-100 space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-envelope-open-heart"></i>
+                            </span>
+                            <h4 class="font-bold text-slate-800 text-sm">나에게 도착한 비밀 칭찬 편지</h4>
+                        </div>
+                        <span class="text-xs font-semibold text-rose-500 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-100">발신인 비밀</span>
+                    </div>
+
+                    <div id="received-letter-box" class="bg-gradient-to-br from-rose-50/60 to-pink-50/40 p-5 rounded-2xl border border-rose-100 text-slate-800 text-sm leading-relaxed whitespace-pre-wrap font-medium">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- EXPANDABLE PANEL 3: Detective Guesses (1st, 2nd, 3rd) -->
+                <div id="panel-guess" class="hidden fade-in bg-white rounded-3xl p-5 sm:p-6 shadow-xl border border-amber-100 space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-6 h-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-user-secret"></i>
+                            </span>
+                            <h4 class="font-bold text-slate-800 text-sm">이 편지를 쓴 친구를 추리해보세요!</h4>
+                        </div>
+                        <span class="text-xs text-amber-700 font-bold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">1순위 3점 / 2순위 2점 / 3순위 1점</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <!-- 1st Rank -->
+                        <div class="bg-amber-50/40 p-3.5 rounded-2xl border border-amber-100">
+                            <label class="block text-xs font-bold text-amber-900 mb-1.5 flex items-center space-x-1.5">
+                                <span class="w-5 h-5 rounded-full bg-amber-200 text-amber-900 flex items-center justify-center text-[10px]">1</span>
+                                <span>1순위 추측 (적중 시 3점)</span>
+                            </label>
+                            <select id="guess-select-1" onchange="handleGuessChange(1, this.value)" class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white text-xs font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                                <option value="">-- 친구 선택 --</option>
+                            </select>
+                        </div>
+
+                        <!-- 2nd Rank -->
+                        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center space-x-1.5">
+                                <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-800 flex items-center justify-center text-[10px]">2</span>
+                                <span>2순위 추측 (적중 시 2점)</span>
+                            </label>
+                            <select id="guess-select-2" onchange="handleGuessChange(2, this.value)" class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white text-xs font-bold focus:ring-2 focus:ring-slate-500 focus:outline-none">
+                                <option value="">-- 친구 선택 --</option>
+                            </select>
+                        </div>
+
+                        <!-- 3rd Rank -->
+                        <div class="bg-orange-50/40 p-3.5 rounded-2xl border border-orange-100">
+                            <label class="block text-xs font-bold text-orange-900 mb-1.5 flex items-center space-x-1.5">
+                                <span class="w-5 h-5 rounded-full bg-orange-200 text-orange-900 flex items-center justify-center text-[10px]">3</span>
+                                <span>3순위 추측 (적중 시 1점)</span>
+                            </label>
+                            <select id="guess-select-3" onchange="handleGuessChange(3, this.value)" class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white text-xs font-bold focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                                <option value="">-- 친구 선택 --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EXPANDABLE PANEL 4: Confirmation & Actual Sender Reveal -->
+                <div id="panel-confirm" class="hidden fade-in bg-white rounded-3xl p-5 sm:p-6 shadow-xl border border-teal-100 space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-6 h-6 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-gift"></i>
+                            </span>
+                            <h4 class="font-bold text-slate-800 text-sm">편지를 보낸 진짜 주인공</h4>
+                        </div>
+                        <span id="confirm-hit-badge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">결과 집계 중</span>
+                    </div>
+
+                    <div id="confirm-result-box" class="p-5 rounded-2xl bg-gradient-to-tr from-teal-50 to-emerald-50 border border-teal-100 text-center space-y-3">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- STAGE: TEACHER MANAGEMENT CONSOLE (선생님 교사뷰) -->
+        <section id="stage-teacher" class="fade-in bg-white/95 backdrop-blur-md rounded-3xl p-6 md:p-8 shadow-xl border border-indigo-100 max-w-4xl mx-auto w-full mb-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-5 mb-6">
+                <div>
+                    <div class="inline-flex items-center space-x-1.5 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-bold mb-2 border border-purple-200">
+                        <i class="fa-solid fa-chalkboard-user text-[11px]"></i>
+                        <span>선생님 관리소 (TEACHER HUB)</span>
+                    </div>
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight">학급 명단 & 매칭·발송 컨트롤 타워</h2>
+                    <p class="text-slate-500 text-xs mt-1">매칭을 임의 지정/조정하고, 학생들의 작성 내용을 검수한 후 순서대로 발송하세요.</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="openPrintModal()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all">
+                        <i class="fa-solid fa-print"></i>
+                        <span>카드 인쇄</span>
+                    </button>
+                    <button onclick="exitTeacherMode()" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs flex items-center space-x-1.5 border border-indigo-200 transition-all">
+                        <i class="fa-solid fa-house"></i>
+                        <span>학생 홈으로 가기</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Step 1: Student List Entry -->
+                <div class="bg-indigo-50/40 p-5 rounded-2xl border border-indigo-100 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-sm font-bold text-slate-800">
+                            <i class="fa-solid fa-users text-indigo-600 mr-1.5"></i>학급 학생 명단 등록
+                        </label>
+                        <span class="text-xs text-slate-400">쉼표(,) 또는 줄바꿈으로 구분</span>
+                    </div>
+                    <textarea id="student-input" rows="2" class="w-full rounded-xl border border-slate-200 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm leading-relaxed transition-all shadow-inner bg-white font-medium" placeholder="우리 반 학생 이름을 쉼표로 구분해 입력하세요."></textarea>
+                    
+                    <div class="flex flex-col sm:flex-row gap-2.5">
+                        <button type="button" onclick="loadSampleStudents(5)" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold py-2 px-4 rounded-xl text-xs transition-all flex items-center justify-center space-x-1.5 shadow-xs">
+                            <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
+                            <span>우리 반 22명 불러오기</span>
+                        </button>
+                        <button type="button" onclick="generateAssignments()" class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all shadow-md shadow-indigo-200 flex items-center justify-center space-x-1.5 active:scale-95">
+                            <i class="fa-solid fa-shuffle"></i>
+                            <span>랜덤 자동 매칭 생성</span>
+                        </button>
+                        <button type="button" onclick="clearAllAssignments()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>매칭 초기화</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Teacher Master Matching Table (Editable & Deletable) -->
+                <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                    <div class="bg-slate-100/90 px-4 py-3 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-sliders text-indigo-600 text-sm"></i>
+                            <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">매칭 수동 조정 & 개별 삭제 관리표</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span id="match-count" class="text-[11px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">매칭 대기 중</span>
+                            <span id="dispatch-target-badge" class="text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">학생 전달 전</span>
+                        </div>
+                    </div>
+
+                    <div id="match-list" class="divide-y divide-slate-100 max-h-64 overflow-y-auto text-xs sm:text-sm custom-scrollbar bg-white">
+                        <div class="p-6 text-center text-xs text-slate-400">학생 명단을 입력하고 매칭을 생성해주세요.</div>
+                    </div>
+
+                    <!-- Dispatch Secret Target Button -->
+                    <div class="p-4 bg-purple-50/70 border-t border-purple-200/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div class="text-xs text-purple-900 leading-tight">
+                            <strong class="font-bold flex items-center space-x-1 text-purple-800">
+                                <i class="fa-solid fa-paper-plane text-purple-600"></i>
+                                <span>[단계 1] 비밀 친구 배정 전달</span>
+                            </strong>
+                            <p class="text-[11px] text-purple-700 mt-0.5">이 버튼을 눌러야 학생 홈의 1번 버튼에 칭찬할 대상 친구 이름이 활성화됩니다.</p>
+                        </div>
+                        <button id="btn-dispatch-targets" onclick="toggleDispatchTargets()" class="w-full sm:w-auto px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-purple-200 flex items-center justify-center space-x-1.5 active:scale-95">
+                            <i id="dispatch-target-icon" class="fa-solid fa-bell"></i>
+                            <span id="dispatch-target-btn-text">학생들에게 비밀 친구 전달하기</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Praise Letters Monitor & Whole-Dispatch Control -->
+                <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm space-y-0">
+                    <div class="bg-slate-100/90 px-4 py-3 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-envelope-open-text text-rose-500 text-sm"></i>
+                            <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">학생 칭찬 편지 실시간 검수 현황</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span id="letters-progress-badge" class="text-[11px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold">작성 0/0명</span>
+                            <span id="dispatch-letters-badge" class="text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">편지 발송 전</span>
+                        </div>
+                    </div>
+
+                    <!-- Progress bar -->
+                    <div class="w-full bg-slate-100 h-1.5 overflow-hidden">
+                        <div id="letters-progress-bar" class="bg-gradient-to-r from-pink-500 to-rose-600 h-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+
+                    <!-- List of students and their written compliment -->
+                    <div id="teacher-letters-review-list" class="divide-y divide-slate-100 max-h-72 overflow-y-auto text-xs sm:text-sm custom-scrollbar bg-white">
+                        <div class="p-6 text-center text-xs text-slate-400">배정 후 학생들이 작성한 편지가 이곳에 실시간으로 표시됩니다.</div>
+                    </div>
+
+                    <!-- Dispatch Praise Letters Button -->
+                    <div class="p-4 bg-rose-50/70 border-t border-rose-200/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div class="text-xs text-rose-900 leading-tight">
+                            <strong class="font-bold flex items-center space-x-1 text-rose-800">
+                                <i class="fa-solid fa-truck-fast text-rose-600"></i>
+                                <span>[단계 2] 칭찬 편지 전체 발송</span>
+                            </strong>
+                            <p class="text-[11px] text-rose-700 mt-0.5">확인이 끝나고 전체 발송 버튼을 누르면, 모든 학생이 도착한 편지를 읽을 수 있습니다.</p>
+                        </div>
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <button onclick="fillSampleCompliments()" class="px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-xl font-bold text-xs transition-all" title="테스트용으로 편지를 일괄 채웁니다.">
+                                <i class="fa-solid fa-bolt text-amber-600 mr-1"></i>데모 편지 채우기
+                            </button>
+                            <button id="btn-dispatch-letters" onclick="toggleDispatchLetters()" class="flex-1 sm:flex-none px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-rose-200 flex items-center justify-center space-x-1.5 active:scale-95">
+                                <i id="dispatch-letters-icon" class="fa-solid fa-paper-plane"></i>
+                                <span id="dispatch-letters-btn-text">편지 전체 발송하기</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Classroom Control Buttons -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <button type="button" onclick="exitTeacherMode()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold py-3.5 px-5 rounded-2xl text-sm transition-all shadow-lg shadow-emerald-200 flex items-center justify-center space-x-2 active:scale-98">
+                        <i class="fa-solid fa-door-open"></i>
+                        <span>학생 홈으로 돌아가기</span>
+                    </button>
+                    <div class="flex space-x-2">
+                        <button type="button" id="btn-teacher-reveal" onclick="toggleRevealAnswers()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 px-4 rounded-2xl text-sm transition-all shadow-md flex items-center justify-center space-x-2">
+                            <i id="teacher-reveal-icon" class="fa-solid fa-eye"></i>
+                            <span id="teacher-reveal-text">[단계 3] 정답 전체 공개 스위치</span>
+                        </button>
+                        <button type="button" onclick="openClassScoreModal()" class="px-4 py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-2xl text-sm shadow-md transition-all flex items-center justify-center" title="학급 점수 결과표 다시 보기">
+                            <i class="fa-solid fa-square-poll-vertical"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Print Modal (For creating take-home praise cards) -->
+        <div id="print-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-scale">
+                <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-print text-indigo-600"></i>
+                        <h3 class="font-bold text-slate-900">학급 칭찬 카드 출력 미리보기</h3>
+                    </div>
+                    <button onclick="closePrintModal()" class="text-slate-400 hover:text-slate-700 p-2">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+                <div id="printable-cards-container" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4">
+                    <!-- Populated dynamically -->
+                </div>
+                <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
+                    <span class="text-xs text-slate-500">브라우저 인쇄 창에서 '배경 그래픽 포함'을 체크하시면 더 예쁘게 출력됩니다.</span>
+                    <div class="space-x-2">
+                        <button onclick="closePrintModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-xl text-xs">닫기</button>
+                        <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 shadow-md shadow-indigo-200">
+                            <i class="fa-solid fa-print"></i>
+                            <span>인쇄하기</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto py-4 text-center text-xs text-slate-400 border-t border-slate-100 bg-white/40 no-print">
+        <p>마음의 선물 릴레이 · 함께 나누는 따뜻한 온기 · 학교 및 소그룹 친교 활동용</p>
+    </footer>
+
+    <script>
+        // ==========================================
+        // Teacher Security Configuration
+        // ==========================================
+        const TEACHER_PIN = "5658";
+        let isTeacherAuthenticated = false;
+
+        // Global Orchestration States
+        let isMatchingDistributed = false; // Whether secret target is revealed to student
+        let isLettersDistributed = false;  // Whether received letters are dispatched to students
+        let isAnswersRevealed = false;     // Whether actual answer is revealed for final check
+
+        // ==========================================
+        // Sound & Audio FX Helper (Web Audio API)
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.1) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playSuccessSound() {
+            playTone(523.25, 'triangle', 0.1, 0.08); // C5
+            setTimeout(() => playTone(659.25, 'triangle', 0.1, 0.08), 80); // E5
+            setTimeout(() => playTone(783.99, 'triangle', 0.2, 0.1), 160); // G5
+        }
+
+        function playCelebrateFanfare() {
+            if (!soundEnabled) return;
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, i) => {
+                setTimeout(() => playTone(freq, 'square', 0.22, 0.06), i * 110);
+            });
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-toggle-btn');
+            btn.innerHTML = soundEnabled ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark text-slate-400"></i>';
+            showToast(soundEnabled ? "효과음이 켜졌습니다." : "효과음이 꺼졌습니다.");
+        }
+
+        // ==========================================
+        // Global Application State
+        // ==========================================
+        let currentMode = 'student'; // 'student' | 'teacher'
+        const DEFAULT_STUDENTS = [
+            "김서아", "김수현", "김윤아", "김태영", "김하랑", "나예린", "박민제", "박선우", "양수빈", "유소영", "이대운",
+            "이새봄", "이서율", "이진서", "이채원", "이초은", "이태환", "이하린", "한규빈", "한유은", "현지우", "황지우"
+        ];
+        let students = [...DEFAULT_STUDENTS];
+        let assignments = {};   // { sender: receiver }
+        let compliments = {};   // { receiver: [ {sender, text, timestamp} ] }
+        let guesses = {};       // { student: { 1: name, 2: name, 3: name } }
+        let currentStudent = '';
+        let activeStudentPanel = ''; // 'write' | 'letter' | 'guess' | 'confirm' | ''
+
+        // ==========================================
+        // Firebase Realtime Database
+        // 공개수업 때 사용한 프로젝트의 별도 경로를 사용합니다.
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAasa9rGvBfQqik4ZwB_zkaKiVaVnFQ40s",
+            authDomain: "open-class-board.firebaseapp.com",
+            databaseURL: "https://open-class-board-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "open-class-board",
+            storageBucket: "open-class-board.firebasestorage.app",
+            messagingSenderId: "404429672223",
+            appId: "1:404429672223:web:48a62a53286377ef172a2a"
+        };
+        const GAME_PATH = "relayAngelGame0201";
+        let gameRef = null;
+        let realtimeReady = false;
+
+        function buildInitialGameState() {
+            return {
+                students: [...DEFAULT_STUDENTS],
+                assignments: {},
+                compliments: {},
+                guesses: {},
+                flags: {
+                    matchingDistributed: false,
+                    lettersDistributed: false,
+                    answersRevealed: false
+                },
+                updatedAt: firebase.database.ServerValue.TIMESTAMP
+            };
+        }
+
+        function normalizeList(value) {
+            if (!value) return [];
+            return Array.isArray(value) ? value.filter(Boolean) : Object.values(value).filter(Boolean);
+        }
+
+        function setConnectionStatus(isConnected, label) {
+            const el = document.getElementById('connection-status');
+            if (!el) return;
+            if (isConnected) {
+                el.className = "hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold";
+                el.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span>실시간 연결';
+            } else {
+                el.className = "hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold";
+                el.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span>${label || '연결 중'}`;
+            }
+        }
+
+        function applyRemoteState(data) {
+            if (!data) return;
+            const wasRevealed = isAnswersRevealed;
+            students = normalizeList(data.students);
+            if (students.length === 0) students = [...DEFAULT_STUDENTS];
+            assignments = data.assignments || {};
+            guesses = data.guesses || {};
+            compliments = {};
+            const remoteCompliments = data.compliments || {};
+            students.forEach(name => {
+                compliments[name] = normalizeList(remoteCompliments[name]);
+            });
+            const flags = data.flags || {};
+            isMatchingDistributed = !!flags.matchingDistributed;
+            isLettersDistributed = !!flags.lettersDistributed;
+            isAnswersRevealed = !!flags.answersRevealed;
+
+            const input = document.getElementById('student-input');
+            if (input && document.activeElement !== input) input.value = students.join(', ');
+            const nameList = document.getElementById('student-name-list');
+            if (nameList) nameList.innerHTML = students.map(name => `<option value="${name}"></option>`).join('');
+
+            if (currentStudent && !students.includes(currentStudent)) {
+                exitStudentSession();
+                showToast("명단이 변경되어 다시 로그인해주세요.", "error");
+            }
+
+            updateDispatchBadges();
+            renderAssignmentPreview();
+            renderTeacherLettersReview();
+            refreshStudentDashboard();
+
+            const teacherText = document.getElementById('teacher-reveal-text');
+            const teacherIcon = document.getElementById('teacher-reveal-icon');
+            if (teacherText) teacherText.textContent = isAnswersRevealed ? "[단계 3] 정답 다시 숨기기" : "[단계 3] 정답 전체 공개 스위치";
+            if (teacherIcon) teacherIcon.className = isAnswersRevealed ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
+
+            if (!wasRevealed && isAnswersRevealed && currentMode !== 'teacher' && currentStudent) {
+                showStudentScoreModal(currentStudent);
+            }
+        }
+
+        async function updateRealtime(partial, errorMessage = "실시간 저장에 실패했습니다. 인터넷 연결을 확인해주세요.") {
+            if (!gameRef || !realtimeReady) {
+                showToast("아직 실시간 서버에 연결 중입니다. 잠시 후 다시 눌러주세요.", "error");
+                return false;
+            }
+            try {
+                await gameRef.update({ ...partial, updatedAt: firebase.database.ServerValue.TIMESTAMP });
+                return true;
+            } catch (error) {
+                console.error(error);
+                showToast(errorMessage, "error");
+                return false;
+            }
+        }
+
+        async function saveWholeGame() {
+            return updateRealtime({
+                students,
+                assignments,
+                compliments,
+                guesses,
+                flags: {
+                    matchingDistributed: isMatchingDistributed,
+                    lettersDistributed: isLettersDistributed,
+                    answersRevealed: isAnswersRevealed
+                }
+            });
+        }
+
+        async function initializeRealtime() {
+            document.getElementById('student-input').value = students.join(', ');
+            updateModeDisplay();
+            setConnectionStatus(false, '연결 중');
+
+            try {
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                const database = firebase.database();
+                gameRef = database.ref(GAME_PATH);
+
+                database.ref('.info/connected').on('value', snapshot => {
+                    const connected = snapshot.val() === true;
+                    realtimeReady = connected;
+                    setConnectionStatus(connected, connected ? '' : '연결 끊김');
+                });
+
+                await gameRef.transaction(current => current || buildInitialGameState());
+                gameRef.on('value', snapshot => {
+                    realtimeReady = true;
+                    applyRemoteState(snapshot.val());
+                }, error => {
+                    console.error(error);
+                    realtimeReady = false;
+                    setConnectionStatus(false, '권한 확인 필요');
+                    showToast("Firebase 데이터베이스 규칙을 확인해주세요.", "error");
+                });
+
+                const savedStudent = localStorage.getItem('angelRelayCurrentStudent') || '';
+                if (savedStudent && students.includes(savedStudent)) {
+                    document.getElementById('student-name-input').value = savedStudent;
+                }
+            } catch (error) {
+                console.error(error);
+                realtimeReady = false;
+                setConnectionStatus(false, '연결 실패');
+                showToast("실시간 연결에 실패했습니다. 인터넷을 확인해주세요.", "error");
+            }
+        }
+
+        const sampleComplimentsPool = [
+            "항상 궂은일에 먼저 앞장서서 친구들을 도와주는 듬직한 모습이 정말 멋져!",
+            "수업 시간에 발표도 적극적으로 하고 질문도 잘 받아줘서 수업이 훨씬 재미있어져.",
+            "아침마다 밝은 미소로 인사해줘서 덕분에 하루를 기분 좋게 시작해. 늘 고마워!",
+            "친구들의 고민을 진지하게 들어주고 공감해주는 따뜻한 마음씨를 정말 닮고 싶어.",
+            "체육 시간이나 모둠 활동할 때 모두가 소외되지 않게 챙겨주는 배려심이 최고야!",
+            "어려운 일이 생겨도 포기하지 않고 긍정적으로 해결해나가는 모습이 정말 본받을 만해."
+        ];
+
+        // Calculate single student's score and evaluation details
+        function getStudentScoreResult(student) {
+            const actualSender = Object.keys(assignments).find(k => assignments[k] === student) || 
+                                 (compliments[student] && compliments[student][0] ? compliments[student][0].sender : '');
+            const myGuess = guesses[student] || { 1: '', 2: '', 3: '' };
+            let score = 0;
+            let hitRank = 0; // 0 (none), 1, 2, 3
+
+            if (actualSender) {
+                if (myGuess[1] === actualSender) {
+                    score = 3;
+                    hitRank = 1;
+                } else if (myGuess[2] === actualSender) {
+                    score = 2;
+                    hitRank = 2;
+                } else if (myGuess[3] === actualSender) {
+                    score = 1;
+                    hitRank = 3;
+                }
+            }
+
+            return {
+                student,
+                actualSender,
+                myGuess,
+                score,
+                hitRank
+            };
+        }
+
+        // Open Individual Student Score Modal Popup
+        function showStudentScoreModal(studentName) {
+            if (!studentName) return;
+            const res = getStudentScoreResult(studentName);
+
+            const modal = document.getElementById('student-score-modal');
+            const iconBox = document.getElementById('score-popup-icon-box');
+            const emojiEl = document.getElementById('score-popup-emoji');
+            const badgeEl = document.getElementById('score-popup-badge');
+            const titleEl = document.getElementById('score-popup-title');
+            const subtitleEl = document.getElementById('score-popup-subtitle');
+            const calloutEl = document.getElementById('score-popup-callout');
+            const actualSenderEl = document.getElementById('score-popup-actual-sender');
+            const listEl = document.getElementById('score-popup-guesses-list');
+
+            titleEl.textContent = `${studentName} 학생의 추리 결과`;
+            actualSenderEl.textContent = res.actualSender ? `${res.actualSender} 학생` : '미배정';
+
+            if (res.hitRank === 1) {
+                iconBox.className = "w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-3xl shadow-lg bg-amber-100 text-amber-700 ring-4 ring-amber-200";
+                emojiEl.textContent = "🥇";
+                badgeEl.className = "inline-block px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase mb-1 bg-amber-100 text-amber-900 border border-amber-300";
+                badgeEl.textContent = "1순위 완벽 적중!";
+                subtitleEl.textContent = "발신인을 정확히 맞추었습니다! 대단한 추리력입니다.";
+                calloutEl.className = "p-4 rounded-2xl border text-center space-y-1 bg-gradient-to-tr from-amber-50 to-yellow-50 border-amber-200 text-amber-900";
+                calloutEl.innerHTML = `
+                    <div class="text-xs font-bold text-amber-700 uppercase">획득 점수</div>
+                    <div class="text-3xl font-black text-amber-900">+3점</div>
+                    <div class="text-[11px] text-amber-700">1순위 지목 성공 (+3점)</div>
+                `;
+            } else if (res.hitRank === 2) {
+                iconBox.className = "w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-3xl shadow-lg bg-indigo-100 text-indigo-700 ring-4 ring-indigo-200";
+                emojiEl.textContent = "🥈";
+                badgeEl.className = "inline-block px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase mb-1 bg-indigo-100 text-indigo-900 border border-indigo-300";
+                badgeEl.textContent = "2순위 적중!";
+                subtitleEl.textContent = "2순위로 친구를 찾아냈습니다! 훌륭해요.";
+                calloutEl.className = "p-4 rounded-2xl border text-center space-y-1 bg-gradient-to-tr from-indigo-50 to-purple-50 border-indigo-200 text-indigo-900";
+                calloutEl.innerHTML = `
+                    <div class="text-xs font-bold text-indigo-700 uppercase">획득 점수</div>
+                    <div class="text-3xl font-black text-indigo-900">+2점</div>
+                    <div class="text-[11px] text-indigo-700">2순위 지목 성공 (+2점)</div>
+                `;
+            } else if (res.hitRank === 3) {
+                iconBox.className = "w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-3xl shadow-lg bg-emerald-100 text-emerald-700 ring-4 ring-emerald-200";
+                emojiEl.textContent = "🥉";
+                badgeEl.className = "inline-block px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase mb-1 bg-emerald-100 text-emerald-900 border border-emerald-300";
+                badgeEl.textContent = "3순위 적중!";
+                subtitleEl.textContent = "3순위 안에 주인공이 있었습니다! 축하합니다.";
+                calloutEl.className = "p-4 rounded-2xl border text-center space-y-1 bg-gradient-to-tr from-emerald-50 to-teal-50 border-emerald-200 text-emerald-900";
+                calloutEl.innerHTML = `
+                    <div class="text-xs font-bold text-emerald-700 uppercase">획득 점수</div>
+                    <div class="text-3xl font-black text-emerald-900">+1점</div>
+                    <div class="text-[11px] text-emerald-700">3순위 지목 성공 (+1점)</div>
+                `;
+            } else {
+                iconBox.className = "w-16 h-16 rounded-3xl mx-auto flex items-center justify-center text-3xl shadow-lg bg-slate-100 text-slate-600 ring-4 ring-slate-200";
+                emojiEl.textContent = "🕵️‍♂️";
+                badgeEl.className = "inline-block px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase mb-1 bg-slate-100 text-slate-700 border border-slate-300";
+                badgeEl.textContent = "아쉬운 미적중";
+                subtitleEl.textContent = "친구의 따뜻한 마음을 전해 받은 것만으로도 최고의 선물입니다!";
+                calloutEl.className = "p-4 rounded-2xl border text-center space-y-1 bg-slate-50 border-slate-200 text-slate-800";
+                calloutEl.innerHTML = `
+                    <div class="text-xs font-bold text-slate-500 uppercase">획득 점수</div>
+                    <div class="text-3xl font-black text-slate-700">0점</div>
+                    <div class="text-[11px] text-slate-500">순위 안에 들지 못했지만 우정 점수 만점!</div>
+                `;
+            }
+
+            // Render rank breakdown
+            let listHtml = '';
+            for (let r = 1; r <= 3; r++) {
+                const guessed = res.myGuess[r] || '미선택';
+                const isHit = guessed === res.actualSender && res.actualSender !== '';
+                const pointText = r === 1 ? '3점' : r === 2 ? '2점' : '1점';
+
+                listHtml += `
+                    <div class="flex justify-between items-center p-2 rounded-xl ${isHit ? 'bg-emerald-50 border border-emerald-200 font-bold text-emerald-900' : 'bg-white border border-slate-100 text-slate-700'}">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-5 h-5 rounded-full ${isHit ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-700'} flex items-center justify-center text-[10px] font-black">${r}</span>
+                            <span>${r}순위: ${guessed}</span>
+                        </div>
+                        <div>
+                            ${isHit 
+                                ? `<span class="px-2 py-0.5 bg-emerald-600 text-white rounded-md text-[10px] font-black">적중 (+${pointText})</span>` 
+                                : `<span class="text-slate-400 text-[10px]">불일치</span>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }
+            listEl.innerHTML = listHtml;
+
+            modal.classList.remove('hidden');
+            if (res.score > 0) {
+                playCelebrateFanfare();
+                if (window.confetti) confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+            } else {
+                playTone(440, 'sine', 0.15);
+            }
+        }
+
+        function closeStudentScoreModal() {
+            document.getElementById('student-score-modal').classList.add('hidden');
+        }
+
+        // Open Classroom Score Report Modal (Teacher / Full Class Board)
+        function openClassScoreModal() {
+            if (students.length === 0) {
+                showToast("등록된 학생 명단이 없습니다.", "error");
+                return;
+            }
+
+            const modal = document.getElementById('class-score-modal');
+            const tableContainer = document.getElementById('class-score-table-container');
+
+            let rank1Count = 0;
+            let rank23Count = 0;
+            let maxScore = 0;
+
+            // Compute each student's results
+            const results = students.map(s => {
+                const res = getStudentScoreResult(s);
+                if (res.hitRank === 1) rank1Count++;
+                if (res.hitRank === 2 || res.hitRank === 3) rank23Count++;
+                if (res.score > maxScore) maxScore = res.score;
+                return res;
+            });
+
+            // Sort by score descending
+            results.sort((a, b) => b.score - a.score || a.student.localeCompare(b.student));
+
+            document.getElementById('stat-rank1-count').textContent = `${rank1Count}명`;
+            document.getElementById('stat-rank23-count').textContent = `${rank23Count}명`;
+            document.getElementById('stat-max-score').textContent = `${maxScore}점`;
+
+            tableContainer.innerHTML = '';
+            results.forEach((r, idx) => {
+                const card = document.createElement('div');
+                card.className = "p-3.5 bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 transition-all shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3";
+
+                let rankBadgeClass = "bg-slate-100 text-slate-600";
+                if (r.score === 3) rankBadgeClass = "bg-amber-100 text-amber-800 border border-amber-300 font-extrabold";
+                else if (r.score === 2) rankBadgeClass = "bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold";
+                else if (r.score === 1) rankBadgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold";
+
+                let hitStatusText = '';
+                if (r.hitRank === 1) hitStatusText = '<span class="text-amber-700 font-black">🎯 1순위 적중 (+3점)</span>';
+                else if (r.hitRank === 2) hitStatusText = '<span class="text-indigo-700 font-bold">✨ 2순위 적중 (+2점)</span>';
+                else if (r.hitRank === 3) hitStatusText = '<span class="text-emerald-700 font-bold">👍 3순위 적중 (+1점)</span>';
+                else hitStatusText = '<span class="text-slate-400 font-normal">미적중 (0점)</span>';
+
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="w-7 h-7 rounded-xl ${rankBadgeClass} text-xs flex items-center justify-center font-black">
+                            ${idx + 1}
+                        </span>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="font-black text-slate-900 text-sm sm:text-base">${r.student}</span>
+                                <span class="text-xs text-slate-400">← 실제 발신: <strong class="text-pink-600">${r.actualSender || '미정'}</strong></span>
+                            </div>
+                            <div class="text-[11px] text-slate-500 mt-0.5 flex flex-wrap gap-x-2">
+                                <span>1순위: ${r.myGuess[1] || '-'}</span>
+                                <span>2순위: ${r.myGuess[2] || '-'}</span>
+                                <span>3순위: ${r.myGuess[3] || '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                        <div class="text-right">
+                            <div class="text-xs font-semibold">${hitStatusText}</div>
+                        </div>
+                        <div class="px-3 py-1.5 rounded-xl ${r.score > 0 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'} text-xs font-black min-w-[54px] text-center shadow-xs">
+                            ${r.score}점
+                        </div>
+                    </div>
+                `;
+                tableContainer.appendChild(card);
+            });
+
+            modal.classList.remove('hidden');
+            playCelebrateFanfare();
+            if (window.confetti) confetti({ particleCount: 90, spread: 80, origin: { y: 0.5 } });
+        }
+
+        function closeClassScoreModal() {
+            document.getElementById('class-score-modal').classList.add('hidden');
+        }
+
+        window.onload = initializeRealtime;
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+            const iconBox = document.getElementById('toast-icon-box');
+            
+            msgEl.textContent = message;
+            if (type === 'success') {
+                iconEl.className = 'fa-solid fa-check';
+                iconBox.className = 'w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs';
+            } else {
+                iconEl.className = 'fa-solid fa-triangle-exclamation';
+                iconBox.className = 'w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs';
+            }
+
+            toast.classList.remove('translate-x-full');
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.classList.add('translate-x-full');
+            }, 3000);
+        }
+
+        // ==========================================
+        // Student Login & Navigation
+        // ==========================================
+        function fillSampleStudentName() {
+            if (students.length > 0) {
+                document.getElementById('student-name-input').value = students[0];
+            }
+        }
+
+        function enterAsStudent() {
+            const nameInput = document.getElementById('student-name-input').value.trim();
+            if (!nameInput) {
+                showToast("이름을 입력해주세요.", "error");
+                return;
+            }
+
+            if (!students.includes(nameInput)) {
+                showToast(`'${nameInput}' 학생은 등록 명단에 없습니다. 선생님께 확인해주세요.`, "error");
+                return;
+            }
+
+            currentStudent = nameInput;
+            localStorage.setItem('angelRelayCurrentStudent', currentStudent);
+            activeStudentPanel = '';
+            document.getElementById('student-login-box').classList.add('hidden');
+            document.getElementById('student-dashboard').classList.remove('hidden');
+            
+            document.getElementById('current-user-name').textContent = currentStudent;
+            document.getElementById('current-user-avatar').textContent = currentStudent.charAt(0);
+
+            playSuccessSound();
+            refreshStudentDashboard();
+        }
+
+        function exitStudentSession() {
+            currentStudent = '';
+            localStorage.removeItem('angelRelayCurrentStudent');
+            activeStudentPanel = '';
+            document.getElementById('student-login-box').classList.remove('hidden');
+            document.getElementById('student-dashboard').classList.add('hidden');
+            document.getElementById('student-name-input').value = '';
+        }
+
+        // ==========================================
+        // 4 Action Buttons State & Expansions
+        // ==========================================
+        function refreshStudentDashboard() {
+            if (!currentStudent) return;
+
+            const target = assignments[currentStudent] || '';
+            const receivedList = compliments[currentStudent] || [];
+            const hasReceivedLetter = receivedList.length > 0;
+            const currentGuess = guesses[currentStudent] || { 1: '', 2: '', 3: '' };
+
+            // 1. BUTTON 1: 비밀 친구 (선생님이 매칭을 전달해야 확인 가능)
+            const btnTarget = document.getElementById('btn-action-target');
+            const targetNameEl = document.getElementById('btn-target-name');
+            const targetSubEl = document.getElementById('btn-target-sub');
+            
+            if (isMatchingDistributed && target) {
+                btnTarget.disabled = false;
+                targetNameEl.textContent = target;
+                targetSubEl.textContent = "누르면 칭찬글 작성";
+                btnTarget.className = "p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-28 shadow-xs cursor-pointer bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200 hover:border-indigo-400 active:scale-95";
+            } else {
+                btnTarget.disabled = true;
+                targetNameEl.textContent = "선생님 배정 대기";
+                targetSubEl.textContent = isMatchingDistributed ? "배정 없음" : "비밀 친구 전달 대기 중";
+                btnTarget.className = "p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-28 shadow-xs opacity-50 cursor-not-allowed bg-slate-50 border-slate-200";
+            }
+
+            // 2. BUTTON 2: 나에게 온 칭찬 편지 (선생님이 전체 발송 버튼을 눌러야 활성화)
+            const btnLetter = document.getElementById('btn-action-letter');
+            const letterStatusEl = document.getElementById('btn-letter-status');
+            const letterSubEl = document.getElementById('btn-letter-sub');
+
+            if (isLettersDistributed && hasReceivedLetter) {
+                btnLetter.disabled = false;
+                letterStatusEl.textContent = "도착 완료!";
+                letterSubEl.textContent = "누르면 편지 읽기";
+                btnLetter.className = "p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-28 shadow-xs cursor-pointer bg-gradient-to-br from-rose-50 to-pink-50 border-rose-200 hover:border-rose-400 active:scale-95";
+            } else {
+                btnLetter.disabled = true;
+                letterStatusEl.textContent = isLettersDistributed ? "미도착" : "선생님 발송 대기";
+                letterSubEl.textContent = isLettersDistributed ? "편지 기다리는 중" : "전체 발송 후 확인 가능";
+                btnLetter.className = "p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-28 shadow-xs opacity-50 cursor-not-allowed bg-slate-50 border-slate-200";
+            }
+
+            // 3. BUTTON 3: 추리하기 (내게 온 편지를 열람할 수 있어야 활성화)
+            const btnGuess = document.getElementById('btn-action-guess');
+            const guessStatusEl = document.getElementById('btn-guess-status');
+            const guessSubEl = document.getElementById('btn-guess-sub');
+
+            if (isLettersDistributed && hasReceivedLetter) {
+                btnGuess.disabled = false;
+                const hasAnyGuess = !!(currentGuess[1] || currentGuess[2] || currentGuess[3]);
+                guessStatusEl.textContent = hasAnyGuess ? "추리 중" : "추리 가능";
+                guessSubEl.textContent = "누르면 1~3순위 선택";
+                btnGuess.className = "p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-28 shadow-xs cursor-pointer bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200 hover:border-amber-400 active:scale-95";
+            } else {
+                btnGuess.disabled = true;
+                guessStatusEl.textContent = "비활성화";
+                guessSubEl.textContent = "편지 도착 후 추리";
+                btnGuess.className = "p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-28 shadow-xs opacity-50 cursor-not-allowed bg-slate-50 border-slate-200";
+            }
+
+            // 4. BUTTON 4: 확인 (선생님이 정답 공개 스위치를 켜야 활성화)
+            const btnConfirm = document.getElementById('btn-action-confirm');
+            const confirmStatusEl = document.getElementById('btn-confirm-status');
+            const confirmSubEl = document.getElementById('btn-confirm-sub');
+
+            if (isAnswersRevealed) {
+                btnConfirm.disabled = false;
+                confirmStatusEl.textContent = "확인 가능!";
+                confirmSubEl.textContent = "누르면 주인공 공개";
+                btnConfirm.className = "p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-28 shadow-xs cursor-pointer bg-gradient-to-br from-teal-50 to-emerald-50 border-teal-200 hover:border-teal-400 active:scale-95";
+            } else {
+                btnConfirm.disabled = true;
+                confirmStatusEl.textContent = "비공개";
+                confirmSubEl.textContent = "선생님 공개 대기";
+                btnConfirm.className = "p-3.5 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between h-28 shadow-xs opacity-50 cursor-not-allowed bg-slate-50 border-slate-200";
+            }
+
+            renderExpandedPanels();
+        }
+
+        function toggleStudentSection(panelName) {
+            if (activeStudentPanel === panelName) {
+                activeStudentPanel = '';
+            } else {
+                activeStudentPanel = panelName;
+                playTone(493.88, 'sine', 0.08); // B4
+            }
+            renderExpandedPanels();
+        }
+
+        function renderExpandedPanels() {
+            const panels = ['write', 'letter', 'guess', 'confirm'];
+            panels.forEach(p => {
+                const el = document.getElementById(`panel-${p}`);
+                if (activeStudentPanel === p) {
+                    el.classList.remove('hidden');
+                } else {
+                    el.classList.add('hidden');
+                }
+            });
+
+            if (!currentStudent) return;
+            const target = assignments[currentStudent] || '';
+            const receivedList = compliments[currentStudent] || [];
+            const actualSender = Object.keys(assignments).find(k => assignments[k] === currentStudent) || '?';
+
+            // PANEL 1: Write
+            document.getElementById('write-target-name-display').textContent = target || '-';
+            const targetReceived = compliments[target] || [];
+            const myPrevPraise = targetReceived.find(c => c.sender === currentStudent);
+            const textarea = document.getElementById('student-compliment-textarea');
+            if (myPrevPraise && textarea.value === '') {
+                textarea.value = myPrevPraise.text;
+            }
+            updateCharCount();
+
+            // PANEL 2: Letter
+            const letterBox = document.getElementById('received-letter-box');
+            if (isLettersDistributed && receivedList.length > 0) {
+                letterBox.innerHTML = `"${receivedList[0].text}"<div class="text-[11px] text-rose-400 font-semibold mt-3 text-right">${receivedList[0].timestamp || ''} 도착</div>`;
+            } else {
+                letterBox.innerHTML = `<span class="text-slate-400 italic">선생님의 전체 편지 발송을 기다리고 있습니다.</span>`;
+            }
+
+            // PANEL 3: Guess
+            populateGuessOptions();
+
+            // PANEL 4: Confirm
+            const confirmBox = document.getElementById('confirm-result-box');
+            const hitBadge = document.getElementById('confirm-hit-badge');
+
+            if (isAnswersRevealed) {
+                const res = getStudentScoreResult(currentStudent);
+                let hitText = '적중 실패 (0점)';
+                let hitClass = 'bg-slate-100 text-slate-500';
+
+                if (res.hitRank === 1) {
+                    hitText = '🥇 1순위 적중! (+3점)';
+                    hitClass = 'bg-amber-100 text-amber-900 border border-amber-300';
+                } else if (res.hitRank === 2) {
+                    hitText = '🥈 2순위 적중! (+2점)';
+                    hitClass = 'bg-indigo-100 text-indigo-900 border border-indigo-300';
+                } else if (res.hitRank === 3) {
+                    hitText = '🥉 3순위 적중! (+1점)';
+                    hitClass = 'bg-emerald-100 text-emerald-900 border border-emerald-300';
+                }
+
+                hitBadge.textContent = hitText;
+                hitBadge.className = `text-xs font-bold px-2.5 py-1 rounded-full ${hitClass}`;
+
+                confirmBox.innerHTML = `
+                    <div class="text-xs text-teal-700 font-bold uppercase tracking-wider mb-1">칭찬 편지를 보낸 친구</div>
+                    <div class="text-2xl font-black text-slate-900 flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-heart text-pink-500 text-lg"></i>
+                        <span>${actualSender}</span>
+                        <span class="text-xs font-normal text-slate-500">학생이었습니다!</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-2">나를 위해 따뜻한 마음을 전해준 친구에게 감사의 인사를 건네보세요.</p>
+                    <div class="pt-2">
+                        <button onclick="showStudentScoreModal('${currentStudent}')" class="px-4 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:opacity-95 text-white font-bold rounded-xl text-xs shadow-md transition-all">
+                            <i class="fa-solid fa-square-poll-vertical mr-1"></i>내 점수 팝업 다시 보기
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function updateCharCount() {
+            const text = document.getElementById('student-compliment-textarea').value;
+            document.getElementById('char-counter').textContent = `${text.length}자`;
+        }
+
+        async function submitStudentCompliment() {
+            const text = document.getElementById('student-compliment-textarea').value.trim();
+            if (!text) {
+                showToast("칭찬 메시지 내용을 입력해주세요.", "error");
+                return;
+            }
+
+            const target = assignments[currentStudent];
+            if (!target) {
+                showToast("아직 배정된 친구가 없습니다.", "error");
+                return;
+            }
+
+            if (!compliments[target]) compliments[target] = [];
+            const existingIdx = compliments[target].findIndex(c => c.sender === currentStudent);
+            const now = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+
+            if (existingIdx >= 0) {
+                compliments[target][existingIdx].text = text;
+                compliments[target][existingIdx].timestamp = now;
+                showToast(`선생님께 편지가 수정 전달되었습니다!`);
+            } else {
+                compliments[target].push({
+                    sender: currentStudent,
+                    text: text,
+                    timestamp: now
+                });
+                showToast(`칭찬 편지가 작성되어 선생님의 검수 보관함에 등록되었습니다!`);
+            }
+
+            const saved = await updateRealtime({ [`compliments/${target}`]: compliments[target] });
+            if (!saved) return;
+            playSuccessSound();
+            if (window.confetti) confetti({ particleCount: 35, spread: 50, origin: { y: 0.6 } });
+            refreshStudentDashboard();
+            renderTeacherLettersReview();
+        }
+
+        function populateGuessOptions() {
+            const myGuess = guesses[currentStudent] || { 1: '', 2: '', 3: '' };
+            const options = students.filter(s => s !== currentStudent);
+
+            for (let rank = 1; rank <= 3; rank++) {
+                const sel = document.getElementById(`guess-select-${rank}`);
+                if (!sel) continue;
+                
+                const curVal = myGuess[rank] || '';
+                sel.innerHTML = `<option value="">-- 친구 선택 --</option>`;
+                options.forEach(opt => {
+                    const optEl = document.createElement('option');
+                    optEl.value = opt;
+                    optEl.textContent = `${opt} 학생`;
+                    if (opt === curVal) optEl.selected = true;
+                    sel.appendChild(optEl);
+                });
+            }
+        }
+
+        async function handleGuessChange(rank, val) {
+            if (!guesses[currentStudent]) {
+                guesses[currentStudent] = { 1: '', 2: '', 3: '' };
+            }
+
+            for (let r = 1; r <= 3; r++) {
+                if (r !== rank && guesses[currentStudent][r] && guesses[currentStudent][r] === val && val !== '') {
+                    showToast("이미 다른 순위에서 선택한 친구입니다!", "error");
+                    populateGuessOptions();
+                    return;
+                }
+            }
+
+            guesses[currentStudent][rank] = val;
+            const saved = await updateRealtime({ [`guesses/${currentStudent}`]: guesses[currentStudent] });
+            if (!saved) return;
+            playTone(659.25, 'sine', 0.08); // E5
+            showToast(`${rank}순위 추측이 저장되었습니다.`);
+            refreshStudentDashboard();
+        }
+
+        // ==========================================
+        // Teacher Authentication & Mode Switches
+        // ==========================================
+        function handleLogoClick() {
+            if (currentMode === 'teacher') {
+                exitTeacherMode();
+            } else {
+                openTeacherAuthModal();
+            }
+        }
+
+        function openTeacherAuthModal() {
+            if (isTeacherAuthenticated) {
+                enterTeacherConsole();
+                return;
+            }
+            const modal = document.getElementById('teacher-auth-modal');
+            const pwdInput = document.getElementById('teacher-password-input');
+            const errorMsg = document.getElementById('auth-error-msg');
+            
+            errorMsg.classList.add('hidden');
+            pwdInput.value = '';
+            modal.classList.remove('hidden');
+            setTimeout(() => pwdInput.focus(), 100);
+        }
+
+        function closeTeacherAuthModal() {
+            document.getElementById('teacher-auth-modal').classList.add('hidden');
+        }
+
+        function verifyTeacherPassword() {
+            const inputVal = document.getElementById('teacher-password-input').value.trim();
+            const errorMsg = document.getElementById('auth-error-msg');
+            const modalCard = document.getElementById('auth-modal-card');
+
+            if (inputVal === TEACHER_PIN) {
+                isTeacherAuthenticated = true;
+                closeTeacherAuthModal();
+                playSuccessSound();
+                enterTeacherConsole();
+                showToast("선생님 인증이 완료되었습니다!");
+            } else {
+                errorMsg.classList.remove('hidden');
+                modalCard.classList.remove('shake');
+                void modalCard.offsetWidth;
+                modalCard.classList.add('shake');
+                playTone(220, 'sawtooth', 0.25, 0.15);
+                document.getElementById('teacher-password-input').value = '';
+                document.getElementById('teacher-password-input').focus();
+            }
+        }
+
+        function enterTeacherConsole() {
+            currentMode = 'teacher';
+            updateModeDisplay();
+            renderAssignmentPreview();
+            renderTeacherLettersReview();
+        }
+
+        function exitTeacherMode() {
+            currentMode = 'student';
+            updateModeDisplay();
+            refreshStudentDashboard();
+            showToast("학생 홈 화면으로 돌아왔습니다.");
+        }
+
+        function updateModeDisplay() {
+            const teacherSec = document.getElementById('stage-teacher');
+            const studentSec = document.getElementById('stage-student-home');
+            const roleBadge = document.getElementById('role-pill-badge');
+            const teacherBtnText = document.getElementById('teacher-nav-btn-text');
+
+            if (currentMode === 'teacher') {
+                teacherSec.classList.remove('hidden');
+                studentSec.classList.add('hidden');
+                roleBadge.textContent = "교사 관리 콘솔";
+                roleBadge.className = "bg-purple-100 text-purple-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-purple-200";
+                teacherBtnText.textContent = "학생 홈으로";
+            } else {
+                teacherSec.classList.add('hidden');
+                studentSec.classList.remove('hidden');
+                roleBadge.textContent = "학생 홈";
+                roleBadge.className = "bg-indigo-100 text-indigo-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-indigo-200";
+                teacherBtnText.textContent = "선생님 교사뷰";
+            }
+        }
+
+        // ==========================================
+        // Teacher Matching Management (Edit, Delete, Adjust)
+        // ==========================================
+        function loadSampleStudents(count = 5) {
+            document.getElementById('student-input').value = DEFAULT_STUDENTS.join(', ');
+            showToast(`우리 반 학생 ${DEFAULT_STUDENTS.length}명을 불러왔습니다.`);
+        }
+
+        async function generateAssignments(showFeedback = true) {
+            const rawText = document.getElementById('student-input').value.trim();
+            if (!rawText) {
+                if (showFeedback) showToast("학생 명단을 입력해주세요.", "error");
+                return;
+            }
+
+            const parsed = rawText.split(/[\n,]/).map(s => s.trim()).filter(s => s.length > 0);
+            students = [...new Set(parsed)];
+
+            if (students.length < 3) {
+                if (showFeedback) showToast("원활한 진행을 위해 최소 3명 이상 입력해주세요.", "error");
+                return;
+            }
+
+            // Derangement algorithm
+            let shuffled = [...students];
+            let attempts = 0;
+            let success = false;
+
+            while (attempts < 200) {
+                attempts++;
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+
+                let derangement = true;
+                for (let i = 0; i < students.length; i++) {
+                    if (students[i] === shuffled[i]) {
+                        derangement = false;
+                        break;
+                    }
+                }
+                if (derangement) {
+                    success = true;
+                    break;
+                }
+            }
+
+            if (!success) {
+                shuffled = [...students.slice(1), students[0]];
+            }
+
+            assignments = {};
+            compliments = {};
+            guesses = {};
+
+            for (let i = 0; i < students.length; i++) {
+                const sender = students[i];
+                assignments[sender] = shuffled[i];
+                compliments[sender] = [];
+                guesses[sender] = { 1: '', 2: '', 3: '' };
+            }
+
+            isMatchingDistributed = false;
+            isLettersDistributed = false;
+            isAnswersRevealed = false;
+            updateDispatchBadges();
+            renderAssignmentPreview();
+            renderTeacherLettersReview();
+
+            const saved = await saveWholeGame();
+            if (!saved) return;
+
+            if (showFeedback) {
+                playSuccessSound();
+                showToast(`총 ${students.length}명의 랜덤 매칭이 생성되었습니다!`);
+            }
+        }
+
+        async function clearAllAssignments() {
+            assignments = {};
+            students.forEach(s => assignments[s] = '');
+            isMatchingDistributed = false;
+            isLettersDistributed = false;
+            isAnswersRevealed = false;
+            updateDispatchBadges();
+            renderAssignmentPreview();
+            renderTeacherLettersReview();
+            refreshStudentDashboard();
+            const saved = await updateRealtime({
+                assignments,
+                compliments: null,
+                guesses: null,
+                flags: {
+                    matchingDistributed: false,
+                    lettersDistributed: false,
+                    answersRevealed: false
+                }
+            });
+            if (!saved) return;
+            showToast("모든 매칭 정보가 초기화되었습니다.");
+        }
+
+        // Change single student's target receiver manually
+        async function handleManualReceiverChange(sender, newReceiver) {
+            assignments[sender] = newReceiver;
+            await updateRealtime({ [`assignments/${sender}`]: newReceiver || null });
+            playTone(440, 'sine', 0.05);
+            renderAssignmentPreview();
+            renderTeacherLettersReview();
+            refreshStudentDashboard();
+            showToast(`${sender} 학생의 칭찬 대상을 '${newReceiver || '미지정'}'(으)로 조정했습니다.`);
+        }
+
+        // Remove single student's matching
+        async function removeStudentAssignment(sender) {
+            assignments[sender] = '';
+            await updateRealtime({ [`assignments/${sender}`]: null });
+            renderAssignmentPreview();
+            renderTeacherLettersReview();
+            refreshStudentDashboard();
+            showToast(`${sender} 학생의 매칭을 해제했습니다.`);
+        }
+
+        function renderAssignmentPreview() {
+            const matchListEl = document.getElementById('match-list');
+            if (!matchListEl) return;
+
+            if (students.length === 0) {
+                matchListEl.innerHTML = '<div class="p-6 text-center text-xs text-slate-400">학생 명단을 등록해주세요.</div>';
+                document.getElementById('match-count').textContent = `매칭 대기 중`;
+                return;
+            }
+
+            matchListEl.innerHTML = '';
+            let validMatches = 0;
+
+            students.forEach((sender, idx) => {
+                const receiver = assignments[sender] || '';
+                if (receiver) validMatches++;
+
+                const div = document.createElement('div');
+                div.className = "px-4 py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-50 transition-colors";
+                
+                // Dropdown options
+                let optionsHtml = `<option value="">-- 대상 선택 --</option>`;
+                students.forEach(other => {
+                    if (other !== sender) {
+                        const isSelected = other === receiver ? 'selected' : '';
+                        optionsHtml += `<option value="${other}" ${isSelected}>${other}</option>`;
+                    }
+                });
+
+                div.innerHTML = `
+                    <div class="flex items-center space-x-2.5">
+                        <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold flex items-center justify-center">${idx + 1}</span>
+                        <span class="font-bold text-slate-800 text-xs sm:text-sm min-w-[60px]">${sender}</span>
+                        <i class="fa-solid fa-arrow-right text-slate-400 text-xs"></i>
+                    </div>
+
+                    <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                        <select onchange="handleManualReceiverChange('${sender}', this.value)" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            ${optionsHtml}
+                        </select>
+                        <button onclick="removeStudentAssignment('${sender}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="매칭 삭제">
+                            <i class="fa-solid fa-xmark text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                matchListEl.appendChild(div);
+            });
+
+            document.getElementById('match-count').textContent = `매칭 완료 ${validMatches}/${students.length}명`;
+            updateDispatchBadges();
+        }
+
+        // ==========================================
+        // Teacher Dispatch Operations
+        // ==========================================
+        // 1. Dispatch Target Assignments to Students
+        async function toggleDispatchTargets() {
+            isMatchingDistributed = !isMatchingDistributed;
+            const saved = await updateRealtime({ 'flags/matchingDistributed': isMatchingDistributed });
+            if (!saved) return;
+            updateDispatchBadges();
+            refreshStudentDashboard();
+
+            if (isMatchingDistributed) {
+                playSuccessSound();
+                if (window.confetti) confetti({ particleCount: 40, spread: 50, origin: { y: 0.6 } });
+                showToast("모든 학생에게 비밀 친구 배정이 전달되었습니다! 이제 1번 버튼이 활성화됩니다.");
+            } else {
+                showToast("비밀 친구 배정 전달이 회수되었습니다 (비활성화 상태).");
+            }
+        }
+
+        // 2. Dispatch Written Compliments to Receivers
+        async function toggleDispatchLetters() {
+            isLettersDistributed = !isLettersDistributed;
+            const saved = await updateRealtime({ 'flags/lettersDistributed': isLettersDistributed });
+            if (!saved) return;
+            updateDispatchBadges();
+            refreshStudentDashboard();
+
+            if (isLettersDistributed) {
+                playCelebrateFanfare();
+                if (window.confetti) confetti({ particleCount: 80, spread: 70, origin: { y: 0.5 } });
+                showToast("칭찬 편지가 전체 학생에게 일괄 발송되었습니다! 2번 편지 버튼이 활성화됩니다.");
+            } else {
+                showToast("칭찬 편지 전체 발송이 회수되었습니다.");
+            }
+        }
+
+        function updateDispatchBadges() {
+            // Target dispatch badge
+            const targetBadge = document.getElementById('dispatch-target-badge');
+            const targetBtnText = document.getElementById('dispatch-target-btn-text');
+            const targetIcon = document.getElementById('dispatch-target-icon');
+            const targetBtn = document.getElementById('btn-dispatch-targets');
+
+            if (targetBadge && targetBtnText && targetBtn) {
+                if (isMatchingDistributed) {
+                    targetBadge.textContent = "학생 전달 완료";
+                    targetBadge.className = "text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold";
+                    targetBtnText.textContent = "배정 전달 취소(잠금)";
+                    targetIcon.className = "fa-solid fa-lock";
+                    targetBtn.className = "w-full sm:w-auto px-4 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-bold text-xs transition-all";
+                } else {
+                    targetBadge.textContent = "학생 전달 전";
+                    targetBadge.className = "text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold";
+                    targetBtnText.textContent = "학생들에게 비밀 친구 전달하기";
+                    targetIcon.className = "fa-solid fa-bell";
+                    targetBtn.className = "w-full sm:w-auto px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-purple-200";
+                }
+            }
+
+            // Letters dispatch badge
+            const lettersBadge = document.getElementById('dispatch-letters-badge');
+            const lettersBtnText = document.getElementById('dispatch-letters-btn-text');
+            const lettersIcon = document.getElementById('dispatch-letters-icon');
+            const lettersBtn = document.getElementById('btn-dispatch-letters');
+
+            if (lettersBadge && lettersBtnText && lettersBtn) {
+                if (isLettersDistributed) {
+                    lettersBadge.textContent = "전체 발송 완료";
+                    lettersBadge.className = "text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold";
+                    lettersBtnText.textContent = "편지 발송 회수(잠금)";
+                    lettersIcon.className = "fa-solid fa-lock";
+                    lettersBtn.className = "flex-1 sm:flex-none px-4 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-bold text-xs transition-all";
+                } else {
+                    lettersBadge.textContent = "편지 발송 전";
+                    lettersBadge.className = "text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold";
+                    lettersBtnText.textContent = "편지 전체 발송하기";
+                    lettersIcon.className = "fa-solid fa-paper-plane";
+                    lettersBtn.className = "flex-1 sm:flex-none px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-rose-200";
+                }
+            }
+        }
+
+        // ==========================================
+        // Teacher Letters Review Panel (Contents & Status)
+        // ==========================================
+        function renderTeacherLettersReview() {
+            const listEl = document.getElementById('teacher-letters-review-list');
+            const progressBadge = document.getElementById('letters-progress-badge');
+            const progressBar = document.getElementById('letters-progress-bar');
+            if (!listEl) return;
+
+            if (students.length === 0) {
+                listEl.innerHTML = '<div class="p-6 text-center text-xs text-slate-400">학생 명단이 등록되지 않았습니다.</div>';
+                if (progressBadge) progressBadge.textContent = "작성 0/0명";
+                if (progressBar) progressBar.style.width = '0%';
+                return;
+            }
+
+            listEl.innerHTML = '';
+            let writtenCount = 0;
+
+            students.forEach((sender, idx) => {
+                const target = assignments[sender] || '';
+                // Find letter written by this sender
+                let letterText = '';
+                let timestamp = '';
+                if (target && compliments[target]) {
+                    const found = compliments[target].find(c => c.sender === sender);
+                    if (found) {
+                        letterText = found.text;
+                        timestamp = found.timestamp;
+                    }
+                }
+
+                const isWritten = !!letterText;
+                if (isWritten) writtenCount++;
+
+                const row = document.createElement('div');
+                row.className = "p-3 hover:bg-slate-50 transition-colors";
+                
+                row.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-5 h-5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold flex items-center justify-center">${idx + 1}</span>
+                            <span class="font-extrabold text-slate-900 text-xs sm:text-sm">${sender}</span>
+                            <span class="text-xs text-slate-400">→</span>
+                            <span class="text-xs font-bold text-pink-600">${target || '미배정'}</span>
+                        </div>
+                        <div>
+                            ${isWritten 
+                                ? `<span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[11px] font-bold flex items-center space-x-1"><i class="fa-solid fa-check"></i><span>작성 완료</span></span>`
+                                : `<span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-[11px] font-bold">작성 대기 중</span>`
+                            }
+                        </div>
+                    </div>
+                    ${isWritten 
+                        ? `<div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-700 font-medium leading-relaxed mt-1 flex justify-between items-end">
+                                <span class="whitespace-pre-wrap">"${letterText}"</span>
+                                <span class="text-[10px] text-slate-400 whitespace-nowrap ml-2">${timestamp || ''}</span>
+                           </div>`
+                        : `<div class="text-[11px] text-slate-400 italic pl-7">아직 칭찬 편지를 작성하지 않았습니다.</div>`
+                    }
+                `;
+                listEl.appendChild(row);
+            });
+
+            const pct = students.length > 0 ? Math.round((writtenCount / students.length) * 100) : 0;
+            if (progressBadge) progressBadge.textContent = `작성 ${writtenCount}/${students.length}명 (${pct}%)`;
+            if (progressBar) progressBar.style.width = `${pct}%`;
+        }
+
+        async function fillSampleCompliments() {
+            if (students.length === 0) {
+                showToast("먼저 학생 명단을 등록해주세요.", "error");
+                return;
+            }
+            students.forEach((sender, i) => {
+                const receiver = assignments[sender];
+                if (!receiver) return;
+                const randomMsg = sampleComplimentsPool[i % sampleComplimentsPool.length];
+                compliments[receiver] = [{
+                    sender: sender,
+                    text: randomMsg,
+                    timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+                }];
+            });
+            const saved = await updateRealtime({ compliments });
+            if (!saved) return;
+            showToast("모든 학생의 칭찬 편지가 데모용으로 일괄 작성되었습니다!");
+            playCelebrateFanfare();
+            if (window.confetti) confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+            renderTeacherLettersReview();
+            refreshStudentDashboard();
+        }
+
+        // Toggle Teacher Reveal Answers
+        async function toggleRevealAnswers() {
+            isAnswersRevealed = !isAnswersRevealed;
+            const saved = await updateRealtime({ 'flags/answersRevealed': isAnswersRevealed });
+            if (!saved) return;
+            
+            const teacherText = document.getElementById('teacher-reveal-text');
+            const teacherIcon = document.getElementById('teacher-reveal-icon');
+
+            if (isAnswersRevealed) {
+                if (teacherText) teacherText.textContent = "[단계 3] 정답 다시 숨기기";
+                if (teacherIcon) teacherIcon.className = "fa-solid fa-eye-slash";
+                
+                showToast("정답이 공개되었습니다! 학생 순위 및 점수 팝업이 활성화됩니다.");
+                
+                // 1. 교사뷰에서는 학급 전체 학생들의 점수 집계 팝업을 즉시 오픈
+                if (currentMode === 'teacher') {
+                    openClassScoreModal();
+                } else if (currentStudent) {
+                    // 2. 학생 화면에 머물고 있다면 학생 개인 점수 팝업 오픈
+                    showStudentScoreModal(currentStudent);
+                }
+            } else {
+                if (teacherText) teacherText.textContent = "[단계 3] 정답 전체 공개 스위치";
+                if (teacherIcon) teacherIcon.className = "fa-solid fa-eye";
+                showToast("정답이 다시 비공개 상태로 전환되었습니다.");
+            }
+
+            refreshStudentDashboard();
+        }
+
+        // ==========================================
+        // Print Take-home Cards Modal
+        // ==========================================
+        function openPrintModal() {
+            const container = document.getElementById('printable-cards-container');
+            container.innerHTML = '';
+
+            if (students.length === 0) {
+                showToast("출력할 학급 명단이 없습니다.", "error");
+                return;
+            }
+
+            students.forEach(student => {
+                const received = compliments[student] || [];
+                const card = document.createElement('div');
+                card.className = "printable-card p-6 rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-white to-pink-50/30 text-slate-800 space-y-3";
+                
+                let letterContent = '';
+                if (received.length > 0) {
+                    letterContent = received.map(c => `
+                        <div class="bg-white p-4 rounded-xl border border-pink-100 shadow-xs text-sm leading-relaxed mb-2 font-medium">
+                            "${c.text}"
+                        </div>
+                    `).join('');
+                } else {
+                    letterContent = `<div class="text-slate-400 text-sm italic p-4 bg-white rounded-xl border border-slate-100">도착한 칭찬 편지가 아직 없습니다.</div>`;
+                }
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center border-b border-indigo-100 pb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-lg">💌</span>
+                            <h4 class="text-base font-extrabold text-indigo-900">${student} 학생에게 전해진 마음의 선물</h4>
+                        </div>
+                        <span class="text-xs text-slate-400 font-semibold">우리 반 칭찬 릴레이</span>
+                    </div>
+                    <div>${letterContent}</div>
+                `;
+                container.appendChild(card);
+            });
+
+            document.getElementById('print-modal').classList.remove('hidden');
+        }
+
+        function closePrintModal() {
+            document.getElementById('print-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
