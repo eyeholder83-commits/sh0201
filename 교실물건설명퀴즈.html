@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교실 물건 설명 퀴즈 게임</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Pretendard Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Tone.js for Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Firebase (Realtime Database, compat SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .pulse-effect {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-100 text-slate-800 flex flex-col antialiased">
+
+    <!-- 상단 글로벌 헤더 & 3단 모드 전환 네비게이션 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="changeMode('board')">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+                    <span class="text-xl">🎒</span>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-black text-slate-900 leading-tight">교실 물건 설명 퀴즈</h1>
+                    <p class="text-[11px] text-slate-500 font-bold" id="header-subtitle">맞히기 + 설명하기 = 51점 만점</p>
+                </div>
+            </div>
+
+            <!-- 모드 탭 전환 버튼 바 -->
+            <div class="flex items-center gap-1.5 sm:gap-2">
+                <button id="tab-btn-board" onclick="changeMode('board')" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm">
+                    <span>📺</span>
+                    <span>전자칠판</span>
+                </button>
+                <button id="tab-btn-teacher" onclick="requestTeacherMode()" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200">
+                    <span>👨‍🏫</span>
+                    <span>교사제어</span>
+                </button>
+                <button id="tab-btn-student" onclick="changeMode('student')" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200">
+                    <span>👤</span>
+                    <span>학생모드</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 뷰 컨테이너 -->
+    <main id="app-viewport" class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 flex flex-col overflow-y-auto">
+        <!-- 동적 뷰 렌더링 영역 -->
+    </main>
+
+    <!-- 1. 알림 모달 -->
+    <div id="app-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-4">
+            <div id="modal-icon" class="text-4xl">📢</div>
+            <h3 id="modal-title" class="text-lg font-black text-slate-900">알림</h3>
+            <p id="modal-desc" class="text-xs sm:text-sm text-slate-600 font-bold whitespace-pre-line leading-relaxed"></p>
+            <button onclick="closeAppModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-2xl cursor-pointer transition shadow-md shadow-indigo-100">확인</button>
+        </div>
+    </div>
+
+    <!-- 2. 교사 인증 모달 (비밀번호: 5658 노출 방지) -->
+    <div id="teacher-auth-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-4">
+            <div class="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center mx-auto text-2xl">🔐</div>
+            <div>
+                <h3 class="text-lg font-black text-slate-900">선생님 전용 제어 모드</h3>
+                <p class="text-xs text-slate-500 font-bold mt-1">선생님 인증 암호를 입력해주세요.</p>
+            </div>
+            <input id="teacher-auth-input" type="password" placeholder="비밀번호" class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 text-center font-black tracking-widest text-lg focus:border-indigo-600 focus:outline-none" onkeydown="if(event.key==='Enter') confirmTeacherAuth()" />
+            <div class="flex gap-2">
+                <button onclick="closeTeacherAuthModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black py-3 rounded-2xl cursor-pointer">취소</button>
+                <button onclick="confirmTeacherAuth()" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-black py-3 rounded-2xl cursor-pointer">접속</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 전자칠판 대형 룰렛 추첨 모달 -->
+    <div id="roulette-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-slate-100 text-center space-y-6">
+            <div class="space-y-1">
+                <span class="bg-amber-100 text-amber-800 text-xs font-black px-3 py-1 rounded-full">🎰 전자칠판 공정 추첨</span>
+                <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">누가 먼저 발표할까?</h2>
+                <p class="text-xs text-slate-500 font-bold">출석 번호 대신 랜덤으로 공정하게 순서를 정합니다</p>
+            </div>
+
+            <div class="py-8 bg-slate-900 rounded-3xl border-4 border-amber-400 shadow-inner relative overflow-hidden">
+                <div class="text-xs text-amber-300 font-bold mb-2">🎲 행운의 발표 순서</div>
+                <div id="roulette-display-name" class="text-3xl sm:text-4xl font-black text-white tracking-wide">준비 중...</div>
+                <div class="absolute inset-x-0 bottom-1 flex justify-center">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                </div>
+            </div>
+
+            <div id="roulette-result-box" class="hidden space-y-3">
+                <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                    <p class="text-xs font-bold text-emerald-600">🎉 첫 번째 설명 당첨자!</p>
+                    <p id="roulette-winner-text" class="text-xl font-black text-emerald-900"></p>
+                </div>
+                <button onclick="closeRouletteModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-2xl cursor-pointer shadow-md">
+                    확정하고 퀴즈 시작하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 우리 반 22명 학생 공식 명단
+        window.CLASS_ROSTER = [
+            "김서아", "김수현", "김윤아", "김태영", "김하랑", "나예린",
+            "박민제", "박선우", "양수빈", "유소영", "이대운", "이새봄",
+            "이서율", "이진서", "이채원", "이초은", "이태환", "이하린",
+            "한규빈", "한유은", "현지우", "황지우"
+        ];
+
+        // 효과음 재생기 (Tone.js 합성음)
+        const sounds = {
+            click: () => {
+                try {
+                    const synth = new Tone.Synth({
+                        oscillator: { type: "sine" },
+                        envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 }
+                    }).toDestination();
+                    synth.triggerAttackRelease("C5", "16n");
+                } catch(e) {}
+            },
+            ding: () => {
+                try {
+                    const synth = new Tone.Synth({
+                        oscillator: { type: "triangle" },
+                        envelope: { attack: 0.01, decay: 0.4, sustain: 0.1, release: 0.4 }
+                    }).toDestination();
+                    synth.triggerAttackRelease("G5", "8n");
+                } catch(e) {}
+            },
+            fanfare: () => {
+                try {
+                    const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                    synth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "4n");
+                } catch(e) {}
+            },
+            rouletteTick: () => {
+                try {
+                    const synth = new Tone.MembraneSynth().toDestination();
+                    synth.triggerAttackRelease("C3", "32n");
+                } catch(e) {}
+            }
+        };
+
+        // 앱 핵심 상태 객체
+        window.appState = {
+            activeView: 'board', // 'board', 'teacher', 'student'
+            isTeacherAuthenticated: false,
+            
+            // 학생 사용자 정보
+            userId: 'student-김서아',
+            playerName: '김서아',
+            myKeyword: '',
+            
+            // 퀴즈 진행 상태
+            gameStage: 'ready', // 'ready', 'quiz', 'finished'
+            quizRounds: [],     // [{ roundIndex, userId, studentName, keyword }]
+            currentRoundIndex: 0,
+            isKeywordRevealed: false,
+            
+            // 제출된 정답들 (보안: 학생 화면에는 노출 금지, 교사 화면에서만 개별 확인)
+            // { [userId]: { userId, name, guess } }
+            guesses: {},
+            
+            // 등록된 플레이어 명단 및 점수
+            // [{ userId, name, keyword, keywordStatus, guessScore, presenterScore, total }]
+            playersList: [],
+            
+            // 전자칠판 순위 탭 ('total', 'guess', 'presenter')
+            boardScoreTab: 'total'
+        };
+
+        // Firebase Realtime Database 연결
+        const firebaseConfig = {
+            apiKey: "AIzaSyAyQ3LFN5HwKjs6PSr8YtWL0_pJvPFRWok",
+            authDomain: "classroom-quiz-0201-c8e5e.firebaseapp.com",
+            databaseURL: "https://classroom-quiz-0201-c8e5e-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "classroom-quiz-0201-c8e5e",
+            storageBucket: "classroom-quiz-0201-c8e5e.firebasestorage.app",
+            messagingSenderId: "136526021906",
+            appId: "1:136526021906:web:66ee5d8b4738c13bf5dfcb"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const sharedRef = db.ref('classroomQuiz');
+        window.__firebaseApplying = false;
+
+        // Firebase에서 바뀐 내용을 모든 기기에 실시간 반영
+        sharedRef.on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            window.__firebaseApplying = true;
+            try {
+                const globalState = data.global || {};
+                if (Object.prototype.hasOwnProperty.call(globalState, 'gameStage')) window.appState.gameStage = globalState.gameStage;
+                if (Object.prototype.hasOwnProperty.call(globalState, 'quizRounds')) {
+                    const qr = globalState.quizRounds || [];
+                    window.appState.quizRounds = Array.isArray(qr) ? qr : Object.values(qr);
+                }
+                if (Object.prototype.hasOwnProperty.call(globalState, 'currentRoundIndex')) window.appState.currentRoundIndex = globalState.currentRoundIndex;
+                if (Object.prototype.hasOwnProperty.call(globalState, 'isKeywordRevealed')) window.appState.isKeywordRevealed = globalState.isKeywordRevealed;
+
+                window.appState.playersList = data.players ? Object.values(data.players) : [];
+                window.appState.guesses = data.guesses || {};
+
+                // 내 이름으로 저장된 정보를 다시 연결
+                const me = window.appState.playersList.find(p => p.name === window.appState.playerName);
+                if (me) {
+                    window.appState.userId = me.userId;
+                    window.appState.myKeyword = me.keyword || '';
+                }
+
+                renderApp();
+            } finally {
+                window.__firebaseApplying = false;
+            }
+        }, (error) => {
+            console.error('Firebase 읽기 오류:', error);
+            showAppModal('연결 오류', 'Firebase 데이터베이스 연결을 확인해주세요.', '⚠️');
+        });
+
+        // 상태 실시간 동기화
+        // 학생은 자기 데이터만 갱신하여 여러 명이 동시에 제출해도 서로 덮어쓰지 않음
+        window.syncState = function() {
+            if (window.__firebaseApplying) return;
+            const state = window.appState;
+
+            if (state.activeView === 'student') {
+                const updates = {};
+                const me = state.playersList.find(p => p.userId === state.userId);
+                if (me) updates[`players/${state.userId}`] = me;
+                if (state.guesses && state.guesses[state.userId]) {
+                    updates[`guesses/${state.userId}`] = state.guesses[state.userId];
+                }
+                if (Object.keys(updates).length > 0) {
+                    sharedRef.update(updates).catch(err => {
+                        console.error('Firebase 학생 저장 오류:', err);
+                        showAppModal('저장 오류', '데이터를 보내지 못했습니다. 인터넷 연결을 확인해주세요.', '⚠️');
+                    });
+                }
+                return;
+            }
+
+            const playersObj = {};
+            (state.playersList || []).forEach(p => {
+                if (p && p.userId) playersObj[p.userId] = p;
+            });
+
+            sharedRef.set({
+                global: {
+                    gameStage: state.gameStage,
+                    quizRounds: state.quizRounds || [],
+                    currentRoundIndex: state.currentRoundIndex || 0,
+                    isKeywordRevealed: !!state.isKeywordRevealed
+                },
+                players: playersObj,
+                guesses: state.guesses || {}
+            }).catch(err => {
+                console.error('Firebase 전체 저장 오류:', err);
+                showAppModal('저장 오류', '게임 상태를 저장하지 못했습니다. 인터넷 연결을 확인해주세요.', '⚠️');
+            });
+        };
+
+        // 가변 인원(N명)에 따른 만점 및 기준 계산
+        window.getScoreLimits = function() {
+            const N = window.appState.playersList.length || 22;
+            const maxGuess = Math.max(1, N - 1); // 맞히기 만점: N - 1 점
+            const maxPresenter = Math.max(1, Math.round(N * (2 / 3) * 2)); // 설명 만점: round(N * 2/3 * 2)
+            const optimalCount = Math.max(1, Math.round((N - 1) * (2 / 3))); // 최적 정답자 수: 약 2/3
+            const maxTotal = maxGuess + maxPresenter;
+            return { N, maxGuess, maxPresenter, optimalCount, maxTotal };
+        };
+
+        // 설명자 점수 계산 공식
+        window.calculatePresenterPoints = function(correctCount, totalGuessers) {
+            const limits = getScoreLimits();
+            const optimal = limits.optimalCount;
+            const maxScore = limits.maxPresenter;
+
+            // 0명이거나 전원 맞힌 경우: 0점
+            if (correctCount === 0 || correctCount >= totalGuessers) {
+                return 0;
+            }
+            // 최적 인원이 맞힌 경우: 만점
+            if (correctCount === optimal) {
+                return maxScore;
+            }
+            // 최적 인원보다 적게 맞힌 구간 (1 ~ optimal - 1)
+            if (correctCount < optimal) {
+                return Math.round((correctCount / optimal) * maxScore);
+            }
+            // 최적 인원보다 많이 맞힌 구간 (optimal + 1 ~ totalGuessers - 1)
+            const upperRange = totalGuessers - optimal;
+            const diff = totalGuessers - correctCount;
+            return Math.max(1, Math.round((diff / (upperRange || 1)) * maxScore));
+        };
+
+        window.changeMode = function(mode) {
+            sounds.click();
+            window.appState.activeView = mode;
+
+            // URL 해시 업데이트로 모드별 고유 링크 유지 (#board, #teacher, #student)
+            try {
+                if (window.location.hash !== '#' + mode) {
+                    history.replaceState(null, '', '#' + mode);
+                }
+            } catch(e) {}
+
+            // 상단 탭 활성화 스타일 업데이트
+            const tabs = ['board', 'teacher', 'student'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (btn) {
+                    if (t === mode) {
+                        btn.className = "px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm";
+                    } else {
+                        btn.className = "px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200";
+                    }
+                }
+            });
+
+            renderApp();
+        };
+
+        // 모드별 전용 링크 클립보드 복사 (iFrame 안전 방식: execCommand)
+        window.copyModeLink = function(mode) {
+            sounds.click();
+            const baseUrl = window.location.href.split('#')[0].split('?')[0];
+            const targetUrl = `${baseUrl}#${mode}`;
+            
+            const tempInput = document.createElement("textarea");
+            tempInput.value = targetUrl;
+            tempInput.style.position = "fixed";
+            tempInput.style.left = "-9999px";
+            tempInput.style.top = "0";
+            document.body.appendChild(tempInput);
+            tempInput.focus();
+            tempInput.select();
+            
+            let success = false;
+            try {
+                success = document.execCommand('copy');
+            } catch(err) {
+                success = false;
+            }
+            document.body.removeChild(tempInput);
+
+            const modeNames = {
+                board: '전자칠판 전용 링크',
+                teacher: '교사제어 전용 링크',
+                student: '학생모드 전용 링크'
+            };
+
+            if (success) {
+                showAppModal("링크 복사 완료", `[${modeNames[mode]}]\n주소가 복사되었습니다.\n\n${targetUrl}`, "📋");
+            } else {
+                showAppModal("링크 주소", `아래 주소를 복사하여 사용하세요:\n${targetUrl}`, "🔗");
+            }
+        };
+
+        // URL 해시 및 파라미터 감지 라우팅 초기화
+        window.initRouteFromUrl = function() {
+            const hash = (window.location.hash || '').replace('#', '').toLowerCase();
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryMode = urlParams.get('mode');
+            const targetMode = hash || queryMode;
+
+            if (targetMode === 'teacher') {
+                requestTeacherMode();
+            } else if (targetMode === 'student') {
+                changeMode('student');
+            } else {
+                changeMode('board');
+            }
+        };
+
+        window.requestTeacherMode = function() {
+            sounds.click();
+            if (window.appState.isTeacherAuthenticated) {
+                changeMode('teacher');
+            } else {
+                document.getElementById('teacher-auth-input').value = '';
+                document.getElementById('teacher-auth-modal').classList.remove('hidden');
+            }
+        };
+
+        window.closeTeacherAuthModal = function() {
+            document.getElementById('teacher-auth-modal').classList.add('hidden');
+        };
+
+        window.confirmTeacherAuth = function() {
+            const input = document.getElementById('teacher-auth-input').value.trim();
+            if (input === '5658') {
+                window.appState.isTeacherAuthenticated = true;
+                closeTeacherAuthModal();
+                changeMode('teacher');
+                sounds.ding();
+            } else {
+                showAppModal("비밀번호 오류", "선생님 비밀번호가 올바르지 않습니다.", "❌");
+            }
+        };
+
+        window.showAppModal = function(title, desc, icon = "📢") {
+            document.getElementById('modal-icon').innerText = icon;
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('app-modal').classList.remove('hidden');
+        };
+
+        window.closeAppModal = function() {
+            document.getElementById('app-modal').classList.add('hidden');
+        };
+
+        // 학생이 자신의 비밀 키워드 등록
+        window.submitMyKeyword = function() {
+            sounds.click();
+            const kwInput = document.getElementById('my-keyword-input');
+            const kw = kwInput ? kwInput.value.trim() : '';
+            if (!kw) {
+                showAppModal("입력 필요", "설명할 교실 물건을 입력해주세요!", "✏️");
+                return;
+            }
+            window.appState.myKeyword = kw;
+            
+            // 플레이어 목록에 반영
+            let p = window.appState.playersList.find(x => x.userId === window.appState.userId);
+            if (!p) {
+                p = {
+                    userId: window.appState.userId,
+                    name: window.appState.playerName,
+                    keyword: kw,
+                    keywordStatus: 'approved',
+                    guessScore: 0,
+                    presenterScore: 0,
+                    total: 0
+                };
+                window.appState.playersList.push(p);
+            } else {
+                p.keyword = kw;
+                p.keywordStatus = 'approved';
+            }
+            syncState();
+            renderApp();
+            showAppModal("등록 완료", `"${kw}" 키워드가 등록되었습니다.\n발표 전까지 친구들에게 절대 공개되지 않습니다!`, "🔒");
+        };
+
+        // 학생 정답 제출 (보안: 타인 답안은 안 보이고 본인 것만 저장됨)
+        window.submitGuessAnswer = function() {
+            sounds.click();
+            const val = document.getElementById('student-guess-input').value.trim();
+            if (!val) {
+                showAppModal("입력 필요", "정답을 입력해주세요!", "✏️");
+                return;
+            }
+            window.appState.guesses[window.appState.userId] = {
+                userId: window.appState.userId,
+                name: window.appState.playerName,
+                guess: val
+            };
+            syncState();
+            renderApp();
+            showAppModal("제출 완료", `"${val}" 정답을 보냈습니다!\n(선생님만 확인할 수 있습니다)`, "🔒");
+        };
+
+        // 🎰 룰렛 추첨 (전자칠판 대형 룰렛)
+        window.startRouletteLottery = function() {
+            sounds.click();
+            const state = window.appState;
+            const validStudents = state.playersList.length > 0 ? state.playersList : window.CLASS_ROSTER.map((name, i) => ({
+                userId: `mock-${i}`,
+                name: name,
+                keyword: ['지우개', '필통', '태블릿', '시계', '지구본', '분필'][i % 6],
+                keywordStatus: 'approved',
+                guessScore: 0,
+                presenterScore: 0,
+                total: 0
+            }));
+
+            if (state.playersList.length === 0) {
+                state.playersList = validStudents;
+            }
+
+            document.getElementById('roulette-modal').classList.remove('hidden');
+            document.getElementById('roulette-result-box').classList.add('hidden');
+            const disp = document.getElementById('roulette-display-name');
+
+            let counter = 0;
+            const interval = setInterval(() => {
+                sounds.rouletteTick();
+                disp.innerText = validStudents[counter % validStudents.length].name;
+                counter++;
+            }, 80);
+
+            setTimeout(() => {
+                clearInterval(interval);
+                sounds.fanfare();
+
+                // Fisher-Yates 무작위 셔플로 전체 답안지(1번~N번) 생성
+                const shuffled = [...validStudents];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+
+                state.quizRounds = shuffled.map((st, idx) => ({
+                    roundIndex: idx + 1,
+                    userId: st.userId,
+                    studentName: st.name,
+                    keyword: st.keyword || '교실물건'
+                }));
+                state.currentRoundIndex = 0;
+                state.isKeywordRevealed = false;
+                state.gameStage = 'quiz';
+                state.guesses = {};
+
+                const firstPresenter = state.quizRounds[0].studentName;
+                disp.innerText = firstPresenter;
+                document.getElementById('roulette-winner-text').innerText = `${firstPresenter} 학생 (1번 문제 출제)`;
+                document.getElementById('roulette-result-box').classList.remove('hidden');
+
+                syncState();
+            }, 2500);
+        };
+
+        window.closeRouletteModal = function() {
+            document.getElementById('roulette-modal').classList.add('hidden');
+            renderApp();
+        };
+
+        // 정답 공개 및 채점 (교사만 실행 가능)
+        window.revealAnswerAndScore = function() {
+            sounds.ding();
+            const state = window.appState;
+            const curRound = state.quizRounds[state.currentRoundIndex];
+            if (!curRound) return;
+
+            state.isKeywordRevealed = true;
+            const target = curRound.keyword.trim().toLowerCase();
+            const guesses = state.guesses || {};
+            const guessers = Object.values(guesses).filter(g => g.userId !== curRound.userId);
+
+            let correctCount = 0;
+
+            // 1. 맞힌 학생 점수 (+1점)
+            guessers.forEach(g => {
+                const userGuess = (g.guess || '').trim().toLowerCase();
+                if (userGuess.includes(target) || target.includes(userGuess)) {
+                    correctCount++;
+                    const player = state.playersList.find(p => p.userId === g.userId);
+                    if (player) {
+                        player.guessScore = (player.guessScore || 0) + 1;
+                        player.total = (player.guessScore || 0) + (player.presenterScore || 0);
+                    }
+                }
+            });
+
+            // 2. 출제자 설명 점수 (약 2/3 맞혔을 때 만점)
+            const totalGuessers = Math.max(1, (state.playersList.length || 22) - 1);
+            const presenterPts = calculatePresenterPoints(correctCount, totalGuessers);
+            const presenter = state.playersList.find(p => p.userId === curRound.userId);
+            if (presenter) {
+                presenter.presenterScore = (presenter.presenterScore || 0) + presenterPts;
+                presenter.total = (presenter.guessScore || 0) + (presenter.presenterScore || 0);
+            }
+
+            syncState();
+            renderApp();
+            showAppModal("채점 완료!", `정답: ${curRound.keyword}\n정답자 수: ${correctCount}명\n발표자 설명 획득 점수: ${presenterPts}점`, "🎉");
+        };
+
+        // 다음 문제로 진행
+        window.nextQuizRound = function() {
+            sounds.click();
+            const state = window.appState;
+            if (state.currentRoundIndex + 1 < state.quizRounds.length) {
+                state.currentRoundIndex++;
+                state.isKeywordRevealed = false;
+                state.guesses = {};
+                syncState();
+                renderApp();
+            } else {
+                state.gameStage = 'finished';
+                syncState();
+                renderApp();
+                showAppModal("퀴즈 종료!", "모든 퀴즈가 끝났습니다! 전자칠판에서 최종 순위를 확인하세요.", "🏆");
+            }
+        };
+
+        // 1. [전자칠판 뷰] (대형 칠판 최적화 & 순위표 3단 탭)
+        function renderBoardView() {
+            const state = window.appState;
+            const limits = getScoreLimits();
+            const curRound = state.quizRounds[state.currentRoundIndex];
+            const guessCount = Object.keys(state.guesses || {}).filter(uid => curRound && uid !== curRound.userId).length;
+
+            // 순위 정렬 기준 (total / guess / presenter)
+            const sortedPlayers = [...state.playersList].sort((a, b) => {
+                if (state.boardScoreTab === 'guess') return (b.guessScore || 0) - (a.guessScore || 0);
+                if (state.boardScoreTab === 'presenter') return (b.presenterScore || 0) - (a.presenterScore || 0);
+                return (b.total || 0) - (a.total || 0);
+            });
+
+            return `
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1">
+                    <!-- 좌측: 대형 문제 안내 및 룰렛 추첨 (lg:col-span-8) -->
+                    <div class="lg:col-span-8 space-y-4 flex flex-col">
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 flex-1 flex flex-col justify-between">
+                            <!-- 상단 인디케이터 바 -->
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <span class="text-xs sm:text-sm font-black text-slate-700">교실 전자칠판 LIVE</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="startRouletteLottery()" class="bg-amber-500 hover:bg-amber-600 text-white font-black px-4 py-2 rounded-xl text-xs sm:text-sm cursor-pointer shadow-sm transition">
+                                        🎰 발표 순서 룰렛 추첨
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 중앙 문제 상태창 -->
+                            <div class="my-auto py-8 text-center space-y-5">
+                                ${state.gameStage === 'quiz' && curRound ? `
+                                    <div class="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 px-4 py-1.5 rounded-full text-indigo-700 text-xs sm:text-sm font-black">
+                                        문제 ${curRound.roundIndex}번 / 총 ${state.quizRounds.length}문제
+                                    </div>
+                                    <h2 class="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
+                                        <span class="text-indigo-600">${curRound.studentName}</span> 학생 설명 중!
+                                    </h2>
+                                    <p class="text-xs sm:text-sm text-slate-500 font-bold">친구의 설명을 귀 기울여 듣고 내 화면에 정답을 적어보세요</p>
+
+                                    <!-- 정답 카드 (보안: 공개 전까지 ???로 마스킹) -->
+                                    <div class="max-w-md mx-auto p-5 rounded-2xl ${state.isKeywordRevealed ? 'bg-emerald-50 border-2 border-emerald-300' : 'bg-slate-50 border-2 border-dashed border-slate-300'}">
+                                        <span class="text-xs font-black ${state.isKeywordRevealed ? 'text-emerald-700' : 'text-slate-400'}">정답 키워드</span>
+                                        <div class="text-3xl sm:text-4xl font-black mt-1 ${state.isKeywordRevealed ? 'text-emerald-700' : 'text-slate-400 tracking-widest'}">
+                                            ${state.isKeywordRevealed ? curRound.keyword : '🔒 비밀 (설명 중)'}
+                                        </div>
+                                    </div>
+
+                                    <!-- 실시간 제출 인원수만 표시 (타인 답안 내용 절대 노출 금지) -->
+                                    <div class="flex items-center justify-center gap-2 text-xs sm:text-sm font-black text-indigo-600">
+                                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                                        <span>현재 정답 제출 완료: ${guessCount}명</span>
+                                    </div>
+                                ` : state.gameStage === 'finished' ? `
+                                    <div class="space-y-4">
+                                        <div class="text-6xl">🏆</div>
+                                        <h2 class="text-3xl sm:text-4xl font-black text-slate-900">모든 퀴즈가 종료되었습니다!</h2>
+                                        <p class="text-sm font-bold text-slate-500">우측 순위표에서 최종 결과를 확인해보세요.</p>
+                                    </div>
+                                ` : `
+                                    <div class="space-y-4 py-8">
+                                        <div class="text-6xl">🎰</div>
+                                        <h2 class="text-2xl sm:text-3xl font-black text-slate-900">퀴즈 시작 준비 중</h2>
+                                        <p class="text-xs sm:text-sm text-slate-500 font-bold">상단의 [🎰 발표 순서 룰렛 추첨]을 누르면 공정하게 순서가 결정됩니다.</p>
+                                    </div>
+                                `}
+                            </div>
+
+                            <!-- 하단 안내 규칙 -->
+                            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-xs font-bold text-slate-500 flex flex-wrap justify-around gap-2 text-center">
+                                <span>🎯 맞히기 1문제 = 1점 (총 ${limits.maxGuess}점 만점)</span>
+                                <span>🎤 설명하기 = 친구 ${limits.optimalCount}명 맞히면 만점 (총 ${limits.maxPresenter}점)</span>
+                                <span class="text-indigo-600 font-black">🌟 총점 ${limits.maxTotal}점 만점</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 우측: 실시간 랭킹 (3단 탭: 맞히기/설명하기/합산) (lg:col-span-4) -->
+                    <div class="lg:col-span-4 bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex flex-col">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+                            <h3 class="text-sm sm:text-base font-black text-slate-900 flex items-center gap-1.5">
+                                <span>🏆</span>
+                                <span>실시간 점수 순위</span>
+                            </h3>
+                            <span class="text-xs font-bold text-slate-400">참여: ${state.playersList.length}명</span>
+                        </div>
+
+                        <!-- 3단 순위 탭 -->
+                        <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-2xl mb-3">
+                            <button onclick="setBoardScoreTab('total')" class="py-1.5 rounded-xl text-xs font-black transition ${state.boardScoreTab === 'total' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500'}">
+                                합산
+                            </button>
+                            <button onclick="setBoardScoreTab('guess')" class="py-1.5 rounded-xl text-xs font-black transition ${state.boardScoreTab === 'guess' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500'}">
+                                맞히기
+                            </button>
+                            <button onclick="setBoardScoreTab('presenter')" class="py-1.5 rounded-xl text-xs font-black transition ${state.boardScoreTab === 'presenter' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500'}">
+                                설명하기
+                            </button>
+                        </div>
+
+                        <!-- 학생 순위 리스트 -->
+                        <div class="space-y-1.5 overflow-y-auto flex-1 custom-scroll pr-1 max-h-[520px]">
+                            ${sortedPlayers.length === 0 ? `
+                                <div class="text-center py-10 text-xs text-slate-400">참여한 학생이 없습니다.</div>
+                            ` : sortedPlayers.map((p, idx) => `
+                                <div class="flex items-center justify-between p-2.5 rounded-xl ${idx === 0 ? 'bg-amber-50 border border-amber-200' : 'bg-slate-50'}">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-5 text-center font-black ${idx === 0 ? 'text-amber-600 text-sm' : 'text-slate-400 text-xs'}">${idx + 1}</span>
+                                        <span class="font-black text-slate-800 text-xs sm:text-sm">${p.name}</span>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="font-black text-indigo-600 text-sm">
+                                            ${state.boardScoreTab === 'guess' ? `${p.guessScore||0}점` : state.boardScoreTab === 'presenter' ? `${p.presenterScore||0}점` : `${p.total||0}점`}
+                                        </span>
+                                        <div class="text-[9px] text-slate-400 font-bold">
+                                            맞힘 ${p.guessScore||0} · 설명 ${p.presenterScore||0}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.setBoardScoreTab = function(tab) {
+            sounds.click();
+            window.appState.boardScoreTab = tab;
+            renderApp();
+        };
+
+        // 2. [교사제어모드] (테스트 모드 완전 통합 & 학생별 제출 답안 확인)
+        function renderTeacherView() {
+            const state = window.appState;
+            const curRound = state.quizRounds[state.currentRoundIndex];
+            const limits = getScoreLimits();
+            const guessersList = Object.values(state.guesses || {}).filter(g => curRound && g.userId !== curRound.userId);
+
+            // 전체 학생 22명 기준 제출/미제출 집계
+            const submittedCount = state.playersList.filter(p => p.keyword && p.keyword.trim()).length;
+            const totalRosterCount = window.CLASS_ROSTER.length;
+
+            return `
+                <div class="max-w-4xl w-full mx-auto space-y-5">
+                    <!-- 문제 진행 제어 카드 -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div>
+                                <h3 class="text-base font-black text-slate-900">선생님 퀴즈 진행 제어</h3>
+                                <p class="text-xs text-slate-500 font-bold">등록 학생: ${state.playersList.length}명 / 키워드 제출 완료: ${submittedCount}명</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="startRouletteLottery()" class="bg-amber-500 hover:bg-amber-600 text-white font-black px-3.5 py-2 rounded-xl text-xs cursor-pointer">
+                                    🎰 순서 룰렛 추첨
+                                </button>
+                                <button onclick="changeMode('board')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-3.5 py-2 rounded-xl text-xs cursor-pointer">
+                                    📺 전자칠판 보기
+                                </button>
+                            </div>
+                        </div>
+
+                        ${curRound ? `
+                            <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 text-center space-y-3">
+                                <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1 rounded-full">
+                                    문제 ${state.currentRoundIndex + 1} / ${state.quizRounds.length}
+                                </span>
+                                <h2 class="text-2xl font-black text-slate-900">발표자: ${curRound.studentName} 학생</h2>
+                                <div class="bg-white p-3 rounded-xl max-w-xs mx-auto border border-indigo-200 shadow-xs">
+                                    <span class="text-[11px] font-bold text-slate-400">비밀 키워드 (교사 화면에만 표시)</span>
+                                    <div class="text-2xl font-black text-indigo-600">${curRound.keyword}</div>
+                                </div>
+                                
+                                <!-- 제출 현황 (교사만 누가 무엇을 적었는지 실시간 확인 가능) -->
+                                <div class="pt-2 text-left bg-white rounded-xl p-4 border border-indigo-100 space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-black text-slate-700">🔒 학생들이 제출한 실시간 답안 (교사 전용)</span>
+                                        <span class="text-xs font-bold text-indigo-600">${guessersList.length}명 제출</span>
+                                    </div>
+                                    <div class="max-h-36 overflow-y-auto custom-scroll space-y-1">
+                                        ${guessersList.length === 0 ? `
+                                            <div class="text-xs text-slate-400 py-2 text-center">아직 제출한 학생이 없습니다.</div>
+                                        ` : guessersList.map(g => `
+                                            <div class="flex justify-between items-center text-xs p-1.5 rounded bg-slate-50 border border-slate-100">
+                                                <span class="font-bold text-slate-700">${g.name}</span>
+                                                <span class="font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">${g.guess}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-center gap-2 pt-2">
+                                    ${!state.isKeywordRevealed ? `
+                                        <button onclick="revealAnswerAndScore()" class="bg-amber-500 hover:bg-amber-600 text-white font-black px-5 py-2.5 rounded-xl text-xs cursor-pointer">
+                                            💡 정답 공개 및 채점
+                                        </button>
+                                    ` : `
+                                        <button onclick="nextQuizRound()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-5 py-2.5 rounded-xl text-xs cursor-pointer">
+                                            ➡️ 다음 문제 진행
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="text-center py-6 text-xs text-slate-400 font-bold">
+                                아직 퀴즈가 시작되지 않았습니다. 아래에서 학생들이 등록한 키워드를 확인한 후 룰렛을 돌려주세요.
+                            </div>
+                        `}
+                    </div>
+
+                    <!-- 📋 [신규] 학생 비밀 키워드 제출 현황 (교사 전용 모니터링) -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg">🔒</span>
+                                <div>
+                                    <h3 class="text-sm font-black text-slate-900">학생 비밀 키워드 제출 현황 (교사 전용)</h3>
+                                    <p class="text-[11px] text-slate-400 font-bold">학생들이 등록한 물건을 실시간으로 확인하고 지도할 수 있습니다 (학생·칠판 화면에는 절대 보이지 않음)</p>
+                                </div>
+                            </div>
+                            <span class="bg-indigo-50 text-indigo-600 text-xs font-black px-3 py-1 rounded-full">
+                                ${submittedCount} / ${totalRosterCount}명 완료
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto custom-scroll pr-1">
+                            ${window.CLASS_ROSTER.map(name => {
+                                const player = state.playersList.find(p => p.name === name);
+                                const hasKeyword = player && player.keyword && player.keyword.trim();
+                                return `
+                                    <div class="p-2.5 rounded-2xl border ${hasKeyword ? 'bg-indigo-50/50 border-indigo-100' : 'bg-slate-50 border-slate-100'} flex items-center justify-between">
+                                        <div class="flex items-center gap-2 truncate">
+                                            <span class="w-2 h-2 rounded-full ${hasKeyword ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
+                                            <span class="text-xs font-black text-slate-800">${name}</span>
+                                        </div>
+                                        <div class="text-right">
+                                            ${hasKeyword ? `
+                                                <span class="bg-white text-indigo-600 border border-indigo-200 text-xs font-black px-2 py-0.5 rounded-lg inline-block max-w-[100px] truncate">
+                                                    ${player.keyword}
+                                                </span>
+                                            ` : `
+                                                <span class="text-[11px] font-bold text-slate-400">미등록</span>
+                                            `}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+
+                    <!-- 🔗 [신규] 모드별 전용 링크 복사 관리 카드 -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+                        <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                            <div>
+                                <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                                    <span>🔗</span>
+                                    <span>모드별 전용 링크 (전자칠판 · 교사제어 · 학생용)</span>
+                                </h3>
+                                <p class="text-[11px] text-slate-400 font-bold mt-0.5">각 기기에서 해당 링크로 접속하면 지정된 화면으로 바로 시작됩니다.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <!-- 1. 전자칠판 링크 -->
+                            <div class="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex flex-col justify-between space-y-3">
+                                <div class="space-y-1">
+                                    <span class="text-xs font-black text-indigo-700 flex items-center gap-1">
+                                        <span>📺</span> 전자칠판 전용 링크
+                                    </span>
+                                    <p class="text-[11px] text-slate-500 font-bold">교실 대형 TV/전자칠판에 띄울 링크</p>
+                                </div>
+                                <button onclick="copyModeLink('board')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2 rounded-xl text-xs cursor-pointer shadow-xs transition flex items-center justify-center gap-1">
+                                    <span>📋</span> 칠판 링크 복사
+                                </button>
+                            </div>
+
+                            <!-- 2. 교사제어 링크 -->
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between space-y-3">
+                                <div class="space-y-1">
+                                    <span class="text-xs font-black text-slate-800 flex items-center gap-1">
+                                        <span>👨‍🏫</span> 교사제어 전용 링크
+                                    </span>
+                                    <p class="text-[11px] text-slate-500 font-bold">선생님 태블릿/스마트폰 전용</p>
+                                </div>
+                                <button onclick="copyModeLink('teacher')" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-2 rounded-xl text-xs cursor-pointer shadow-xs transition flex items-center justify-center gap-1">
+                                    <span>📋</span> 교사용 링크 복사
+                                </button>
+                            </div>
+
+                            <!-- 3. 학생모드 링크 -->
+                            <div class="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100 flex flex-col justify-between space-y-3">
+                                <div class="space-y-1">
+                                    <span class="text-xs font-black text-emerald-800 flex items-center gap-1">
+                                        <span>👤</span> 학생모드 전용 링크
+                                    </span>
+                                    <p class="text-[11px] text-slate-500 font-bold">학생들 기기(크롬북/스마트폰) 공유용</p>
+                                </div>
+                                <button onclick="copyModeLink('student')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 rounded-xl text-xs cursor-pointer shadow-xs transition flex items-center justify-center gap-1">
+                                    <span>📋</span> 학생용 링크 복사
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 🧪 교사 전용 테스트 도구 -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                                <span>🧪</span>
+                                <span>교사 전용 테스트 도구 (시뮬레이터)</span>
+                            </h3>
+                            <span class="text-[11px] font-bold text-slate-400">교사만 조작 가능</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <button onclick="runTestSetup22()" class="p-3 bg-slate-100 hover:bg-slate-200 rounded-2xl text-xs font-black text-slate-700 text-center cursor-pointer transition">
+                                🤖 22명 자동 세팅
+                            </button>
+                            <button onclick="runTestOptimalAnswers()" class="p-3 bg-indigo-50 hover:bg-indigo-100 rounded-2xl text-xs font-black text-indigo-700 text-center cursor-pointer transition">
+                                🎯 15명 정답(만점)
+                            </button>
+                            <button onclick="runTestAllFail()" class="p-3 bg-rose-50 hover:bg-rose-100 rounded-2xl text-xs font-black text-rose-700 text-center cursor-pointer transition">
+                                ❌ 전원 오답(0점)
+                            </button>
+                            <button onclick="runTestResetAll()" class="p-3 bg-slate-100 hover:bg-slate-200 rounded-2xl text-xs font-black text-slate-700 text-center cursor-pointer transition">
+                                🔄 전체 초기화
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 테스트 시뮬레이터 함수군
+        window.runTestSetup22 = function() {
+            sounds.click();
+            const keywords = ["지우개", "필통", "태블릿", "칠판지우개", "시계", "지구본", "분필", "거울", "청소기", "가위", "풀", "자", "색연필", "스탬프", "물티슈", "돋보기", "북엔드", "화분", "바구니", "보드마카", "우산꽂이", "소화기"];
+            window.appState.playersList = window.CLASS_ROSTER.map((name, i) => ({
+                userId: `sim-${i}`,
+                name: name,
+                keyword: keywords[i % keywords.length],
+                keywordStatus: 'approved',
+                guessScore: 0,
+                presenterScore: 0,
+                total: 0
+            }));
+            
+            // 셔플 및 답안지 생성
+            const shuffled = [...window.appState.playersList];
+            window.appState.quizRounds = shuffled.map((p, idx) => ({
+                roundIndex: idx + 1,
+                userId: p.userId,
+                studentName: p.name,
+                keyword: p.keyword
+            }));
+            window.appState.currentRoundIndex = 0;
+            window.appState.gameStage = 'quiz';
+            window.appState.isKeywordRevealed = false;
+            window.appState.guesses = {};
+
+            syncState();
+            renderApp();
+            showAppModal("테스트 세팅 완료", "22명의 학생과 키워드가 세팅되었습니다!\n전자칠판 또는 학생 모드로 전환해보세요.", "🤖");
+        };
+
+        window.runTestOptimalAnswers = function() {
+            sounds.click();
+            const state = window.appState;
+            const curRound = state.quizRounds[state.currentRoundIndex];
+            if (!curRound) {
+                showAppModal("알림", "먼저 22명 세팅을 누르세요!", "⚠️");
+                return;
+            }
+            state.guesses = {};
+            const guessers = state.playersList.filter(p => p.userId !== curRound.userId);
+            // 15명 정답 세팅
+            guessers.forEach((p, idx) => {
+                state.guesses[p.userId] = {
+                    userId: p.userId,
+                    name: p.name,
+                    guess: idx < 15 ? curRound.keyword : "틀린답"
+                };
+            });
+            syncState();
+            renderApp();
+            showAppModal("시뮬레이션", "친구들 15명이 정답을 제출했습니다.\n[💡 정답 공개 및 채점]을 눌러보세요!", "🎯");
+        };
+
+        window.runTestAllFail = function() {
+            sounds.click();
+            const state = window.appState;
+            const curRound = state.quizRounds[state.currentRoundIndex];
+            if (!curRound) return;
+            state.guesses = {};
+            state.playersList.forEach(p => {
+                if (p.userId !== curRound.userId) {
+                    state.guesses[p.userId] = { userId: p.userId, name: p.name, guess: "엉뚱한답" };
+                }
+            });
+            syncState();
+            renderApp();
+            showAppModal("시뮬레이션", "전원 오답을 제출했습니다 (0명 정답).", "❌");
+        };
+
+        window.runTestResetAll = function() {
+            sounds.click();
+            window.appState.gameStage = 'ready';
+            window.appState.quizRounds = [];
+            window.appState.currentRoundIndex = 0;
+            window.appState.isKeywordRevealed = false;
+            window.appState.guesses = {};
+            window.appState.playersList = [];
+            syncState();
+            renderApp();
+            showAppModal("초기화 완료", "모든 게임 데이터가 리셋되었습니다.", "🔄");
+        };
+
+        // 3. [학생 모드] (타인 키워드 및 타인 정답 완벽 차단)
+        function renderStudentView() {
+            const state = window.appState;
+            const curRound = state.quizRounds[state.currentRoundIndex];
+            const isPresenter = curRound && curRound.userId === state.userId;
+            const myInfo = state.playersList.find(p => p.userId === state.userId) || {};
+            const mySubmittedGuess = (state.guesses && state.guesses[state.userId]) ? state.guesses[state.userId].guess : '';
+
+            return `
+                <div class="max-w-md w-full mx-auto space-y-4">
+                    <!-- 학생 본인 이름 선택 및 프로필 -->
+                    <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-3">
+                        <label class="block text-xs font-black text-slate-700">내 이름 선택</label>
+                        <select onchange="changeStudentProfile(this.value)" class="w-full px-3 py-2.5 rounded-xl border-2 border-slate-200 font-black text-sm bg-white focus:border-indigo-600 focus:outline-none">
+                            ${window.CLASS_ROSTER.map(name => `
+                                <option value="${name}" ${state.playerName === name ? 'selected' : ''}>${name}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+
+                    <!-- 상단 내 키워드 등록/수정 (본인 것만 표시) -->
+                    <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-2">
+                        <label class="block text-xs font-black text-slate-700">내가 교실에서 설명할 비밀 물건</label>
+                        <div class="flex gap-2">
+                            <input id="my-keyword-input" type="text" value="${state.myKeyword}" placeholder="예: 지우개, 필통, 시계" class="flex-1 px-3 py-2.5 rounded-xl border-2 border-slate-200 font-black text-sm focus:border-indigo-600 focus:outline-none" />
+                            <button onclick="submitMyKeyword()" class="bg-indigo-600 text-white font-black px-4 py-2.5 rounded-xl text-xs cursor-pointer">등록</button>
+                        </div>
+                        <p class="text-[11px] text-slate-400 font-bold">※ 등록한 키워드는 발표 전까지 다른 친구들에게 절대 공개되지 않습니다.</p>
+                    </div>
+
+                    <!-- 퀴즈 참여 카드 -->
+                    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 text-center space-y-4">
+                        ${curRound ? `
+                            ${isPresenter ? `
+                                <!-- 내가 발표자일 때 (정답창 잠김 & 설명 가이드) -->
+                                <div class="bg-indigo-600 text-white rounded-2xl p-6 space-y-4 shadow-md">
+                                    <span class="bg-white/20 text-white text-xs font-black px-3 py-1 rounded-full">🌟 내가 발표할 차례!</span>
+                                    <p class="text-xs text-indigo-200 font-bold">친구들에게 아래 물건을 설명하세요</p>
+                                    <div class="bg-white text-indigo-950 py-3 px-5 rounded-xl font-black text-3xl">
+                                        ${curRound.keyword}
+                                    </div>
+                                    <div class="bg-indigo-950/40 p-3 rounded-xl text-xs text-left space-y-1 text-indigo-100">
+                                        <p class="font-black text-amber-300">⚠️ 규칙:</p>
+                                        <p>· 글자 수나 초성을 말하면 안 돼요.</p>
+                                        <p>· 친구들의 약 2/3가 맞혔을 때 만점을 받습니다!</p>
+                                    </div>
+                                    <div class="text-[11px] text-indigo-300 font-bold">
+                                        🔒 내가 낸 문제이므로 정답 입력창이 잠겼습니다.
+                                    </div>
+                                </div>
+                            ` : `
+                                <!-- 내가 맞히는 친구일 때 (정답 입력 활성 & 타인 답안 비공개) -->
+                                <div class="space-y-3">
+                                    <span class="text-xs font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                                        문제 ${state.currentRoundIndex + 1}번
+                                    </span>
+                                    <h3 class="text-2xl font-black text-slate-900">${curRound.studentName} 친구의 설명 중!</h3>
+                                    <p class="text-xs text-slate-500 font-bold">친구의 설명을 귀 기울여 듣고 정답을 입력하세요.</p>
+                                    
+                                    <input id="student-guess-input" type="text" placeholder="정답 입력" class="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-200 text-center font-black text-lg focus:border-indigo-600 focus:outline-none" onkeydown="if(event.key==='Enter') submitGuessAnswer()" />
+                                    <button onclick="submitGuessAnswer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-2xl cursor-pointer shadow-md">
+                                        ${mySubmittedGuess ? '정답 다시 제출하기' : '정답 제출하기'}
+                                    </button>
+
+                                    ${mySubmittedGuess ? `
+                                        <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-800">
+                                            내가 낸 답: <span class="font-black underline">${mySubmittedGuess}</span> (선생님께만 전달됨)
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `}
+
+                            ${state.isKeywordRevealed ? `
+                                <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-emerald-800 font-black text-sm">
+                                    🎉 공개된 정답: <span class="text-base">${curRound.keyword}</span>
+                                </div>
+                            ` : ''}
+                        ` : `
+                            <div class="py-8 text-xs text-slate-400 font-bold">
+                                퀴즈 준비 중입니다. 위에서 설명할 물건을 먼저 등록하세요.
+                            </div>
+                        `}
+                    </div>
+
+                    <!-- 내 점수 요약 -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex justify-around text-center">
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold block">맞히기</span>
+                            <span class="text-sm font-black text-slate-800">${myInfo.guessScore || 0}점</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold block">설명하기</span>
+                            <span class="text-sm font-black text-slate-800">${myInfo.presenterScore || 0}점</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-indigo-500 font-bold block">내 총점</span>
+                            <span class="text-sm font-black text-indigo-600">${myInfo.total || 0}점</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.changeStudentProfile = function(name) {
+            sounds.click();
+            window.appState.playerName = name;
+            // 해당 이름의 플레이어 매핑
+            let p = window.appState.playersList.find(x => x.name === name);
+            if (p) {
+                window.appState.userId = p.userId;
+                window.appState.myKeyword = p.keyword || '';
+            } else {
+                window.appState.userId = 'student-' + name;
+                window.appState.myKeyword = '';
+            }
+            renderApp();
+        };
+
+        // 메인 렌더 함수
+        function renderApp() {
+            const viewport = document.getElementById('app-viewport');
+            if (!viewport) return;
+
+            if (window.appState.activeView === 'board') {
+                viewport.innerHTML = renderBoardView();
+            } else if (window.appState.activeView === 'teacher') {
+                viewport.innerHTML = renderTeacherView();
+            } else if (window.appState.activeView === 'student') {
+                viewport.innerHTML = renderStudentView();
+            }
+        }
+
+        // 앱 시작 시 URL 해시(#board, #teacher, #student)에 맞추어 자동 실행
+        window.onload = function() {
+            initRouteFromUrl();
+            window.addEventListener('hashchange', initRouteFromUrl);
+        };
+    </script>
+</body>
+</html>
