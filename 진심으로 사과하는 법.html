@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>진심으로 사과하는 법 - 국어 학습장</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Tone.js (Sound Effects) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf4f5',
+              100: '#fbe8eb',
+              500: '#e11d48',
+              600: '#be123c',
+              700: '#9f1239'
+            }
+          },
+          fontFamily: {
+            sans: ['Pretendard', 'Noto Sans KR', 'sans-serif'],
+            book: ['KoPub Batang', 'Nanum Myeongjo', 'serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+    
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+
+    .book-font {
+      font-family: 'Nanum Myeongjo', serif;
+    }
+
+    /* 4페이지 문장 클릭 형광펜 밑줄 스타일 */
+    .readable-sentence {
+      cursor: pointer;
+      display: inline;
+      padding: 2px 4px;
+      margin: 0 -2px;
+      border-radius: 6px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .readable-sentence:hover {
+      background-color: rgba(254, 240, 138, 0.45);
+    }
+    .readable-sentence.hl-yellow {
+      background-color: #fef08a !important;
+      border-bottom: 3.5px solid #eab308;
+    }
+    .readable-sentence.hl-pink {
+      background-color: #fbcfe8 !important;
+      border-bottom: 3.5px solid #ec4899;
+    }
+    .readable-sentence.hl-blue {
+      background-color: #bae6fd !important;
+      border-bottom: 3.5px solid #0284c7;
+    }
+
+    /* 본문 용지 질감 효과 */
+    .page-sheet {
+      background: #ffffff;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+      background-image: radial-gradient(#f1f5f9 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-rose-100 selection:text-rose-900">
+
+  <!-- ================= HEADER NAVIGATION ================= -->
+  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="flex items-center justify-between h-16 sm:h-20 gap-2">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-rose-500 text-white flex items-center justify-center text-xl shadow-md shadow-rose-500/20 shrink-0">
+            <i class="fa-solid fa-book-open"></i>
+          </div>
+          <div>
+            <h1 class="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
+              <span>진심으로 사과하는 법</span>
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100 hidden sm:inline-block">국어 학습</span>
+            </h1>
+            <p class="text-xs text-slate-500 hidden sm:block">1단계: 퀴즈 → 2단계: 물음에 답하기 → 3단계: 중심내용 살펴보기 → 4단계: 본문 탐독</p>
+          </div>
+        </div>
+
+        <button onclick="openSubmitModal()" class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all transform hover:-translate-y-0.5 active:scale-95">
+          <i class="fa-solid fa-paper-plane text-amber-400"></i>
+          <span>선생님께 제출하기</span>
+        </button>
+      </div>
+
+      <!-- 4단계 탭 내비게이션 -->
+      <nav class="flex space-x-1.5 pt-1 -mb-px overflow-x-auto pb-1.5" aria-label="학습 단계 전환">
+        <button id="tab-1" onclick="switchPage(1)" class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all bg-rose-600 text-white shadow-xs whitespace-nowrap">
+          <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-black">1</span>
+          <span>1단계: 퀴즈 (15문항)</span>
+        </button>
+        <button id="tab-2" onclick="switchPage(2)" class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all whitespace-nowrap">
+          <span class="w-5 h-5 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-black">2</span>
+          <span>2단계: 물음에 답하기</span>
+        </button>
+        <button id="tab-3" onclick="switchPage(3)" class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all whitespace-nowrap">
+          <span class="w-5 h-5 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-black">3</span>
+          <span>3단계: 중심내용 살펴보기</span>
+        </button>
+        <button id="tab-4" onclick="switchPage(4)" class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all whitespace-nowrap">
+          <span class="w-5 h-5 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-black">4</span>
+          <span>4단계: 본문 & 밑줄</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full flex-grow">
+
+    <!-- ================= PAGE 1: 퀴즈 (15문항) ================= -->
+    <section id="page-1" class="space-y-6">
+      
+      <!-- 상단 배너 -->
+      <div class="bg-gradient-to-r from-rose-50 via-pink-50 to-amber-50 rounded-3xl p-5 sm:p-6 border border-rose-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-start gap-3.5">
+          <div class="w-11 h-11 rounded-2xl bg-rose-500 text-white flex items-center justify-center text-xl shadow-md shadow-rose-500/20 shrink-0">
+            <i class="fa-solid fa-list-check"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white text-rose-600 border border-rose-200">
+                1단계 · 전체 문항 풀기
+              </span>
+              <span class="text-xs text-slate-500">총 15문항 (객관식 10 / 단답형 5)</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-slate-800">진심으로 사과하는 법 퀴즈</h2>
+            <p class="text-xs sm:text-sm text-slate-600 mt-1">문제를 꼼꼼히 읽고 답을 골라보세요. 채점 후 틀린 문제는 스스로 다시 풀어볼 수 있습니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 진행률 및 안내 바 -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-2">
+        <div class="flex items-center justify-between text-xs sm:text-sm font-bold">
+          <span class="text-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-chart-pie text-rose-500"></i> 풀이 및 정답 현황
+          </span>
+          <span id="quiz-progress-text" class="text-rose-600 font-extrabold">0 / 15문항 작성</span>
+        </div>
+        <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+          <div id="quiz-progress-bar" class="h-full bg-rose-500 rounded-full transition-all duration-300 w-0"></div>
+        </div>
+      </div>
+
+      <!-- 전체 퀴즈 리스트 -->
+      <div id="all-quiz-list" class="space-y-5"></div>
+
+      <!-- 퀴즈 채점 및 점수 바 -->
+      <div class="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div id="quiz-score-badge" class="hidden items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-xl text-rose-600 font-black">
+            <span id="score-val">0</span>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 font-semibold">채점 결과</p>
+            <p class="text-sm sm:text-base font-extrabold text-slate-800" id="score-msg">15문제 중 0문제 정답</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <button onclick="gradeQuiz()" class="flex-1 sm:flex-none px-7 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm sm:text-base shadow-md shadow-rose-600/20 transition-all active:scale-95 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-check-double"></i>
+            <span>채점하기</span>
+          </button>
+          <button onclick="resetQuiz()" class="px-4 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition-all active:scale-95" title="전체 처음부터 다시 풀기">
+            <i class="fa-solid fa-rotate-right mr-1"></i> 전체 초기화
+          </button>
+        </div>
+      </div>
+
+      <!-- 다음 단계로 이동 버튼 -->
+      <div class="flex justify-end pt-2">
+        <button onclick="switchPage(2)" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition shadow-md shadow-amber-600/20 text-xs sm:text-sm">
+          <span>2단계 물음에 답하기로 이동</span> <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ================= PAGE 2: 물음에 답하기 ================= -->
+    <section id="page-2" class="hidden space-y-6">
+      
+      <div class="bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 rounded-3xl p-5 sm:p-6 border border-amber-200/70 shadow-xs">
+        <div class="flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-2xl bg-amber-600 text-white flex items-center justify-center text-lg shadow-md shadow-amber-600/25 shrink-0">
+            <i class="fa-solid fa-lightbulb"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white text-amber-700 border border-amber-200">
+                2페이지 · 생각 키우기
+              </span>
+              <span class="text-xs text-slate-500">질문을 읽고 힌트 키워드를 떠올리며 내 생각을 정리해 보세요.</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-slate-800">〈진심으로 사과하는 법〉을 읽고 물음에 답해보기</h2>
+            <p class="text-xs sm:text-sm text-slate-600 mt-1">글을 다시 되새기며 주어진 힌트 키워드를 바탕으로 친구나 짝과 함께 생각을 나누어 보세요.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-5">
+        
+        <!-- 질문 1 -->
+        <div class="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div class="flex items-start gap-2.5">
+            <span class="px-2.5 py-1 rounded-xl bg-amber-100 text-amber-800 font-extrabold text-xs shrink-0 mt-0.5">질문 1</span>
+            <div>
+              <h3 class="text-base sm:text-lg font-bold text-slate-800 leading-snug">
+                (1) 잘못을 했을 때 사과해야 하는 까닭은 무엇일까요?
+              </h3>
+              <p class="text-xs text-slate-500 mt-1">마음속에 머물러 있는 생각과 상대방의 입장을 함께 떠올려 보세요.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-2.5">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+              <i class="fa-solid fa-key text-amber-600"></i>
+              <span>생각 열기 힌트 키워드</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 마음의 전달
+              </span>
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 소리 내어 표현하기
+              </span>
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 상대방의 눈높이
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 질문 2 -->
+        <div class="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div class="flex items-start gap-2.5">
+            <span class="px-2.5 py-1 rounded-xl bg-amber-100 text-amber-800 font-extrabold text-xs shrink-0 mt-0.5">질문 2</span>
+            <div>
+              <h3 class="text-base sm:text-lg font-bold text-slate-800 leading-snug">
+                (2) 사과를 받아 주는 상대에게 뭐라고 물어봐야 할까요?
+              </h3>
+              <p class="text-xs text-slate-500 mt-1">용서를 바라는 나의 마음보다 상처 입은 상대방의 마음에 귀 기울여 보세요.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-2.5">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+              <i class="fa-solid fa-key text-amber-600"></i>
+              <span>생각 열기 힌트 키워드</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 상대의 결정권
+              </span>
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 강요하지 않는 태도
+              </span>
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 예의 바른 질문
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 질문 3 -->
+        <div class="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <div class="flex items-start gap-2.5">
+            <span class="px-2.5 py-1 rounded-xl bg-amber-100 text-amber-800 font-extrabold text-xs shrink-0 mt-0.5">질문 3</span>
+            <div>
+              <h3 class="text-base sm:text-lg font-bold text-slate-800 leading-snug">
+                (3) 사과할 때 변명하는 것이 좋지 않은 까닭은 무엇인가요?
+              </h3>
+              <p class="text-xs text-slate-500 mt-1">말 끝에 군더더기 이유를 붙였을 때 상대가 느낄 감정을 생각해 보세요.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-2.5">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+              <i class="fa-solid fa-key text-amber-600"></i>
+              <span>생각 열기 힌트 키워드</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 핑계와 책임 전가
+              </span>
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 감정의 불씨
+              </span>
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 깨끗한 인정
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 페이지 전환 버튼 -->
+      <div class="flex items-center justify-between pt-2">
+        <button onclick="switchPage(1)" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition shadow-xs text-xs sm:text-sm">
+          <i class="fa-solid fa-arrow-left"></i> 1단계 퀴즈로 가기
+        </button>
+        <button onclick="switchPage(3)" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold transition shadow-md shadow-teal-600/20 text-xs sm:text-sm">
+          <span>3단계 중심내용 살펴보기</span> <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ================= PAGE 3: 중심 내용 살펴보기 ================= -->
+    <section id="page-3" class="hidden space-y-6">
+      
+      <div class="bg-gradient-to-r from-teal-50 via-emerald-50 to-cyan-50 rounded-3xl p-5 sm:p-6 border border-teal-200/70 shadow-xs">
+        <div class="flex items-start gap-3.5">
+          <div class="w-10 h-10 rounded-2xl bg-teal-600 text-white flex items-center justify-center text-lg shadow-md shadow-teal-600/25 shrink-0">
+            <i class="fa-solid fa-magnifying-glass-chart"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white text-teal-700 border border-teal-200 shadow-2xs">
+                3페이지 · 중심 내용 탐구
+              </span>
+              <span class="text-xs text-slate-500">교과서 활동을 토대로 글의 핵심을 파악해 보세요.</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-slate-800">중심 내용 살펴보기</h2>
+            <p class="text-xs sm:text-sm text-slate-600 mt-1">제목으로 내용을 짐작해보고, [보기]의 낱말로 빈칸을 채워 중심 생각을 완성해 보세요.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        
+        <!-- 1. 글의 제목을 보고 짐작한 내용 -->
+        <div class="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <h3 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+            <span class="w-7 h-7 rounded-xl bg-teal-100 text-teal-800 text-xs font-black flex items-center justify-center">1</span>
+            <span>글의 제목을 보고 짐작한 내용은 무엇이었나요?</span>
+          </h3>
+
+          <!-- 도우미 캐릭터 말풍선 카드 -->
+          <div class="flex items-center gap-3.5 bg-emerald-50/60 p-4 rounded-3xl border-2 border-emerald-400/80 shadow-xs">
+            <div class="shrink-0 w-12 h-14 sm:w-14 sm:h-16 flex items-center justify-center">
+              <svg viewBox="0 0 100 120" class="w-full h-full drop-shadow-sm">
+                <rect x="20" y="25" width="60" height="75" rx="30" fill="#e8f5e9" stroke="#81c784" stroke-width="4"/>
+                <path d="M20 50 Q50 30 80 50" fill="none" stroke="#ffb74d" stroke-width="5" stroke-linecap="round"/>
+                <circle cx="38" cy="60" r="4" fill="#2e7d32"/>
+                <circle cx="62" cy="60" r="4" fill="#2e7d32"/>
+                <path d="M44 70 Q50 76 56 70" fill="none" stroke="#2e7d32" stroke-width="3" stroke-linecap="round"/>
+                <ellipse cx="32" cy="67" rx="5" ry="3" fill="#ffcdd2"/>
+                <ellipse cx="68" cy="67" rx="5" ry="3" fill="#ffcdd2"/>
+                <ellipse cx="14" cy="65" rx="6" ry="5" fill="#a5d6a7"/>
+              </svg>
+            </div>
+            <div class="text-xs sm:text-sm font-semibold text-emerald-950 leading-relaxed">
+              글의 제목을 보면 글쓴이가 무엇을 이야기하려고 하는지 미리 생각해 볼 수 있어요.
+            </div>
+          </div>
+
+          <!-- 생각 열기 키워드 카드 -->
+          <div class="p-4 rounded-2xl bg-teal-50/70 border border-teal-200/80 space-y-2.5">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-teal-900">
+              <i class="fa-solid fa-key text-teal-600"></i>
+              <span>생각 열기 키워드</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-teal-300 text-teal-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 제목 속 핵심 낱말
+              </span>
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-teal-300 text-teal-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 이야기 내용 예측하기
+              </span>
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-teal-300 text-teal-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 올바른 화해의 방법
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 빈칸에 들어갈 알맞은 말을 보기에서 골라 써 보세요 -->
+        <div class="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <h3 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+            <span class="w-7 h-7 rounded-xl bg-teal-100 text-teal-800 text-xs font-black flex items-center justify-center">2</span>
+            <span>빈칸에 들어갈 알맞은 말을 <span class="px-2 py-0.5 rounded-md bg-slate-800 text-white text-xs font-bold">보기</span>에서 골라 써 보세요.</span>
+          </h3>
+
+          <!-- 보기 상자 (클릭 시 자동 빈칸 입력) -->
+          <div class="relative pt-3">
+            <div class="border-2 border-slate-700 rounded-2xl p-4 bg-slate-50/70 flex flex-col items-center justify-center gap-2">
+              <div class="absolute -top-1 left-6 -translate-y-1/2 bg-slate-800 text-white text-xs font-extrabold px-3 py-0.5 rounded-lg shadow-2xs tracking-wider">
+                보기
+              </div>
+              <div class="flex flex-wrap items-center justify-center gap-4 sm:gap-8 pt-1">
+                <button type="button" onclick="fillNextBlank('사과')" class="px-4 py-1.5 bg-white border border-slate-300 rounded-xl text-base sm:text-lg font-bold text-slate-800 hover:border-teal-500 hover:bg-teal-50 active:scale-95 transition shadow-2xs">
+                  사과
+                </button>
+                <button type="button" onclick="fillNextBlank('잘못')" class="px-4 py-1.5 bg-white border border-slate-300 rounded-xl text-base sm:text-lg font-bold text-slate-800 hover:border-teal-500 hover:bg-teal-50 active:scale-95 transition shadow-2xs">
+                  잘못
+                </button>
+                <button type="button" onclick="fillNextBlank('정중')" class="px-4 py-1.5 bg-white border border-slate-300 rounded-xl text-base sm:text-lg font-bold text-slate-800 hover:border-teal-500 hover:bg-teal-50 active:scale-95 transition shadow-2xs">
+                  정중
+                </button>
+                <button type="button" onclick="fillNextBlank('인정')" class="px-4 py-1.5 bg-white border border-slate-300 rounded-xl text-base sm:text-lg font-bold text-slate-800 hover:border-teal-500 hover:bg-teal-50 active:scale-95 transition shadow-2xs">
+                  인정
+                </button>
+              </div>
+              <span class="text-[11px] text-slate-400 mt-0.5">※ 보기의 낱말을 클릭하면 빈칸에 차례대로 채워집니다. 직접 입력해도 됩니다.</span>
+            </div>
+          </div>
+
+          <!-- 점선 테두리 빈칸 문장 카드 -->
+          <div class="border-2 border-dashed border-rose-300 rounded-3xl p-5 sm:p-7 bg-rose-50/30 space-y-4 text-base sm:text-lg text-slate-800 leading-loose">
+            <div class="flex items-start gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0 mt-3"></span>
+              <p class="flex-grow">
+                잘못을 했을 때에는 상대에게 꼭
+                <input type="text" id="p3-blank-1" oninput="savePage3Answers()" placeholder="낱말 입력" class="mx-1.5 px-3 py-1 text-center font-bold text-teal-800 border-b-2 border-slate-400 focus:border-teal-600 bg-white rounded-lg outline-none w-28 text-base shadow-2xs">
+                하고 미안한 까닭을 말한다.
+              </p>
+            </div>
+
+            <div class="flex items-start gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0 mt-3"></span>
+              <p class="flex-grow">
+                사과할 때에는 “내 사과를 받아 줄래?”라고
+                <input type="text" id="p3-blank-2" oninput="savePage3Answers()" placeholder="낱말 입력" class="mx-1.5 px-3 py-1 text-center font-bold text-teal-800 border-b-2 border-slate-400 focus:border-teal-600 bg-white rounded-lg outline-none w-28 text-base shadow-2xs">
+                하게 물어본다.
+              </p>
+            </div>
+
+            <div class="flex items-start gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0 mt-3"></span>
+              <p class="flex-grow">
+                사과할 때에는 자신의
+                <input type="text" id="p3-blank-3" oninput="savePage3Answers()" placeholder="낱말 입력" class="mx-1.5 px-3 py-1 text-center font-bold text-teal-800 border-b-2 border-slate-400 focus:border-teal-600 bg-white rounded-lg outline-none w-28 text-base shadow-2xs">
+                을/를 깨끗하게
+                <input type="text" id="p3-blank-4" oninput="savePage3Answers()" placeholder="낱말 입력" class="mx-1.5 px-3 py-1 text-center font-bold text-teal-800 border-b-2 border-slate-400 focus:border-teal-600 bg-white rounded-lg outline-none w-28 text-base shadow-2xs">
+                하고 진심으로 사과한다.
+              </p>
+            </div>
+          </div>
+
+          <!-- 빈칸 정답 확인 버튼 및 피드백 -->
+          <div class="flex items-center justify-between pt-1">
+            <button type="button" onclick="checkPage3Blanks()" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs sm:text-sm transition shadow-xs flex items-center gap-1.5">
+              <i class="fa-solid fa-check"></i>
+              <span>빈칸 정답 확인하기</span>
+            </button>
+            <button type="button" onclick="clearPage3Blanks()" class="text-xs text-slate-400 hover:text-slate-600 font-semibold">
+              빈칸 다시 쓰기
+            </button>
+          </div>
+          <div id="p3-blank-feedback" class="hidden p-4 rounded-2xl text-xs sm:text-sm font-semibold transition-all"></div>
+        </div>
+
+        <!-- 3. 중심 내용 이야기해보기 -->
+        <div class="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+          <h3 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+            <span class="w-7 h-7 rounded-xl bg-teal-100 text-teal-800 text-xs font-black flex items-center justify-center">3</span>
+            <span>「진심으로 사과하는 법을 알아 둬」의 중심 내용이 무엇인지 친구들과 이야기해 보세요.</span>
+          </h3>
+          
+          <!-- 대화 유도 힌트 키워드 카드 -->
+          <div class="p-4 rounded-2xl bg-teal-50/70 border border-teal-200/80 space-y-2.5">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-teal-900">
+              <i class="fa-solid fa-comments text-teal-600"></i>
+              <span>함께 이야기 나눌 중심 키워드</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-teal-300 text-teal-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 솔직한 인정과 진심
+              </span>
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-teal-300 text-teal-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 핑계 없는 태도
+              </span>
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-teal-300 text-teal-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 정중한 용서 구하기
+              </span>
+              <span class="px-3 py-1.5 rounded-xl bg-white border border-teal-300 text-teal-900 text-xs sm:text-sm font-bold shadow-2xs">
+                # 참된 우정 회복
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 페이지 전환 버튼 -->
+      <div class="flex items-center justify-between pt-2">
+        <button onclick="switchPage(2)" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition shadow-xs text-xs sm:text-sm">
+          <i class="fa-solid fa-arrow-left"></i> 2단계 물음에 답하기로 가기
+        </button>
+        <button onclick="switchPage(4)" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-bold transition shadow-md shadow-purple-600/20 text-xs sm:text-sm">
+          <span>4단계 본문 & 밑줄로 가기</span> <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ================= PAGE 4: 본문 탐독 & 중요 문장 밑줄 ================= -->
+    <section id="page-4" class="hidden space-y-6">
+      
+      <!-- 상단 밑줄 툴바 -->
+      <div class="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+              4페이지 · 원문 읽기
+            </span>
+            <span class="text-xs text-rose-500 font-bold flex items-center gap-1">
+              <i class="fa-solid fa-highlighter"></i> 문장을 클릭(터치)하면 밑줄이 그어져요!
+            </span>
+          </div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-800">본문 천천히 읽기 & 중요 문장 형광펜 밑줄</h2>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- 색상 선택 -->
+          <div class="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs">
+            <span class="text-slate-500 font-semibold px-2">펜 색상:</span>
+            <button id="p4-color-yellow" onclick="setHighlightColor('yellow')" class="px-2.5 py-1 rounded-xl font-bold bg-yellow-200 text-yellow-900 border-2 border-yellow-400 shadow-xs flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span> 노랑
+            </button>
+            <button id="p4-color-pink" onclick="setHighlightColor('pink')" class="px-2.5 py-1 rounded-xl font-medium text-slate-600 hover:text-pink-600 transition flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-pink-400"></span> 분홍
+            </button>
+            <button id="p4-color-blue" onclick="setHighlightColor('blue')" class="px-2.5 py-1 rounded-xl font-medium text-slate-600 hover:text-sky-600 transition flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> 하늘
+            </button>
+          </div>
+
+          <!-- 밑줄 카운터 및 리셋 -->
+          <div class="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-2xl text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+            <span>밑줄:</span>
+            <span id="p4-marked-count" class="font-extrabold text-rose-600">0</span>개
+            <button onclick="clearAllMarks()" title="모든 밑줄 지우기" class="ml-1 text-slate-400 hover:text-rose-500 transition">
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 책 지문 카드 (원문 캡처의 줄바꿈과 문단 정확히 보존) -->
+      <div class="page-sheet rounded-3xl p-6 sm:p-12 md:p-16 border border-slate-200 max-w-3xl mx-auto text-slate-800 transition-all shadow-md flex flex-col items-center">
+        
+        <div class="text-center pt-2 pb-6 w-full max-w-xl">
+          <h3 class="book-font text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-snug">
+            진심으로 사과하는 법을 알아 둬
+          </h3>
+          <div class="text-right text-sm sm:text-base text-slate-600 font-medium pt-3 pb-3 border-b border-slate-200">
+            글: 박현숙, 그림: 안경희
+          </div>
+        </div>
+
+        <div class="w-full max-w-xl mx-auto flex justify-center py-4 select-none">
+          <div class="book-font text-lg sm:text-xl md:text-2xl text-slate-800 leading-[2.25] sm:leading-[2.35] space-y-7 inline-block text-left">
+            
+            <!-- 문단 1 -->
+            <p class="indent-6">
+              <span class="readable-sentence" data-id="sent-1" onclick="toggleSentence(this)">누구나 잘못을 했을 때 상대에게 사과를 꼭 해야 해.</span><br>
+              <span class="readable-sentence" data-id="sent-2" onclick="toggleSentence(this)">마음속으로만 잘못했다고 생각하면 상대는 알 수가 없<br>
+              잖아.</span> <span class="readable-sentence" data-id="sent-3" onclick="toggleSentence(this)">내 마음을 읽을 수 없으니까 말이야.</span> <span class="readable-sentence" data-id="sent-4" onclick="toggleSentence(this)">또 중요한 한<br>
+              가지!</span> <span class="readable-sentence" data-id="sent-5" onclick="toggleSentence(this)">사과할 때는 왜 미안한지도 말해야 해.</span> <span class="readable-sentence" data-id="sent-6" onclick="toggleSentence(this)">무엇을 잘<br>
+              못해서 뉘우치고 있다는 것을 알려 주어야 상대도 사과<br>
+              하는 사람의 진심을 느끼고 받아들여 주거든.</span> <span class="readable-sentence" data-id="sent-7" onclick="toggleSentence(this)">그리고 다<br>
+              시는 그런 일을 하지 않을 거라는 약속도 해야 한단다.</span>
+            </p>
+
+            <!-- 문단 2 -->
+            <p class="indent-6">
+              <span class="readable-sentence" data-id="sent-8" onclick="toggleSentence(this)">또 무작정 사과만 해 놓고 상대가 받아 주든지 말든<br>
+              지 신경 쓰지 않는 사람도 있어.</span> <span class="readable-sentence" data-id="sent-9" onclick="toggleSentence(this)">사과를 받아 주는 것은<br>
+              나 때문에 상처를 받은 상대가 결정해야 하기 때문에,<br>
+              “내 사과를 받아 줄래?”라고 정중하게 물어봐야 해.</span> <span class="readable-sentence" data-id="sent-10" onclick="toggleSentence(this)">진<br>
+              심으로 사과하면 받아 주지 않는 사람은 없을 거야.</span> <span class="readable-sentence" data-id="sent-11" onclick="toggleSentence(this)">그<br>
+              런데 실컷 사과를 하고도 엉뚱하게 더 화가 나게 만드<br>
+              는 사람들이 꼭 있어.</span>
+            </p>
+
+            <!-- 문단 3 -->
+            <p class="indent-6">
+              <span class="readable-sentence" data-id="sent-12" onclick="toggleSentence(this)">“나도 잘못했지만 너도 잘못했어.” 이렇게 끝에 토를<br>
+              달기 때문이야.</span> <span class="readable-sentence" data-id="sent-13" onclick="toggleSentence(this)">사과를 하면서 이렇게 따진다면 차라리<br>
+              사과를 하지 않는 편이 더 나아.</span> <span class="readable-sentence" data-id="sent-14" onclick="toggleSentence(this)">다시 다투게 될지도 모<br>
+              르거든.</span>
+            </p>
+
+            <!-- 문단 4 -->
+            <p class="indent-6">
+              <span class="readable-sentence" data-id="sent-15" onclick="toggleSentence(this)">“미안해. 하지만……” 이런 식으로 이유를 대거나 변<br>
+              명을 하는 것도 좋지 않아.</span> <span class="readable-sentence" data-id="sent-16" onclick="toggleSentence(this)">변명을 하다 보면 상대를 탓<br>
+              하게 되거든.</span> <span class="readable-sentence" data-id="sent-17" onclick="toggleSentence(this)">사과를 하려고 마음먹었으면 정말 딱 사과<br>
+              만 하는 거야.</span> <span class="readable-sentence" data-id="sent-18" onclick="toggleSentence(this)">깨끗하게 자신의 잘못을 인정하고 진심으<br>
+              로 사과하고 화해한다면 더 좋은 친구가 될 수 있어.</span>
+            </p>
+
+          </div>
+        </div>
+
+        <div class="w-full max-w-xl mt-8 pt-4 border-t border-slate-200 flex items-center justify-between text-xs text-slate-400">
+          <span>문장을 가볍게 누르면 중요 표시가 켜지고 꺼집니다.</span>
+          <button onclick="openSubmitModal()" class="font-bold text-rose-600 hover:underline">
+            과제 제출창 열기 &rarr;
+          </button>
+        </div>
+      </div>
+
+      <!-- 내가 밑줄 친 문장 모아보기 -->
+      <div class="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-xs space-y-3">
+        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+          <i class="fa-solid fa-highlighter text-purple-600"></i>
+          <span>내가 밑줄 친 중요 문장 모아보기</span>
+        </h4>
+        <div id="p4-highlight-summary-box" class="text-xs sm:text-sm text-slate-600 space-y-1.5 pl-1">
+          <p class="text-slate-400 italic">본문 문장을 클릭하여 중요한 구절에 밑줄을 그어보세요.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2">
+        <button onclick="switchPage(3)" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition shadow-xs text-xs sm:text-sm">
+          <i class="fa-solid fa-arrow-left"></i> 3단계 중심내용으로 가기
+        </button>
+        <button onclick="openSubmitModal()" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold transition shadow-md shadow-rose-600/20 text-xs sm:text-sm">
+          <i class="fa-solid fa-paper-plane text-amber-300"></i>
+          <span>선생님께 학습 결과 제출하기</span>
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= 선생님께 제출하기 모달 ================= -->
+  <div id="submit-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+      
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-paper-plane"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-800">선생님께 학습 결과 제출하기</h3>
+        </div>
+        <button onclick="closeSubmitModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">&times;</button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">학생 정보 입력</label>
+          <div class="grid grid-cols-2 gap-2.5">
+            <input type="text" id="student-class" placeholder="예: 4학년 2반 15번" class="p-3 border border-slate-200 rounded-xl text-xs sm:text-sm focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none">
+            <input type="text" id="student-name" placeholder="이름 (예: 김배려)" class="p-3 border border-slate-200 rounded-xl text-xs sm:text-sm focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 outline-none">
+          </div>
+        </div>
+
+        <!-- 활동 요약 카드 미리보기 -->
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-2">
+          <div class="flex items-center justify-between font-bold text-slate-700 border-b border-slate-200 pb-1.5">
+            <span>📋 제출 내용 요약</span>
+            <span id="modal-preview-quiz-badge" class="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-rose-600 font-extrabold">1단계: 미채점</span>
+          </div>
+          <div class="space-y-1 text-slate-600">
+            <p>• <strong>2단계 물음에 답하기:</strong> <span id="modal-preview-p2" class="text-amber-700 font-semibold">키워드 탐구 및 생각 정리 완료</span></p>
+            <p>• <strong>3단계 중심내용 탐구:</strong> <span id="modal-preview-p3" class="text-teal-700 font-semibold">작성 중</span></p>
+            <p>• <strong>4단계 중요 밑줄:</strong> <span id="modal-preview-p4" class="text-purple-700 font-semibold">0개 문장</span></p>
+          </div>
+        </div>
+
+        <!-- 복사용 리포트 텍스트 영역 -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">제출 텍스트 리포트</label>
+          <textarea id="submission-report-box" rows="5" readonly class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] font-mono text-slate-700 leading-relaxed outline-none"></textarea>
+        </div>
+
+        <!-- 제출 버튼 -->
+        <div class="space-y-2 pt-1">
+          <button type="button" onclick="copySubmissionReport()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-98 text-sm">
+            <i class="fa-solid fa-clipboard-check text-amber-400"></i>
+            <span>제출 리포트 클립보드 복사하기</span>
+          </button>
+          <p class="text-[11px] text-slate-400 text-center">복사한 뒤 구글 클래스룸, 패들렛, 위두랑, 알림장 댓글에 붙여넣기(Ctrl+V)하세요.</p>
+        </div>
+      </div>
+
+      <div class="text-right pt-2 border-t border-slate-100">
+        <button onclick="closeSubmitModal()" class="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 rounded-xl">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 메시지 바 -->
+  <div id="toast-message" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-5 py-3 rounded-2xl text-xs sm:text-sm font-bold shadow-xl transition-all duration-300 transform translate-y-20 opacity-0 z-50 flex items-center gap-2">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toast-text">복사되었습니다!</span>
+  </div>
+
+  <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400">
+    <p>초등 국어과 배려와 소통 학습장 | 진심으로 사과하는 법</p>
+  </footer>
+
+  <script>
+    // ==========================================
+    // 1. 15문제 퀴즈 데이터베이스
+    // ==========================================
+    const quizData = [
+      {
+        id: 1,
+        type: 'choice',
+        question: '내가 잘못했을 때 가장 먼저 해야 할 일은 무엇인가요?',
+        options: ['모른 척한다.', '상대에게 사과한다.', '다른 사람에게 말한다.', '자리를 피한다.'],
+        correctAnswer: 2,
+        explanation: '잘못을 인지했을 때 미루거나 피하지 않고 상대방에게 솔직히 사과하는 것이 가장 우선입니다.'
+      },
+      {
+        id: 2,
+        type: 'text',
+        question: '사과할 때는 왜 (　　　)한지 분명하게 말해야 한다.',
+        correctAnswer: '미안',
+        explanation: '무엇 때문에 미안한지 이유를 구체적으로 전달해야 상대방이 진심을 느낄 수 있습니다.'
+      },
+      {
+        id: 3,
+        type: 'choice',
+        question: '사과할 때 자신의 잘못에 대해 어떻게 해야 하나요?',
+        options: ['숨긴다.', '친구 탓을 한다.', '무엇을 잘못했는지 말한다.', '아무 말도 하지 않는다.'],
+        correctAnswer: 3,
+        explanation: '자신이 어떤 행동으로 상처를 주었는지 정확히 말해야 진정한 사과가 됩니다.'
+      },
+      {
+        id: 4,
+        type: 'text',
+        question: '무엇을 잘못했는지 말해야 상대가 사과하는 사람의 (　　　)을 느낄 수 있다.',
+        correctAnswer: '진심',
+        explanation: '구체적인 잘못을 짚어 말할 때 건성으로 하는 말이 아닌 "진심"이 와닿습니다.'
+      },
+      {
+        id: 5,
+        type: 'choice',
+        question: '사과하면서 함께 해야 하는 것은 무엇인가요?',
+        options: [
+          '다시는 그런 일을 하지 않겠다고 약속한다.',
+          '선물을 달라고 한다.',
+          '친구에게 먼저 사과하라고 한다.',
+          '웃으면서 장난을 친다.'
+        ],
+        correctAnswer: 1,
+        explanation: '사과의 완성은 같은 실수를 반복하지 않겠다는 재발 방지 약속입니다.'
+      },
+      {
+        id: 6,
+        type: 'text',
+        question: '사과할 때는 다시는 같은 잘못을 하지 않겠다는 (　　　)도 해야 한다.',
+        correctAnswer: '약속',
+        explanation: '앞으로 다시는 그런 행동으로 상처 주지 않겠다는 "약속"이 동반되어야 합니다.'
+      },
+      {
+        id: 7,
+        type: 'choice',
+        question: '사과를 받아 줄지 말지는 누가 결정하나요?',
+        options: ['사과하는 사람', '선생님', '상처를 받은 사람', '옆에 있는 친구'],
+        correctAnswer: 3,
+        explanation: '용서를 강요할 수 없습니다. 받아줄지의 결정권은 오롯이 상처받은 사람에게 있습니다.'
+      },
+      {
+        id: 8,
+        type: 'choice',
+        question: '사과할 때 알맞은 말은 무엇인가요?',
+        options: [
+          '“내 사과를 꼭 받아 줘!”',
+          '“내 사과를 받아 줄래?”',
+          '“너도 잘못했잖아!”',
+          '“난 잘못한 게 없어.”'
+        ],
+        correctAnswer: 2,
+        explanation: '용서를 강요하지 않고, 상대방의 마음을 정중하게 묻고 배려해야 합니다.'
+      },
+      {
+        id: 9,
+        type: 'choice',
+        question: '다음 중 상대를 더 화나게 만들 수 있는 사과는 무엇인가요?',
+        options: [
+          '“내가 잘못했어. 미안해.”',
+          '“정말 미안해.”',
+          '“나도 잘못했지만 너도 잘못했어.”',
+          '“다시는 그러지 않을게.”'
+        ],
+        correctAnswer: 3,
+        explanation: '상대방에게 책임을 떠넘기는 양비론식 사과는 상대의 화를 더 돋우게 됩니다.'
+      },
+      {
+        id: 10,
+        type: 'text',
+        question: '사과하면서 “너도 잘못했어.”라고 끝에 (　　　)를 달면 상대가 더 화가 날 수 있다.',
+        correctAnswer: '토',
+        explanation: '말끝에 군더더기나 조건을 붙이는 것을 "토를 달다"라고 합니다.'
+      },
+      {
+        id: 11,
+        type: 'choice',
+        question: '사과할 때 끝에 토를 다는 것이 좋지 않은 까닭은 무엇인가요?',
+        options: [
+          '말이 너무 짧아지기 때문에',
+          '다시 다투게 될 수도 있기 때문에',
+          '목소리가 작아지기 때문에',
+          '친구가 웃을 수 있기 때문에'
+        ],
+        correctAnswer: 2,
+        explanation: '토를 달면 사과가 아니라 말다툼과 비난의 연장이 되어 다시 싸우게 됩니다.'
+      },
+      {
+        id: 12,
+        type: 'choice',
+        question: '“미안해. 하지만……”과 같이 말하는 것이 좋지 않은 까닭은 무엇인가요?',
+        options: [
+          '사과가 너무 빨리 끝나기 때문에',
+          '상대방을 탓하는 말이 될 수 있기 때문에',
+          '목소리가 커지기 때문에',
+          '재미있는 말이 아니기 때문에'
+        ],
+        correctAnswer: 2,
+        explanation: '"하지만" 뒤에는 핑계와 남 탓이 따라오기 쉬워 사과의 진정성을 퇴색시킵니다.'
+      },
+      {
+        id: 13,
+        type: 'text',
+        question: '사과할 때 이유를 대거나 (　　　)을 하면 상대를 탓하는 것처럼 들릴 수 있다.',
+        correctAnswer: '변명',
+        explanation: '자신의 행동을 정당화하려는 "변명"은 진솔한 반성이 아니게 느껴집니다.'
+      },
+      {
+        id: 14,
+        type: 'choice',
+        question: '진심으로 사과하려면 어떻게 해야 하나요?',
+        options: [
+          '자신의 잘못을 깨끗하게 인정한다.',
+          '자신의 잘못을 숨긴다.',
+          '다른 사람의 잘못을 먼저 찾는다.',
+          '이유를 길게 설명한다.'
+        ],
+        correctAnswer: 1,
+        explanation: '군더더기 없이 자신의 잘못을 솔직하게 인정하는 것이 진정한 사과의 핵심입니다.'
+      },
+      {
+        id: 15,
+        type: 'choice',
+        question: '글에서 말하는 좋은 친구가 되는 방법으로 알맞은 것은 무엇인가요?',
+        options: [
+          '절대로 사과하지 않는다.',
+          '잘못을 인정하고 진심으로 사과하며 화해한다.',
+          '친구가 먼저 사과할 때까지 기다린다.',
+          '다투면 다시 만나지 않는다.'
+        ],
+        correctAnswer: 2,
+        explanation: '잘못을 바로잡고 진심 어린 사과로 관계를 회복하는 친구가 참된 친구입니다.'
+      }
+    ];
+
+    // 애플리케이션 전역 상태
+    let activePage = 1;
+    let quizAnswers = {};
+    let isQuizGraded = false;
+    let quizEvaluation = {}; // 문항별 채점 결과 ('correct' | 'wrong')
+
+    let page3Answers = { blank1: '', blank2: '', blank3: '', blank4: '' };
+    const page3BlankCorrect = { blank1: '사과', blank2: '정중', blank3: '잘못', blank4: '인정' };
+
+    let currentPenColor = 'yellow';
+    let markedSentenceMap = {};
+
+    let toneSynth = null;
+    function playSound(effect) {
+      try {
+        if (!toneSynth && window.Tone) {
+          toneSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+          toneSynth.volume.value = -12;
+        }
+        if (window.Tone && Tone.context.state !== 'running') {
+          Tone.start();
+        }
+        if (!toneSynth) return;
+
+        if (effect === 'click') {
+          toneSynth.triggerAttackRelease(["C5"], "32n");
+        } else if (effect === 'correct') {
+          toneSynth.triggerAttackRelease(["E5", "B5"], "16n");
+        } else if (effect === 'wrong') {
+          toneSynth.triggerAttackRelease(["G3", "Eb3"], "16n");
+        } else if (effect === 'fanfare') {
+          toneSynth.triggerAttackRelease(["C4", "G4", "C5", "E5"], "8n");
+        }
+      } catch (e) {}
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-message');
+      const text = document.getElementById('toast-text');
+      if (!toast || !text) return;
+      text.innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 2500);
+    }
+
+    function switchPage(pageNumber) {
+      activePage = pageNumber;
+      [1, 2, 3, 4].forEach(n => {
+        const p = document.getElementById(`page-${n}`);
+        const t = document.getElementById(`tab-${n}`);
+        if (!p || !t) return;
+        if (n === pageNumber) {
+          p.classList.remove('hidden');
+          t.className = 'flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all bg-rose-600 text-white shadow-xs whitespace-nowrap';
+        } else {
+          p.classList.add('hidden');
+          t.className = 'flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all whitespace-nowrap';
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateQuizProgress() {
+      const answeredCount = Object.keys(quizAnswers).filter(k => String(quizAnswers[k] || '').trim() !== '').length;
+      const pct = Math.round((answeredCount / quizData.length) * 100);
+      const text = document.getElementById('quiz-progress-text');
+      const bar = document.getElementById('quiz-progress-bar');
+      
+      if (isQuizGraded) {
+        let correctCount = Object.values(quizEvaluation).filter(v => v === 'correct').length;
+        if (text) text.innerText = `${correctCount} / ${quizData.length}문항 정답 (${answeredCount}문항 작성됨)`;
+      } else {
+        if (text) text.innerText = `${answeredCount} / ${quizData.length}문항 작성 (${pct}%)`;
+      }
+      if (bar) bar.style.width = `${pct}%`;
+    }
+
+    function renderAllQuizList() {
+      const container = document.getElementById('all-quiz-list');
+      if (!container) return;
+
+      container.innerHTML = quizData.map((q) => {
+        const userVal = quizAnswers[q.id];
+        const evalStatus = quizEvaluation[q.id]; // 'correct' | 'wrong' | undefined
+
+        // 카드 외곽 스타일 (정답: 은은한 초록, 오답: 다시 풀도록 강조 테두리)
+        let cardBorder = 'border-slate-200';
+        let statusBadge = '';
+
+        if (isQuizGraded) {
+          if (evalStatus === 'correct') {
+            cardBorder = 'border-emerald-300 bg-emerald-50/20';
+            statusBadge = `
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800">
+                <i class="fa-solid fa-circle-check text-emerald-600"></i> 정답입니다!
+              </span>
+            `;
+          } else {
+            cardBorder = 'border-rose-400 bg-rose-50/20 shadow-xs';
+            statusBadge = `
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-700 animate-pulse">
+                <i class="fa-solid fa-circle-xmark text-rose-500"></i> 틀렸습니다. 다시 풀어보세요!
+              </span>
+            `;
+          }
+        }
+
+        // 입력 폼 (글씨 크기 확대: text-base sm:text-lg)
+        let inputHtml = '';
+        if (q.type === 'choice') {
+          inputHtml = `
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+              ${q.options.map((opt, i) => {
+                const optNum = i + 1;
+                const isSelected = (Number(userVal) === optNum);
+                let btnStyle = isSelected 
+                  ? 'border-rose-500 bg-rose-50 text-rose-950 font-bold ring-2 ring-rose-300 shadow-2xs' 
+                  : 'border-slate-200 bg-slate-50/70 hover:bg-slate-100 text-slate-800';
+
+                return `
+                  <button type="button" onclick="selectChoiceOption(${q.id}, ${optNum})" class="p-4 rounded-2xl border ${btnStyle} text-left transition-all text-sm sm:text-base md:text-lg flex items-start gap-3">
+                    <span class="w-7 h-7 rounded-full flex items-center justify-center font-extrabold text-sm shrink-0 ${isSelected ? 'bg-rose-600 text-white' : 'bg-white border border-slate-300 text-slate-700'}">${optNum}</span>
+                    <span class="pt-0.5 leading-snug">${opt}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          `;
+        } else {
+          inputHtml = `
+            <div class="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <input type="text" value="${userVal || ''}" oninput="onTextInput(${q.id}, this.value)" placeholder="정답 낱말 입력" class="p-3.5 sm:p-4 rounded-2xl border-2 ${evalStatus === 'wrong' ? 'border-rose-400 focus:border-rose-500' : 'border-slate-300 focus:border-rose-500'} focus:ring-2 focus:ring-rose-500/20 outline-none text-slate-900 text-base sm:text-lg font-bold max-w-md w-full shadow-2xs">
+              <span class="text-xs sm:text-sm text-slate-400">※ 본문에 나온 알맞은 낱말 1개를 적어보세요.</span>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="bg-white p-6 sm:p-7 rounded-3xl border-2 ${cardBorder} transition-all space-y-3 shadow-xs">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <span class="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 text-xs sm:text-sm font-extrabold">
+                ${q.id}번 문항
+              </span>
+              ${statusBadge}
+            </div>
+            <h3 class="text-base sm:text-xl md:text-2xl font-bold text-slate-900 leading-snug pt-1">
+              ${q.question}
+            </h3>
+            ${inputHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectChoiceOption(qId, optNum) {
+      quizAnswers[qId] = optNum;
+      playSound('click');
+      // 답을 수정하면 채점 상태를 해제하여 자유롭게 다시 풀도록 함
+      if (quizEvaluation[qId] === 'wrong') {
+        delete quizEvaluation[qId];
+      }
+      renderAllQuizList();
+      updateQuizProgress();
+    }
+
+    function onTextInput(qId, val) {
+      quizAnswers[qId] = val.trim();
+      if (quizEvaluation[qId] === 'wrong') {
+        delete quizEvaluation[qId];
+      }
+      updateQuizProgress();
+    }
+
+    function gradeQuiz() {
+      let correct = 0;
+      quizEvaluation = {};
+
+      quizData.forEach(q => {
+        const val = quizAnswers[q.id];
+        let isCorrect = false;
+
+        if (q.type === 'choice') {
+          if (Number(val) === q.correctAnswer) isCorrect = true;
+        } else {
+          if (String(val || '').trim() === q.correctAnswer) isCorrect = true;
+        }
+
+        if (isCorrect) {
+          quizEvaluation[q.id] = 'correct';
+          correct++;
+        } else {
+          quizEvaluation[q.id] = 'wrong';
+        }
+      });
+
+      const total = quizData.length;
+      const score = Math.round((correct / total) * 100);
+      isQuizGraded = true;
+
+      const badge = document.getElementById('quiz-score-badge');
+      const scoreVal = document.getElementById('score-val');
+      const scoreMsg = document.getElementById('score-msg');
+
+      if (badge && scoreVal && scoreMsg) {
+        badge.classList.remove('hidden');
+        badge.classList.add('flex');
+        scoreVal.innerText = score;
+        
+        if (correct === total) {
+          scoreMsg.innerText = `축하합니다! 15문제 모두 정답입니다! 🎉`;
+        } else {
+          scoreMsg.innerText = `${correct} / ${total}문제 정답 (${total - correct}문제 오답 - 다시 풀어보세요!)`;
+        }
+      }
+
+      renderAllQuizList();
+      updateQuizProgress();
+
+      if (correct === total) {
+        playSound('fanfare');
+        if (window.confetti) confetti({ particleCount: 110, spread: 75, origin: { y: 0.6 } });
+        showToast(`🎉 만점입니다! 15문제를 모두 맞혔습니다.`);
+      } else {
+        playSound(correct >= 10 ? 'correct' : 'wrong');
+        showToast(`채점 완료! 빨간색으로 표시된 틀린 문제를 다시 풀어보세요.`);
+      }
+    }
+
+    function resetQuiz() {
+      quizAnswers = {};
+      quizEvaluation = {};
+      isQuizGraded = false;
+
+      const badge = document.getElementById('quiz-score-badge');
+      if (badge) {
+        badge.classList.add('hidden');
+        badge.classList.remove('flex');
+      }
+
+      renderAllQuizList();
+      updateQuizProgress();
+      showToast('모든 문제의 답안이 초기화되었습니다.');
+    }
+
+    function savePage3Answers() {
+      page3Answers.blank1 = document.getElementById('p3-blank-1') ? document.getElementById('p3-blank-1').value.trim() : '';
+      page3Answers.blank2 = document.getElementById('p3-blank-2') ? document.getElementById('p3-blank-2').value.trim() : '';
+      page3Answers.blank3 = document.getElementById('p3-blank-3') ? document.getElementById('p3-blank-3').value.trim() : '';
+      page3Answers.blank4 = document.getElementById('p3-blank-4') ? document.getElementById('p3-blank-4').value.trim() : '';
+    }
+
+    function fillNextBlank(word) {
+      playSound('click');
+      const blanks = [
+        document.getElementById('p3-blank-1'),
+        document.getElementById('p3-blank-2'),
+        document.getElementById('p3-blank-3'),
+        document.getElementById('p3-blank-4')
+      ];
+
+      let filled = false;
+      for (let input of blanks) {
+        if (input && !input.value.trim()) {
+          input.value = word;
+          filled = true;
+          input.focus();
+          break;
+        }
+      }
+      if (!filled && blanks[0]) blanks[0].value = word;
+      savePage3Answers();
+    }
+
+    function checkPage3Blanks() {
+      savePage3Answers();
+      const b1 = document.getElementById('p3-blank-1');
+      const b2 = document.getElementById('p3-blank-2');
+      const b3 = document.getElementById('p3-blank-3');
+      const b4 = document.getElementById('p3-blank-4');
+      const fb = document.getElementById('p3-blank-feedback');
+
+      const ok1 = (page3Answers.blank1 === page3BlankCorrect.blank1);
+      const ok2 = (page3Answers.blank2 === page3BlankCorrect.blank2);
+      const ok3 = (page3Answers.blank3 === page3BlankCorrect.blank3);
+      const ok4 = (page3Answers.blank4 === page3BlankCorrect.blank4);
+
+      [
+        { el: b1, ok: ok1 },
+        { el: b2, ok: ok2 },
+        { el: b3, ok: ok3 },
+        { el: b4, ok: ok4 }
+      ].forEach(item => {
+        if (!item.el) return;
+        if (item.ok) {
+          item.el.className = 'mx-1.5 px-3 py-1 text-center font-bold text-emerald-800 border-2 border-emerald-500 bg-emerald-50 rounded-lg outline-none w-28 text-base ring-2 ring-emerald-200';
+        } else {
+          item.el.className = 'mx-1.5 px-3 py-1 text-center font-bold text-rose-800 border-2 border-rose-400 bg-rose-50 rounded-lg outline-none w-28 text-base';
+        }
+      });
+
+      const allOk = ok1 && ok2 && ok3 && ok4;
+      if (fb) {
+        fb.classList.remove('hidden');
+        if (allOk) {
+          playSound('correct');
+          fb.className = 'p-4 rounded-2xl bg-emerald-50 text-emerald-900 border border-emerald-200 text-xs sm:text-sm font-semibold flex items-center gap-2';
+          fb.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600 text-base"></i><span>참 잘했습니다! 4가지 빈칸을 모두 정확하게 맞혔습니다.</span>';
+        } else {
+          playSound('wrong');
+          fb.className = 'p-4 rounded-2xl bg-rose-50 text-rose-900 border border-rose-200 text-xs sm:text-sm font-semibold';
+          fb.innerHTML = '<div class="flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-rose-600 text-base"></i><span>틀린 빈칸이 있습니다. 빨간색으로 표시된 빈칸의 낱말을 다시 골라보세요.</span></div>';
+        }
+      }
+    }
+
+    function clearPage3Blanks() {
+      ['p3-blank-1', 'p3-blank-2', 'p3-blank-3', 'p3-blank-4'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.value = '';
+          el.className = 'mx-1.5 px-3 py-1 text-center font-bold text-teal-800 border-b-2 border-slate-400 focus:border-teal-600 bg-white rounded-lg outline-none w-28 text-base shadow-2xs';
+        }
+      });
+      const fb = document.getElementById('p3-blank-feedback');
+      if (fb) fb.classList.add('hidden');
+      savePage3Answers();
+      playSound('click');
+    }
+
+    function toggleHint(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('hidden');
+    }
+
+    function setHighlightColor(color) {
+      currentPenColor = color;
+      ['yellow', 'pink', 'blue'].forEach(c => {
+        const btn = document.getElementById(`p4-color-${c}`);
+        if (!btn) return;
+        if (c === color) {
+          btn.className = `px-2.5 py-1 rounded-xl font-bold bg-${c === 'yellow' ? 'yellow-200 text-yellow-900 border-2 border-yellow-400' : c === 'pink' ? 'pink-200 text-pink-900 border-2 border-pink-400' : 'sky-200 text-sky-900 border-2 border-sky-400'} shadow-xs flex items-center gap-1`;
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-xl font-medium text-slate-600 hover:text-slate-900 transition flex items-center gap-1';
+        }
+      });
+    }
+
+    function toggleSentence(el) {
+      playSound('click');
+      const id = el.getAttribute('data-id');
+      const targetClass = `hl-${currentPenColor}`;
+
+      if (el.classList.contains(targetClass)) {
+        el.classList.remove(targetClass);
+        delete markedSentenceMap[id];
+      } else {
+        el.classList.remove('hl-yellow', 'hl-pink', 'hl-blue');
+        el.classList.add(targetClass);
+        markedSentenceMap[id] = {
+          color: currentPenColor,
+          text: el.innerText.replace(/\s+/g, ' ').trim()
+        };
+      }
+      updateHighlightSummary();
+    }
+
+    function clearAllMarks() {
+      document.querySelectorAll('.readable-sentence').forEach(el => {
+        el.classList.remove('hl-yellow', 'hl-pink', 'hl-blue');
+      });
+      markedSentenceMap = {};
+      updateHighlightSummary();
+      playSound('click');
+    }
+
+    function updateHighlightSummary() {
+      const countEl = document.getElementById('p4-marked-count');
+      const box = document.getElementById('p4-highlight-summary-box');
+      const keys = Object.keys(markedSentenceMap);
+
+      if (countEl) countEl.innerText = keys.length;
+
+      if (!box) return;
+      if (keys.length === 0) {
+        box.innerHTML = '<p class="text-slate-400 italic">본문 문장을 클릭하여 중요한 구절에 밑줄을 그어보세요.</p>';
+        return;
+      }
+
+      box.innerHTML = keys.map((k, i) => `
+        <div class="flex items-start gap-2">
+          <span class="text-purple-600 font-bold">•</span>
+          <span>"${markedSentenceMap[k].text}"</span>
+        </div>
+      `).join('');
+    }
+
+    // ==========================================
+    // 선생님께 제출하기 모달 & 리포트 생성
+    // ==========================================
+    function openSubmitModal() {
+      savePage3Answers();
+
+      let correct = 0;
+      quizData.forEach(q => {
+        const val = quizAnswers[q.id];
+        if (q.type === 'choice') {
+          if (Number(val) === q.correctAnswer) correct++;
+        } else {
+          if (String(val || '').trim() === q.correctAnswer) correct++;
+        }
+      });
+      const answeredCount = Object.keys(quizAnswers).filter(k => String(quizAnswers[k] || '').trim() !== '').length;
+
+      const badge = document.getElementById('modal-preview-quiz-badge');
+      if (badge) {
+        if (isQuizGraded) {
+          const score = Math.round((correct / quizData.length) * 100);
+          badge.innerText = `1단계 퀴즈: ${correct}/${quizData.length}문항 (${score}점)`;
+        } else {
+          badge.innerText = `1단계 풀이: ${answeredCount}/${quizData.length}문항 (미채점)`;
+        }
+      }
+
+      const p2Badge = document.getElementById('modal-preview-p2');
+      if (p2Badge) p2Badge.innerText = `키워드 탐구 및 생각 정리 완료`;
+
+      const p3FilledCount = [
+        page3Answers.blank1, page3Answers.blank2,
+        page3Answers.blank3, page3Answers.blank4
+      ].filter(t => (t || '').trim().length > 0).length;
+      const p3Badge = document.getElementById('modal-preview-p3');
+      if (p3Badge) p3Badge.innerText = `빈칸 ${p3FilledCount} / 4개 완성 및 키워드 탐구`;
+
+      const hlCount = Object.keys(markedSentenceMap).length;
+      const p4Badge = document.getElementById('modal-preview-p4');
+      if (p4Badge) p4Badge.innerText = `${hlCount}개 문장 밑줄`;
+
+      updateSubmissionReportText();
+
+      const modal = document.getElementById('submit-modal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeSubmitModal() {
+      const modal = document.getElementById('submit-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function updateSubmissionReportText() {
+      const sClass = document.getElementById('student-class') ? document.getElementById('student-class').value.trim() : '미입력';
+      const sName = document.getElementById('student-name') ? document.getElementById('student-name').value.trim() : '미입력';
+
+      let correct = 0;
+      quizData.forEach(q => {
+        const val = quizAnswers[q.id];
+        if (q.type === 'choice') {
+          if (Number(val) === q.correctAnswer) correct++;
+        } else {
+          if (String(val || '').trim() === q.correctAnswer) correct++;
+        }
+      });
+      const answeredCount = Object.keys(quizAnswers).filter(k => String(quizAnswers[k] || '').trim() !== '').length;
+      const quizStatus = isQuizGraded 
+        ? `${correct} / ${quizData.length} 정답 (${Math.round((correct / quizData.length) * 100)}점)`
+        : `${answeredCount} / ${quizData.length} 풀이완료 (미채점)`;
+
+      const markedKeys = Object.keys(markedSentenceMap);
+      const markedTexts = markedKeys.map((k, i) => ` ${i + 1}) "${markedSentenceMap[k].text}"`).join('\n');
+
+      const report = `[진심으로 사과하는 법 - 국어 과제 제출 리포트]
+■ 소속 / 번호: ${sClass || '미입력'}
+■ 학생 이름: ${sName || '미입력'}
+
+1. [1단계] 퀴즈 결과: ${quizStatus}
+
+2. [2단계] 물음에 답하기:
+ • 힌트 키워드 기반 생각 정리 및 탐구 완료
+
+3. [3단계] 중심 내용 살펴보기:
+ 1) 글의 제목을 보고 짐작한 내용: 키워드 기반 탐구 및 내용 예측 완료
+ 2) [보기]에서 골라 쓴 빈칸 낱말:
+     - 1번: [${page3Answers.blank1 || '___'}]
+     - 2번: [${page3Answers.blank2 || '___'}]
+     - 3번: [${page3Answers.blank3 || '___'}]
+     - 4번: [${page3Answers.blank4 || '___'}]
+ 3) 글의 중심 내용: 중심 키워드 기반 짝과의 이야기 나누기 완료
+
+4. [4단계] 내가 밑줄 친 중요 문장 (${markedKeys.length}개):
+${markedTexts || ' (밑줄 그은 문장 없음)'}
+
+제출 일시: ${new Date().toLocaleString('ko-KR')}`;
+
+      const reportBox = document.getElementById('submission-report-box');
+      if (reportBox) reportBox.value = report;
+    }
+
+    function copySubmissionReport() {
+      updateSubmissionReportText();
+      const reportBox = document.getElementById('submission-report-box');
+      if (!reportBox) return;
+
+      reportBox.select();
+      reportBox.setSelectionRange(0, 99999);
+
+      let success = false;
+      try {
+        success = document.execCommand('copy');
+      } catch (err) {
+        success = false;
+      }
+
+      if (!success && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(reportBox.value).then(() => {
+          showToast('📋 과제 제출 리포트가 복사되었습니다!');
+          closeSubmitModal();
+        }).catch(() => {
+          showToast('텍스트 상자의 내용을 직접 선택하여 복사해 주세요.');
+        });
+      } else if (success) {
+        showToast('📋 과제 제출 리포트가 복사되었습니다!');
+        closeSubmitModal();
+      } else {
+        showToast('텍스트 상자의 내용을 직접 선택하여 복사해 주세요.');
+      }
+    }
+
+    // 학생 정보 입력 변경 시 리포트 자동 갱신
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAllQuizList();
+      updateQuizProgress();
+
+      const sClass = document.getElementById('student-class');
+      const sName = document.getElementById('student-name');
+      if (sClass) sClass.addEventListener('input', updateSubmissionReportText);
+      if (sName) sName.addEventListener('input', updateSubmissionReportText);
+    });
+  </script>
+</body>
+</html>
