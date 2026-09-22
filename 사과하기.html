@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>상황에 따른 사과하기</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    * {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('student')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+          <i data-lucide="users" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-slate-900 leading-tight">상황에 따른 사과하기</h1>
+          <p class="text-xs text-slate-500">모둠 편성 및 개인별 학습 링크</p>
+        </div>
+      </div>
+
+      <!-- Mode Selector / Status -->
+      <div class="flex items-center space-x-2">
+        <button id="navStudentBtn" onclick="switchView('student')" class="px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-1.5 bg-indigo-50 text-indigo-700">
+          <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+          <span>학생 뷰</span>
+        </button>
+        <button id="navTeacherBtn" onclick="requestTeacherAuth()" class="px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+          <i data-lucide="lock" class="w-4 h-4"></i>
+          <span>교사 뷰</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- ================================================================= -->
+    <!-- [VIEW 1] STUDENT VIEW CONTAINER -->
+    <!-- ================================================================= -->
+    <section id="studentViewContainer" class="space-y-6">
+      
+      <!-- Student Selection Step (Shown when no student is actively selected) -->
+      <div id="studentSelectSection" class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+        <div class="max-w-2xl mx-auto text-center space-y-3 mb-8">
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 mr-1"></i> 학생 로그인 없이 바로 확인
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900">내 이름을 선택하세요</h2>
+          <p class="text-sm text-slate-600">본인의 이름을 클릭하면 배정된 조와 전용 개인 링크를 확인할 수 있습니다.</p>
+          
+          <!-- Search Bar -->
+          <div class="pt-2">
+            <div class="relative max-w-md mx-auto">
+              <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="studentSearchInput" placeholder="이름으로 검색..." oninput="filterStudentList()"
+                class="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm bg-slate-50 focus:bg-white transition-all">
+            </div>
+          </div>
+        </div>
+
+        <!-- Student Cards Grid -->
+        <div id="studentCardsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[460px] overflow-y-auto p-1 custom-scrollbar">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Student Detail Dashboard (Shown when a student is selected) -->
+      <div id="studentDashboardSection" class="hidden space-y-6">
+        <!-- Top Personal Banner Card -->
+        <div class="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+          <div class="absolute -right-6 -bottom-10 opacity-10 pointer-events-none">
+            <i data-lucide="award" class="w-56 h-56"></i>
+          </div>
+          <div class="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div class="space-y-2">
+              <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-1 rounded-md bg-white/20 text-xs font-semibold backdrop-blur-sm">학생 전용 카드</span>
+                <button onclick="clearSelectedStudent()" class="text-xs text-indigo-100 hover:text-white underline underline-offset-2 flex items-center">
+                  <i data-lucide="refresh-cw" class="w-3 h-3 mr-1"></i> 다른 학생으로 변경
+                </button>
+              </div>
+              <h2 class="text-2xl sm:text-3xl font-extrabold flex items-center gap-2">
+                <span id="activeStudentName">홍길동</span> 학생
+              </h2>
+              <p class="text-indigo-100 text-sm sm:text-base">
+                현재 <span id="activeStudentGroupBadge" class="font-bold underline underline-offset-4 decoration-amber-400">1조</span>에 편성되어 있습니다.
+              </p>
+            </div>
+
+            <!-- Student's Personal Link Button -->
+            <div class="w-full sm:w-auto flex flex-col sm:items-end gap-2">
+              <a id="activeStudentLinkBtn" href="#" target="_blank" rel="noopener noreferrer"
+                class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 rounded-xl bg-amber-400 text-slate-900 font-bold hover:bg-amber-300 transition-all shadow-md active:scale-95 group">
+                <i data-lucide="external-link" class="w-5 h-5 mr-2 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"></i>
+                <span id="activeStudentLinkText">내 개인 링크 바로가기</span>
+              </a>
+              <span id="activeStudentLinkUrlDisplay" class="text-xs text-indigo-200 max-w-xs truncate hidden sm:block"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Group Overview Section -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 gap-2">
+            <div>
+              <h3 class="text-xl font-bold text-slate-900">전체 조 편성 현황</h3>
+              <p class="text-sm text-slate-500">본인이 속한 조는 강조 표시됩니다. 각 모둠의 조원들을 확인해보세요.</p>
+            </div>
+            <span class="inline-flex items-center text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg w-fit">
+              <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 mr-2"></span> 내 소속 조 강조
+            </span>
+          </div>
+
+          <!-- Groups Grid Display -->
+          <div id="studentGroupsGrid" class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Dynamically populated groups -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- [VIEW 2] TEACHER VIEW CONTAINER -->
+    <!-- ================================================================= -->
+    <section id="teacherViewContainer" class="hidden space-y-6">
+      
+      <!-- Top Action Bar -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center space-x-2">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 flex items-center">
+              <i data-lucide="check-circle" class="w-3.5 h-3.5 mr-1"></i> 교사 인증됨
+            </span>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">조 편성 및 학생별 링크 관리</h2>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button onclick="openAddStudentModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-all flex items-center shadow-sm active:scale-95">
+            <i data-lucide="user-plus" class="w-4 h-4 mr-1.5"></i> 학생 추가
+          </button>
+          <button onclick="openBatchModal()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition-all flex items-center">
+            <i data-lucide="list-plus" class="w-4 h-4 mr-1.5"></i> 일괄 등록
+          </button>
+          <button onclick="openAutoGroupModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl transition-all flex items-center shadow-sm">
+            <i data-lucide="shuffle" class="w-4 h-4 mr-1.5"></i> 자동 조 편성
+          </button>
+          <button onclick="lockTeacherView()" class="px-3.5 py-2 border border-slate-300 hover:bg-slate-100 text-slate-600 text-sm font-medium rounded-xl transition-all flex items-center">
+            <i data-lucide="log-out" class="w-4 h-4 mr-1.5"></i> 교사 모드 종료
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Summary Badges -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm flex items-center space-x-3">
+          <div class="p-2.5 rounded-lg bg-indigo-50 text-indigo-600">
+            <i data-lucide="users" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500">총 학생 수</p>
+            <p id="statTotalStudents" class="text-lg font-bold text-slate-900">0명</p>
+          </div>
+        </div>
+        <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm flex items-center space-x-3">
+          <div class="p-2.5 rounded-lg bg-emerald-50 text-emerald-600">
+            <i data-lucide="layout-grid" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500">편성된 모둠</p>
+            <p id="statTotalGroups" class="text-lg font-bold text-slate-900">0개 조</p>
+          </div>
+        </div>
+        <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm flex items-center space-x-3">
+          <div class="p-2.5 rounded-lg bg-sky-50 text-sky-600">
+            <i data-lucide="link" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500">링크 등록 학생</p>
+            <p id="statLinkedStudents" class="text-lg font-bold text-slate-900">0명</p>
+          </div>
+        </div>
+        <div class="bg-white border border-slate-200 p-4 rounded-xl shadow-sm flex items-center space-x-3">
+          <div class="p-2.5 rounded-lg bg-amber-50 text-amber-600">
+            <i data-lucide="alert-circle" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500">미배정 학생</p>
+            <p id="statUnassignedStudents" class="text-lg font-bold text-slate-900">0명</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab & View Navigation for Teacher -->
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="flex space-x-2">
+            <button id="tabTableViewBtn" onclick="switchTeacherTab('table')" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg bg-indigo-50 text-indigo-700">
+              목록 & 링크 편집
+            </button>
+            <button id="tabBoardViewBtn" onclick="switchTeacherTab('board')" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100">
+              조별 카드 보기
+            </button>
+          </div>
+          
+          <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <input type="text" id="teacherSearchInput" placeholder="학생 검색..." oninput="renderTeacherTable()"
+              class="w-full sm:w-60 px-3 py-1.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button onclick="resetToSampleDataConfirm()" title="샘플 데이터 복원" class="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-800 border border-slate-200 rounded-lg hover:bg-slate-50 whitespace-nowrap">
+              기본예시 복원
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab 1: Table View -->
+        <div id="teacherTableTab" class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-sm text-left">
+            <thead class="bg-slate-50 text-slate-600 font-semibold">
+              <tr>
+                <th class="px-6 py-3.5">번호</th>
+                <th class="px-6 py-3.5">이름</th>
+                <th class="px-6 py-3.5">배정된 조</th>
+                <th class="px-6 py-3.5">개인 연결 링크</th>
+                <th class="px-6 py-3.5 text-right">동작</th>
+              </tr>
+            </thead>
+            <tbody id="teacherTableBody" class="divide-y divide-slate-200">
+              <!-- Dynamically populated table rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Tab 2: Board View -->
+        <div id="teacherBoardTab" class="hidden p-6">
+          <div id="teacherBoardContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Dynamically populated board columns -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================================================================= -->
+  <!-- MODALS -->
+  <!-- ================================================================= -->
+
+  <!-- Modal 1: Teacher Password Auth Modal -->
+  <div id="teacherAuthModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-slate-100 transform transition-all">
+      <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+        <i data-lucide="shield-check" class="w-6 h-6"></i>
+      </div>
+      <div class="text-center">
+        <h3 class="text-lg font-bold text-slate-900">교사 인증</h3>
+        <p class="text-xs text-slate-500 mt-1">교사 모드 접근을 위해 비밀번호를 입력해주세요.</p>
+      </div>
+      
+      <div>
+        <input type="password" id="teacherPinInput" maxlength="10" placeholder="비밀번호 입력"
+          class="w-full text-center tracking-widest text-lg font-semibold py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          onkeydown="if(event.key==='Enter') submitTeacherAuth()">
+        <p id="authErrorMsg" class="text-xs text-red-500 text-center mt-2 hidden">비밀번호가 일치하지 않습니다.</p>
+      </div>
+
+      <div class="flex space-x-2 pt-2">
+        <button onclick="closeTeacherAuthModal()" class="w-1/2 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">취소</button>
+        <button onclick="submitTeacherAuth()" class="w-1/2 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl">인증하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Add/Edit Student Modal -->
+  <div id="studentFormModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 id="studentFormTitle" class="text-lg font-bold text-slate-900">학생 정보 등록</h3>
+        <button onclick="closeStudentFormModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <input type="hidden" id="editStudentId">
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">학생 이름 *</label>
+          <input type="text" id="inputStudentName" placeholder="예: 김민수" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">배정 조 (선택)</label>
+          <select id="inputStudentGroup" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="0">미배정</option>
+            <option value="1">1조</option>
+            <option value="2">2조</option>
+            <option value="3">3조</option>
+            <option value="4">4조</option>
+            <option value="5">5조</option>
+            <option value="6">6조</option>
+            <option value="7">7조</option>
+            <option value="8">8조</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">개인 연결 링크 (URL)</label>
+          <input type="url" id="inputStudentLink" placeholder="https://..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <p class="text-[11px] text-slate-400 mt-1">학생이 자기 이름을 클릭했을 때 이동할 구글 문서, 패들렛, 포트폴리오 등</p>
+        </div>
+      </div>
+
+      <div class="flex space-x-2 pt-2">
+        <button onclick="closeStudentFormModal()" class="w-1/2 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">취소</button>
+        <button onclick="saveStudentForm()" class="w-1/2 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Auto Grouping Modal -->
+  <div id="autoGroupModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-slate-100">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-lg font-bold text-slate-900">랜덤 자동 조 편성</h3>
+        <button onclick="closeAutoGroupModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <p class="text-xs text-slate-600">
+        등록된 모든 학생을 무작위로 섞어 선택한 조의 수만큼 균등하게 배정합니다.
+      </p>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">생성할 조의 개수</label>
+        <select id="autoGroupCountSelect" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="2">2개 조</option>
+          <option value="3">3개 조</option>
+          <option value="4" selected>4개 조</option>
+          <option value="5">5개 조</option>
+          <option value="6">6개 조</option>
+          <option value="7">7개 조</option>
+          <option value="8">8개 조</option>
+        </select>
+      </div>
+
+      <div class="flex space-x-2 pt-2">
+        <button onclick="closeAutoGroupModal()" class="w-1/2 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">취소</button>
+        <button onclick="executeAutoGrouping()" class="w-1/2 py-2.5 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-xl flex items-center justify-center">
+          <i data-lucide="shuffle" class="w-4 h-4 mr-1"></i> 조 섞기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Batch Import Modal -->
+  <div id="batchModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-100">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-lg font-bold text-slate-900">학생 일괄 추가</h3>
+        <button onclick="closeBatchModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="space-y-2">
+        <p class="text-xs text-slate-600">줄바꿈으로 구분하여 여러 학생 이름을 한 번에 입력하세요.</p>
+        <textarea id="batchNamesInput" rows="6" placeholder="김철수&#10;이영희&#10;박지성&#10;손흥민"
+          class="w-full p-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+      </div>
+
+      <div class="flex space-x-2 pt-2">
+        <button onclick="closeBatchModal()" class="w-1/2 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">취소</button>
+        <button onclick="executeBatchImport()" class="w-1/2 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl">일괄 등록하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 5: Custom Notification / Confirmation Dialog (Alert replacement) -->
+  <div id="customDialog" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-slate-100 text-center">
+      <div id="dialogIcon" class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+        <i data-lucide="info" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h4 id="dialogTitle" class="text-lg font-bold text-slate-900">알림</h4>
+        <p id="dialogMessage" class="text-sm text-slate-600 mt-1 leading-relaxed">내용</p>
+      </div>
+      <div id="dialogButtons" class="flex space-x-2 pt-2">
+        <button onclick="closeCustomDialog()" class="w-full py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ================================================================= */
+    /* APP STATE & DATA INITIALIZATION                                   */
+    /* ================================================================= */
+    const TEACHER_PIN = "5658";
+    let isTeacherAuthenticated = false;
+    let currentView = 'student'; // 'student' or 'teacher'
+    let selectedStudentId = null;
+    let activeTeacherTab = 'table'; // 'table' or 'board'
+
+    // Initial student dataset (지정된 조 편성 배정 및 캔바 개인 맞춤 링크 완료)
+    const DEFAULT_STUDENTS = [
+      { id: 1, name: "김서아", group: 1, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#1" },
+      { id: 2, name: "김수현", group: 3, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#2" },
+      { id: 3, name: "김윤아", group: 2, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#3" },
+      { id: 4, name: "김태영", group: 4, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#4" },
+      { id: 5, name: "김하랑", group: 1, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#5" },
+      { id: 6, name: "나예린", group: 3, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#6" },
+
+      { id: 7, name: "박민제", group: 1, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#7" },
+      { id: 8, name: "박선우", group: 2, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#8" },
+      { id: 9, name: "양수빈", group: 3, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#9" },
+      { id: 10, name: "유소영", group: 2, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#10" },
+      { id: 11, name: "이대운", group: 3, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#11" },
+
+      { id: 12, name: "이새봄", group: 4, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#12" },
+      { id: 13, name: "이서율", group: 2, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#13" },
+      { id: 14, name: "이진서", group: 1, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#14" },
+      { id: 15, name: "이채원", group: 4, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#15" },
+      { id: 16, name: "이초은", group: 4, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#16" },
+      { id: 17, name: "이태환", group: 1, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#17" },
+
+      { id: 18, name: "이하린", group: 2, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#18" },
+      { id: 19, name: "한규빈", group: 3, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#19" },
+      { id: 20, name: "한유은", group: 1, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#20" },
+      { id: 21, name: "현지우", group: 4, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#21" },
+      { id: 22, name: "황지우", group: 2, link: "https://www.canva.com/design/DAHV14xY3b4/VNnSz5AeW5gfmQWLCjTy8w/view?utm_content=DAHV14xY3b4&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h0dfdc85461#22" }
+    ];
+
+    let students = JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
+
+    /* UI Custom Dialog (Replacement for alert/confirm) */
+    function showNotification(title, message, iconName = 'info') {
+      const dialog = document.getElementById('customDialog');
+      const titleEl = document.getElementById('dialogTitle');
+      const msgEl = document.getElementById('dialogMessage');
+      const iconContainer = document.getElementById('dialogIcon');
+      const btnContainer = document.getElementById('dialogButtons');
+
+      titleEl.textContent = title;
+      msgEl.innerHTML = message;
+      iconContainer.innerHTML = `<i data-lucide="${iconName}" class="w-6 h-6"></i>`;
+      btnContainer.innerHTML = `
+        <button onclick="closeCustomDialog()" class="w-full py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl">확인</button>
+      `;
+      dialog.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function showConfirmDialog(title, message, onConfirm, confirmText = "실행") {
+      const dialog = document.getElementById('customDialog');
+      const titleEl = document.getElementById('dialogTitle');
+      const msgEl = document.getElementById('dialogMessage');
+      const iconContainer = document.getElementById('dialogIcon');
+      const btnContainer = document.getElementById('dialogButtons');
+
+      titleEl.textContent = title;
+      msgEl.innerHTML = message;
+      iconContainer.innerHTML = `<i data-lucide="help-circle" class="w-6 h-6 text-amber-600"></i>`;
+      
+      btnContainer.innerHTML = `
+        <button onclick="closeCustomDialog()" class="w-1/2 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">취소</button>
+        <button id="dialogConfirmBtn" class="w-1/2 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl">${confirmText}</button>
+      `;
+      dialog.classList.remove('hidden');
+      lucide.createIcons();
+
+      document.getElementById('dialogConfirmBtn').onclick = () => {
+        closeCustomDialog();
+        onConfirm();
+      };
+    }
+
+    function closeCustomDialog() {
+      document.getElementById('customDialog').classList.add('hidden');
+    }
+
+    /* Authentication & View Switching */
+    function switchView(target) {
+      currentView = target;
+      const sContainer = document.getElementById('studentViewContainer');
+      const tContainer = document.getElementById('teacherViewContainer');
+      const sBtn = document.getElementById('navStudentBtn');
+      const tBtn = document.getElementById('navTeacherBtn');
+
+      if (target === 'student') {
+        sContainer.classList.remove('hidden');
+        tContainer.classList.add('hidden');
+        sBtn.className = "px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-1.5 bg-indigo-50 text-indigo-700";
+        tBtn.className = "px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100";
+        renderStudentSelector();
+        if (selectedStudentId) {
+          renderStudentDashboard();
+        }
+      } else {
+        sContainer.classList.add('hidden');
+        tContainer.classList.remove('hidden');
+        tBtn.className = "px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-1.5 bg-indigo-50 text-indigo-700";
+        sBtn.className = "px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100";
+        updateTeacherStats();
+        renderTeacherTable();
+        renderTeacherBoard();
+      }
+      lucide.createIcons();
+    }
+
+    function requestTeacherAuth() {
+      if (isTeacherAuthenticated) {
+        switchView('teacher');
+      } else {
+        document.getElementById('teacherPinInput').value = '';
+        document.getElementById('authErrorMsg').classList.add('hidden');
+        document.getElementById('teacherAuthModal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('teacherPinInput').focus(), 100);
+      }
+    }
+
+    function closeTeacherAuthModal() {
+      document.getElementById('teacherAuthModal').classList.add('hidden');
+    }
+
+    function submitTeacherAuth() {
+      const pin = document.getElementById('teacherPinInput').value.trim();
+      if (pin === TEACHER_PIN) {
+        isTeacherAuthenticated = true;
+        closeTeacherAuthModal();
+        switchView('teacher');
+        showNotification("교사 인증 완료", "선생님 환영합니다! 조 편성 및 학생별 링크를 편집할 수 있습니다.", "unlock");
+      } else {
+        const err = document.getElementById('authErrorMsg');
+        err.classList.remove('hidden');
+        err.textContent = "비밀번호가 일치하지 않습니다.";
+      }
+    }
+
+    function lockTeacherView() {
+      isTeacherAuthenticated = false;
+      switchView('student');
+      showNotification("로그아웃 완료", "교사 모드가 안전하게 잠겼습니다.", "lock");
+    }
+
+    /* Student Selection Logic */
+    function renderStudentSelector(filter = "") {
+      const grid = document.getElementById('studentCardsGrid');
+      grid.innerHTML = "";
+
+      const query = filter.trim().toLowerCase();
+      const filtered = students.filter(s => s.name.toLowerCase().includes(query));
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-400">
+            <i data-lucide="user-x" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+            <p class="text-sm">일치하는 학생이 없습니다.</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      filtered.forEach(student => {
+        const card = document.createElement('button');
+        card.className = "flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-xl border border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50/50 hover:shadow-md transition-all active:scale-95 group text-center";
+        card.onclick = () => selectStudent(student.id);
+
+        const groupBadge = student.group > 0 
+          ? `<span class="mt-1 text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">${student.group}조</span>` 
+          : `<span class="mt-1 text-[11px] font-medium text-slate-400">미배정</span>`;
+
+        const hasLinkIcon = student.link && student.link.trim() !== ""
+          ? `<span title="개인 링크 있음" class="w-2 h-2 rounded-full bg-emerald-500 absolute top-2 right-2"></span>`
+          : "";
+
+        card.innerHTML = `
+          <div class="relative w-full flex flex-col items-center">
+            ${hasLinkIcon}
+            <div class="w-11 h-11 rounded-full bg-slate-100 group-hover:bg-indigo-100 text-slate-600 group-hover:text-indigo-600 flex items-center justify-center font-bold text-base mb-1.5 transition-colors">
+              ${student.name.charAt(0)}
+            </div>
+            <span class="font-bold text-slate-800 text-sm group-hover:text-indigo-700">${escapeHtml(student.name)}</span>
+            ${groupBadge}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    function filterStudentList() {
+      const val = document.getElementById('studentSearchInput').value;
+      renderStudentSelector(val);
+    }
+
+    /* Student Detail & Group Overview */
+    function selectStudent(studentId) {
+      selectedStudentId = studentId;
+      document.getElementById('studentSelectSection').classList.add('hidden');
+      document.getElementById('studentDashboardSection').classList.remove('hidden');
+      renderStudentDashboard();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function clearSelectedStudent() {
+      selectedStudentId = null;
+      document.getElementById('studentDashboardSection').classList.add('hidden');
+      document.getElementById('studentSelectSection').classList.remove('hidden');
+      renderStudentSelector();
+    }
+
+    function renderStudentDashboard() {
+      const student = students.find(s => s.id === selectedStudentId);
+      if (!student) return;
+
+      document.getElementById('activeStudentName').textContent = student.name;
+      const badge = document.getElementById('activeStudentGroupBadge');
+      if (student.group > 0) {
+        badge.textContent = `${student.group}조`;
+      } else {
+        badge.textContent = "미배정 상태";
+      }
+
+      // Individual Link Handling
+      const linkBtn = document.getElementById('activeStudentLinkBtn');
+      const linkText = document.getElementById('activeStudentLinkText');
+      const urlDisplay = document.getElementById('activeStudentLinkUrlDisplay');
+
+      if (student.link && student.link.trim() !== "") {
+        const fullUrl = student.link.startsWith('http') ? student.link : `https://${student.link}`;
+        linkBtn.href = fullUrl;
+        linkBtn.classList.remove('opacity-50', 'pointer-events-none');
+        linkText.textContent = `${student.name} 학생 링크 바로가기`;
+        urlDisplay.textContent = fullUrl;
+        urlDisplay.classList.remove('hidden');
+        linkBtn.onclick = null;
+      } else {
+        linkBtn.href = "#";
+        linkBtn.classList.add('opacity-60');
+        linkText.textContent = "등록된 전용 링크 없음";
+        urlDisplay.classList.add('hidden');
+        linkBtn.onclick = (e) => {
+          e.preventDefault();
+          showNotification("링크 미등록", `선생님께서 아직 <strong>${student.name}</strong> 학생의 개인 링크를 등록하지 않으셨습니다. 선생님께 문의해보세요!`, "info");
+        };
+      }
+
+      renderStudentAllGroups(student.group);
+      lucide.createIcons();
+    }
+
+    function renderStudentAllGroups(highlightGroupNumber) {
+      const container = document.getElementById('studentGroupsGrid');
+      container.innerHTML = "";
+
+      // Determine highest group number or fallback
+      const maxGroup = Math.max(4, ...students.map(s => s.group || 0));
+
+      for (let g = 1; g <= maxGroup; g++) {
+        const groupMembers = students.filter(s => s.group === g);
+        const isMyGroup = highlightGroupNumber === g;
+
+        const card = document.createElement('div');
+        card.className = `rounded-2xl p-5 transition-all ${
+          isMyGroup 
+            ? 'border-2 border-indigo-600 bg-indigo-50/40 shadow-md ring-4 ring-indigo-500/10' 
+            : 'border border-slate-200 bg-white hover:border-slate-300'
+        }`;
+
+        let membersListHtml = "";
+        if (groupMembers.length === 0) {
+          membersListHtml = `<p class="text-xs text-slate-400 py-4 text-center italic">배정된 조원이 없습니다.</p>`;
+        } else {
+          membersListHtml = groupMembers.map(member => {
+            const isMe = member.id === selectedStudentId;
+            const hasLink = member.link && member.link.trim() !== "";
+            const linkHref = hasLink ? (member.link.startsWith('http') ? member.link : `https://${member.link}`) : null;
+
+            return `
+              <div class="flex items-center justify-between p-2.5 rounded-xl ${isMe ? 'bg-indigo-600 text-white font-bold shadow-sm' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'} transition-colors">
+                <div class="flex items-center space-x-2.5">
+                  <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs ${isMe ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600 font-semibold'}">
+                    ${escapeHtml(member.name.charAt(0))}
+                  </span>
+                  <span class="text-sm">${escapeHtml(member.name)} ${isMe ? '(나)' : ''}</span>
+                </div>
+                ${
+                  hasLink 
+                    ? `<a href="${linkHref}" target="_blank" rel="noopener noreferrer" 
+                         title="${member.name} 학생 링크 열기" 
+                         class="p-1 rounded-lg ${isMe ? 'text-amber-300 hover:text-white' : 'text-indigo-600 hover:bg-indigo-100'} transition-colors">
+                         <i data-lucide="external-link" class="w-4 h-4"></i>
+                       </a>`
+                    : `<span title="링크 없음" class="text-slate-300"><i data-lucide="minus" class="w-3.5 h-3.5"></i></span>`
+                }
+              </div>
+            `;
+          }).join("");
+        }
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-3.5 pb-2.5 border-b ${isMyGroup ? 'border-indigo-200' : 'border-slate-100'}">
+            <div class="flex items-center space-x-2">
+              <span class="text-base font-bold ${isMyGroup ? 'text-indigo-900' : 'text-slate-900'}">${g}조</span>
+              ${isMyGroup ? `<span class="bg-indigo-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">내 조</span>` : ''}
+            </div>
+            <span class="text-xs text-slate-500 font-medium">${groupMembers.length}명</span>
+          </div>
+          <div class="space-y-2">
+            ${membersListHtml}
+          </div>
+        `;
+        container.appendChild(card);
+      }
+    }
+
+    /* Teacher Mode Controls */
+    function switchTeacherTab(tab) {
+      activeTeacherTab = tab;
+      const tableTab = document.getElementById('teacherTableTab');
+      const boardTab = document.getElementById('teacherBoardTab');
+      const tableBtn = document.getElementById('tabTableViewBtn');
+      const boardBtn = document.getElementById('tabBoardViewBtn');
+
+      if (tab === 'table') {
+        tableTab.classList.remove('hidden');
+        boardTab.classList.add('hidden');
+        tableBtn.className = "px-3.5 py-1.5 text-sm font-semibold rounded-lg bg-indigo-50 text-indigo-700";
+        boardBtn.className = "px-3.5 py-1.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100";
+        renderTeacherTable();
+      } else {
+        tableTab.classList.add('hidden');
+        boardTab.classList.remove('hidden');
+        boardBtn.className = "px-3.5 py-1.5 text-sm font-semibold rounded-lg bg-indigo-50 text-indigo-700";
+        tableBtn.className = "px-3.5 py-1.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100";
+        renderTeacherBoard();
+      }
+      lucide.createIcons();
+    }
+
+    function updateTeacherStats() {
+      const total = students.length;
+      const unassigned = students.filter(s => !s.group || s.group === 0).length;
+      const linked = students.filter(s => s.link && s.link.trim() !== "").length;
+      const maxG = Math.max(0, ...students.map(s => s.group || 0));
+
+      document.getElementById('statTotalStudents').textContent = `${total}명`;
+      document.getElementById('statTotalGroups').textContent = `${maxG}개 조`;
+      document.getElementById('statLinkedStudents').textContent = `${linked}명`;
+      document.getElementById('statUnassignedStudents').textContent = `${unassigned}명`;
+    }
+
+    function renderTeacherTable() {
+      const tbody = document.getElementById('teacherTableBody');
+      tbody.innerHTML = "";
+
+      const query = (document.getElementById('teacherSearchInput')?.value || "").trim().toLowerCase();
+      const filtered = students.filter(s => s.name.toLowerCase().includes(query));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="px-6 py-8 text-center text-slate-400">
+              학생 데이터가 없습니다. 학생을 추가해보세요.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      filtered.forEach((st, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/80 transition-colors";
+
+        const hasLink = st.link && st.link.trim() !== "";
+        const cleanLink = hasLink ? (st.link.startsWith('http') ? st.link : `https://${st.link}`) : "";
+
+        tr.innerHTML = `
+          <td class="px-6 py-3.5 text-slate-400 font-mono text-xs">${idx + 1}</td>
+          <td class="px-6 py-3.5 font-bold text-slate-900">${escapeHtml(st.name)}</td>
+          <td class="px-6 py-3.5">
+            <select onchange="updateStudentGroupDirect(${st.id}, this.value)" 
+              class="px-2.5 py-1 rounded-lg border border-slate-300 text-xs font-semibold focus:ring-1 focus:ring-indigo-500 bg-white">
+              <option value="0" ${st.group === 0 ? 'selected' : ''}>미배정</option>
+              ${[1, 2, 3, 4, 5, 6, 7, 8].map(g => `<option value="${g}" ${st.group === g ? 'selected' : ''}>${g}조</option>`).join('')}
+            </select>
+          </td>
+          <td class="px-6 py-3.5 max-w-xs">
+            <div class="flex items-center space-x-2">
+              <input type="url" value="${escapeHtml(st.link || '')}" 
+                placeholder="개인 링크 (https://...)" 
+                onchange="updateStudentLinkDirect(${st.id}, this.value)"
+                class="w-full text-xs px-2.5 py-1 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 truncate">
+              ${
+                hasLink ? `
+                  <a href="${cleanLink}" target="_blank" rel="noopener noreferrer" title="새 탭에서 열기" class="text-indigo-600 hover:text-indigo-800 p-1">
+                    <i data-lucide="external-link" class="w-4 h-4"></i>
+                  </a>
+                ` : ''
+              }
+            </div>
+          </td>
+          <td class="px-6 py-3.5 text-right space-x-1.5 whitespace-nowrap">
+            <button onclick="openEditStudentModal(${st.id})" class="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg" title="수정">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteStudentConfirm(${st.id})" class="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg" title="삭제">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+    function renderTeacherBoard() {
+      const board = document.getElementById('teacherBoardContainer');
+      board.innerHTML = "";
+
+      const maxGroup = Math.max(4, ...students.map(s => s.group || 0));
+
+      for (let g = 1; g <= maxGroup; g++) {
+        const members = students.filter(s => s.group === g);
+        const col = document.createElement('div');
+        col.className = "border border-slate-200 rounded-2xl bg-white p-4 shadow-sm flex flex-col";
+
+        const membersHtml = members.map(m => `
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between text-xs hover:shadow-sm">
+            <div>
+              <span class="font-bold text-slate-800 text-sm">${escapeHtml(m.name)}</span>
+              ${m.link ? `<p class="text-[11px] text-indigo-600 truncate max-w-[150px]">${escapeHtml(m.link)}</p>` : `<p class="text-[11px] text-slate-400 italic">링크 없음</p>`}
+            </div>
+            <div class="flex items-center space-x-1">
+              <button onclick="openEditStudentModal(${m.id})" class="p-1 text-slate-400 hover:text-indigo-600">
+                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        col.innerHTML = `
+          <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+            <h4 class="font-bold text-slate-900 flex items-center">
+              <span class="w-2 h-2 rounded-full bg-indigo-600 mr-2"></span>${g}조
+            </h4>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">${members.length}명</span>
+          </div>
+          <div class="space-y-2.5 flex-1">
+            ${members.length > 0 ? membersHtml : '<p class="text-xs text-slate-400 text-center py-6">비어 있음</p>'}
+          </div>
+        `;
+        board.appendChild(col);
+      }
+      lucide.createIcons();
+    }
+
+    /* Student CRUD & Quick Edits */
+    function updateStudentGroupDirect(id, newGroup) {
+      const target = students.find(s => s.id === id);
+      if (target) {
+        target.group = parseInt(newGroup, 10);
+        updateTeacherStats();
+      }
+    }
+
+    function updateStudentLinkDirect(id, newLink) {
+      const target = students.find(s => s.id === id);
+      if (target) {
+        target.link = newLink.trim();
+        updateTeacherStats();
+      }
+    }
+
+    function openAddStudentModal() {
+      document.getElementById('studentFormTitle').textContent = "새 학생 추가";
+      document.getElementById('editStudentId').value = "";
+      document.getElementById('inputStudentName').value = "";
+      document.getElementById('inputStudentGroup').value = "0";
+      document.getElementById('inputStudentLink').value = "";
+      document.getElementById('studentFormModal').classList.remove('hidden');
+    }
+
+    function openEditStudentModal(id) {
+      const s = students.find(item => item.id === id);
+      if (!s) return;
+      document.getElementById('studentFormTitle').textContent = "학생 정보 및 링크 수정";
+      document.getElementById('editStudentId').value = s.id;
+      document.getElementById('inputStudentName').value = s.name;
+      document.getElementById('inputStudentGroup').value = s.group || 0;
+      document.getElementById('inputStudentLink').value = s.link || "";
+      document.getElementById('studentFormModal').classList.remove('hidden');
+    }
+
+    function closeStudentFormModal() {
+      document.getElementById('studentFormModal').classList.add('hidden');
+    }
+
+    function saveStudentForm() {
+      const idVal = document.getElementById('editStudentId').value;
+      const name = document.getElementById('inputStudentName').value.trim();
+      const group = parseInt(document.getElementById('inputStudentGroup').value, 10);
+      const link = document.getElementById('inputStudentLink').value.trim();
+
+      if (!name) {
+        showNotification("입력 오류", "학생 이름을 반드시 입력해주세요.", "alert-triangle");
+        return;
+      }
+
+      if (idVal) {
+        // Edit existing
+        const target = students.find(s => s.id === parseInt(idVal, 10));
+        if (target) {
+          target.name = name;
+          target.group = group;
+          target.link = link;
+        }
+      } else {
+        // Add new
+        const newId = students.length > 0 ? Math.max(...students.map(s => s.id)) + 1 : 1;
+        students.push({
+          id: newId,
+          name: name,
+          group: group,
+          link: link
+        });
+      }
+
+      closeStudentFormModal();
+      updateTeacherStats();
+      renderTeacherTable();
+      renderTeacherBoard();
+      showNotification("저장 완료", `학생 [${name}] 정보가 성공적으로 반영되었습니다.`, "check-circle");
+    }
+
+    function deleteStudentConfirm(id) {
+      const target = students.find(s => s.id === id);
+      if (!target) return;
+
+      showConfirmDialog(
+        "학생 삭제", 
+        `정말로 <strong>${escapeHtml(target.name)}</strong> 학생을 목록에서 삭제하시겠습니까?`, 
+        () => {
+          students = students.filter(s => s.id !== id);
+          if (selectedStudentId === id) {
+            clearSelectedStudent();
+          }
+          updateTeacherStats();
+          renderTeacherTable();
+          renderTeacherBoard();
+        },
+        "삭제하기"
+      );
+    }
+
+    /* Automatic Grouping Algorithm */
+    function openAutoGroupModal() {
+      if (students.length === 0) {
+        showNotification("알림", "등록된 학생이 없어 조를 편성할 수 없습니다.", "alert-triangle");
+        return;
+      }
+      document.getElementById('autoGroupModal').classList.remove('hidden');
+    }
+
+    function closeAutoGroupModal() {
+      document.getElementById('autoGroupModal').classList.add('hidden');
+    }
+
+    function executeAutoGrouping() {
+      const groupCount = parseInt(document.getElementById('autoGroupCountSelect').value, 10);
+      if (groupCount <= 0 || students.length === 0) return;
+
+      // Fisher-Yates Shuffle on a clone of student indices
+      const shuffled = [...students].sort(() => Math.random() - 0.5);
+
+      // Distribute evenly among 1..groupCount
+      shuffled.forEach((student, index) => {
+        student.group = (index % groupCount) + 1;
+      });
+
+      closeAutoGroupModal();
+      updateTeacherStats();
+      renderTeacherTable();
+      renderTeacherBoard();
+      showNotification("조 편성 완료!", `총 ${students.length}명의 학생이 <strong>${groupCount}개 조</strong>로 랜덤 균등 배정되었습니다.`, "sparkles");
+    }
+
+    /* Batch Import */
+    function openBatchModal() {
+      document.getElementById('batchNamesInput').value = "";
+      document.getElementById('batchModal').classList.remove('hidden');
+    }
+
+    function closeBatchModal() {
+      document.getElementById('batchModal').classList.add('hidden');
+    }
+
+    function executeBatchImport() {
+      const text = document.getElementById('batchNamesInput').value;
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+      if (lines.length === 0) {
+        showNotification("알림", "등록할 학생 이름을 입력해주세요.", "alert-triangle");
+        return;
+      }
+
+      let currentMaxId = students.length > 0 ? Math.max(...students.map(s => s.id)) : 0;
+      lines.forEach(name => {
+        currentMaxId++;
+        students.push({
+          id: currentMaxId,
+          name: name,
+          group: 0,
+          link: ""
+        });
+      });
+
+      closeBatchModal();
+      updateTeacherStats();
+      renderTeacherTable();
+      renderTeacherBoard();
+      showNotification("일괄 등록 완료", `${lines.length}명의 학생이 새롭게 추가되었습니다.`, "users");
+    }
+
+    /* Reset Sample Data */
+    function resetToSampleDataConfirm() {
+      showConfirmDialog("데이터 초기화", "예시 샘플 데이터로 복원하시겠습니까? 현재 입력된 데이터는 리셋됩니다.", () => {
+        students = JSON.parse(JSON.stringify(DEFAULT_STUDENTS));
+        updateTeacherStats();
+        renderTeacherTable();
+        renderTeacherBoard();
+        showNotification("초기화 완료", "샘플 데이터로 정상 복원되었습니다.", "check-circle");
+      });
+    }
+
+    /* Helper: Escape HTML to avoid XSS */
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initial Run on Load
+    window.addEventListener('DOMContentLoaded', () => {
+      renderStudentSelector();
+      updateTeacherStats();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
