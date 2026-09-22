@@ -1,0 +1,2701 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우리반 무궁화꽃 지키기 (전자칠판·선생님·학생 3단 구조)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- QRCode.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Firebase Realtime Database (compat SDK: GitHub Pages에서도 바로 사용 가능) -->
+    <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-database-compat.js"></script>
+    <!-- Google Fonts: Gothic A1 & Jua -->
+    <link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;600;700;800;900&family=Jua&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Gothic A1', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 50%, #eef2f6 100%);
+            color: #0f172a;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-point { font-family: 'Jua', sans-serif; }
+        
+        @keyframes popIn {
+            0% { transform: scale(0.6); opacity: 0; }
+            70% { transform: scale(1.08); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes pulseAlert {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 0 14px rgba(220, 38, 38, 0.6)); }
+        }
+        @keyframes gentleFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .pop-in { animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .pulse-alert { animation: pulseAlert 0.5s ease-in-out infinite; }
+        .gentle-float { animation: gentleFloat 3s ease-in-out infinite; }
+        
+        @keyframes clashDisappear {
+            0% { transform: scale(1); opacity: 1; filter: brightness(1); }
+            30% { transform: scale(1.08) rotate(-3deg); filter: contrast(150%) brightness(1.2); }
+            60% { transform: scale(0.9) rotate(3deg); filter: grayscale(100%) blur(1px); opacity: 0.7; }
+            100% { transform: scale(0.4) rotate(-6deg); opacity: 0; filter: blur(4px); pointer-events: none; }
+        }
+        @keyframes bloomFlower {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.25) rotate(6deg); }
+            100% { transform: scale(1.05); opacity: 1; }
+        }
+        @keyframes formulaSlideDown {
+            0% { transform: translateY(-18px) scale(0.92); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes dustFloat {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0.1); opacity: 0; }
+        }
+        @keyframes bumpScale {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4) rotate(4deg); color: #f43f5e; text-shadow: 0 0 15px rgba(244, 63, 94, 0.6); }
+            100% { transform: scale(1); }
+        }
+        @keyframes villainCackle {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            20% { transform: scale(1.25) rotate(-8deg); filter: drop-shadow(0 0 25px rgba(239, 68, 68, 0.9)); }
+            40% { transform: scale(1.1) rotate(8deg); }
+            60% { transform: scale(1.3) rotate(-6deg); filter: drop-shadow(0 0 35px rgba(220, 38, 38, 1)); }
+            80% { transform: scale(1.15) rotate(4deg); }
+        }
+        @keyframes villainSneak {
+            0%, 100% { transform: translateY(0) scale(1) rotate(-3deg); }
+            25% { transform: translateY(-15px) scale(1.15) rotate(5deg); }
+            50% { transform: translateY(0) scale(0.95) rotate(-6deg); }
+            75% { transform: translateY(-10px) scale(1.2) rotate(4deg); }
+        }
+        @keyframes villainTremble {
+            0% { transform: translate(0, 0) scale(1); }
+            20% { transform: translate(-8px, 5px) scale(1.15) rotate(-5deg); }
+            40% { transform: translate(8px, -5px) scale(1.25) rotate(6deg); }
+            60% { transform: translate(-6px, -4px) scale(1.1) rotate(-4deg); }
+            80% { transform: translate(7px, 6px) scale(1.28) rotate(5deg); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes redAlertPulse {
+            0%, 100% { background-color: rgba(15, 23, 42, 0.88); }
+            50% { background-color: rgba(127, 29, 29, 0.92); }
+        }
+
+        .clash-cancelled { animation: clashDisappear 0.85s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        .bloom-flower { animation: bloomFlower 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .formula-banner { animation: formulaSlideDown 0.4s ease-out forwards; }
+        .villain-laugh { animation: villainCackle 0.7s ease-in-out infinite; }
+        .villain-sneak { animation: villainSneak 0.6s ease-in-out infinite; }
+        .villain-tremble { animation: villainTremble 0.35s ease-in-out infinite; }
+        .red-alert-backdrop { animation: redAlertPulse 1.2s ease-in-out infinite; }
+        
+        @keyframes soundWave {
+            0%, 100% { height: 6px; }
+            50% { height: 28px; }
+        }
+        .eq-bar {
+            width: 5px;
+            background-color: #f59e0b;
+            border-radius: 9999px;
+            animation: soundWave 0.6s ease-in-out infinite;
+        }
+        .eq-bar:nth-child(2) { animation-delay: 0.15s; background-color: #ef4444; }
+        .eq-bar:nth-child(3) { animation-delay: 0.3s; background-color: #10b981; }
+        .eq-bar:nth-child(4) { animation-delay: 0.45s; background-color: #6366f1; }
+        .eq-bar:nth-child(5) { animation-delay: 0.2s; background-color: #ec4899; }
+
+        .dust-particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            border-radius: 50%;
+            animation: dustFloat 0.8s ease-out forwards;
+        }
+        .flying-flower-node {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: all 0.75s cubic-bezier(0.25, 1, 0.5, 1);
+            filter: drop-shadow(0 8px 16px rgba(244, 63, 94, 0.5));
+        }
+        .counter-bump { animation: bumpScale 0.35s ease-out; }
+
+        /* High Contrast Chalkboard Frame with Crisp Dark Green */
+        .chalkboard-frame {
+            border: 14px solid #854d0e;
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.7), 0 10px 30px rgba(0,0,0,0.25);
+            background-color: #14532d;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.08); border-radius: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.4); border-radius: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.6); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col p-2.5 sm:p-4 md:p-6 justify-between text-slate-900">
+
+    <!-- Top Navigation Bar -->
+    <header class="max-w-7xl w-full mx-auto mb-3 bg-white/95 rounded-2xl p-3.5 px-5 border-2 border-slate-200 shadow-md flex justify-between items-center flex-wrap gap-3 backdrop-blur-md">
+        <div class="flex items-center gap-3">
+            <span class="text-3xl sm:text-4xl gentle-float">🌺</span>
+            <div>
+                <h1 class="text-lg sm:text-xl md:text-2xl font-black text-rose-600 font-point tracking-wide flex items-center gap-2">
+                    우리반 무궁화꽃 지키기
+                    <span id="headerParticipantsBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-300">22명 참여</span>
+                </h1>
+                <p class="text-xs sm:text-sm font-semibold text-slate-600">큰 전자칠판 · 선생님 리모컨 · 학생 태블릿 3단 동기화</p>
+            </div>
+        </div>
+
+        <!-- Mode Buttons & Link Modal Trigger -->
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <button onclick="testAudio()" title="스피커 소리가 정상 작동하는지 확인하고 볼륨을 조절합니다" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-xs sm:text-sm font-black text-slate-950 rounded-xl border-2 border-amber-300 transition flex items-center gap-1.5 shadow-md">
+                <span class="text-base animate-bounce">🔊</span>
+                <span>소리 테스트 & 볼륨</span>
+            </button>
+            <button onclick="openLinkModal()" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-xs sm:text-sm font-black text-indigo-700 rounded-xl border border-indigo-200 transition flex items-center gap-1.5 shadow-sm">
+                <span>🔗 전용 링크 / QR코드</span>
+            </button>
+            <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-300 shadow-inner">
+                <button id="navTabBoard" onclick="switchView('board')" class="px-3.5 py-2 rounded-lg font-black text-xs md:text-sm transition bg-rose-600 text-white shadow">
+                    🖥️ 큰 전자칠판
+                </button>
+                <button id="navTabTeacher" onclick="switchView('teacher')" class="px-3.5 py-2 rounded-lg font-black text-xs md:text-sm text-slate-600 hover:text-slate-900 transition">
+                    🧑‍🏫 선생님 뷰
+                </button>
+                <button id="navTabStudent" onclick="switchView('student')" class="px-3.5 py-2 rounded-lg font-black text-xs md:text-sm text-slate-600 hover:text-slate-900 transition">
+                    📱 학생 뷰
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== VIEW 1: 큰 전자칠판 (교실 대형 화면) ==================== -->
+    <main id="viewBoard" class="max-w-7xl w-full mx-auto flex-1 flex flex-col">
+        
+        <!-- Opening Stage: Mugunghwa Quiz Screen -->
+        <section id="boardQuizStage" class="chalkboard-frame rounded-3xl p-6 md:p-12 flex-1 flex flex-col justify-center items-center text-center relative overflow-hidden my-auto shadow-2xl">
+            <div class="absolute inset-0 bg-[radial-gradient(#22c55e_1px,transparent_1px)] [background-size:24px_24px] opacity-15 pointer-events-none"></div>
+            
+            <div class="relative z-10 max-w-2xl space-y-6">
+                <div class="inline-block p-5 bg-emerald-900/80 rounded-3xl border-2 border-emerald-400 shadow-xl">
+                    <span class="text-7xl md:text-9xl gentle-float block">🌺</span>
+                </div>
+                <div>
+                    <span class="bg-amber-400 text-slate-950 text-sm md:text-base font-black px-4 py-1.5 rounded-full shadow border-2 border-amber-200">
+                        활동 시작 전 퀴즈
+                    </span>
+                    <h2 class="text-3xl md:text-5xl font-black text-white font-point mt-4 tracking-tight drop-shadow-md">
+                        무궁화 퀴즈!
+                    </h2>
+                    <p class="text-emerald-100 text-base md:text-lg mt-2 font-bold drop-shadow">
+                        우리나라의 꽃 무궁화(無窮花)는 어떤 의미를 담고 있을까요?
+                    </p>
+                </div>
+                
+                <div class="bg-black/50 rounded-2xl p-6 border-2 border-emerald-400/40 text-left space-y-2.5 text-sm md:text-base text-white leading-relaxed shadow-inner">
+                    <p class="font-black text-amber-300 text-base md:text-lg">💡 "영원히 피고 또 피어서 지지 않는 꽃"</p>
+                    <p class="font-semibold text-slate-100">우리 선조들은 끊임없이 피어나는 무궁화처럼, 어떤 어려움 속에서도 바른 양심을 지키고 희망을 잃지 않는 마음을 소중히 여겼습니다.</p>
+                    <p class="text-emerald-300 font-black pt-1">오늘 우리 22명의 친구들은 36가지 행동을 보며 마음속 무궁화꽃을 끝까지 지켜낼 수 있을까요?</p>
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="startFirstRound()" class="w-full sm:w-auto px-9 py-4 bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 active:scale-95 text-white font-black text-lg md:text-2xl rounded-2xl shadow-2xl transition transform border-2 border-white/40 font-point flex items-center justify-center gap-3 mx-auto">
+                        <span>🌺 무궁화 퀴즈 풀고 1번 행동 시작하기! ➔</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Stage: Voting Whiteboard with High Legibility -->
+        <section id="boardMainStage" class="hidden chalkboard-frame rounded-3xl p-4 md:p-7 flex-1 flex flex-col justify-between relative overflow-hidden shadow-2xl">
+            <div class="absolute inset-0 bg-[radial-gradient(#22c55e_1px,transparent_1px)] [background-size:20px_20px] opacity-15 pointer-events-none"></div>
+
+            <!-- Top Header on Chalkboard -->
+            <div class="relative z-10">
+                <div class="flex justify-between items-center flex-wrap gap-2 mb-2.5">
+                    <div class="flex items-center gap-2.5">
+                        <span class="bg-amber-400 text-slate-950 text-sm md:text-base font-black px-4 py-1.5 rounded-full shadow border border-amber-200">
+                            행동 <span id="boardRoundBadge">#1</span> / 36
+                        </span>
+                        <span id="boardTimerPill" class="hidden text-sm md:text-base font-black px-4 py-1.5 rounded-full shadow border-2">
+                            남은 시간: <span id="boardTimerSec">10</span>초
+                        </span>
+                    </div>
+
+                    <!-- Live Summary Counters with High Contrast Badges -->
+                    <div class="flex items-center gap-2 flex-wrap text-xs md:text-sm font-black">
+                        <span class="bg-emerald-100 text-emerald-950 px-3.5 py-1.5 rounded-full border-2 border-emerald-400 shadow-sm flex items-center gap-1">
+                            <span>👍 찬성</span> <strong id="boardCountAgree" class="text-emerald-700 text-base">0</strong>명
+                        </span>
+                        <span class="bg-slate-200 text-slate-950 px-3.5 py-1.5 rounded-full border-2 border-slate-400 shadow-sm flex items-center gap-1">
+                            <span>🏳️ 포기</span> <strong id="boardCountForfeit" class="text-slate-700 text-base">0</strong>명
+                        </span>
+                        <span class="bg-rose-100 text-rose-950 px-3.5 py-1.5 rounded-full border-2 border-rose-400 shadow-sm flex items-center gap-1">
+                            <span>👎 반대</span> <strong id="boardCountDisagree" class="text-rose-700 text-base">0</strong>명
+                        </span>
+                        <span class="bg-white text-slate-900 px-3.5 py-1.5 rounded-full border-2 border-slate-300 shadow-sm">
+                            총 참여 <strong id="boardCountTotal" class="text-indigo-600 text-base">0</strong> / <span id="boardMaxStudents">22</span>명
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Big High-Contrast Behavior Title Banner -->
+                <div class="bg-black/55 rounded-2xl p-4 md:p-5 border-2 border-emerald-300/40 shadow-inner">
+                    <h2 id="boardBehaviorTitle" class="text-2xl sm:text-3xl md:text-4xl font-black text-amber-300 leading-snug font-point min-h-[4rem] flex items-center drop-shadow">
+                        로딩 중...
+                    </h2>
+                </div>
+
+                <!-- Live Subtraction Formula Banner on Chalkboard (Appears when Awarded) -->
+                <div id="boardFormulaBanner" class="hidden mt-3 p-3.5 px-6 rounded-2xl border-3 shadow-2xl flex items-center justify-between flex-wrap gap-2 transition-all">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-3xl filter drop-shadow">⚖️</span>
+                        <div>
+                            <span id="boardFormulaTypeTag" class="text-[11px] font-black px-2.5 py-0.5 rounded-full uppercase">
+                                계산 공식
+                            </span>
+                            <h3 id="boardFormulaEquation" class="text-lg md:text-2xl font-black font-point tracking-wide mt-0.5">
+                                [찬성 0명] - [반대 0명] = 0송이 적립!
+                            </h3>
+                        </div>
+                    </div>
+                    <div id="boardFormulaResultBadge" class="text-base md:text-xl font-black px-4 py-1.5 rounded-xl shadow">
+                        +0송이 적립
+                    </div>
+                </div>
+
+                <!-- 10s Visual Progress Bar -->
+                <div id="boardProgressBarContainer" class="hidden mt-2.5 bg-black/60 rounded-full h-4 overflow-hidden border-2 border-emerald-400/60 shadow">
+                    <div id="boardProgressBar" class="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 w-full transition-all duration-100 ease-linear"></div>
+                </div>
+            </div>
+
+            <!-- 3-Column Voting Layout: Left (찬성), Center (포기), Right (반대) -->
+            <div class="relative z-10 my-3.5 grid grid-cols-1 md:grid-cols-3 gap-3.5 flex-1 min-h-[300px] max-h-[420px]">
+                
+                <!-- Left: 찬성 (Thumbs Up Icon) -->
+                <div class="bg-white/95 rounded-3xl p-3.5 border-4 border-emerald-400 flex flex-col shadow-lg backdrop-blur-md">
+                    <div class="flex justify-between items-center pb-2 mb-2 border-b-2 border-emerald-200">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">👍</span>
+                            <span class="font-black text-emerald-900 text-base md:text-lg font-point">
+                                찬성
+                            </span>
+                        </div>
+                        <span id="boardAgreeColBadge" class="bg-emerald-600 text-white text-xs md:text-sm font-black px-3 py-1 rounded-full shadow">
+                            0명
+                        </span>
+                    </div>
+                    <div id="boardAgreeColumn" class="flex-1 overflow-y-auto flex flex-wrap content-start gap-2 custom-scrollbar p-1">
+                        <!-- Dynamic Agree Cards -->
+                    </div>
+                </div>
+
+                <!-- Center: 포기 (Forfeit - Only shown after 10s expires without vote) -->
+                <div class="bg-white/95 rounded-3xl p-3.5 border-4 border-slate-400 flex flex-col shadow-lg backdrop-blur-md">
+                    <div class="flex justify-between items-center pb-2 mb-2 border-b-2 border-slate-200">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">🏳️</span>
+                            <span class="font-black text-slate-800 text-base md:text-lg font-point">
+                                포기 (미선택)
+                            </span>
+                        </div>
+                        <span id="boardForfeitColBadge" class="bg-slate-600 text-white text-xs md:text-sm font-black px-3 py-1 rounded-full shadow">
+                            0명
+                        </span>
+                    </div>
+                    <div id="boardForfeitColumn" class="flex-1 overflow-y-auto flex flex-wrap content-start gap-2 custom-scrollbar p-1">
+                        <!-- Dynamic Forfeit Cards -->
+                    </div>
+                </div>
+
+                <!-- Right: 반대 (Disagree) -->
+                <div class="bg-white/95 rounded-3xl p-3.5 border-4 border-rose-400 flex flex-col shadow-lg backdrop-blur-md">
+                    <div class="flex justify-between items-center pb-2 mb-2 border-b-2 border-rose-200">
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl">👎</span>
+                            <span class="font-black text-rose-900 text-base md:text-lg font-point">
+                                반대
+                            </span>
+                        </div>
+                        <span id="boardDisagreeColBadge" class="bg-rose-600 text-white text-xs md:text-sm font-black px-3 py-1 rounded-full shadow">
+                            0명
+                        </span>
+                    </div>
+                    <div id="boardDisagreeColumn" class="flex-1 overflow-y-auto flex flex-wrap content-start gap-2 custom-scrollbar p-1">
+                        <!-- Dynamic Disagree Cards -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Stats Strip on Chalkboard -->
+            <div class="relative z-10 bg-white/95 rounded-2xl p-3.5 px-5 border-2 border-slate-300 flex justify-between items-center flex-wrap gap-2 shadow-lg">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">🌺</span>
+                    <div>
+                        <span class="text-xs sm:text-sm text-slate-600 font-bold block">우리반 누적 무궁화꽃</span>
+                        <span class="text-xs sm:text-sm font-black text-emerald-700">찬성한 학생들의 소중한 양심 꽃이 모였습니다</span>
+                    </div>
+                <!-- Bottom Stats Strip on Chalkboard -->
+                <div class="flex items-center gap-2">
+                    <span id="boardTotalFlowers" class="text-3xl md:text-4xl font-black text-rose-600 font-point transition-transform inline-block">
+                        0
+                    </span>
+                    <span class="text-base font-black text-slate-800">송이</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== VIEW 2: 선생님 뷰 (교사 제어 리모컨) ==================== -->
+    <main id="viewTeacher" class="hidden max-w-7xl w-full mx-auto flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        
+        <!-- Left 2 Cols: Control Board & Status -->
+        <section class="lg:col-span-2 flex flex-col gap-3.5">
+            <div class="bg-white rounded-3xl p-5 md:p-6 border-2 border-slate-200 shadow-md space-y-4">
+                <div class="flex justify-between items-center flex-wrap gap-2 pb-3 border-b-2 border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-3xl">🧑‍🏫</span>
+                        <div>
+                            <h2 class="font-black text-lg md:text-xl text-slate-900 font-point">선생님 수업 리모컨</h2>
+                            <p class="text-xs sm:text-sm font-semibold text-slate-500">투표 타이머를 시작하고 라운드를 제어하세요</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-100 text-amber-900 text-xs sm:text-sm font-black px-3.5 py-1.5 rounded-full border border-amber-300">
+                            행동 <span id="teacherRoundNum">#1</span> / 36
+                        </span>
+                        <span class="bg-rose-100 text-rose-900 text-xs sm:text-sm font-black px-3.5 py-1.5 rounded-full border border-rose-300">
+                            꽃 <strong id="teacherTotalFlowers" class="text-rose-600 text-base">0</strong>송이
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Behavior Preview Card with High Readability -->
+                <div class="bg-slate-50 rounded-2xl p-4 border-2 border-slate-200">
+                    <span class="text-xs font-black text-slate-500 block mb-1">현재 제시된 행동 내용</span>
+                    <p id="teacherBehaviorText" class="text-lg md:text-xl font-black text-slate-900 font-point leading-relaxed">
+                        로딩 중...
+                    </p>
+                </div>
+
+                <!-- Teacher Action Buttons -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
+                    <button id="btnTeacherStartTimer" onclick="teacherStartTimer()" class="py-4 px-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:scale-95 text-white font-black text-sm md:text-base rounded-2xl shadow-md transition flex flex-col items-center justify-center gap-1 border-b-4 border-teal-800">
+                        <span class="text-3xl">⏱️</span>
+                        <span class="font-point text-base md:text-lg">행동 판단하기 시작</span>
+                        <span class="text-[11px] text-emerald-100 font-medium">10초 타이머 · 5초 전 카운트다운</span>
+                    </button>
+
+                    <button id="btnTeacherAward" onclick="teacherAwardFlowers()" class="py-4 px-3 bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 hover:from-pink-600 hover:to-amber-600 active:scale-95 text-white font-black text-sm md:text-base rounded-2xl shadow-md transition flex flex-col items-center justify-center gap-1 border-b-4 border-rose-800">
+                        <span class="text-3xl animate-bounce">🌺</span>
+                        <span class="font-point text-base md:text-lg">무궁화꽃 적립!</span>
+                        <span class="text-[11px] text-pink-100 font-medium">손가락 ➔ 무궁화꽃 변환</span>
+                    </button>
+
+                    <button id="btnTeacherSteal" onclick="teacherTriggerStealModal()" class="py-4 px-3 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 active:scale-95 text-white font-black text-sm md:text-base rounded-2xl shadow-md transition flex flex-col items-center justify-center gap-1 border-b-4 border-rose-900">
+                        <span class="text-3xl">👺</span>
+                        <span class="font-point text-base md:text-lg">양심불량자 추첨!</span>
+                        <span class="text-[11px] text-amber-100 font-medium">누적 꽃 무작위 차감</span>
+                    </button>
+
+                    <button id="btnTeacherNext" onclick="teacherNextRound()" class="py-4 px-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 active:scale-95 text-white font-black text-sm md:text-base rounded-2xl shadow-md transition flex flex-col items-center justify-center gap-1 border-b-4 border-indigo-900">
+                        <span class="text-3xl">➔</span>
+                        <span class="font-point text-base md:text-lg">다음 행동으로 이동</span>
+                        <span class="text-[11px] text-indigo-100 font-medium">선택 상태 초기화</span>
+                    </button>
+                </div>
+
+                <!-- Reset Game & Audio Controls -->
+                <div class="pt-3 border-t-2 border-slate-100 flex justify-between items-center text-xs sm:text-sm">
+                    <button onclick="confirmResetGame()" class="font-bold text-slate-500 hover:text-red-600 transition underline">
+                        ⚠️ 게임 전체 처음부터 다시 시작
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="testAudio()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-3 py-1.5 rounded-xl transition border border-amber-300 shadow-sm text-xs">
+                            🔔 소리 점검
+                        </button>
+                        <button onclick="toggleAudio()" id="audioToggleBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3.5 py-1.5 rounded-xl transition border border-slate-300 shadow-sm">
+                            🔊 효과음 켜짐
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Log -->
+            <div class="bg-white rounded-3xl p-4 md:p-5 border-2 border-slate-200 shadow-md flex-1 flex flex-col min-h-[220px]">
+                <h3 class="text-sm md:text-base font-black text-slate-800 mb-2.5 flex items-center justify-between">
+                    <span>📜 라운드 진행 및 결과 기록</span>
+                    <span id="teacherLogCount" class="text-xs font-bold text-slate-500">총 0개</span>
+                </h3>
+                <div id="teacherHistoryList" class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[220px] text-xs custom-scrollbar">
+                    <div class="text-slate-400 font-semibold text-center py-8">아직 진행된 기록이 없습니다.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Col: 22 Roster Realtime Status -->
+        <section class="bg-white rounded-3xl p-5 border-2 border-slate-200 shadow-md flex flex-col">
+            <div class="flex justify-between items-center pb-3 mb-3 border-b-2 border-slate-100">
+                <div>
+                    <h3 class="font-black text-base text-slate-900 flex items-center gap-1.5 font-point">
+                        <span>👥 우리반 22명 실시간 참여</span>
+                    </h3>
+                    <p class="text-xs font-semibold text-slate-500">이번 행동 선택 현황 및 누적 실천 · 출석 <span id="teacherPresentCountText">22</span>명 / 결석 <span id="teacherAbsentCountText">0</span>명</p>
+                </div>
+                <span id="teacherRosterSummary" class="text-xs bg-indigo-50 text-indigo-700 font-black px-3 py-1 rounded-full border border-indigo-200 shadow-sm">
+                    0 / 22 제출
+                </span>
+            </div>
+
+            <!-- 22 Students List -->
+            <div id="teacherRosterGrid" class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[580px] custom-scrollbar text-xs">
+                <!-- Dynamic 22 Student Cards -->
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== VIEW 3: 학생 뷰 (1인 1태블릿 참여 전용) ==================== -->
+    <main id="viewStudent" class="hidden max-w-md w-full mx-auto flex-1 flex flex-col justify-between py-2">
+        
+        <!-- Student Name Selector -->
+        <div class="bg-white rounded-3xl p-4.5 border-2 border-slate-200 shadow-md mb-3">
+            <label class="block text-xs sm:text-sm font-black text-slate-700 mb-1.5 flex justify-between items-center">
+                <span>내 이름 선택하기 (우리반 22명)</span>
+                <span id="studentCurrentRoundBadge" class="text-xs font-black text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300">
+                    행동 #1
+                </span>
+            </label>
+            <select id="studentNameSelect" onchange="onStudentNameChanged()" class="w-full bg-slate-50 border-2 border-slate-300 rounded-2xl px-3.5 py-3 text-base font-black text-slate-900 focus:outline-none focus:border-rose-500 transition shadow-inner">
+                <option value="">이름을 선택하세요</option>
+            </select>
+        </div>
+
+        <!-- Student Main Action Box -->
+        <div class="bg-white rounded-3xl p-6 border-3 border-rose-200 shadow-xl flex-1 flex flex-col justify-between text-center relative overflow-hidden my-auto">
+            
+            <!-- Behavior Title Sync -->
+            <div class="space-y-2">
+                <div class="inline-block bg-rose-100 text-rose-700 text-xs font-black px-3 py-1 rounded-full border border-rose-300">
+                    전자칠판 실시간 제시 행동
+                </div>
+                <h3 id="studentBehaviorTitle" class="text-xl md:text-2xl font-black text-slate-900 leading-snug font-point min-h-[4rem] flex items-center justify-center">
+                    전자칠판 연결 대기 중...
+                </h3>
+            </div>
+
+            <!-- Student Timer & Status Indicator -->
+            <div class="my-3">
+                <div id="studentTimerNotice" class="text-xs sm:text-sm font-black py-2 px-4 rounded-full inline-block bg-slate-100 text-slate-700 mb-2 border border-slate-300 shadow-sm">
+                    선생님이 시작 버튼을 누르면 투표할 수 있어요 ⏳
+                </div>
+                <div id="studentProgressBarContainer" class="hidden w-full bg-slate-100 rounded-full h-3.5 overflow-hidden border-2 border-slate-300 shadow-inner">
+                    <div id="studentProgressBar" class="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500 w-full transition-all duration-100 ease-linear"></div>
+                </div>
+            </div>
+
+            <!-- Student 2 Voting Buttons: 찬성 (👍) vs 반대 (👎) -->
+            <div id="studentButtonArea" class="grid grid-cols-2 gap-3.5 my-2">
+                <button id="btnStudentAgree" onclick="studentSubmitVote('찬성')" class="py-6 md:py-8 bg-gradient-to-b from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:scale-95 text-white font-black text-2xl md:text-3xl rounded-3xl shadow-xl transition transform flex flex-col items-center justify-center gap-1 border-b-6 border-teal-800">
+                    <span class="text-5xl gentle-float">👍</span>
+                    <span class="font-point">찬성</span>
+                    <span class="text-xs font-black text-emerald-100 bg-black/20 px-3.5 py-0.5 rounded-full mt-1">이 행동에 찬성해요</span>
+                </button>
+                
+                <button id="btnStudentDisagree" onclick="studentSubmitVote('반대')" class="py-6 md:py-8 bg-gradient-to-b from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 active:scale-95 text-white font-black text-2xl md:text-3xl rounded-3xl shadow-xl transition transform flex flex-col items-center justify-center gap-1 border-b-6 border-red-800">
+                    <span class="text-5xl gentle-float">👎</span>
+                    <span class="font-point">반대</span>
+                    <span class="text-xs font-black text-rose-100 bg-black/20 px-3.5 py-0.5 rounded-full mt-1">이 행동에 반대해요</span>
+                </button>
+            </div>
+
+            <!-- State 1: Already Submitted Feedback Box -->
+            <div id="studentSuccessBox" class="hidden bg-emerald-50 border-3 border-emerald-400 rounded-3xl p-6 text-emerald-950 space-y-2 my-auto shadow-inner">
+                <div id="studentSuccessIcon" class="text-5xl animate-bounce">👍</div>
+                <div id="studentSuccessTitle" class="text-xl font-black text-emerald-900 font-point">[👍 찬성] 의견 전송 완료!</div>
+                <p id="studentSuccessDesc" class="text-xs sm:text-sm font-semibold text-emerald-800">
+                    우리반 큰 전자칠판에 내 생각이 전송되었습니다.<br>선생님의 다음 행동을 기다려주세요.
+                </p>
+            </div>
+
+            <!-- State 2: Forfeit Result Box (Time expired without voting) -->
+            <div id="studentForfeitBox" class="hidden bg-slate-100 border-3 border-slate-400 rounded-3xl p-6 text-slate-800 space-y-2 my-auto shadow-inner">
+                <div class="text-5xl">🏳️</div>
+                <div class="text-xl font-black text-slate-900 font-point">10초가 지나 [포기] 처리되었습니다</div>
+                <p class="text-xs sm:text-sm font-semibold text-slate-600">
+                    다음 행동에서는 10초 카운트다운 안에 찬성 또는 반대 버튼을 꼭 눌러보세요!
+                </p>
+            </div>
+
+            <!-- Student Bottom Flower Total -->
+            <div class="mt-4 pt-3.5 border-t-2 border-slate-100 flex justify-between items-center text-xs sm:text-sm font-bold">
+                <span class="text-slate-600">우리반 현재 무궁화꽃 총량</span>
+                <span id="studentTotalFlowers" class="text-lg font-black text-rose-600 font-point">0송이</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== MODALS ==================== -->
+    
+    <!-- Audio Unlock Floating Toast (브라우저 자동재생 차단 해제용 배너) -->
+    <div id="audioUnlockBanner" onclick="unlockAudioManual()" class="fixed top-4 left-1/2 -translate-x-1/2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 px-5 py-2.5 rounded-2xl shadow-2xl z-[9999] cursor-pointer hidden border-2 border-white flex items-center gap-2 transition transform animate-bounce">
+        <span class="text-xl">🔇</span>
+        <span class="text-xs sm:text-sm font-black">브라우저 소리가 잠겨있습니다. 여기를 클릭(터치)하여 소리를 켜주세요!</span>
+    </div>
+
+    <!-- Modal 1: Roulette Theft Modal (양심불량자 추첨 - 전자칠판 및 모든 기기 실시간 동기화) -->
+    <div id="lotteryModal" class="fixed inset-0 red-alert-backdrop backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
+        <div id="modalVillainBox" class="bg-white border-8 border-rose-600 rounded-3xl p-6 md:p-10 max-w-lg w-full text-center space-y-5 shadow-2xl relative transform transition-all duration-300">
+            <div id="modalVillainIcon" class="text-7xl md:text-9xl villain-laugh inline-block select-none filter drop-shadow-lg">
+                👺
+            </div>
+            <div>
+                <span id="modalVillainBadge" class="bg-rose-600 text-white text-xs md:text-sm font-black px-4 py-1.5 rounded-full shadow tracking-wider uppercase inline-block">
+                    ⚠️ 양심 비상경보 발령!
+                </span>
+                <h3 id="modalVillainTitle" class="text-3xl md:text-4xl font-black text-rose-700 font-point mt-2">
+                    양심불량자 등장!
+                </h3>
+                <p id="modalVillainSubtitle" class="text-sm md:text-base font-bold text-slate-700 mt-1">
+                    우리반 꽃밭에서 몰래 훔쳐갈 꽃을 노리고 있습니다!
+                </p>
+            </div>
+
+            <div class="bg-slate-900 border-4 border-amber-400 rounded-3xl py-6 md:py-8 shadow-inner relative overflow-hidden">
+                <div class="text-xs font-black text-amber-300 mb-1">1부터 <span id="modalMaxFlowers" class="text-rose-400 text-base">0</span>송이 중 무작위 추첨 중...</div>
+                <span id="rouletteDisplay" class="text-6xl md:text-8xl font-black text-amber-400 tracking-wider font-point drop-shadow-[0_0_15px_rgba(251,191,36,0.6)]">0</span>
+                <span class="text-2xl md:text-4xl font-black text-amber-300 ml-1">송이</span>
+            </div>
+
+            <div id="modalResultText" class="text-base md:text-xl font-black text-slate-900 min-h-[2.4rem] flex items-center justify-center">
+                케케케... 몇 송이의 양심 꽃을 훔쳐갈까?!
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: View Links & QR Code Modal -->
+    <div id="linkModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white border-2 border-slate-300 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+            <div class="flex justify-between items-center pb-2.5 border-b-2 border-slate-100">
+                <h3 class="text-lg font-black text-slate-900 font-point flex items-center gap-2">
+                    <span>🔗 전용 링크 및 학생 접속용 QR코드</span>
+                </h3>
+                <button onclick="closeLinkModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">✕</button>
+            </div>
+
+            <div class="space-y-3.5 text-xs sm:text-sm">
+                <!-- Student View Link -->
+                <div class="bg-slate-50 p-3.5 rounded-2xl border-2 border-slate-200 space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <span class="font-black text-rose-600">📱 학생 태블릿 전용 화면</span>
+                        <button onclick="copyToClipboard(getDirectUrl('student'))" class="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-black text-xs transition shadow-sm">
+                            📋 링크 복사
+                        </button>
+                    </div>
+                    <input type="text" readonly id="linkUrlStudent" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-bold text-slate-700 select-all">
+                </div>
+
+                <!-- Teacher View Link -->
+                <div class="bg-slate-50 p-3.5 rounded-2xl border-2 border-slate-200 space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <span class="font-black text-indigo-700">🧑‍🏫 선생님 리모컨 전용 화면</span>
+                        <button onclick="copyToClipboard(getDirectUrl('teacher'))" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-black text-xs transition shadow-sm">
+                            📋 링크 복사
+                        </button>
+                    </div>
+                    <input type="text" readonly id="linkUrlTeacher" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-bold text-slate-700 select-all">
+                </div>
+
+                <!-- QR Code for Student -->
+                <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 flex flex-col items-center text-center space-y-2">
+                    <span class="font-black text-slate-800">📷 학생 태블릿 카메라로 스캔하여 즉시 입장</span>
+                    <div id="qrcodeStudent" class="p-2 bg-white rounded-xl shadow border border-slate-200 inline-block"></div>
+                </div>
+            </div>
+
+            <button onclick="closeLinkModal()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black rounded-xl transition text-sm">
+                닫기
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal 3: Custom Classroom Notice / Confirmation Modal -->
+    <div id="noticeModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white border-2 border-slate-300 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <div id="noticeIcon" class="text-5xl">📢</div>
+            <h4 id="noticeTitle" class="text-xl font-black text-slate-900 font-point">안내</h4>
+            <p id="noticeDesc" class="text-sm font-semibold text-slate-600 leading-relaxed">알림 내용</p>
+            <div id="noticeActions" class="flex gap-2.5 justify-center pt-2">
+                <button id="noticeConfirmBtn" onclick="closeNoticeModal()" class="flex-1 py-3 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-sm transition shadow-md">
+                    확인
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3-1: Sound Diagnostic & Volume Control Modal -->
+    <div id="soundDiagnosticModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md hidden z-[9999] flex items-center justify-center p-4">
+        <div class="bg-white border-4 border-amber-400 rounded-3xl p-6 md:p-8 max-w-md w-full text-center space-y-5 shadow-2xl relative">
+            <div class="flex items-center justify-center gap-1.5 h-10 my-1">
+                <div class="eq-bar"></div>
+                <div class="eq-bar"></div>
+                <div class="eq-bar"></div>
+                <div class="eq-bar"></div>
+                <div class="eq-bar"></div>
+            </div>
+
+            <div>
+                <span class="bg-amber-100 text-amber-900 text-xs font-black px-3 py-1 rounded-full border border-amber-300">
+                    실시간 스피커 진단 & 볼륨 조절
+                </span>
+                <h3 class="text-2xl font-black text-slate-900 font-point mt-2">
+                    🔊 소리 출력 테스트
+                </h3>
+                <p class="text-xs sm:text-sm font-semibold text-slate-600 mt-1">
+                    방금 "딩-동-댕-동 🎶" 멜로디가 스피커에서 들리셨나요?
+                </p>
+            </div>
+
+            <!-- Volume Preset Selector -->
+            <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-3.5 space-y-2 text-left">
+                <div class="flex justify-between items-center text-xs font-black text-slate-700">
+                    <span>효과음 볼륨 크기</span>
+                    <span id="currentVolumeText" class="text-amber-600 font-bold">100% (교실 권장)</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setMasterVolume(0.45)" id="volBtnLow" class="py-2 px-1 text-xs font-black rounded-xl border border-slate-300 bg-white hover:bg-slate-100 transition text-center">
+                        🔈 작게 (45%)
+                    </button>
+                    <button onclick="setMasterVolume(0.75)" id="volBtnMid" class="py-2 px-1 text-xs font-black rounded-xl border border-slate-300 bg-white hover:bg-slate-100 transition text-center">
+                        🔉 보통 (75%)
+                    </button>
+                    <button onclick="setMasterVolume(1.0)" id="volBtnMax" class="py-2 px-1 text-xs font-black rounded-xl border-2 border-amber-500 bg-amber-500 text-white shadow-sm transition text-center">
+                        🔊 최대 (100%)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Replay Sound Button -->
+            <button onclick="playTestMelody()" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 active:scale-95 text-white font-black rounded-2xl shadow-lg transition flex items-center justify-center gap-2 text-sm font-point">
+                <span>🔔 딩동댕동 멜로디 다시 듣기</span>
+            </button>
+
+            <!-- Troubleshooting Checklist -->
+            <div class="bg-rose-50 rounded-2xl p-3 border border-rose-200 text-left text-[11px] text-rose-900 space-y-1">
+                <p class="font-black text-xs text-rose-700 flex items-center gap-1">
+                    <span>⚠️</span> <span>소리가 전혀 들리지 않는 경우:</span>
+                </p>
+                <p>1. 전자칠판 / PC 본체의 <strong>자체 볼륨 및 음소거(Mute)</strong> 버튼 확인</p>
+                <p>2. 브라우저 탭 제목 표시줄에 <strong>스피커 음소거 아이콘(🔇)</strong> 확인</p>
+                <p>3. HDMI 케이블 또는 블루투스 스피커의 <strong>기본 출력 장치</strong> 확인</p>
+            </div>
+
+            <button onclick="closeSoundDiagnosticModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-black rounded-xl transition text-xs">
+                확인 완료 (창 닫기)
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal 4: Game Over 36 Behaviors Summary -->
+    <div id="gameOverModal" class="fixed inset-0 bg-slate-900/85 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white border-4 border-rose-500 rounded-3xl p-7 max-w-lg w-full text-center space-y-5 shadow-2xl">
+            <div class="text-6xl">🏆</div>
+            <div>
+                <h2 class="text-3xl font-black text-rose-600 font-point">36가지 행동 완료!</h2>
+                <p class="text-slate-600 mt-1 text-sm font-bold">우리반 22명 친구들의 생각과 양심을 모았습니다.</p>
+            </div>
+
+            <div class="bg-slate-50 rounded-2xl p-5 border-2 border-slate-200 space-y-2">
+                <p class="text-xs font-black text-slate-500">우리반 최종 지켜낸 무궁화꽃</p>
+                <p id="finalFlowerCount" class="text-5xl font-black text-rose-600 font-point">0송이</p>
+                <p id="finalEvaluation" class="text-sm font-black text-slate-800 pt-1">
+                    평가 메시지
+                </p>
+            </div>
+
+            <button onclick="executeResetGame()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-4 rounded-xl shadow-lg text-lg transition font-point">
+                새 게임 시작하기
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Firebase Realtime Database 연결 ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAT7STbp8kTFN1Gf6bqV7Q6u3IxRNDRIA8",
+            authDomain: "mugunghwa-class-game.firebaseapp.com",
+            databaseURL: "https://mugunghwa-class-game-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "mugunghwa-class-game",
+            storageBucket: "mugunghwa-class-game.firebasestorage.app",
+            messagingSenderId: "401253346648",
+            appId: "1:401253346648:web:a7c1471f1a49cea88c892d"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const firebaseDb = firebase.database();
+        const firebaseRootRef = firebaseDb.ref('mugunghwaGame');
+        const firebaseStateRef = firebaseRootRef.child('gameState');
+        const firebaseSubmissionsRef = firebaseRootRef.child('submissions');
+        const firebaseHistoryRef = firebaseRootRef.child('historyLogs');
+        const firebaseStealRef = firebaseRootRef.child('stealEvent');
+        let firebaseSyncStarted = false;
+        let lastStealEventTs = Date.now();
+
+        // 22 Roster Definition (Strict Class Membership)
+        const CLASS_ROSTER = [
+            "김서아", "김수현", "김윤아", "김태영", "김하랑",
+            "나예린", "박민제", "박선우", "양수빈", "유소영",
+            "이대운", "이새봄", "이서율", "이진서", "이채원",
+            "이초은", "이태환", "이하린", "한규빈", "한유은",
+            "현지우", "황지우"
+        ];
+
+        // 36 Behaviors with classification (good: 옳은 행동 -> 찬성 정답 / bad: 나쁜 행동 -> 반대 정답)
+        const BEHAVIORS = [
+            { text: "길에서 주운 지갑을 주인에게 돌려준다.", type: "good" },
+            { text: "몸이 불편한 사람이 서 있어도 모른 척한다.", type: "bad" },
+            { text: "힘을 합쳐 무거운 물건을 함께 옮긴다.", type: "good" },
+            { text: "부모님께 감사 편지를 쓴다.", type: "good" },
+            { text: "해야 할 일을 계속 미루고 하지 않는다.", type: "bad" },
+            { text: "비 오는 날 우산이 없는 사람과 우산을 함께 쓴다.", type: "good" },
+            { text: "반려동물에게 매일 밥과 물을 챙겨 준다.", type: "good" },
+            { text: "자신이 먼저 하려고 친구를 밀치고 새치기한다.", type: "bad" },
+            { text: "떨리지만 사람들 앞에서 발표한다.", type: "good" },
+            { text: "사용하지 않는 옷을 필요한 사람에게 기부한다.", type: "good" },
+            { text: "자신의 실수를 숨기려고 거짓말을 한다.", type: "bad" },
+            { text: "상대방의 말을 끊지 않고 끝까지 들어 준다.", type: "good" },
+            { text: "급한 사람에게 먼저 지나가도록 양보한다.", type: "good" },
+            { text: "가족이 힘들어해도 관심을 보이지 않는다.", type: "bad" },
+            { text: "길을 모르는 사람에게 친절하게 길을 알려 준다.", type: "good" },
+            { text: "정해진 시간에 꾸준히 공부하거나 연습한다.", type: "good" },
+            { text: "모둠 활동에서 아무것도 하지 않고 다른 사람에게만 시킨다.", type: "bad" },
+            { text: "아픈 가족을 정성껏 돌봐 준다.", type: "good" },
+            { text: "계산이 잘못된 것을 발견하고 바로 알려 준다.", type: "good" },
+            { text: "친구가 발표하는데 큰 소리로 떠들며 방해한다.", type: "bad" },
+            { text: "약속한 일을 잊지 않고 끝까지 해낸다.", type: "good" },
+            { text: "어려운 이웃에게 음식이나 물건을 나눈다.", type: "good" },
+            { text: "잘못을 했지만 혼날까 봐 다른 사람의 탓으로 돌린다.", type: "bad" },
+            { text: "뒤에 오는 사람을 위해 문을 잡아 준다.", type: "good" },
+            { text: "의견이 달라도 비웃지 않고 받아들인다.", type: "good" },
+            { text: "도움을 받고도 당연한 일이라고 생각하며 고맙다는 말을 하지 않는다.", type: "bad" },
+            { text: "매일 꾸준히 운동하며 건강을 관리한다.", type: "good" },
+            { text: "버스에서 임산부에게 자리를 양보한다.", type: "good" },
+            { text: "친구가 필요한 물건이 있어도 혼자만 사용하려고 한다.", type: "bad" },
+            { text: "자신의 잘못을 솔직하게 인정하고 사과한다.", type: "good" },
+            { text: "무거운 짐을 들고 있는 사람을 도와준다.", type: "good" },
+            { text: "도움을 요청하는 사람에게 짜증을 내며 무시한다.", type: "bad" },
+            { text: "도움을 받은 뒤 진심으로 “고맙습니다.”라고 말한다.", type: "good" },
+            { text: "힘들어하는 가족을 따뜻하게 안아 준다.", type: "good" },
+            { text: "자신이 맡은 일을 하지 않고 다른 사람에게 떠넘긴다.", type: "bad" },
+            { text: "역할을 나누어 하나의 일을 완성한다.", type: "good" }
+        ];
+
+        let currentView = 'board'; // 'board' | 'teacher' | 'student'
+        let isAudioEnabled = true;
+        let masterVolume = 1.0; // 0.1 ~ 1.0 (기본 최대 100% 교실용 고출력)
+        let audioCtx = null;
+        let countdownTimerInterval = null;
+
+        // Shared Game State
+        let gameState = {
+            stage: 'QUIZ', // 'QUIZ' | 'ACTIVE'
+            currentRound: 1,
+            totalFlowers: 0,
+            totalStolenFlowers: 0, // 양심불량자가 누적하여 훔쳐간 총 꽃 수
+            isGameOver: false,     // 36개 행동 완료 여부 동기화
+            isAccepting: false,
+            timerRemaining: 0,
+            timerTotal: 10,
+            hasClosedRound: false,
+            isAwarded: false, // 적립 버튼이 눌렸는지 여부
+            awardedCount: 0,  // 이번 라운드에 적립된 꽃 수
+            hasStartedRoundTimer: false, // 행동당 1회 시작 제한 플래그
+            hasUsedStealThisRound: false, // 행동당 1회 추첨 제한 플래그
+            absentStudents: [], // 결석 학생 명단 배열
+            updatedAt: Date.now()
+        };
+
+        let submissions = []; // [{ round, studentName, choice: '찬성'|'반대', timestamp }]
+        let historyLogs = [];
+
+        // Broadcast Channel for reliable multi-tab / local synchronization
+        const syncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('mugunghwa_class_channel_bright') : null;
+
+        // 양심불량자 다양한 외형 및 캐릭터 풀
+        const VILLAIN_ROSTER = [
+            {
+                name: "욕심쟁이 도깨비",
+                enterIcon: "👺",
+                afterIcon: "😈",
+                badge: "👺 붉은 도깨비의 습격!",
+                subtitle: "우리반 양심 꽃밭을 통째로 털어가려고 도깨비방망이를 휘두릅니다!",
+                introPhrases: [
+                    "케케케... 꽃이 탐스럽구나! 몇 송이나 훔쳐갈까?!",
+                    "흐흐흐... 너희 양심 꽃은 이제 다 내 차지다!"
+                ],
+                stolenQuotes: [
+                    "\"으하하하! %d송이는 내가 꿀꺽했다! 도깨비 방망이 맛이 어떠냐!\"",
+                    "\"키키킥! %d송이 챙겼으니 난 이만 도망친다! 메롱!\""
+                ],
+                themeBorder: "border-rose-600",
+                titleColor: "text-rose-700",
+                badgeBg: "bg-rose-600",
+                animClass: "villain-laugh",
+                laughType: 0 // 날카로운 도깨비 톱니파 웃음
+            },
+            {
+                name: "살금살금 깜장 도둑",
+                enterIcon: "🦹",
+                afterIcon: "🤑",
+                badge: "🦹 슬그머니 나타난 꽃 도둑!",
+                subtitle: "모두가 방심한 틈을 타 포대자루에 양심 꽃을 주워 담으려 합니다!",
+                introPhrases: [
+                    "히히히... 아무도 모르게 살금살금 훔쳐가야지!",
+                    "쉿! 조용히 해... 내 커다란 자루에 몇 송이나 들어갈까?!"
+                ],
+                stolenQuotes: [
+                    "\"히히힛! %d송이나 챙겼군! 자루가 터지겠는걸?!\"",
+                    "\"감쪽같았지?! %d송이 챙겨서 줄행랑친다!\""
+                ],
+                themeBorder: "border-purple-600",
+                titleColor: "text-purple-700",
+                badgeBg: "bg-purple-600",
+                animClass: "villain-sneak",
+                laughType: 1 // 낄낄거리는 고음 쇳소리 웃음
+            },
+            {
+                name: "심술쟁이 악동 외계인",
+                enterIcon: "👽",
+                afterIcon: "🛸",
+                badge: "👽 우주 광선 꽃 납치범!",
+                subtitle: "지구 어린이들의 착한 양심 꽃 에너지를 빨아들이려 우주선이 떴습니다!",
+                introPhrases: [
+                    "삐리삐리... 지구인의 무궁화 에너지를 흡수하겠다!",
+                    "치지직... 이번 타겟은 몇 송이냐, 삐빅!"
+                ],
+                stolenQuotes: [
+                    "\"삐리릭! 무궁화 %d송이 전송 완료! 우주로 날아간다 뿅!\"",
+                    "\"치지직... %d송이 흡수 완료! 으하하하 우주선 출발!\""
+                ],
+                themeBorder: "border-cyan-500",
+                titleColor: "text-cyan-700",
+                badgeBg: "bg-cyan-600",
+                animClass: "villain-tremble",
+                laughType: 2 // 우주 빔 변조 로봇 괴물 웃음
+            },
+            {
+                name: "으스스한 해골 해적",
+                enterIcon: "☠️",
+                afterIcon: "🏴‍☠️",
+                badge: "☠️ 양심 보물 사냥꾼!",
+                subtitle: "너희들의 소중한 무궁화 꽃을 금은보화처럼 빼앗으려 나타났습니다!",
+                introPhrases: [
+                    "크하하하! 황금보다 귀한 양심 꽃을 내놓아라!",
+                    "어이쿠! 꽃 냄새를 맡고 해적단이 출몰했다!"
+                ],
+                stolenQuotes: [
+                    "\"요호호호! %d송이 보물 상자에 잘 담았다! 고맙다 친구들!\"",
+                    "\"와하하! %d송이는 우리 해적단 몫이다! 잘 있어라!\""
+                ],
+                themeBorder: "border-amber-600",
+                titleColor: "text-amber-700",
+                badgeBg: "bg-amber-600",
+                animClass: "villain-laugh",
+                laughType: 3 // 굵고 웅장한 해적 저음 호탕 웃음
+            },
+            {
+                name: "불꽃 심술 몬스터",
+                enterIcon: "👹",
+                afterIcon: "🔥",
+                badge: "👹 양심을 태우는 심술마왕!",
+                subtitle: "친구들의 다정한 마음이 꼴 보기 싫다며 심술불꽃을 내뿜습니다!",
+                introPhrases: [
+                    "우워어어! 착한 행동은 다 불태워버리겠다!",
+                    "쿠구구... 너희들의 양심 꽃을 잿더미로 만들 테다!"
+                ],
+                stolenQuotes: [
+                    "\"쿠하하하! %d송이를 모조리 집어삼켰다! 속이 시원하군!\"",
+                    "\"크르르... %d송이 가져간다! 어디 한번 다시 모아봐라!\""
+                ],
+                themeBorder: "border-orange-600",
+                titleColor: "text-orange-700",
+                badgeBg: "bg-orange-600",
+                animClass: "villain-tremble",
+                laughType: 4 // 가래 끓는 거친 괴물 웃음
+            }
+        ];
+
+        async function ensureAudioContext() {
+            try {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) {
+                        audioCtx = new AudioContextClass();
+                    }
+                }
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    await audioCtx.resume();
+                }
+                return audioCtx;
+            } catch (e) {
+                console.debug("AudioContext init error", e);
+                return null;
+            }
+        }
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    audioCtx = new AudioContextClass();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => {});
+            }
+            return audioCtx;
+        }
+
+        // 브라우저 Autoplay Policy 완벽 해제 및 오디오 하드웨어 웜업
+        async function unlockAudio() {
+            try {
+                const ctx = await ensureAudioContext();
+                if (ctx) {
+                    if (ctx.state === 'suspended') {
+                        await ctx.resume();
+                    }
+                    // 무음 버퍼 재생으로 브라우저 오디오 파이프라인 확실하게 언락
+                    const buffer = ctx.createBuffer(1, 1, 22050);
+                    const source = ctx.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(ctx.destination);
+                    source.start(0);
+                }
+                const banner = document.getElementById('audioUnlockBanner');
+                if (banner) banner.classList.add('hidden');
+                return true;
+            } catch (e) {
+                console.debug("Audio unlock error", e);
+                return false;
+            }
+        }
+
+        window.unlockAudioManual = async function() {
+            await unlockAudio();
+            playTestMelody();
+        };
+
+        window.setMasterVolume = function(vol) {
+            masterVolume = vol;
+            const textEl = document.getElementById('currentVolumeText');
+            const btnLow = document.getElementById('volBtnLow');
+            const btnMid = document.getElementById('volBtnMid');
+            const btnMax = document.getElementById('volBtnMax');
+
+            [btnLow, btnMid, btnMax].forEach(btn => {
+                btn.className = "py-2 px-1 text-xs font-black rounded-xl border border-slate-300 bg-white hover:bg-slate-100 transition text-center";
+            });
+
+            if (vol <= 0.5) {
+                if (textEl) textEl.innerText = "45% (작게)";
+                if (btnLow) btnLow.className = "py-2 px-1 text-xs font-black rounded-xl border-2 border-amber-500 bg-amber-500 text-white shadow-sm transition text-center";
+            } else if (vol <= 0.8) {
+                if (textEl) textEl.innerText = "75% (보통)";
+                if (btnMid) btnMid.className = "py-2 px-1 text-xs font-black rounded-xl border-2 border-amber-500 bg-amber-500 text-white shadow-sm transition text-center";
+            } else {
+                if (textEl) textEl.innerText = "100% (교실 권장)";
+                if (btnMax) btnMax.className = "py-2 px-1 text-xs font-black rounded-xl border-2 border-amber-500 bg-amber-500 text-white shadow-sm transition text-center";
+            }
+
+            playTone(880, 0.15, 'sine');
+        };
+
+        window.testAudio = async function() {
+            await unlockAudio();
+            isAudioEnabled = true;
+            const btn = document.getElementById('audioToggleBtn');
+            if (btn) btn.innerText = "🔊 효과음 켜짐";
+
+            const modal = document.getElementById('soundDiagnosticModal');
+            if (modal) modal.classList.remove('hidden');
+
+            playTestMelody();
+        };
+
+        window.closeSoundDiagnosticModal = function() {
+            const modal = document.getElementById('soundDiagnosticModal');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        // 맑고 풍성한 4단계 학교 차임벨 멜로디 (도-미-솔-높은도)
+        async function playTestMelody() {
+            const ctx = await ensureAudioContext();
+            if (!ctx) return;
+            const now = ctx.currentTime + 0.05; // 50ms 하드웨어 스케줄링 룩어헤드 보장
+
+            const chimeNotes = [
+                { f: 523.25, time: 0.00, dur: 0.35 }, // C5
+                { f: 659.25, time: 0.22, dur: 0.35 }, // E5
+                { f: 783.99, time: 0.44, dur: 0.38 }, // G5
+                { f: 1046.50, time: 0.68, dur: 0.65 } // C6
+            ];
+
+            chimeNotes.forEach(n => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(n.f, now + n.time);
+                
+                const peakGain = 0.6 * masterVolume;
+                gain.gain.setValueAtTime(0.001, now + n.time);
+                gain.gain.linearRampToValueAtTime(peakGain, now + n.time + 0.03);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + n.time + n.dur);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now + n.time);
+                osc.stop(now + n.time + n.dur);
+            });
+        }
+
+        // 단일 톤 즉각 생성 헬퍼
+        async function playTone(freq, duration, waveType = 'sine') {
+            if (!isAudioEnabled) return;
+            const ctx = await ensureAudioContext();
+            if (!ctx) return;
+            const now = ctx.currentTime + 0.03;
+
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = waveType;
+            osc.frequency.setValueAtTime(freq, now);
+
+            const peakGain = 0.5 * masterVolume;
+            gain.gain.setValueAtTime(peakGain, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + duration);
+        }
+
+        async function playSound(type, param) {
+            if (!isAudioEnabled) return;
+            try {
+                const ctx = await ensureAudioContext();
+                if (!ctx) return;
+
+                // 브라우저 백그라운드 복귀 시 여전히 suspended 상태인 경우 처리
+                if (ctx.state === 'suspended') {
+                    await ctx.resume().catch(() => {});
+                }
+
+                const now = ctx.currentTime + 0.04; // 40ms 룩어헤드로 단기 오디오 잘림 원천 방지
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const vol = masterVolume;
+
+                if (type === 'start') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.18);
+                    gain.gain.setValueAtTime(0.55 * vol, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
+                    osc.start(now);
+                    osc.stop(now + 0.22);
+                } else if (type === 'countdown') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(987.77, now); // B5 (또렷한 비프음)
+                    gain.gain.setValueAtTime(0.65 * vol, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'timeup') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(320, now);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.4);
+                    gain.gain.setValueAtTime(0.6 * vol, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'vote') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(520, now);
+                    osc.frequency.exponentialRampToValueAtTime(1040, now + 0.12);
+                    gain.gain.setValueAtTime(0.45 * vol, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'steal') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(480, now);
+                    osc.frequency.exponentialRampToValueAtTime(90, now + 0.45);
+                    gain.gain.setValueAtTime(0.7 * vol, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.45);
+                    osc.start(now);
+                    osc.stop(now + 0.45);
+                } else if (type === 'evil_laugh') {
+                    playDiverseEvilLaughSound(ctx, typeof param === 'number' ? param : 0);
+                } else if (type === 'clash') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(320, now);
+                    osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                    gain.gain.setValueAtTime(0.65 * vol, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'dust') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(650, now);
+                    osc.frequency.exponentialRampToValueAtTime(70, now + 0.4);
+                    gain.gain.setValueAtTime(0.35 * vol, now);
+                    gain.gain.linearRampToValueAtTime(0.001, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'collect') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(587.33, now); // D5
+                    osc.frequency.exponentialRampToValueAtTime(1174.66, now + 0.14); // D6
+                    gain.gain.setValueAtTime(0.55 * vol, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.14);
+                    osc.start(now);
+                    osc.stop(now + 0.14);
+                } else if (type === 'tick') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(280, now);
+                    gain.gain.setValueAtTime(0.25 * vol, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.04);
+                    osc.start(now);
+                    osc.stop(now + 0.04);
+                }
+            } catch (err) {
+                console.debug("Audio play error", err);
+            }
+        }
+
+        // Web Audio API로 합성하는 5가지 다채로운 악당 웃음소리
+        function playDiverseEvilLaughSound(ctx, laughType) {
+            if (!ctx) return;
+            const now = ctx.currentTime + 0.05;
+            const vol = masterVolume;
+
+            if (laughType === 1) {
+                // 1. 도둑: 얄미운 고음 쇳소리 낄낄거림 ("히히히히-킥킥킥!")
+                const notes = [
+                    { f: 880, dur: 0.09, t: 0.00 },
+                    { f: 980, dur: 0.09, t: 0.08 },
+                    { f: 780, dur: 0.08, t: 0.16 },
+                    { f: 1040, dur: 0.10, t: 0.23 },
+                    { f: 880, dur: 0.08, t: 0.32 },
+                    { f: 1180, dur: 0.15, t: 0.40 },
+                    { f: 940, dur: 0.25, t: 0.54 }
+                ];
+                notes.forEach(n => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    const filter = ctx.createBiquadFilter();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(n.f, now + n.t);
+                    osc.frequency.exponentialRampToValueAtTime(n.f * 1.25, now + n.t + n.dur);
+                    filter.type = 'highpass';
+                    filter.frequency.setValueAtTime(600, now + n.t);
+                    gain.gain.setValueAtTime(0.55 * vol, now + n.t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.dur);
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + n.t);
+                    osc.stop(now + n.t + n.dur);
+                });
+            } else if (laughType === 2) {
+                // 2. 외계인: 삐리삐리 우주 빔 변조 괴음 ("삐비빅-케헤헤헤!")
+                const notes = [
+                    { f: 720, dur: 0.13, t: 0.00 },
+                    { f: 380, dur: 0.12, t: 0.11 },
+                    { f: 850, dur: 0.14, t: 0.21 },
+                    { f: 420, dur: 0.12, t: 0.33 },
+                    { f: 960, dur: 0.18, t: 0.44 },
+                    { f: 290, dur: 0.35, t: 0.60 }
+                ];
+                notes.forEach(n => {
+                    const osc = ctx.createOscillator();
+                    const mod = ctx.createOscillator();
+                    const modGain = ctx.createGain();
+                    const gain = ctx.createGain();
+                    osc.type = 'square';
+                    mod.type = 'sawtooth';
+                    mod.frequency.setValueAtTime(28, now + n.t);
+                    modGain.gain.setValueAtTime(140, now + n.t);
+                    mod.connect(osc.frequency);
+                    osc.frequency.setValueAtTime(n.f, now + n.t);
+                    gain.gain.setValueAtTime(0.48 * vol, now + n.t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.dur);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    mod.start(now + n.t);
+                    osc.start(now + n.t);
+                    mod.stop(now + n.t + n.dur);
+                    osc.stop(now + n.t + n.dur);
+                });
+            } else if (laughType === 3) {
+                // 3. 해적: 굵고 웅장한 호탕한 흉포한 웃음소리 ("크와하하하-요호호!")
+                const notes = [
+                    { f: 220, dur: 0.18, t: 0.00 },
+                    { f: 260, dur: 0.16, t: 0.15 },
+                    { f: 196, dur: 0.18, t: 0.29 },
+                    { f: 310, dur: 0.20, t: 0.44 },
+                    { f: 240, dur: 0.22, t: 0.62 },
+                    { f: 165, dur: 0.50, t: 0.82 }
+                ];
+                notes.forEach(n => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    const filter = ctx.createBiquadFilter();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(n.f, now + n.t);
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(700, now + n.t);
+                    gain.gain.setValueAtTime(0.6 * vol, now + n.t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.dur);
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + n.t);
+                    osc.stop(now + n.t + n.dur);
+                });
+            } else if (laughType === 4) {
+                // 4. 불꽃 몬스터: 그르렁거리는 불꽃 괴물 웃음 ("쿠구구-쿠하하하!")
+                const notes = [
+                    { f: 180, dur: 0.15, t: 0.00 },
+                    { f: 210, dur: 0.14, t: 0.13 },
+                    { f: 160, dur: 0.16, t: 0.25 },
+                    { f: 240, dur: 0.18, t: 0.39 },
+                    { f: 190, dur: 0.16, t: 0.55 },
+                    { f: 130, dur: 0.45, t: 0.69 }
+                ];
+                notes.forEach(n => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    const filter = ctx.createBiquadFilter();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(n.f, now + n.t);
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(450, now + n.t);
+                    filter.Q.setValueAtTime(2.5, now + n.t);
+                    gain.gain.setValueAtTime(0.65 * vol, now + n.t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.dur);
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + n.t);
+                    osc.stop(now + n.t + n.dur);
+                });
+            } else {
+                // 0. 도깨비: 날카롭고 얄미운 톱니파 낄낄거림 ("케케케케-으하하하!")
+                const laughterNotes = [
+                    { f: 580, dur: 0.12, time: 0.00 },
+                    { f: 490, dur: 0.11, time: 0.10 },
+                    { f: 620, dur: 0.14, time: 0.20 },
+                    { f: 430, dur: 0.12, time: 0.32 },
+                    { f: 520, dur: 0.15, time: 0.43 },
+                    { f: 380, dur: 0.22, time: 0.56 },
+                    { f: 220, dur: 0.45, time: 0.74 }
+                ];
+
+                laughterNotes.forEach(note => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    const filter = ctx.createBiquadFilter();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(note.f, now + note.time);
+                    osc.frequency.exponentialRampToValueAtTime(note.f * 0.75, now + note.time + note.dur);
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(1400, now + note.time);
+                    filter.Q.setValueAtTime(3.5, now + note.time);
+                    gain.gain.setValueAtTime(0.55 * vol, now + note.time);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + note.time + note.dur);
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + note.time);
+                    osc.stop(now + note.time + note.dur);
+                });
+            }
+        }
+
+        function broadcastState() {
+            gameState.updatedAt = Date.now();
+            saveLocalState();
+
+            // Firebase에는 게임 상태와 진행 기록을 저장합니다.
+            // 학생 투표는 학생별 고유 경로에 따로 저장하여 동시 제출 시 서로 덮어쓰지 않게 합니다.
+            firebaseStateRef.set(gameState).catch(err => console.error('Firebase state sync error:', err));
+            firebaseHistoryRef.set(historyLogs.length ? historyLogs : null).catch(err => console.error('Firebase history sync error:', err));
+
+            // 같은 기기 여러 탭에서도 즉시 반영
+            if (syncChannel) {
+                syncChannel.postMessage({
+                    type: 'SYNC_ALL',
+                    gameState,
+                    submissions,
+                    historyLogs
+                });
+            }
+            renderAllViews();
+        }
+
+        function normalizeFirebaseSubmissions(raw) {
+            const flat = [];
+            if (!raw || typeof raw !== 'object') return flat;
+            Object.entries(raw).forEach(([roundKey, studentsObj]) => {
+                if (!studentsObj || typeof studentsObj !== 'object') return;
+                Object.entries(studentsObj).forEach(([studentName, value]) => {
+                    if (!value) return;
+                    flat.push({
+                        round: Number(roundKey),
+                        studentName,
+                        choice: value.choice,
+                        timestamp: value.timestamp || 0
+                    });
+                });
+            });
+            return flat;
+        }
+
+        function startFirebaseSync() {
+            if (firebaseSyncStarted) return;
+            firebaseSyncStarted = true;
+
+            firebaseStateRef.on('value', snapshot => {
+                const remoteState = snapshot.val();
+                if (remoteState) {
+                    gameState = { ...gameState, ...remoteState };
+                    if (!Array.isArray(gameState.absentStudents)) gameState.absentStudents = [];
+                    saveLocalState();
+                    renderAllViews();
+                } else {
+                    // 첫 실행이면 현재 기본 상태를 Firebase에 생성
+                    firebaseStateRef.set(gameState);
+                }
+            });
+
+            firebaseSubmissionsRef.on('value', snapshot => {
+                submissions = normalizeFirebaseSubmissions(snapshot.val());
+                saveLocalState();
+                renderAllViews();
+            });
+
+            firebaseHistoryRef.on('value', snapshot => {
+                const raw = snapshot.val();
+                historyLogs = Array.isArray(raw) ? raw.filter(Boolean) : (raw && typeof raw === 'object' ? Object.values(raw) : []);
+                saveLocalState();
+                renderAllViews();
+            });
+
+            // 악당 추첨 연출도 서로 다른 기기(교사용 화면 → 전자칠판)로 전송
+            firebaseStealRef.on('value', snapshot => {
+                const ev = snapshot.val();
+                if (!ev || !ev.timestamp || ev.timestamp <= lastStealEventTs) return;
+                lastStealEventTs = ev.timestamp;
+                if (currentView === 'board') {
+                    runStealRouletteUI(ev.total, ev.stolenAmount, ev.villainIndex, false);
+                }
+            });
+        }
+
+        if (syncChannel) {
+            syncChannel.onmessage = (event) => {
+                if (event.data && event.data.type === 'SYNC_ALL') {
+                    gameState = event.data.gameState || gameState;
+                    submissions = event.data.submissions || submissions;
+                    historyLogs = event.data.historyLogs || historyLogs;
+                    renderAllViews();
+                } else if (event.data && event.data.type === 'TRIGGER_STEAL_ANIMATION' && currentView === 'board') {
+                    runStealRouletteUI(event.data.total, event.data.stolenAmount, event.data.villainIndex, false);
+                }
+            };
+        }
+
+        function saveLocalState() {
+            try {
+                localStorage.setItem('mugunghwa_state_bright_v1', JSON.stringify({
+                    gameState,
+                    submissions,
+                    historyLogs
+                }));
+            } catch (e) {}
+        }
+
+        function loadLocalState() {
+            try {
+                const raw = localStorage.getItem('mugunghwa_state_bright_v1');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed.gameState) {
+                        gameState = parsed.gameState;
+                        if (!Array.isArray(gameState.absentStudents)) {
+                            gameState.absentStudents = [];
+                        }
+                    }
+                    if (parsed.submissions) submissions = parsed.submissions;
+                    if (parsed.historyLogs) historyLogs = parsed.historyLogs;
+                }
+            } catch (e) {}
+        }
+
+        // Attendance Helper Functions
+        function getPresentStudents() {
+            const absentList = gameState.absentStudents || [];
+            return CLASS_ROSTER.filter(name => !absentList.includes(name));
+        }
+
+        function isStudentAbsent(name) {
+            return (gameState.absentStudents || []).includes(name);
+        }
+
+        window.toggleStudentAttendance = function(studentName) {
+            if (!Array.isArray(gameState.absentStudents)) {
+                gameState.absentStudents = [];
+            }
+
+            const idx = gameState.absentStudents.indexOf(studentName);
+            if (idx >= 0) {
+                // 결석 -> 출석
+                gameState.absentStudents.splice(idx, 1);
+            } else {
+                // 출석 -> 결석
+                gameState.absentStudents.push(studentName);
+                // 이미 이번 라운드에 제출한 내역이 있다면 결석 처리에 맞춰 제거
+                submissions = submissions.filter(s => !(s.round === gameState.currentRound && s.studentName === studentName));
+                firebaseSubmissionsRef.child(String(gameState.currentRound)).child(studentName).remove().catch(err => console.error('Firebase submission remove error:', err));
+            }
+
+            broadcastState();
+        };
+
+        window.setAllAttendance = function(presentAll) {
+            if (presentAll) {
+                gameState.absentStudents = [];
+            }
+            broadcastState();
+        };
+
+        function updateStudentDropdown() {
+            const selectEl = document.getElementById('studentNameSelect');
+            if (!selectEl) return;
+
+            const currentSelected = selectEl.value;
+            const presentList = getPresentStudents();
+
+            selectEl.innerHTML = '<option value="">이름을 선택하세요</option>';
+            presentList.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.innerText = name;
+                if (name === currentSelected) {
+                    opt.selected = true;
+                }
+                selectEl.appendChild(opt);
+            });
+
+            // 선택했던 학생이 결석으로 전환된 경우 선택 해제
+            if (currentSelected && isStudentAbsent(currentSelected)) {
+                selectEl.value = '';
+                try { localStorage.removeItem('mugunghwa_student_name_bright_v1'); } catch (e) {}
+            }
+        }
+
+        function renderAllViews() {
+            const round = gameState.currentRound || 1;
+            const behaviorObj = BEHAVIORS[round - 1] || { text: "모든 행동이 완료되었습니다.", type: "good" };
+            const behaviorText = behaviorObj.text;
+            const totalFlowers = gameState.totalFlowers || 0;
+
+            const presentStudents = getPresentStudents();
+            const absentStudents = gameState.absentStudents || [];
+            const presentCount = presentStudents.length;
+
+            // Update Header & Count Badges with Dynamic Active Participants
+            const headerBadge = document.getElementById('headerParticipantsBadge');
+            if (headerBadge) {
+                headerBadge.innerText = absentStudents.length > 0
+                    ? `출석 ${presentCount}명 (결석 ${absentStudents.length}명)`
+                    : `${presentCount}명 참여`;
+            }
+
+            const boardMaxSpan = document.getElementById('boardMaxStudents');
+            if (boardMaxSpan) {
+                boardMaxSpan.innerText = presentCount;
+            }
+
+            // Update Teacher View attendance summary
+            const presentCountText = document.getElementById('teacherPresentCountText');
+            const absentCountText = document.getElementById('teacherAbsentCountText');
+            if (presentCountText) presentCountText.innerText = presentCount;
+            if (absentCountText) absentCountText.innerText = absentStudents.length;
+
+            // 1. Stage Switching on Board
+            const boardQuiz = document.getElementById('boardQuizStage');
+            const boardMain = document.getElementById('boardMainStage');
+            if (gameState.stage === 'QUIZ') {
+                boardQuiz.classList.remove('hidden');
+                boardMain.classList.add('hidden');
+            } else {
+                boardQuiz.classList.add('hidden');
+                boardMain.classList.remove('hidden');
+            }
+
+            // 2. Update Chalkboard Header
+            document.getElementById('boardRoundBadge').innerText = `#${round}`;
+            document.getElementById('boardBehaviorTitle').innerText = behaviorText;
+            document.getElementById('boardTotalFlowers').innerText = totalFlowers;
+
+            // 3. Update Teacher View
+            document.getElementById('teacherRoundNum').innerText = `#${round}`;
+            document.getElementById('teacherTotalFlowers').innerText = totalFlowers;
+            document.getElementById('teacherBehaviorText').innerText = behaviorText;
+
+            // 라운드별 1회 제한 버튼 상태(비활성화) 반영
+            const btnTimer = document.getElementById('btnTeacherStartTimer');
+            const btnSteal = document.getElementById('btnTeacherSteal');
+
+            if (btnTimer) {
+                const isTimerDisabled = !!gameState.hasStartedRoundTimer || gameState.isAccepting;
+                btnTimer.disabled = isTimerDisabled;
+                if (isTimerDisabled) {
+                    btnTimer.classList.add('opacity-40', 'cursor-not-allowed', 'filter', 'grayscale-[60%]');
+                    btnTimer.classList.remove('hover:from-emerald-600', 'hover:to-teal-700', 'active:scale-95');
+                } else {
+                    btnTimer.classList.remove('opacity-40', 'cursor-not-allowed', 'filter', 'grayscale-[60%]');
+                    btnTimer.classList.add('hover:from-emerald-600', 'hover:to-teal-700', 'active:scale-95');
+                }
+            }
+
+            if (btnSteal) {
+                const isStealDisabled = !!gameState.hasUsedStealThisRound || totalFlowers <= 0;
+                btnSteal.disabled = isStealDisabled;
+                if (isStealDisabled) {
+                    btnSteal.classList.add('opacity-40', 'cursor-not-allowed', 'filter', 'grayscale-[60%]');
+                    btnSteal.classList.remove('hover:from-rose-700', 'hover:to-amber-700', 'active:scale-95');
+                } else {
+                    btnSteal.classList.remove('opacity-40', 'cursor-not-allowed', 'filter', 'grayscale-[60%]');
+                    btnSteal.classList.add('hover:from-rose-700', 'hover:to-amber-700', 'active:scale-95');
+                }
+            }
+
+            // 4. Update Student View
+            document.getElementById('studentCurrentRoundBadge').innerText = `행동 #${round}`;
+            document.getElementById('studentBehaviorTitle').innerText = behaviorText;
+            document.getElementById('studentTotalFlowers').innerText = `${totalFlowers}송이`;
+            updateStudentDropdown();
+
+            // 5. Game Over Modal Sync Check across all views (전자칠판, 선생님, 학생)
+            if (gameState.isGameOver) {
+                showGameOverModal();
+            } else {
+                const gameOverEl = document.getElementById('gameOverModal');
+                if (gameOverEl) gameOverEl.classList.add('hidden');
+            }
+
+            // Calculate voting stats for current round among PRESENT students
+            const currentSubmissions = submissions.filter(s => s.round === round && !absentStudents.includes(s.studentName));
+            const agreeStudents = currentSubmissions.filter(s => s.choice === '찬성').map(s => s.studentName);
+            const disagreeStudents = currentSubmissions.filter(s => s.choice === '반대').map(s => s.studentName);
+            const votedStudents = currentSubmissions.map(s => s.studentName);
+            
+            // Forfeit is determined ONLY among present students who did not vote
+            const isRoundClosed = gameState.hasClosedRound && !gameState.isAccepting;
+            const forfeitStudents = isRoundClosed 
+                ? presentStudents.filter(name => !votedStudents.includes(name))
+                : [];
+
+            // Update Counter Badges
+            document.getElementById('boardCountAgree').innerText = agreeStudents.length;
+            document.getElementById('boardCountForfeit').innerText = isRoundClosed ? forfeitStudents.length : 0;
+            document.getElementById('boardCountDisagree').innerText = disagreeStudents.length;
+            document.getElementById('boardCountTotal').innerText = votedStudents.length;
+
+            document.getElementById('boardAgreeColBadge').innerText = `${agreeStudents.length}명`;
+            document.getElementById('boardForfeitColBadge').innerText = `${isRoundClosed ? forfeitStudents.length : 0}명`;
+            document.getElementById('boardDisagreeColBadge').innerText = `${disagreeStudents.length}명`;
+
+            // Render Subtraction Formula Banner & Cards
+            renderSubtractionFormulaBanner(behaviorObj.type, agreeStudents.length, disagreeStudents.length, gameState.isAwarded);
+            renderBoardColumns(agreeStudents, forfeitStudents, disagreeStudents, isRoundClosed, behaviorObj.type, gameState.isAwarded);
+
+            // Render Teacher Roster List & History
+            renderTeacherRoster(currentSubmissions, behaviorObj.type, gameState.isAwarded);
+            renderTeacherHistory();
+            renderStudentViewStatus(currentSubmissions, isRoundClosed);
+            renderTimerDisplays();
+        }
+
+        function renderSubtractionFormulaBanner(behaviorType, agreeCount, disagreeCount, isAwarded) {
+            const banner = document.getElementById('boardFormulaBanner');
+            if (!banner) return;
+
+            if (!isAwarded) {
+                banner.classList.add('hidden');
+                return;
+            }
+
+            banner.classList.remove('hidden');
+            banner.classList.add('formula-banner');
+
+            const isGood = (behaviorType === 'good');
+            const typeTag = document.getElementById('boardFormulaTypeTag');
+            const eqText = document.getElementById('boardFormulaEquation');
+            const resBadge = document.getElementById('boardFormulaResultBadge');
+
+            if (isGood) {
+                const net = Math.max(0, agreeCount - disagreeCount);
+                banner.className = "mt-3 p-3.5 px-6 rounded-2xl border-3 shadow-2xl flex items-center justify-between flex-wrap gap-2 transition-all bg-emerald-950/95 border-emerald-400 text-white formula-banner";
+                typeTag.className = "text-[11px] font-black px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-200 border border-emerald-500";
+                typeTag.innerText = "옳은 행동 적립 공식: [👍 찬성] - [👎 반대]";
+                eqText.innerHTML = `[찬성 <strong class="text-amber-300 text-xl md:text-2xl">${agreeCount}명</strong>] － [반대 <strong class="text-rose-300 text-xl md:text-2xl">${disagreeCount}명</strong>] ＝ <strong class="text-emerald-300 text-2xl md:text-3xl">${net}송이</strong>`;
+
+                if (net > 0) {
+                    resBadge.className = "text-base md:text-xl font-black px-4 py-1.5 rounded-xl shadow bg-emerald-600 text-white animate-bounce";
+                    resBadge.innerText = `🌺 +${net}송이 적립!`;
+                } else {
+                    resBadge.className = "text-base md:text-lg font-black px-4 py-1.5 rounded-xl shadow bg-slate-700 text-slate-300";
+                    resBadge.innerText = `💥 모두 상쇄 (0송이)`;
+                }
+            } else {
+                const net = Math.max(0, disagreeCount - agreeCount);
+                banner.className = "mt-3 p-3.5 px-6 rounded-2xl border-3 shadow-2xl flex items-center justify-between flex-wrap gap-2 transition-all bg-rose-950/95 border-rose-400 text-white formula-banner";
+                typeTag.className = "text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-800 text-rose-200 border border-rose-500";
+                typeTag.innerText = "나쁜 행동 적립 공식: [👎 반대] - [👍 찬성]";
+                eqText.innerHTML = `[반대 <strong class="text-rose-300 text-xl md:text-2xl">${disagreeCount}명</strong>] － [찬성 <strong class="text-amber-300 text-xl md:text-2xl">${agreeCount}명</strong>] ＝ <strong class="text-rose-300 text-2xl md:text-3xl">${net}송이</strong>`;
+
+                if (net > 0) {
+                    resBadge.className = "text-base md:text-xl font-black px-4 py-1.5 rounded-xl shadow bg-rose-600 text-white animate-bounce";
+                    resBadge.innerText = `🌺 +${net}송이 적립!`;
+                } else {
+                    resBadge.className = "text-base md:text-lg font-black px-4 py-1.5 rounded-xl shadow bg-slate-700 text-slate-300";
+                    resBadge.innerText = `💥 모두 상쇄 (0송이)`;
+                }
+            }
+        }
+
+        function renderBoardColumns(agreeStudents, forfeitStudents, disagreeStudents, isRoundClosed, behaviorType, isAwarded) {
+            const isGood = (behaviorType === 'good');
+            const agreeCount = agreeStudents.length;
+            const disagreeCount = disagreeStudents.length;
+            // 상쇄되는 학생 수 (1:1 매칭으로 상쇄)
+            const clashCount = Math.min(agreeCount, disagreeCount);
+
+            // 1. 찬성 열 렌더링 (이름 비공개 - 아이콘만 표시)
+            const agreeCol = document.getElementById('boardAgreeColumn');
+            if (agreeStudents.length === 0) {
+                agreeCol.innerHTML = `
+                    <div class="w-full h-32 flex flex-col items-center justify-center text-emerald-700/70 text-sm font-black gap-1.5">
+                        <span class="text-4xl opacity-70">👍</span>
+                        <span>${gameState.isAccepting ? '학생들의 찬성을 기다리는 중...' : '찬성한 친구가 아직 없습니다'}</span>
+                    </div>`;
+            } else {
+                agreeCol.innerHTML = agreeStudents.map((_, idx) => {
+                    let cardClass = "border-2 border-emerald-400 bg-emerald-50 text-slate-900 shadow-sm";
+                    let icon = "👍";
+
+                    if (isAwarded) {
+                        if (isGood) {
+                            if (idx < clashCount) {
+                                cardClass = "clash-cancelled border-2 border-dashed border-slate-400 bg-slate-200/90 shadow-inner";
+                                icon = "✖️";
+                            } else {
+                                cardClass = "bloom-flower border-4 border-rose-500 bg-rose-50 shadow-xl scale-110";
+                                icon = "🌺";
+                            }
+                        } else {
+                            if (idx < clashCount) {
+                                cardClass = "clash-cancelled border-2 border-dashed border-slate-400 bg-slate-200/90 shadow-inner";
+                                icon = "✖️";
+                            } else {
+                                cardClass = "border-2 border-slate-300 bg-slate-100 opacity-60";
+                                icon = "👍";
+                            }
+                        }
+                    }
+
+                    return `
+                        <div class="pop-in flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-2xl transition-all duration-500 ${cardClass}" style="animation-delay: ${idx * 0.03}s">
+                            <span class="text-2xl md:text-3xl filter drop-shadow transition-transform duration-300">${icon}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 2. 포기 열 렌더링 (이름 비공개 - 아이콘만 표시)
+            const forfeitCol = document.getElementById('boardForfeitColumn');
+            if (!isRoundClosed) {
+                forfeitCol.innerHTML = `
+                    <div class="w-full h-32 flex flex-col items-center justify-center text-slate-600 text-sm font-black gap-1.5 text-center p-2">
+                        <span class="text-4xl opacity-60">⏳</span>
+                        <span>${gameState.isAccepting ? '학생들이 생각하고 있어요 (10초)' : '선생님이 시작을 누르면 투표가 진행됩니다'}</span>
+                        <span class="text-xs text-slate-500 font-bold">시간 내 선택하지 않으면 포기 처리됩니다</span>
+                    </div>`;
+            } else {
+                if (forfeitStudents.length === 0) {
+                    forfeitCol.innerHTML = `
+                        <div class="w-full h-32 flex flex-col items-center justify-center text-emerald-700 text-sm font-black gap-1">
+                            <span class="text-4xl">👏</span>
+                            <span class="text-base">출석한 학생 모두 시간 내에 선택 완료!</span>
+                        </div>`;
+                } else {
+                    forfeitCol.innerHTML = forfeitStudents.map((_, idx) => `
+                        <div class="pop-in flex items-center justify-center w-12 h-12 md:w-14 md:h-14 bg-slate-100 rounded-2xl border-2 border-slate-400 shadow-sm" style="animation-delay: ${idx * 0.02}s">
+                            <span class="text-2xl md:text-3xl filter drop-shadow">🏳️</span>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            // 3. 반대 열 렌더링 (이름 비공개 - 아이콘만 표시)
+            const disagreeCol = document.getElementById('boardDisagreeColumn');
+            if (disagreeStudents.length === 0) {
+                disagreeCol.innerHTML = `
+                    <div class="w-full h-32 flex flex-col items-center justify-center text-rose-700/70 text-sm font-black gap-1.5">
+                        <span class="text-4xl opacity-70">👎</span>
+                        <span>${gameState.isAccepting ? '학생들의 반대를 기다리는 중...' : '반대한 친구가 아직 없습니다'}</span>
+                    </div>`;
+            } else {
+                disagreeCol.innerHTML = disagreeStudents.map((_, idx) => {
+                    let cardClass = "border-2 border-rose-400 bg-rose-50 text-slate-900 shadow-sm";
+                    let icon = "👎";
+
+                    if (isAwarded) {
+                        if (!isGood) {
+                            if (idx < clashCount) {
+                                cardClass = "clash-cancelled border-2 border-dashed border-slate-400 bg-slate-200/90 shadow-inner";
+                                icon = "✖️";
+                            } else {
+                                cardClass = "bloom-flower border-4 border-rose-500 bg-rose-50 shadow-xl scale-110";
+                                icon = "🌺";
+                            }
+                        } else {
+                            if (idx < clashCount) {
+                                cardClass = "clash-cancelled border-2 border-dashed border-slate-400 bg-slate-200/90 shadow-inner";
+                                icon = "✖️";
+                            } else {
+                                cardClass = "border-2 border-slate-300 bg-slate-100 opacity-60";
+                                icon = "👎";
+                            }
+                        }
+                    }
+
+                    return `
+                        <div class="pop-in flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-2xl transition-all duration-500 ${cardClass}" style="animation-delay: ${idx * 0.03}s">
+                            <span class="text-2xl md:text-3xl filter drop-shadow transition-transform duration-300">${icon}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function renderTeacherRoster(currentSubmissions, behaviorType, isAwarded) {
+            const rosterGrid = document.getElementById('teacherRosterGrid');
+            const summaryBadge = document.getElementById('teacherRosterSummary');
+            const presentStudents = getPresentStudents();
+            summaryBadge.innerText = `${currentSubmissions.length} / ${presentStudents.length} 제출`;
+
+            rosterGrid.innerHTML = CLASS_ROSTER.map(studentName => {
+                const isAbsent = isStudentAbsent(studentName);
+                const sub = currentSubmissions.find(s => s.studentName === studentName);
+                const isRoundClosed = gameState.hasClosedRound && !gameState.isAccepting;
+                
+                let statusBadge = '';
+                if (isAbsent) {
+                    statusBadge = '<span class="bg-rose-100 text-rose-700 px-2.5 py-1 rounded-full border border-rose-300 font-black text-xs">결석 (집계 제외)</span>';
+                } else if (sub) {
+                    const isCorrect = (behaviorType === 'good' && sub.choice === '찬성') || (behaviorType === 'bad' && sub.choice === '반대');
+                    if (isAwarded && isCorrect) {
+                        statusBadge = '<span class="bg-rose-500 text-white px-2.5 py-1 rounded-full font-black text-xs shadow animate-pulse">🌺 꽃 적립!</span>';
+                    } else if (sub.choice === '찬성') {
+                        statusBadge = '<span class="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-300 font-black text-xs">👍 찬성</span>';
+                    } else {
+                        statusBadge = '<span class="bg-rose-100 text-rose-800 px-2.5 py-1 rounded-full border border-rose-300 font-black text-xs">👎 반대</span>';
+                    }
+                } else if (isRoundClosed) {
+                    statusBadge = '<span class="bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full border border-slate-300 font-black text-xs">🏳️ 포기</span>';
+                } else {
+                    statusBadge = '<span class="text-slate-400 font-bold text-xs">대기 중...</span>';
+                }
+
+                // Attendance toggle button styling
+                const attendBtnClass = isAbsent
+                    ? 'bg-rose-600 text-white border-rose-700 hover:bg-rose-700'
+                    : 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700';
+                const attendBtnText = isAbsent ? '결석' : '출석';
+
+                const cardBg = isAbsent ? 'bg-slate-100/70 opacity-70 border-dashed' : 'bg-slate-50';
+
+                return `
+                    <div class="flex justify-between items-center ${cardBg} p-2.5 rounded-xl border border-slate-200 shadow-sm transition">
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleStudentAttendance('${studentName}')" title="클릭하여 출석/결석 상태 변경" class="px-2 py-0.5 rounded-md text-[11px] font-black border transition active:scale-95 shadow-xs ${attendBtnClass}">
+                                ${attendBtnText}
+                            </button>
+                            <span class="font-black ${isAbsent ? 'line-through text-slate-400' : 'text-slate-900'} text-sm">${escapeHtml(studentName)}</span>
+                        </div>
+                        ${statusBadge}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderTeacherHistory() {
+            const list = document.getElementById('teacherHistoryList');
+            document.getElementById('teacherLogCount').innerText = `총 ${historyLogs.length}개`;
+
+            if (historyLogs.length === 0) {
+                list.innerHTML = `<div class="text-slate-400 font-semibold text-center py-8">아직 진행된 기록이 없습니다.</div>`;
+                return;
+            }
+
+            const sorted = [...historyLogs].sort((a, b) => b.round - a.round);
+            list.innerHTML = sorted.map(item => `
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs sm:text-sm space-y-1 shadow-sm">
+                    <div class="flex justify-between font-black">
+                        <span class="text-amber-700">행동 #${item.round}</span>
+                        <span class="text-slate-700">잔여: <strong class="text-rose-600">${item.totalAfter}송이</strong></span>
+                    </div>
+                    <p class="text-slate-900 font-bold truncate">${escapeHtml(item.behavior)}</p>
+                    <div class="flex gap-2 flex-wrap text-xs pt-1.5 border-t border-slate-200 font-semibold items-center justify-between">
+                        <div class="flex gap-2 text-slate-700">
+                            <span class="text-emerald-700 font-bold">👍 ${item.agreeCount}</span>
+                            <span class="text-rose-700 font-bold">👎 ${item.disagreeCount}</span>
+                            <span class="text-slate-500">🏳️ ${item.forfeitCount}</span>
+                        </div>
+                        <span class="text-rose-600 font-black bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                            ${item.calcFormula || `+${item.netAwarded || 0}`}
+                        </span>
+                        ${item.stolen > 0 ? `<span class="text-red-600 font-black">👺 차감: -${item.stolen}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderStudentViewStatus(currentSubmissions, isRoundClosed) {
+            const studentName = getSelectedStudentName();
+            const mySubmission = currentSubmissions.find(s => s.studentName === studentName);
+            const buttonArea = document.getElementById('studentButtonArea');
+            const successBox = document.getElementById('studentSuccessBox');
+            const forfeitBox = document.getElementById('studentForfeitBox');
+            const timerNotice = document.getElementById('studentTimerNotice');
+
+            // Hide all boxes first
+            buttonArea.classList.add('hidden');
+            successBox.classList.add('hidden');
+            forfeitBox.classList.add('hidden');
+
+            if (!studentName) {
+                timerNotice.innerText = "상단에서 내 이름을 먼저 선택해주세요! 👆";
+                timerNotice.className = "text-xs sm:text-sm font-black py-2 px-4 rounded-full inline-block bg-amber-100 text-amber-800 mb-2 border border-amber-300 shadow-sm";
+                return;
+            }
+
+            if (mySubmission) {
+                successBox.classList.remove('hidden');
+                document.getElementById('studentSuccessIcon').innerText = mySubmission.choice === '찬성' ? '👍' : '👎';
+                document.getElementById('studentSuccessTitle').innerText = `[${mySubmission.choice}] 의견 전송 완료!`;
+                timerNotice.innerText = "선생님의 다음 행동 제시를 기다려주세요 🌸";
+                timerNotice.className = "text-xs sm:text-sm font-black py-2 px-4 rounded-full inline-block bg-emerald-100 text-emerald-800 mb-2 border border-emerald-300 shadow-sm";
+            } else if (isRoundClosed) {
+                forfeitBox.classList.remove('hidden');
+                timerNotice.innerText = "이번 행동의 투표 시간이 종료되었습니다 ⏳";
+                timerNotice.className = "text-xs sm:text-sm font-black py-2 px-4 rounded-full inline-block bg-slate-100 text-slate-700 mb-2 border border-slate-300 shadow-sm";
+            } else if (gameState.isAccepting) {
+                buttonArea.classList.remove('hidden');
+                timerNotice.innerText = `생각을 선택해주세요! (${gameState.timerRemaining}초 남음) ⏱️`;
+                timerNotice.className = gameState.timerRemaining <= 5
+                    ? "text-xs sm:text-sm font-black py-2 px-4 rounded-full inline-block bg-rose-100 text-rose-800 mb-2 border border-rose-300 shadow-sm animate-pulse"
+                    : "text-xs sm:text-sm font-black py-2 px-4 rounded-full inline-block bg-emerald-100 text-emerald-800 mb-2 border border-emerald-300 shadow-sm";
+            } else {
+                timerNotice.innerText = "선생님이 시작 버튼을 누르면 투표할 수 있어요 ⏳";
+                timerNotice.className = "text-xs sm:text-sm font-black py-2 px-4 rounded-full inline-block bg-slate-100 text-slate-700 mb-2 border border-slate-300 shadow-sm";
+            }
+        }
+
+        function renderTimerDisplays() {
+            const boardTimerPill = document.getElementById('boardTimerPill');
+            const boardTimerSec = document.getElementById('boardTimerSec');
+            const boardProgressCont = document.getElementById('boardProgressBarContainer');
+            const boardProgressBar = document.getElementById('boardProgressBar');
+            const studentProgressCont = document.getElementById('studentProgressBarContainer');
+            const studentProgressBar = document.getElementById('studentProgressBar');
+
+            if (gameState.isAccepting) {
+                boardTimerPill.classList.remove('hidden');
+                boardProgressCont.classList.remove('hidden');
+                studentProgressCont.classList.remove('hidden');
+
+                const rem = gameState.timerRemaining;
+                boardTimerSec.innerText = rem;
+
+                const pct = Math.max(0, Math.min(100, (rem / (gameState.timerTotal || 10)) * 100));
+                boardProgressBar.style.width = `${pct}%`;
+                studentProgressBar.style.width = `${pct}%`;
+
+                if (rem <= 5) {
+                    boardTimerPill.className = "text-sm md:text-base font-black px-4 py-1.5 rounded-full shadow border-2 bg-rose-600 text-white border-rose-300 animate-pulse";
+                } else {
+                    boardTimerPill.className = "text-sm md:text-base font-black px-4 py-1.5 rounded-full shadow border-2 bg-emerald-600 text-white border-emerald-300";
+                }
+            } else {
+                boardTimerPill.classList.add('hidden');
+                boardProgressCont.classList.add('hidden');
+                studentProgressCont.classList.add('hidden');
+            }
+        }
+
+        window.startFirstRound = function() {
+            gameState.stage = 'ACTIVE';
+            gameState.currentRound = 1;
+            gameState.isAccepting = false;
+            gameState.hasClosedRound = false;
+            gameState.isAwarded = false;
+            gameState.hasStartedRoundTimer = false;
+            gameState.hasUsedStealThisRound = false;
+            playSound('start');
+            broadcastState();
+        };
+
+        window.teacherStartTimer = function() {
+            if (gameState.hasStartedRoundTimer) {
+                showNotice("이미 시작되었습니다!", "각 행동마다 '행동 판단하기 시작'은 1회만 누를 수 있습니다.");
+                return;
+            }
+
+            if (gameState.isAccepting) {
+                showNotice("이미 투표가 진행 중입니다!", "10초 카운트다운이 끝난 후 다시 시작할 수 있습니다.");
+                return;
+            }
+
+            if (countdownTimerInterval) {
+                clearInterval(countdownTimerInterval);
+                countdownTimerInterval = null;
+            }
+
+            gameState.hasStartedRoundTimer = true;
+            gameState.isAccepting = true;
+            gameState.hasClosedRound = false;
+            gameState.isAwarded = false;
+            gameState.timerRemaining = 10;
+            gameState.timerTotal = 10;
+
+            playSound('start');
+            broadcastState();
+
+            countdownTimerInterval = setInterval(() => {
+                gameState.timerRemaining--;
+                if (gameState.timerRemaining <= 5 && gameState.timerRemaining > 0) {
+                    playSound('countdown');
+                }
+
+                if (gameState.timerRemaining <= 0) {
+                    clearInterval(countdownTimerInterval);
+                    countdownTimerInterval = null;
+                    gameState.isAccepting = false;
+                    gameState.hasClosedRound = true;
+                    playSound('timeup');
+                }
+                broadcastState();
+            }, 1000);
+        };
+
+        // Particle Disintegration Effect (카드가 가루가 되어 사방으로 흩어짐)
+        function spawnDisintegrateDust(element) {
+            if (!element) return;
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const colors = ['#94a3b8', '#64748b', '#cbd5e1', '#e2e8f0', '#f1f5f9', '#fbbf24'];
+
+            const particleCount = 18;
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.className = 'dust-particle';
+                const size = Math.random() * 7 + 4;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                p.style.left = `${centerX + (Math.random() - 0.5) * rect.width * 0.7}px`;
+                p.style.top = `${centerY + (Math.random() - 0.5) * rect.height * 0.7}px`;
+
+                const angle = Math.random() * 2 * Math.PI;
+                const distance = Math.random() * 90 + 35;
+                const dx = Math.cos(angle) * distance;
+                const dy = Math.sin(angle) * distance - 25; // 약간 위로 솟구치며 흩어짐
+                p.style.setProperty('--dx', `${dx}px`);
+                p.style.setProperty('--dy', `${dy}px`);
+
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 800);
+            }
+        }
+
+        // Flying Flower & Count-up Animation (무궁화가 아래로 포물선을 그리며 떨어져 적립)
+        function flyFlowersToBottomAndCountUp(sourceCards, startCount, targetCount) {
+            const bottomTarget = document.getElementById('boardTotalFlowers');
+            if (!bottomTarget) return;
+
+            const targetRect = bottomTarget.getBoundingClientRect();
+            const targetX = targetRect.left + targetRect.width / 2;
+            const targetY = targetRect.top + targetRect.height / 2;
+
+            let arrived = 0;
+            const totalToFly = sourceCards.length;
+
+            if (totalToFly === 0) {
+                animateCounterValue(bottomTarget, startCount, targetCount, 500);
+                return;
+            }
+
+            sourceCards.forEach((cardEl, idx) => {
+                const cardRect = cardEl.getBoundingClientRect();
+                const startX = cardRect.left + cardRect.width / 2;
+                const startY = cardRect.top + cardRect.height / 2;
+
+                const flyingEl = document.createElement('div');
+                flyingEl.className = 'flying-flower-node text-3xl md:text-4xl';
+                flyingEl.innerText = '🌺';
+                flyingEl.style.left = `${startX - 20}px`;
+                flyingEl.style.top = `${startY - 20}px`;
+                flyingEl.style.transform = 'scale(0.8)';
+                flyingEl.style.opacity = '1';
+
+                document.body.appendChild(flyingEl);
+
+                // 순차적으로 출발
+                setTimeout(() => {
+                    flyingEl.style.left = `${targetX - 20}px`;
+                    flyingEl.style.top = `${targetY - 20}px`;
+                    flyingEl.style.transform = 'scale(1.3) rotate(360deg)';
+
+                    setTimeout(() => {
+                        flyingEl.remove();
+                        arrived++;
+                        playSound('collect');
+
+                        // 하단 숫자 바운스 및 부분 카운트업
+                        const currentVal = Math.round(startCount + (targetCount - startCount) * (arrived / totalToFly));
+                        bottomTarget.innerText = currentVal;
+                        bottomTarget.classList.remove('counter-bump');
+                        void bottomTarget.offsetWidth; // trigger reflow
+                        bottomTarget.classList.add('counter-bump');
+
+                        if (arrived >= totalToFly) {
+                            bottomTarget.innerText = targetCount;
+                            try {
+                                if (typeof confetti === 'function') {
+                                    confetti({ particleCount: 70, spread: 75, origin: { y: 0.85 } });
+                                }
+                            } catch (e) {}
+                        }
+                    }, 750);
+                }, idx * 120 + 80);
+            });
+        }
+
+        function animateCounterValue(element, start, end, duration) {
+            if (!element) return;
+            const range = end - start;
+            if (range === 0) {
+                element.innerText = end;
+                return;
+            }
+            const startTime = performance.now();
+            function step(currentTime) {
+                const progress = Math.min((currentTime - startTime) / duration, 1);
+                const current = Math.round(start + range * progress);
+                element.innerText = current;
+                element.classList.add('counter-bump');
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    element.innerText = end;
+                }
+            }
+            requestAnimationFrame(step);
+        }
+        window.teacherAwardFlowers = function() {
+            if (gameState.isAwarded) {
+                showNotice("이미 적립되었습니다!", "이번 행동의 무궁화꽃이 이미 우리반에 적립되었습니다.");
+                return;
+            }
+
+            const round = gameState.currentRound;
+            const behaviorObj = BEHAVIORS[round - 1];
+            if (!behaviorObj) return;
+
+            const isGood = behaviorObj.type === 'good';
+            const currentSubmissions = submissions.filter(s => s.round === round);
+            const agreeCount = currentSubmissions.filter(s => s.choice === '찬성').length;
+            const disagreeCount = currentSubmissions.filter(s => s.choice === '반대').length;
+            const clashCount = Math.min(agreeCount, disagreeCount);
+
+            let netFlowers = 0;
+            let formulaDesc = "";
+
+            if (isGood) {
+                netFlowers = Math.max(0, agreeCount - disagreeCount);
+                formulaDesc = `[찬성 ${agreeCount}명] - [반대 ${disagreeCount}명] = ${netFlowers}송이`;
+            } else {
+                netFlowers = Math.max(0, disagreeCount - agreeCount);
+                formulaDesc = `[반대 ${disagreeCount}명] - [찬성 ${agreeCount}명] = ${netFlowers}송이`;
+            }
+
+            const startTotalFlowers = gameState.totalFlowers || 0;
+            const finalTotalFlowers = startTotalFlowers + netFlowers;
+
+            gameState.isAwarded = true;
+            gameState.awardedCount = netFlowers;
+            gameState.totalFlowers = finalTotalFlowers;
+
+            // 1단계: 상쇄 대상 카드들에 가루 분해 효과 발생
+            if (clashCount > 0) {
+                playSound('clash');
+                setTimeout(() => playSound('dust'), 150);
+
+                // 전자칠판의 찬성/반대 카드 중 상쇄 클래스가 붙은 요소들 찾기
+                const clashCards = document.querySelectorAll('.clash-cancelled');
+                clashCards.forEach((cardEl, idx) => {
+                    setTimeout(() => spawnDisintegrateDust(cardEl), idx * 40 + 80);
+                });
+            }
+
+            // 2단계: 상쇄 완료 후 남은 무궁화 카드들이 아래로 날아가며 숫자 카운트업
+            setTimeout(() => {
+                if (netFlowers > 0) {
+                    const bloomingCards = Array.from(document.querySelectorAll('.bloom-flower'));
+                    flyFlowersToBottomAndCountUp(bloomingCards, startTotalFlowers, finalTotalFlowers);
+
+                    showNotice(
+                        "🌺 무궁화꽃 적립 완료!",
+                        `${formulaDesc}\n상쇄된 의견은 가루가 되어 사라지고, 남은 ${netFlowers}송이의 무궁화꽃이 아래 정원에 적립됩니다!`
+                    );
+                } else {
+                    playSound('timeup');
+                    showNotice(
+                        "💥 모두 상쇄되었습니다",
+                        `${formulaDesc}\n반대 의견과 찬성 의견이 모두 상쇄되어 적립된 꽃은 0송이입니다.`
+                    );
+                }
+                broadcastState();
+            }, clashCount > 0 ? 800 : 150);
+
+            broadcastState();
+        };
+
+        window.teacherNextRound = function() {
+            if (countdownTimerInterval) {
+                clearInterval(countdownTimerInterval);
+                countdownTimerInterval = null;
+            }
+
+            // 무궁화꽃 적립 필수 검증 (실수 방지 가드)
+            if (!gameState.isAwarded) {
+                showNotice(
+                    "⚠️ 무궁화꽃 적립을 먼저 진행해주세요!",
+                    "이번 행동의 무궁화꽃을 아직 적립하지 않았습니다.\n먼저 [🌺 무궁화꽃 적립!] 버튼을 눌러 상쇄 및 꽃 적립을 완료한 후 다음 행동으로 이동해주세요."
+                );
+                return;
+            }
+
+            const round = gameState.currentRound;
+            const presentStudents = getPresentStudents();
+            const currentSubmissions = submissions.filter(s => s.round === round && presentStudents.includes(s.studentName));
+            const agreeCount = currentSubmissions.filter(s => s.choice === '찬성').length;
+            const disagreeCount = currentSubmissions.filter(s => s.choice === '반대').length;
+            const forfeitCount = presentStudents.length - currentSubmissions.length;
+            const isGood = BEHAVIORS[round - 1].type === 'good';
+            const netAwarded = gameState.awardedCount || 0;
+
+            historyLogs.push({
+                round: round,
+                behavior: BEHAVIORS[round - 1].text,
+                agreeCount: agreeCount,
+                disagreeCount: disagreeCount,
+                forfeitCount: Math.max(0, forfeitCount),
+                netAwarded: netAwarded,
+                calcFormula: isGood ? `찬(${agreeCount}) - 반(${disagreeCount}) = +${netAwarded}` : `반(${disagreeCount}) - 찬(${agreeCount}) = +${netAwarded}`,
+                stolen: 0,
+                totalAfter: gameState.totalFlowers,
+                timestamp: Date.now()
+            });
+
+            // 36번째 행동 완료 시 결과 화면 동기화 표출
+            if (gameState.currentRound >= 36) {
+                gameState.isGameOver = true;
+                gameState.isAccepting = false;
+                gameState.hasClosedRound = true;
+                playSound('start');
+                broadcastState();
+                showGameOverModal();
+                return;
+            }
+
+            gameState.currentRound++;
+            gameState.isAccepting = false;
+            gameState.hasClosedRound = false;
+            gameState.isAwarded = false;
+            gameState.awardedCount = 0;
+            gameState.timerRemaining = 0;
+            gameState.hasStartedRoundTimer = false;
+            gameState.hasUsedStealThisRound = false;
+
+            playSound('start');
+            broadcastState();
+        };
+
+        window.studentSubmitVote = function(choice) {
+            const studentName = getSelectedStudentName();
+            if (!studentName) {
+                showNotice("이름을 먼저 선택해주세요!", "상단 드롭다운에서 본인 이름을 선택한 후 투표해주세요.");
+                return;
+            }
+
+            if (isStudentAbsent(studentName)) {
+                showNotice("결석 처리된 학생입니다!", "선생님 화면에서 출석으로 변경된 후 투표에 참여할 수 있습니다.");
+                return;
+            }
+
+            if (!gameState.isAccepting) {
+                showNotice("투표 시간이 아닙니다!", "선생님이 [행동 판단하기 시작] 버튼을 누르면 투표할 수 있습니다.");
+                return;
+            }
+
+            const round = gameState.currentRound;
+            const alreadyVoted = submissions.some(s => s.round === round && s.studentName === studentName);
+            if (alreadyVoted) {
+                showNotice("이미 투표했습니다!", "각 행동마다 한 번만 선택할 수 있습니다.");
+                return;
+            }
+
+            const voteTimestamp = Date.now();
+            submissions.push({
+                round: round,
+                studentName: studentName,
+                choice: choice,
+                timestamp: voteTimestamp
+            });
+
+            firebaseSubmissionsRef
+                .child(String(round))
+                .child(studentName)
+                .set({ choice: choice, timestamp: voteTimestamp })
+                .catch(err => {
+                    console.error('Firebase vote submit error:', err);
+                    showNotice('전송 오류', '인터넷 연결을 확인한 뒤 다시 시도해주세요.');
+                });
+
+            playSound('vote');
+            saveLocalState();
+            renderAllViews();
+        };
+
+        window.onStudentNameChanged = function() {
+            const val = getSelectedStudentName();
+            if (val) {
+                try { localStorage.setItem('mugunghwa_student_name_bright_v1', val); } catch (e) {}
+            }
+            renderAllViews();
+        };
+
+        function getSelectedStudentName() {
+            const el = document.getElementById('studentNameSelect');
+            return el ? el.value.trim() : '';
+        }
+
+        window.teacherTriggerStealModal = function() {
+            if (gameState.hasUsedStealThisRound) {
+                showNotice("추첨 완료!", "각 행동마다 양심불량자 추첨은 1회만 진행할 수 있습니다.");
+                return;
+            }
+
+            const total = gameState.totalFlowers || 0;
+            if (total <= 0) {
+                showNotice("차감할 꽃이 없습니다!", "우리반에 모인 무궁화꽃이 0송이라 양심불량자가 가져갈 꽃이 없습니다.");
+                return;
+            }
+
+            gameState.hasUsedStealThisRound = true;
+            broadcastState();
+
+            const stolenAmount = Math.floor(Math.random() * total) + 1;
+            // 5가지 양심불량자 캐릭터 중 무작위 선정
+            const villainIndex = Math.floor(Math.random() * VILLAIN_ROSTER.length);
+            const villain = VILLAIN_ROSTER[villainIndex];
+
+            // 전자칠판 화면(board)에 캐릭터 정보와 함께 애니메이션 실행 신호 전송
+            if (syncChannel) {
+                syncChannel.postMessage({
+                    type: 'TRIGGER_STEAL_ANIMATION',
+                    total: total,
+                    stolenAmount: stolenAmount,
+                    villainIndex: villainIndex
+                });
+            }
+            firebaseStealRef.set({
+                total: total,
+                stolenAmount: stolenAmount,
+                villainIndex: villainIndex,
+                timestamp: Date.now()
+            }).catch(err => console.error('Firebase steal event error:', err));
+
+            // 선생님 뷰에서는 팝업을 띄우지 않고, 칠판의 연출 타이밍(약 2.5초)에 맞춰 꽃 수량만 차감
+            setTimeout(() => {
+                gameState.totalFlowers = Math.max(0, gameState.totalFlowers - stolenAmount);
+                gameState.totalStolenFlowers = (gameState.totalStolenFlowers || 0) + stolenAmount;
+                broadcastState();
+                showNotice(
+                    `⚠️ [${villain.name}] 차감 완료`,
+                    `전자칠판에 [${villain.name}]이(가) 나타나 우리반 꽃밭에서 ${stolenAmount}송이의 무궁화꽃을 가져갔습니다!`
+                );
+            }, 2500);
+        };
+
+        // 전자칠판 전용 다채로운 양심불량자 룰렛 & 웃음소리 실행기
+        function runStealRouletteUI(total, stolenAmount, villainIdx, isMaster = false) {
+            const villain = VILLAIN_ROSTER[typeof villainIdx === 'number' ? villainIdx : 0] || VILLAIN_ROSTER[0];
+            const modal = document.getElementById('lotteryModal');
+            const villainBox = document.getElementById('modalVillainBox');
+            const villainIcon = document.getElementById('modalVillainIcon');
+            const villainBadge = document.getElementById('modalVillainBadge');
+            const villainTitle = document.getElementById('modalVillainTitle');
+            const villainSubtitle = document.getElementById('modalVillainSubtitle');
+            const maxSpan = document.getElementById('modalMaxFlowers');
+            const rouletteDisplay = document.getElementById('rouletteDisplay');
+            const resultText = document.getElementById('modalResultText');
+
+            // 1. 선택된 캐릭터에 맞게 박스 테두리, 제목, 배지, 아이콘 스타일 변경
+            villainBox.className = `bg-white border-8 ${villain.themeBorder} rounded-3xl p-6 md:p-10 max-w-lg w-full text-center space-y-5 shadow-2xl relative transform transition-all duration-300`;
+            villainBadge.className = `${villain.badgeBg} text-white text-xs md:text-sm font-black px-4 py-1.5 rounded-full shadow tracking-wider uppercase inline-block`;
+            villainBadge.innerText = villain.badge;
+            villainTitle.className = `text-3xl md:text-4xl font-black ${villain.titleColor} font-point mt-2`;
+            villainTitle.innerText = `${villain.name} 등장!`;
+            villainSubtitle.innerText = villain.subtitle;
+
+            villainIcon.className = `text-7xl md:text-9xl ${villain.animClass} inline-block select-none filter drop-shadow-lg`;
+            villainIcon.innerText = villain.enterIcon;
+
+            // 랜덤 대사 선택
+            const randomIntro = villain.introPhrases[Math.floor(Math.random() * villain.introPhrases.length)];
+            resultText.innerHTML = `<span class="${villain.titleColor} font-black animate-pulse">${escapeHtml(randomIntro)}</span>`;
+
+            maxSpan.innerText = total;
+            rouletteDisplay.innerText = total;
+            modal.classList.remove('hidden');
+
+            // 캐릭터 고유 악당 웃음소리 즉시 재생
+            playSound('evil_laugh', villain.laughType);
+
+            let counter = 0;
+            const totalTicks = 26;
+
+            const timer = setInterval(() => {
+                const randomVal = Math.floor(Math.random() * total) + 1;
+                rouletteDisplay.innerText = randomVal;
+                playSound('tick');
+                counter++;
+
+                if (counter >= totalTicks) {
+                    clearInterval(timer);
+                    rouletteDisplay.innerText = stolenAmount;
+                    villainIcon.innerText = villain.afterIcon; // 훔친 후의 익살스럽고 얄미운 표정
+
+                    const quoteTemplate = villain.stolenQuotes[Math.floor(Math.random() * villain.stolenQuotes.length)];
+                    const finishedQuote = quoteTemplate.replace('%d', stolenAmount);
+
+                    resultText.innerHTML = `
+                        <div class="${villain.titleColor} font-black text-lg md:text-2xl font-point animate-bounce">
+                            ${escapeHtml(finishedQuote)}
+                        </div>
+                    `;
+                    // 확정되는 순간 얄미운 웃음소리 한 번 더 재생 + 차감 사운드
+                    playSound('evil_laugh', villain.laughType);
+                    setTimeout(() => playSound('steal'), 250);
+
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                        if (isMaster) {
+                            gameState.totalFlowers = Math.max(0, gameState.totalFlowers - stolenAmount);
+                            gameState.totalStolenFlowers = (gameState.totalStolenFlowers || 0) + stolenAmount;
+                            broadcastState();
+                        }
+                    }, 2500);
+                }
+            }, 60);
+        }
+
+        window.confirmResetGame = function() {
+            showNotice(
+                "게임을 처음부터 다시 시작하시겠습니까?",
+                "지금까지 기록된 모든 찬반 투표 결과와 무궁화꽃이 0으로 초기화됩니다.",
+                true,
+                () => executeResetGame()
+            );
+        };
+
+        window.executeResetGame = function() {
+            if (countdownTimerInterval) {
+                clearInterval(countdownTimerInterval);
+                countdownTimerInterval = null;
+            }
+
+            document.getElementById('gameOverModal').classList.add('hidden');
+            gameState = {
+                stage: 'QUIZ',
+                currentRound: 1,
+                totalFlowers: 0,
+                totalStolenFlowers: 0,
+                isGameOver: false,
+                isAccepting: false,
+                timerRemaining: 0,
+                timerTotal: 10,
+                hasClosedRound: false,
+                isAwarded: false,
+                awardedCount: 0,
+                hasStartedRoundTimer: false,
+                hasUsedStealThisRound: false,
+                absentStudents: [],
+                updatedAt: Date.now()
+            };
+            submissions = [];
+            historyLogs = [];
+            firebaseSubmissionsRef.remove().catch(err => console.error('Firebase submissions reset error:', err));
+            firebaseHistoryRef.remove().catch(err => console.error('Firebase history reset error:', err));
+            firebaseStealRef.remove().catch(() => {});
+
+            playSound('start');
+            broadcastState();
+        };
+
+        window.toggleAudio = function() {
+            isAudioEnabled = !isAudioEnabled;
+            const btn = document.getElementById('audioToggleBtn');
+            btn.innerText = isAudioEnabled ? "🔊 효과음 켜짐" : "🔇 효과음 끔";
+        };
+
+        window.switchView = function(view) {
+            currentView = view;
+            const views = {
+                board: document.getElementById('viewBoard'),
+                teacher: document.getElementById('viewTeacher'),
+                student: document.getElementById('viewStudent')
+            };
+
+            const tabs = {
+                board: document.getElementById('navTabBoard'),
+                teacher: document.getElementById('navTabTeacher'),
+                student: document.getElementById('navTabStudent')
+            };
+
+            Object.keys(views).forEach(key => {
+                if (key === view) {
+                    views[key].classList.remove('hidden');
+                    tabs[key].className = "px-3.5 py-2 rounded-lg font-black text-xs md:text-sm transition bg-rose-600 text-white shadow";
+                } else {
+                    views[key].classList.add('hidden');
+                    tabs[key].className = "px-3.5 py-2 rounded-lg font-black text-xs md:text-sm text-slate-600 hover:text-slate-900 transition";
+                }
+            });
+
+            // Update URL query without page reload
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('view', view);
+                window.history.replaceState({}, '', url.toString());
+            } catch (e) {}
+
+            renderAllViews();
+        };
+
+        function getDirectUrl(viewName) {
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('view', viewName);
+                return url.toString();
+            } catch (e) {
+                return window.location.href;
+            }
+        }
+
+        window.openLinkModal = function() {
+            const modal = document.getElementById('linkModal');
+            document.getElementById('linkUrlStudent').value = getDirectUrl('student');
+            document.getElementById('linkUrlTeacher').value = getDirectUrl('teacher');
+
+            // Generate Student QR Code
+            const qrContainer = document.getElementById('qrcodeStudent');
+            qrContainer.innerHTML = '';
+            try {
+                new QRCode(qrContainer, {
+                    text: getDirectUrl('student'),
+                    width: 140,
+                    height: 140,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } catch (e) {}
+
+            modal.classList.remove('hidden');
+        };
+
+        window.closeLinkModal = function() {
+            document.getElementById('linkModal').classList.add('hidden');
+        };
+
+        window.copyToClipboard = function(text) {
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            showNotice("복사 완료!", "클립보드에 링크가 복사되었습니다. 브라우저나 메신저에 붙여넣기 하세요.");
+        };
+
+        // Notice Modal Helper
+        let pendingNoticeCallback = null;
+        function showNotice(title, desc, isConfirm = false, onConfirm = null) {
+            const modal = document.getElementById('noticeModal');
+            document.getElementById('noticeTitle').innerText = title;
+            document.getElementById('noticeDesc').innerText = desc;
+            const actionArea = document.getElementById('noticeActions');
+
+            pendingNoticeCallback = onConfirm;
+
+            if (isConfirm) {
+                actionArea.innerHTML = `
+                    <button onclick="closeNoticeModal()" class="flex-1 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-black rounded-xl text-xs sm:text-sm transition">
+                        취소
+                    </button>
+                    <button onclick="executeNoticeConfirm()" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl text-xs sm:text-sm transition shadow">
+                        네, 초기화합니다
+                    </button>
+                `;
+            } else {
+                actionArea.innerHTML = `
+                    <button onclick="closeNoticeModal()" class="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-sm transition shadow-md">
+                        확인
+                    </button>
+                `;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        window.closeNoticeModal = function() {
+            document.getElementById('noticeModal').classList.add('hidden');
+            pendingNoticeCallback = null;
+        };
+
+        window.executeNoticeConfirm = function() {
+            if (typeof pendingNoticeCallback === 'function') {
+                pendingNoticeCallback();
+            }
+            closeNoticeModal();
+        };
+
+        function showGameOverModal() {
+            const modal = document.getElementById('gameOverModal');
+            if (!modal) return;
+
+            const kept = gameState.totalFlowers || 0;
+            const stolen = gameState.totalStolenFlowers || 0;
+            const originalTotal = kept + stolen;
+
+            // 1. 끝까지 지켜낸 무궁화꽃
+            const keptEl = document.getElementById('finalKeptFlowers');
+            if (keptEl) keptEl.innerText = kept;
+
+            // 2. 양심불량자가 가져간 무궁화꽃
+            const stolenEl = document.getElementById('finalStolenFlowers');
+            if (stolenEl) stolenEl.innerText = stolen;
+
+            // 3. 양심불량자가 가져가지 않았다면 모았을 무궁화꽃 총량
+            const originalEl = document.getElementById('finalOriginalTotalFlowers');
+            if (originalEl) originalEl.innerText = originalTotal;
+
+            // 요약 본문 내 지켜낸 꽃 수치 반영
+            const summaryText = document.getElementById('summaryKeptText');
+            if (summaryText) summaryText.innerText = `${kept}송이`;
+
+            modal.classList.remove('hidden');
+
+            try {
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 120, spread: 100, origin: { y: 0.6 } });
+                }
+            } catch (e) {}
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // Populate Student Select Dropdown
+            const selectEl = document.getElementById('studentNameSelect');
+            CLASS_ROSTER.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.innerText = name;
+                selectEl.appendChild(opt);
+            });
+
+            // Restore saved student name
+            try {
+                const saved = localStorage.getItem('mugunghwa_student_name_bright_v1');
+                if (saved && CLASS_ROSTER.includes(saved)) {
+                    selectEl.value = saved;
+                }
+            } catch (e) {}
+
+            // Load saved state
+            loadLocalState();
+
+            // Check URL parameters for direct view routing (?view=teacher | ?view=student | ?view=board)
+            const params = new URLSearchParams(window.location.search);
+            const viewParam = params.get('view');
+            if (viewParam && ['board', 'teacher', 'student'].includes(viewParam)) {
+                switchView(viewParam);
+            } else {
+                switchView('board');
+            }
+
+            renderAllViews();
+            startFirebaseSync();
+
+            // 사용자 첫 터치 및 마우스 클릭 시 자동 오디오 언락 등록
+            ['click', 'touchstart', 'keydown'].forEach(evtType => {
+                window.addEventListener(evtType, () => {
+                    unlockAudio();
+                }, { once: false, passive: true });
+            });
+        });
+    </script>
+</body>
+</html>
