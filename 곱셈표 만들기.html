@@ -1,0 +1,2316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>곱셈표 만들기 & 비밀키워드</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter, Jua, Noto Sans KR, Gowun Dodum -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&family=Noto+Sans+KR:wght@400;600;700;800;900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .font-jua {
+      font-family: 'Jua', sans-serif;
+    }
+    
+    /* 표 디자인 토큰 */
+    .header-col-bg { background-color: #93b5e8; color: #1e293b; }
+    .header-row-bg { background-color: #fef08a; color: #1e293b; }
+    .diagonal-bg { background-color: #ffffff; }
+    .upper-triangle-bg { background-color: #e0ecfb; }
+    .lower-triangle-bg { background-color: #fef9c3; }
+
+    /* 숫자 입력창 화살표(스피너) 제거 */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    /* 4단계 구슬 입체 구체 그라디언트 */
+    .bead-sphere {
+      background: radial-gradient(circle at 32% 32%, #f5d0fe 0%, #d8b4fe 25%, #a855f7 65%, #6b21a8 100%);
+      box-shadow: inset 0 2px 3px rgba(255,255,255,0.7), 0 3px 5px rgba(0,0,0,0.25);
+    }
+
+    .smooth-transition {
+      transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes modalPop {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-modal {
+      animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes softFloat {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-4px) scale(1.03); }
+    }
+    .animate-float {
+      animation: softFloat 2.4s infinite ease-in-out;
+    }
+
+    /* 상장 인쇄용 스타일 */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #certificate-print-area, #certificate-print-area * {
+        visibility: visible;
+      }
+      #certificate-print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 30px;
+        box-shadow: none;
+        border: 6px double #d97706;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-sky-50 to-purple-50 min-h-screen text-slate-800 flex flex-col items-center justify-between p-2 sm:p-5 relative overflow-x-hidden">
+
+  <!-- 축하 폭죽 캔버스 -->
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
+
+  <header class="w-full max-w-5xl bg-white/95 backdrop-blur-md rounded-3xl shadow-sm border border-indigo-100 p-3 sm:p-4 mb-3">
+    <div class="flex items-center justify-between gap-2 mb-2 px-1">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl animate-float">✨</span>
+        <h1 class="font-jua text-base sm:text-xl text-indigo-950 tracking-tight">곱셈표 만들기 & 비밀키워드</h1>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- 등록 학생 뱃지 -->
+        <div id="header-student-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-300 rounded-full text-xs font-jua text-indigo-800">
+          <span>👤</span>
+          <span id="header-student-name" class="font-bold">학생 미등록</span>
+          <span id="header-letters-count" class="text-amber-600 font-bold ml-1">(0/6)</span>
+        </div>
+
+        <!-- 효과음 켜기/끄기 -->
+        <button id="sound-btn" onclick="toggleSound()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-xs sm:text-sm font-jua text-slate-700 transition-all cursor-pointer">
+          <span id="sound-icon">🔊</span>
+          <span id="sound-label" class="hidden sm:inline">효과음</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 8개 탭 (표지 + 1~5단계 미션 + 6단계 60초 + 7단계 키워드) -->
+    <nav class="grid grid-cols-4 sm:grid-cols-8 gap-1.5 text-center font-jua text-xs sm:text-sm" aria-label="단계 탐색">
+      <button onclick="switchPage(0)" id="tab-0" class="py-2 px-1 rounded-xl transition-all cursor-pointer">📖 표지</button>
+      <button onclick="switchPage(1)" id="tab-1" class="py-2 px-1 rounded-xl transition-all cursor-pointer">1. ◆ 식</button>
+      <button onclick="switchPage(2)" id="tab-2" class="py-2 px-1 rounded-xl transition-all cursor-pointer">2. 한줄단</button>
+      <button onclick="switchPage(3)" id="tab-3" class="py-2 px-1 rounded-xl transition-all cursor-pointer">3. 대칭짝꿍</button>
+      <button onclick="switchPage(4)" id="tab-4" class="py-2 px-1 rounded-xl transition-all cursor-pointer">4. 교환법칙</button>
+      <button onclick="switchPage(5)" id="tab-5" class="py-2 px-1 rounded-xl transition-all cursor-pointer">5. 수수께끼</button>
+      <button onclick="switchPage(6)" id="tab-6" class="py-2 px-1 rounded-xl transition-all text-rose-600 font-bold cursor-pointer">⏱️ 6. 60초</button>
+      <button onclick="switchPage(7)" id="tab-7" class="py-2 px-1 rounded-xl transition-all text-amber-600 font-bold cursor-pointer">🎁 7. 키워드</button>
+    </nav>
+  </header>
+
+  <main class="w-full max-w-5xl bg-white rounded-3xl shadow-sm border border-slate-200/90 p-3 sm:p-6 flex-1 flex flex-col items-center justify-between min-h-[580px]">
+    
+    <!-- 각 페이지 뷰가 삽입될 동적 컨테이너 -->
+    <div id="page-content" class="w-full flex flex-col items-center flex-1 justify-start pt-1"></div>
+
+    <!-- 하단 단계 탐색 컨트롤 -->
+    <div id="bottom-nav" class="w-full pt-3 mt-4 border-t border-slate-100 flex items-center justify-between font-jua text-sm sm:text-base">
+      <button id="prev-step-btn" onclick="goPrevPage()" class="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all disabled:opacity-30 cursor-pointer">
+        <span>◀</span> <span>이전 단계</span>
+      </button>
+      <span id="page-indicator" class="text-slate-400 font-bold">1 / 8 단계</span>
+      <button id="next-step-btn" onclick="goNextPage()" class="flex items-center gap-1.5 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all active:scale-95 disabled:opacity-30 cursor-pointer">
+        <span>다음 단계</span> <span>▶</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- 5연속 성공 및 글자 획득 축하 모달 -->
+  <div id="success-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border-4 border-indigo-400 text-center animate-modal relative">
+      <div id="modal-badge-icon" class="text-6xl mb-2 animate-float">🎉👑</div>
+      <div id="modal-badge-label" class="inline-block bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full mb-2">단계 마스터 배지 & 비밀 글자 획득!</div>
+      <h3 id="modal-title" class="font-jua text-2xl sm:text-3xl text-indigo-700 mb-2">대단해요! 정답 성공! 🎉</h3>
+      <p id="modal-desc" class="text-slate-600 text-sm sm:text-base font-medium mb-6 leading-relaxed whitespace-pre-line"></p>
+      
+      <div class="flex flex-col gap-2">
+        <button id="modal-next-btn" onclick="handleModalNextStep()" class="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-jua text-lg rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2">
+          <span>다음 단계로 출발! 🚀</span>
+        </button>
+        <button onclick="closeModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-jua text-sm rounded-xl transition-all cursor-pointer">
+          이 단계 더 연습하기 🔄
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 오답 리셋 및 잠금 안내 모달 -->
+  <div id="notice-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-xl border-2 border-amber-400 text-center animate-modal relative">
+      <div class="text-4xl mb-2">💡</div>
+      <h4 class="font-jua text-xl text-amber-900 mb-2 font-bold">안내</h4>
+      <p id="notice-modal-msg" class="text-slate-600 font-jua text-sm sm:text-base mb-5 whitespace-pre-line"></p>
+      <button onclick="closeNoticeModal()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-jua text-base rounded-xl transition-all active:scale-95 cursor-pointer">
+        확인
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 구글 앱스 스크립트(GAS) 배포 URL 기본 탑재
+    let GOOGLE_SCRIPT_URL = localStorage.getItem('gas_web_app_url') || 'https://script.google.com/macros/s/AKfycbxhbEWMgkNUWlXMdWHYCWGwEbpTQqQVgPdz42WPdqw0bhimE8L7dw6CaoKQ2s1qlHXG3g/exec';
+
+    // 학생 DB 및 목표 격려 문장 (6글자)
+    const STUDENT_DB = {
+      '김서아': '함께라서좋아',
+      '김수현': '용기내어보자',
+      '김윤아': '고운말을써요',
+      '김태영': '마음껏웃어요',
+      '김하랑': '자신있게해요',
+      '나예린': '꿈을향해가자',
+      '박민제': '친구를아껴요',
+      '박선우': '밝게웃어봐요',
+      '양수빈': '끝까지해보자',
+      '유소영': '서로를도와요',
+      '이대운': '포기하지말자',
+      '이새봄': '힘차게달려요',
+      '이서율': '오늘도힘내자',
+      '이진서': '마음을나눠요',
+      '이채원': '차근차근해요',
+      '이초은': '힘을모아보자',
+      '이태환': '웃으며지내자',
+      '이하린': '약속을지켜요',
+      '한규빈': '배려하며살자',
+      '한유은': '씩씩하게가자',
+      '현지우': '천천히해봐요',
+      '황지우': '즐겁게배워요'
+    };
+
+    let currentStudent = '';
+    let studentTargetSentence = '';
+    let unlockedLetters = {};
+    let currentPage = 0; // 0: 표지, 1~5: 단계, 6: 60초, 7: 키워드
+    let nextTargetPage = 0;
+
+    // 단계별 연속 정답 스트릭 상태 변수 (연속 5번 성공 시 클리어)
+    let p1Streak = 0;
+    let p2Streak = 0;
+    let p3Streak = 0;
+    let p4Streak = 0;
+    let p5Streak = 0;
+
+    // 1단계 상태 (◆ 식 맞히기)
+    let p1TargetR = 4;
+    let p1TargetC = 7;
+
+    // 2단계 상태 (한 줄 구구단 & 성질 퀴즈)
+    let p2Dan = 3;
+    let p2BlankCols = [];
+    let p2CurrentQuiz = null;
+
+    // 단별 성질 탐구 퀴즈 데이터베이스 (요청된 퀴즈 정확히 매칭)
+    const P2_QUIZZES = {
+      0: [
+        { pre: "0단의 답은 모두 (", blank: "0", post: ")이다." },
+        { pre: "어떤 수에 0을 곱하면 답은 항상 (", blank: "0", post: ")이다." }
+      ],
+      1: [
+        { pre: "1단의 답은 (", blank: "1", post: ")씩 커진다." },
+        { pre: "1단의 답은 곱해지는 수와 (", blank: "같다", post: ")." },
+        { pre: "어떤 수에 1을 곱하면 답은 그 수와 (", blank: "같다", post: ")." }
+      ],
+      2: [
+        { pre: "2단의 답은 (", blank: "2", post: ")씩 커진다." },
+        { pre: "2단의 답은 모두 (", blank: "짝", post: ")수이다." },
+        { pre: "2단, 4단, 6단, 8단의 답은 모두 (", blank: "짝", post: ")수이다." }
+      ],
+      3: [
+        { pre: "3단의 답은 (", blank: "3", post: ")씩 커진다." }
+      ],
+      4: [
+        { pre: "4단의 답은 2단의 답을 (", blank: "2", post: ")배 한 것과 같다." },
+        { pre: "2단, 4단, 6단, 8단의 답은 모두 (", blank: "짝", post: ")수이다." }
+      ],
+      5: [
+        { pre: "5단의 답은 일의 자리 숫자가 (", blank: "5", post: ")와 0으로 번갈아 나타난다." },
+        { pre: "5단의 답은 (", blank: "5", post: ")씩 커진다." }
+      ],
+      6: [
+        { pre: "6단의 답은 3단의 답을 (", blank: "2", post: ")배 한 것과 같다." },
+        { pre: "2단, 4단, 6단, 8단의 답은 모두 (", blank: "짝", post: ")수이다." }
+      ],
+      7: [
+        { pre: "7단의 답은 (", blank: "7", post: ")씩 커진다." }
+      ],
+      8: [
+        { pre: "8단의 답은 4단의 답을 (", blank: "2", post: ")배 한 것과 같다." },
+        { pre: "8단의 답은 모두 (", blank: "짝", post: ")수이다." },
+        { pre: "2단, 4단, 6단, 8단의 답은 모두 (", blank: "짝", post: ")수이다." }
+      ],
+      9: [
+        { pre: "9단의 답은 (", blank: "9", post: ")씩 커진다." },
+        { pre: "9단에서 십의 자리 숫자는 차례로 (", blank: "1", post: ")씩 커진다." },
+        { pre: "9단에서 일의 자리 숫자는 차례로 (", blank: "1", post: ")씩 작아진다." },
+        { pre: "9단의 두 자리 답은 각 자리의 숫자를 더하면 (", blank: "9", post: ")가 된다." }
+      ]
+    };
+
+    // 3단계 상태 (대칭 짝꿍 찾기)
+    let p3TargetR = 4;
+    let p3TargetC = 7;
+    let p3SymbolType = 'star';
+    let p3RevealedPartner = false;
+    let p3TableData = [];
+
+    // 4단계 상태 (구슬 교환법칙 모핑)
+    let p4NumA = 2;
+    let p4NumB = 6;
+    let p4Phase = 1;
+    let isAnimatingP4 = false;
+
+    // 5단계 상태 (수수께끼)
+    let p5CurrentRiddle = null;
+
+    // 6단계 (60초 스피드 챌린지) 상태
+    let p6Questions = [];
+    let p6IsStarted = false;
+    let p6TimerId = null;
+    let p6StartTime = 0;
+    let p6ElapsedTime = 0;
+    let p6IsFinished = false;
+
+    let audioCtx = null;
+    let isMuted = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    window.addEventListener('pointerdown', () => {
+      if (!audioCtx && !isMuted) {
+        try { initAudio(); } catch (e) {}
+      }
+    }, { once: true });
+
+    function toggleSound() {
+      isMuted = !isMuted;
+      const icon = document.getElementById('sound-icon');
+      const label = document.getElementById('sound-label');
+      if (isMuted) {
+        icon.innerText = '🔇';
+        label.innerText = '음소거';
+      } else {
+        icon.innerText = '🔊';
+        label.innerText = '효과음';
+        initAudio();
+        playSound('correct');
+      }
+    }
+
+    function playSound(type) {
+      if (isMuted) return;
+      try {
+        initAudio();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+
+        if (type === 'correct') {
+          const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const st = now + idx * 0.08;
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, st);
+            gain.gain.setValueAtTime(0.18, st);
+            gain.gain.exponentialRampToValueAtTime(0.0001, st + 0.35);
+            osc.start(st);
+            osc.stop(st + 0.35);
+          });
+        } else if (type === 'wrong') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(230, now);
+          osc.frequency.setValueAtTime(160, now + 0.12);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+          osc.start(now);
+          osc.stop(now + 0.32);
+        } else if (type === 'fanfare') {
+          const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const st = now + idx * 0.09;
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, st);
+            gain.gain.setValueAtTime(0.22, st);
+            gain.gain.exponentialRampToValueAtTime(0.0001, st + 0.4);
+            osc.start(st);
+            osc.stop(st + 0.4);
+          });
+        }
+      } catch (e) {
+        console.warn('Audio not available:', e);
+      }
+    }
+
+    function triggerConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#0284c7', '#38bdf8', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6'];
+
+      for (let i = 0; i < 90; i++) {
+        particles.push({
+          x: canvas.width * 0.5,
+          y: canvas.height * 0.35,
+          r: Math.random() * 6 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: (Math.random() - 0.5) * 16,
+          vy: (Math.random() - 0.75) * 16,
+          alpha: 1,
+          decay: Math.random() * 0.015 + 0.01
+        });
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let active = false;
+        particles.forEach(p => {
+          if (p.alpha > 0) {
+            active = true;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.38;
+            p.alpha -= p.decay;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        });
+        if (active) {
+          requestAnimationFrame(render);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      render();
+    }
+
+    function showNoticeModal(message) {
+      const modal = document.getElementById('notice-modal');
+      const msgEl = document.getElementById('notice-modal-msg');
+      if (modal && msgEl) {
+        msgEl.innerText = message;
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeNoticeModal() {
+      const modal = document.getElementById('notice-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function openSuccessModal({ title, badge, desc, nextPageNum }) {
+      const modal = document.getElementById('success-modal');
+      const titleEl = document.getElementById('modal-title');
+      const badgeEl = document.getElementById('modal-badge-label');
+      const descEl = document.getElementById('modal-desc');
+      const nextBtn = document.getElementById('modal-next-btn');
+
+      if (titleEl) titleEl.innerText = title;
+      if (badgeEl) badgeEl.innerText = badge;
+      if (descEl) descEl.innerText = desc;
+      nextTargetPage = nextPageNum;
+
+      if (nextBtn) {
+        if (nextTargetPage === 0) {
+          nextBtn.innerHTML = '<span>처음 화면으로 돌아가기 🏠</span>';
+        } else if (nextTargetPage === 7) {
+          nextBtn.innerHTML = '<span>비밀 키워드 열러 가기! 🎁</span>';
+        } else {
+          nextBtn.innerHTML = `<span>다음 단계로 출발! 🚀</span>`;
+        }
+      }
+
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function handleModalNextStep() {
+      closeModal();
+      if (nextTargetPage >= 0) {
+        switchPage(nextTargetPage);
+      }
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('success-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function registerStudent(name) {
+      const trimmed = name ? name.trim() : '';
+      if (!trimmed) {
+        showNoticeModal('🔒 이름을 입력하거나 명단에서 선택해 주세요!\n이름을 등록해야 다음 단계로 나아갈 수 있습니다.');
+        return false;
+      }
+
+      const prevStudent = currentStudent;
+      currentStudent = trimmed;
+      studentTargetSentence = STUDENT_DB[trimmed] || '너는최고야멋져';
+
+      if (prevStudent !== currentStudent) {
+        unlockedLetters = {};
+      }
+
+      const badge = document.getElementById('header-student-badge');
+      const sName = document.getElementById('header-student-name');
+      if (badge && sName) {
+        badge.classList.remove('hidden');
+        sName.innerText = currentStudent;
+      }
+      updateHeaderLettersTracker();
+      return true;
+    }
+
+    function awardKeywordLetter(stepNum) {
+      if (!currentStudent) {
+        currentStudent = '친구';
+        studentTargetSentence = '너는최고야멋져';
+      }
+      const charIndex = stepNum - 1;
+      const letter = studentTargetSentence.charAt(charIndex) || '★';
+      unlockedLetters[stepNum] = letter;
+      updateHeaderLettersTracker();
+      return letter;
+    }
+
+    function updateHeaderLettersTracker() {
+      const countEl = document.getElementById('header-letters-count');
+      const count = Object.keys(unlockedLetters).length;
+      if (countEl) countEl.innerText = `(${count}/6)`;
+    }
+
+    function switchPage(page) {
+      if (page > 0 && !currentStudent) {
+        showNoticeModal('🔒 이름을 먼저 등록해야 다음 단계로 나아갈 수 있어요!\n표지에서 이름을 입력하거나 명단에서 선택해 주세요.');
+        if (currentPage !== 0) {
+          switchPage(0);
+        } else {
+          const inp = document.getElementById('cover-student-input');
+          if (inp) inp.focus();
+        }
+        return;
+      }
+
+      if (currentPage === 6 && p6TimerId) {
+        clearInterval(p6TimerId);
+        p6TimerId = null;
+      }
+
+      currentPage = page;
+
+      // 탭 활성화 UI 갱신
+      for (let i = 0; i <= 7; i++) {
+        const tab = document.getElementById(`tab-${i}`);
+        if (tab) {
+          if (i === page) {
+            tab.className = (i === 6)
+              ? 'py-2 px-1 rounded-xl bg-rose-600 text-white shadow-xs font-bold border-2 border-rose-700 cursor-pointer'
+              : (i === 7)
+              ? 'py-2 px-1 rounded-xl bg-amber-500 text-white shadow-xs font-bold border-2 border-amber-600 cursor-pointer'
+              : 'py-2 px-1 rounded-xl bg-indigo-600 text-white shadow-xs font-bold border-2 border-indigo-700 cursor-pointer';
+          } else {
+            tab.className = (i === 6)
+              ? 'py-2 px-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-rose-600 font-bold border-2 border-transparent cursor-pointer'
+              : (i === 7)
+              ? 'py-2 px-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-amber-600 font-bold border-2 border-transparent cursor-pointer'
+              : 'py-2 px-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium border-2 border-transparent cursor-pointer';
+          }
+        }
+      }
+
+      const indicator = document.getElementById('page-indicator');
+      if (indicator) indicator.innerText = `${page + 1} / 8 단계`;
+
+      const prevBtn = document.getElementById('prev-step-btn');
+      const nextBtn = document.getElementById('next-step-btn');
+      if (prevBtn) prevBtn.disabled = (page === 0);
+      if (nextBtn) nextBtn.disabled = (page === 7);
+
+      if (page === 0) renderCoverPage();
+      else if (page === 1) renderPage1View();
+      else if (page === 2) renderPage2View();
+      else if (page === 3) renderPage3View();
+      else if (page === 4) renderPage4View();
+      else if (page === 5) renderPage5View();
+      else if (page === 6) renderPage6View();
+      else if (page === 7) renderPage7View();
+    }
+
+    function goPrevPage() {
+      if (currentPage > 0) switchPage(currentPage - 1);
+    }
+
+    function goNextPage() {
+      if (currentPage === 0 && !currentStudent) {
+        const inp = document.getElementById('cover-student-input');
+        const name = inp ? inp.value.trim() : '';
+        if (!name) {
+          showNoticeModal('🔒 이름을 먼저 등록해야 다음 단계로 나아갈 수 있어요!\n표지에서 이름을 입력하거나 명단에서 선택해 주세요.');
+          if (inp) inp.focus();
+          return;
+        }
+        registerStudent(name);
+      }
+      if (currentPage < 7) switchPage(currentPage + 1);
+    }
+
+    function renderCoverPage() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      const studentOptions = Object.keys(STUDENT_DB).map(name => `
+        <option value="${name}" ${currentStudent === name ? 'selected' : ''}>${name}</option>
+      `).join('');
+
+      const slotsHtml = [1, 2, 3, 4, 5, 6].map(num => {
+        const letter = unlockedLetters[num];
+        if (letter) {
+          return `
+            <div class="flex flex-col items-center">
+              <span class="text-[10px] text-amber-700 font-bold mb-0.5">${num}단계</span>
+              <div class="w-10 h-12 sm:w-12 sm:h-14 rounded-xl bg-gradient-to-b from-amber-200 to-amber-300 border-2 border-amber-400 text-amber-950 font-jua text-xl sm:text-2xl flex items-center justify-center font-bold shadow-xs">
+                ${letter}
+              </div>
+            </div>
+          `;
+        }
+        return `
+          <div class="flex flex-col items-center">
+            <span class="text-[10px] text-slate-400 font-medium mb-0.5">${num}단계</span>
+            <div class="w-10 h-12 sm:w-12 sm:h-14 rounded-xl bg-slate-100 border-2 border-slate-200 text-slate-400 font-jua text-sm sm:text-base flex items-center justify-center font-bold shadow-inner">
+              ${num}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center justify-center py-3 px-2 text-center max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-5 py-2 bg-indigo-100 text-indigo-900 rounded-full font-jua text-sm sm:text-base mb-3 shadow-xs border border-indigo-300">
+            <span>✨</span> <span>초등 수학 · 곱셈표 인터랙티브 마스터 챌린지</span>
+          </div>
+          
+          <h2 class="font-jua text-3xl sm:text-5xl text-slate-900 tracking-tight mb-2 drop-shadow-xs">
+            곱셈표 만들기 & 비밀키워드
+          </h2>
+          
+          <p class="font-jua text-slate-700 text-base sm:text-xl mb-4 font-medium">
+            각 단계마다 5번 연속 성공하고 6개의 비밀 글자를 모아 보물 키워드를 완성하세요! 🚀
+          </p>
+
+          <!-- 학생 이름 등록 카드 -->
+          <div class="w-full bg-white rounded-3xl p-5 border-2 border-indigo-400 shadow-sm mb-4 flex flex-col items-center">
+            <div class="font-jua text-slate-800 text-base sm:text-lg mb-3 flex items-center gap-2 font-bold">
+              <span>👤</span> <span>학생의 이름을 입력하거나 선택해 주세요 (필수):</span>
+            </div>
+            
+            <div class="w-full max-w-md flex items-center gap-2 mb-2">
+              <input 
+                type="text" 
+                id="cover-student-input" 
+                value="${currentStudent}" 
+                placeholder="이름 입력 (예: 김서아)" 
+                class="flex-1 h-12 px-4 rounded-2xl border-2 border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-200 font-jua text-base sm:text-lg text-center bg-indigo-50/30 text-indigo-950 placeholder:text-slate-400"
+              />
+              <select 
+                id="cover-student-select" 
+                onchange="onSelectStudent(this.value)" 
+                class="h-12 px-3 rounded-2xl border-2 border-slate-300 bg-slate-50 font-jua text-sm sm:text-base text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 cursor-pointer"
+              >
+                <option value="">명단에서 선택 ∨</option>
+                ${studentOptions}
+              </select>
+            </div>
+            <p class="font-jua text-xs sm:text-sm text-rose-600 font-bold">
+              🔒 표지에 이름을 써야 다음 단계로 나아갈 수 있어요!
+            </p>
+          </div>
+
+          <!-- 연속 5회 규칙 배너 -->
+          <div class="inline-flex items-center justify-center flex-wrap gap-2 px-5 py-2.5 bg-rose-50 border-2 border-rose-200 text-rose-700 rounded-2xl font-jua text-xs sm:text-sm mb-4 shadow-2xs leading-relaxed">
+            <span class="font-black text-sm sm:text-base">🚨 [도전 규칙]</span> 
+            <span>1~5단계는 <b>연속으로 5번</b> 맞혀야 비밀 글자가 열려요! (틀리면 0개부터 다시 시작!)</span>
+          </div>
+
+          <!-- 6글자 슬롯 수집 현황 -->
+          <div class="w-full bg-white rounded-2xl p-4 sm:p-5 border-2 border-indigo-300 shadow-xs flex flex-col items-center mb-5">
+            <span class="text-xs sm:text-sm font-jua text-slate-600 font-bold mb-3">
+              나의 6글자 키워드 수집 현황
+            </span>
+            <div class="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+              ${slotsHtml}
+            </div>
+          </div>
+
+          <!-- 시작 버튼 -->
+          <button onclick="handleStartFromCover()" class="py-3.5 px-10 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-jua text-xl sm:text-2xl rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+            <span>🚀 1단계 ◆ 식 맞히기 시작!</span>
+          </button>
+        </div>
+      `;
+
+      const inp = document.getElementById('cover-student-input');
+      if (inp) {
+        inp.addEventListener('keydown', e => {
+          if (e.key === 'Enter') handleStartFromCover();
+        });
+      }
+    }
+
+    function onSelectStudent(val) {
+      if (val) {
+        const inp = document.getElementById('cover-student-input');
+        if (inp) inp.value = val;
+        registerStudent(val);
+        renderCoverPage();
+      }
+    }
+
+    function handleStartFromCover() {
+      const inp = document.getElementById('cover-student-input');
+      const name = inp ? inp.value.trim() : '';
+      if (!name) {
+        showNoticeModal('🔒 이름을 입력하거나 명단에서 선택해 주세요!\n이름을 등록해야 다음 단계로 나아갈 수 있습니다.');
+        if (inp) inp.focus();
+        return;
+      }
+      registerStudent(name);
+      switchPage(1);
+    }
+
+    function renderPage1View() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 w-full max-w-[650px]">
+            <div class="flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full bg-indigo-600"></span>
+              <h2 class="text-lg sm:text-xl font-black text-indigo-950 font-jua">
+                1단계 · ◆ 위치의 곱셈식을 완성하세요
+              </h2>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button onclick="initPage1Question()" class="px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-900 rounded-xl text-xs sm:text-sm font-black font-jua transition shadow-xs cursor-pointer flex items-center gap-1 active:scale-95">
+                <span>🎲</span> <span>랜덤 문제</span>
+              </button>
+              <div class="flex items-center gap-2 bg-indigo-50 px-3.5 py-1.5 rounded-2xl border border-indigo-200">
+                <span class="text-xs sm:text-sm font-jua text-slate-600 font-bold">⭐ 연속 성공:</span>
+                <span id="p1-streak-stars" class="text-amber-500 font-bold tracking-widest text-base sm:text-lg">
+                  ${'★'.repeat(p1Streak)}${'☆'.repeat(5 - p1Streak)}
+                </span>
+                <span class="text-xs sm:text-sm font-jua font-bold text-indigo-800">(${p1Streak}/5)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 11x11 표 (◆ 표시) -->
+          <div class="relative w-full max-w-[370px] sm:max-w-[500px] md:max-w-[580px] bg-white p-2 sm:p-4 rounded-3xl shadow-xl border-4 border-indigo-200">
+            <svg class="absolute inset-0 w-full h-full pointer-events-none z-20" style="padding: inherit;">
+              <line x1="9%" y1="9%" x2="100%" y2="100%" stroke="#16a34a" stroke-width="3" stroke-dasharray="6,6" stroke-linecap="round" />
+            </svg>
+            <div id="p1-grid-container" class="grid grid-cols-11 gap-1 w-full aspect-square relative z-10"></div>
+          </div>
+
+          <!-- 입력 카드 -->
+          <div class="w-full max-w-[580px] mt-4 p-4 bg-white rounded-3xl shadow-lg border-2 border-indigo-200 flex flex-col items-center">
+            <div class="flex items-center justify-center gap-2 sm:gap-3 flex-wrap">
+              <div class="flex flex-col items-center">
+                <input type="number" id="p1-input-r" inputmode="numeric" class="w-12 h-12 text-center text-xl font-black rounded-xl border-2 border-amber-300 bg-amber-50 focus:bg-white outline-none" placeholder="?">
+              </div>
+              <span class="text-2xl font-black text-slate-400 self-center">×</span>
+              <div class="flex flex-col items-center">
+                <input type="number" id="p1-input-c" inputmode="numeric" class="w-12 h-12 text-center text-xl font-black rounded-xl border-2 border-sky-300 bg-sky-50 focus:bg-white outline-none" placeholder="?">
+              </div>
+              <span class="text-2xl font-black text-slate-400 self-center">=</span>
+              <div class="flex flex-col items-center">
+                <input type="number" id="p1-input-ans" inputmode="numeric" class="w-16 h-12 text-center text-xl font-black rounded-xl border-2 border-indigo-300 bg-indigo-50 focus:bg-white outline-none" placeholder="?">
+              </div>
+              <button onclick="checkP1Answer()" class="self-center px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-xl shadow-md transition active:scale-95 cursor-pointer font-jua">
+                정답 확인
+              </button>
+            </div>
+            <div id="p1-feedback" class="mt-2 text-xs sm:text-sm font-black text-slate-500 text-center min-h-[20px]"></div>
+          </div>
+        </div>
+      `;
+
+      initPage1Question();
+    }
+
+    function initPage1Question() {
+      // 10% 대각선 확률
+      if (Math.random() < 0.1) {
+        p1TargetR = Math.floor(Math.random() * 9) + 1;
+        p1TargetC = p1TargetR;
+      } else {
+        p1TargetR = Math.floor(Math.random() * 9) + 1;
+        p1TargetC = Math.floor(Math.random() * 9) + 1;
+        while (p1TargetC === p1TargetR) {
+          p1TargetC = Math.floor(Math.random() * 9) + 1;
+        }
+      }
+
+      const inR = document.getElementById('p1-input-r');
+      const inC = document.getElementById('p1-input-c');
+      const inAns = document.getElementById('p1-input-ans');
+      if (inR) inR.value = '';
+      if (inC) inC.value = '';
+      if (inAns) inAns.value = '';
+
+      renderPage1Grid();
+      setupP1AutoAdvance();
+      setTimeout(() => { if (inR) inR.focus(); }, 100);
+    }
+
+    function renderPage1Grid() {
+      const grid = document.getElementById('p1-grid-container');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      grid.appendChild(createHeaderCell('×', 'rounded-tl-2xl bg-white border border-slate-300 font-black text-slate-700 text-base sm:text-xl flex items-center justify-center'));
+
+      for (let c = 0; c <= 9; c++) {
+        const cls = `header-col-bg font-black text-slate-800 text-sm sm:text-lg border border-slate-300 flex items-center justify-center ${c === 9 ? 'rounded-tr-2xl' : ''}`;
+        grid.appendChild(createHeaderCell(c, cls));
+      }
+
+      for (let r = 0; r <= 9; r++) {
+        const rowCls = `header-row-bg font-black text-slate-800 text-sm sm:text-lg border border-slate-300 flex items-center justify-center ${r === 9 ? 'rounded-bl-2xl' : ''}`;
+        grid.appendChild(createHeaderCell(r, rowCls));
+
+        for (let c = 0; c <= 9; c++) {
+          const cell = document.createElement('div');
+          const isCorner = (r === 9 && c === 9);
+          cell.className = `w-full h-full border border-slate-200 flex items-center justify-center font-black ${isCorner ? 'rounded-br-2xl' : ''}`;
+
+          if (r === c) cell.classList.add('diagonal-bg');
+          else if (r < c) cell.classList.add('upper-triangle-bg');
+          else cell.classList.add('lower-triangle-bg');
+
+          if (r === p1TargetR && c === p1TargetC) {
+            cell.innerHTML = `<span class="text-cyan-600 text-xl sm:text-2xl font-black animate-pulse drop-shadow">◆</span>`;
+            cell.classList.add('ring-2', 'ring-cyan-500', 'bg-cyan-50');
+          }
+          grid.appendChild(cell);
+        }
+      }
+    }
+
+    function setupP1AutoAdvance() {
+      const inR = document.getElementById('p1-input-r');
+      const inC = document.getElementById('p1-input-c');
+      const inAns = document.getElementById('p1-input-ans');
+      if (inR && inC && inAns) {
+        inR.oninput = () => { if (inR.value.length >= 1) inC.focus(); };
+        inC.oninput = () => { if (inC.value.length >= 1) inAns.focus(); };
+        inAns.onkeydown = (e) => { if (e.key === 'Enter') checkP1Answer(); };
+      }
+    }
+
+    function checkP1Answer() {
+      const inR = parseInt(document.getElementById('p1-input-r')?.value.trim(), 10);
+      const inC = parseInt(document.getElementById('p1-input-c')?.value.trim(), 10);
+      const inAns = parseInt(document.getElementById('p1-input-ans')?.value.trim(), 10);
+      const feedback = document.getElementById('p1-feedback');
+
+      if (isNaN(inR) || isNaN(inC) || isNaN(inAns)) {
+        if (feedback) feedback.innerHTML = `<span class="text-amber-600 font-bold">네모 칸에 숫자를 모두 입력해 주세요!</span>`;
+        return;
+      }
+
+      const expected = p1TargetR * p1TargetC;
+      if (inR === p1TargetR && inC === p1TargetC && inAns === expected) {
+        playSound('correct');
+        p1Streak++;
+        updateStreakDisplay('p1', p1Streak);
+
+        if (p1Streak >= 5) {
+          playSound('fanfare');
+          triggerConfetti();
+          const letter = awardKeywordLetter(1);
+          p1Streak = 0;
+          openSuccessModal({
+            title: '1단계 5연속 정답 성공! 🎉',
+            badge: '1단계 마스터 배지 & 비밀 글자 획득!',
+            desc: `축하합니다! 5번 연속으로 모두 정확하게 맞혔습니다!\n[1번째 비밀 글자: '${letter}']을 획득했습니다!\n다음 2단계(한 줄 구구단)로 이동해 보세요! 🚀`,
+            nextPageNum: 2
+          });
+        } else {
+          showNoticeModal(`🎉 정답입니다! (${p1Streak}/5 성공)\n연속 5번 성공을 향해 다음 문제로 이동합니다! 🚀`);
+          setTimeout(initPage1Question, 700);
+        }
+      } else {
+        playSound('wrong');
+        p1Streak = 0;
+        updateStreakDisplay('p1', p1Streak);
+        showNoticeModal(`❌ 틀렸어요! (${p1TargetR}행 × ${p1TargetC}열 = ${expected})\n연속 성공이 0으로 리셋됩니다. 처음부터 다시 도전해 보세요!`);
+        setTimeout(initPage1Question, 1000);
+      }
+    }
+
+    function renderPage2View() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="w-full max-w-[720px] flex flex-col items-center">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 w-full">
+            <div class="flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full bg-indigo-600"></span>
+              <h2 class="text-lg sm:text-xl font-black text-indigo-950 font-jua">
+                2단계 · 한 줄 구구단 & 성질 퀴즈 완성하기
+              </h2>
+            </div>
+            <div class="flex items-center gap-2 bg-indigo-50 px-3.5 py-1.5 rounded-2xl border border-indigo-200">
+              <span class="text-xs sm:text-sm font-jua text-slate-600 font-bold">⭐ 연속 성공:</span>
+              <span id="p2-streak-stars" class="text-amber-500 font-bold tracking-widest text-base sm:text-lg">
+                ${'★'.repeat(p2Streak)}${'☆'.repeat(5 - p2Streak)}
+              </span>
+              <span class="text-xs sm:text-sm font-jua font-bold text-indigo-800">(${p2Streak}/5)</span>
+            </div>
+          </div>
+
+          <!-- 무작위 단 안내 배너 -->
+          <div class="w-full mb-3 flex items-center justify-between gap-2 bg-white/95 px-4 py-3 rounded-2xl shadow border border-indigo-100">
+            <span id="p2-status-title" class="text-sm sm:text-base font-black text-indigo-950 font-jua">
+              🎲 무작위 출제: ?단의 빈칸과 퀴즈를 완성하세요!
+            </span>
+            <button onclick="newP2Problem()" class="px-3.5 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-900 text-xs sm:text-sm font-black rounded-xl transition shadow-xs font-jua cursor-pointer flex items-center gap-1 active:scale-95">
+              <span>🎲</span> <span>랜덤 문제</span>
+            </button>
+          </div>
+
+          <!-- 2행 x 11열 한 줄 판 -->
+          <div class="w-full bg-white/95 p-3 sm:p-5 rounded-3xl shadow-xl border-4 border-indigo-200 mb-4 overflow-x-auto">
+            <div class="min-w-[500px]">
+              <div class="grid grid-cols-11 gap-1.5 sm:gap-2 mb-2">
+                <div class="h-12 sm:h-14 rounded-xl bg-slate-100 border border-slate-300 flex items-center justify-center font-black text-slate-700 text-lg sm:text-2xl">×</div>
+                ${[0,1,2,3,4,5,6,7,8,9].map(num => `
+                  <div class="h-12 sm:h-14 rounded-xl header-col-bg border border-sky-300 flex items-center justify-center font-black text-slate-800 text-base sm:text-2xl">${num}</div>
+                `).join('')}
+              </div>
+              <div id="p2-row-cells" class="grid grid-cols-11 gap-1.5 sm:gap-2"></div>
+            </div>
+          </div>
+
+          <!-- 하단 성질 탐구 퀴즈 & 채점 카드 -->
+          <div class="w-full p-4 sm:p-5 bg-white rounded-3xl shadow-lg border-2 border-indigo-200 flex flex-col items-center gap-3">
+            <div id="p2-quiz-container" class="w-full bg-amber-50/80 border-2 border-amber-300 rounded-2xl p-4 flex flex-col items-center text-center">
+              <span class="text-xs sm:text-sm font-black text-amber-900 mb-1.5 font-jua flex items-center gap-1.5">
+                <span>💡</span> <span id="p2-quiz-dan-label">탐구 퀴즈</span>
+              </span>
+              <div id="p2-quiz-sentence" class="font-jua text-base sm:text-lg text-slate-800 flex items-center justify-center flex-wrap gap-1">
+                <!-- 퀴즈 문장 및 인풋 동적 삽입 -->
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between w-full flex-wrap gap-2 pt-1">
+              <span class="text-xs sm:text-sm font-bold text-slate-500 font-jua">
+                빈칸 2개와 퀴즈의 네모를 모두 채운 뒤 확인을 누르세요.
+              </span>
+              <button onclick="checkP2Answers()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm sm:text-base font-black rounded-xl shadow transition active:scale-95 font-jua cursor-pointer">
+                정답 확인
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      newP2Problem();
+    }
+
+    function newP2Problem() {
+      // 0단부터 9단까지 무작위 단 선택 (이전 단과 가급적 다르게)
+      let newDan;
+      do {
+        newDan = Math.floor(Math.random() * 10);
+      } while (newDan === p2Dan && Math.random() < 0.8);
+      p2Dan = newDan;
+
+      // 출제된 해당 단에 속한 성질 퀴즈 중 하나를 무작위 선택
+      const quizList = P2_QUIZZES[p2Dan] || [
+        { pre: `${p2Dan}단의 답은 (`, blank: `${p2Dan}`, post: `)씩 커진다.` }
+      ];
+      p2CurrentQuiz = quizList[Math.floor(Math.random() * quizList.length)];
+
+      // 빈칸 2개 열 무작위 추출 (0~9 중 2개)
+      p2BlankCols = [];
+      while (p2BlankCols.length < 2) {
+        const pick = Math.floor(Math.random() * 10);
+        if (!p2BlankCols.includes(pick)) p2BlankCols.push(pick);
+      }
+      p2BlankCols.sort((a, b) => a - b);
+
+      const title = document.getElementById('p2-status-title');
+      if (title) title.innerHTML = `🎲 이번 도전: <span class="text-indigo-600 font-black">${p2Dan}단</span>의 빈칸을 채우고 성질 퀴즈를 풀어보세요!`;
+
+      // 한 줄 구구단 셀 렌더링
+      const container = document.getElementById('p2-row-cells');
+      if (container) {
+        container.innerHTML = '';
+
+        const danHeader = document.createElement('div');
+        danHeader.className = 'h-12 sm:h-14 rounded-xl header-row-bg border border-amber-300 flex items-center justify-center font-black text-slate-800 text-base sm:text-2xl shadow-sm';
+        danHeader.textContent = p2Dan;
+        container.appendChild(danHeader);
+
+        for (let c = 0; c <= 9; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'h-12 sm:h-14 rounded-xl bg-white border border-slate-300 flex items-center justify-center font-black shadow-sm overflow-hidden';
+
+          if (p2BlankCols.includes(c)) {
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.inputmode = 'numeric';
+            input.id = `p2-input-${c}`;
+            input.className = 'w-full h-full text-center text-base sm:text-xl font-black text-indigo-700 bg-amber-50 focus:bg-white focus:ring-2 focus:ring-indigo-300 outline-none';
+            input.placeholder = '?';
+            input.onkeydown = (e) => {
+              if (e.key === 'Enter') {
+                const nextBlank = p2BlankCols.find(col => col > c);
+                if (nextBlank !== undefined) {
+                  document.getElementById(`p2-input-${nextBlank}`)?.focus();
+                } else {
+                  document.getElementById('p2-quiz-input')?.focus();
+                }
+              }
+            };
+            cell.appendChild(input);
+          } else {
+            cell.textContent = p2Dan * c;
+            cell.className += ' text-slate-700 text-base sm:text-2xl';
+          }
+          container.appendChild(cell);
+        }
+      }
+
+      // 성질 탐구 퀴즈 렌더링
+      const quizLabel = document.getElementById('p2-quiz-dan-label');
+      if (quizLabel) quizLabel.textContent = `${p2Dan}단 성질 탐구 퀴즈`;
+
+      const quizSentence = document.getElementById('p2-quiz-sentence');
+      if (quizSentence && p2CurrentQuiz) {
+        quizSentence.innerHTML = `
+          <span>${p2CurrentQuiz.pre}</span>
+          <input 
+            type="text" 
+            id="p2-quiz-input" 
+            maxlength="4" 
+            placeholder="?" 
+            autocomplete="off"
+            class="w-16 sm:w-20 h-10 text-center font-jua text-base sm:text-lg font-black text-indigo-800 bg-white border-2 border-amber-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 shadow-inner"
+          />
+          <span>${p2CurrentQuiz.post}</span>
+        `;
+
+        const quizInput = document.getElementById('p2-quiz-input');
+        if (quizInput) {
+          quizInput.onkeydown = (e) => {
+            if (e.key === 'Enter') checkP2Answers();
+          };
+        }
+      }
+
+      // 첫 번째 빈칸으로 자동 포커스
+      setTimeout(() => {
+        const firstInput = document.getElementById(`p2-input-${p2BlankCols[0]}`);
+        if (firstInput) firstInput.focus();
+      }, 80);
+    }
+
+    function checkP2Answers() {
+      let allFilled = true;
+      let tableCorrect = true;
+
+      // 1. 구구단 빈칸 2개 검사
+      for (let c of p2BlankCols) {
+        const input = document.getElementById(`p2-input-${c}`);
+        if (!input) continue;
+        const valStr = input.value.trim();
+        if (valStr === '') allFilled = false;
+        const val = parseInt(valStr, 10);
+        const expected = p2Dan * c;
+        if (val === expected) {
+          input.classList.remove('border-rose-400', 'bg-rose-50');
+          input.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+        } else {
+          input.classList.add('border-rose-400', 'bg-rose-50');
+          tableCorrect = false;
+        }
+      }
+
+      // 2. 성질 탐구 퀴즈 검사
+      const quizInput = document.getElementById('p2-quiz-input');
+      const quizVal = quizInput ? quizInput.value.trim().replace(/\s+/g, '') : '';
+      if (quizVal === '') allFilled = false;
+
+      let quizCorrect = false;
+      if (p2CurrentQuiz && quizVal) {
+        const expectedQuiz = p2CurrentQuiz.blank.replace(/\s+/g, '');
+        if (quizVal === expectedQuiz) {
+          quizCorrect = true;
+          if (quizInput) {
+            quizInput.classList.remove('border-rose-400', 'bg-rose-50');
+            quizInput.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+          }
+        } else {
+          if (quizInput) {
+            quizInput.classList.add('border-rose-400', 'bg-rose-50');
+          }
+        }
+      }
+
+      if (!allFilled) {
+        playSound('wrong');
+        showNoticeModal('⚠️ 구구단 빈칸 2개와 아래 성질 퀴즈의 답을 모두 적어주세요!');
+        return;
+      }
+
+      if (tableCorrect && quizCorrect) {
+        playSound('correct');
+        p2Streak++;
+        updateStreakDisplay('p2', p2Streak);
+
+        if (p2Streak >= 5) {
+          playSound('fanfare');
+          triggerConfetti();
+          const letter = awardKeywordLetter(2);
+          p2Streak = 0;
+          openSuccessModal({
+            title: '2단계 5연속 정답 성공! 🎉',
+            badge: '2단계 마스터 배지 & 비밀 글자 획득!',
+            desc: `축하합니다! 한 줄 구구단과 성질 퀴즈를 5번 연속 모두 맞혔습니다!\n[2번째 비밀 글자: '${letter}']을 획득했습니다!\n다음 3단계(대칭 짝꿍 찾기)로 이동해 보세요! 🚀`,
+            nextPageNum: 3
+          });
+        } else {
+          showNoticeModal(`🎉 정답입니다! (${p2Streak}/5 성공)\n연속 5번 성공을 향해 다음 무작위 단으로 이동합니다! 🚀`);
+          setTimeout(newP2Problem, 700);
+        }
+      } else {
+        playSound('wrong');
+        p2Streak = 0;
+        updateStreakDisplay('p2', p2Streak);
+        let errorMsg = '❌ 틀린 부분이 있어요!\n';
+        if (!tableCorrect) errorMsg += '• 한 줄 구구단 빈칸을 확인해 보세요.\n';
+        if (!quizCorrect) errorMsg += `• 성질 퀴즈의 알맞은 답은 [ ${p2CurrentQuiz.blank} ]입니다.\n`;
+        errorMsg += '연속 성공이 0으로 리셋됩니다. 새로운 문제로 다시 도전해 보세요!';
+        showNoticeModal(errorMsg);
+        setTimeout(newP2Problem, 1100);
+      }
+    }
+
+    function renderPage3View() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 w-full max-w-[650px]">
+            <div class="flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full bg-purple-600"></span>
+              <h2 class="text-lg sm:text-xl font-black text-purple-950 font-jua">
+                3단계 · 대칭 짝꿍 찾고 식 쓰기
+              </h2>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button onclick="initPage3Question()" class="px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-900 rounded-xl text-xs sm:text-sm font-black font-jua transition shadow-xs cursor-pointer flex items-center gap-1 active:scale-95">
+                <span>🎲</span> <span>랜덤 문제</span>
+              </button>
+              <div class="flex items-center gap-2 bg-purple-50 px-3.5 py-1.5 rounded-2xl border border-purple-200">
+                <span class="text-xs sm:text-sm font-jua text-slate-600 font-bold">⭐ 연속 성공:</span>
+                <span id="p3-streak-stars" class="text-amber-500 font-bold tracking-widest text-base sm:text-lg">
+                  ${'★'.repeat(p3Streak)}${'☆'.repeat(5 - p3Streak)}
+                </span>
+                <span class="text-xs sm:text-sm font-jua font-bold text-purple-800">(${p3Streak}/5)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 11x11 표 -->
+          <div class="relative w-full max-w-[370px] sm:max-w-[500px] md:max-w-[580px] bg-white p-2 sm:p-4 rounded-3xl shadow-xl border-4 border-indigo-200">
+            <svg class="absolute inset-0 w-full h-full pointer-events-none z-20" style="padding: inherit;">
+              <line x1="9%" y1="9%" x2="100%" y2="100%" stroke="#16a34a" stroke-width="3" stroke-dasharray="6,6" stroke-linecap="round" />
+            </svg>
+            <div id="p3-grid-container" class="grid grid-cols-11 gap-1 w-full aspect-square relative z-10"></div>
+          </div>
+
+          <!-- 안내 및 식 풀이 카드 -->
+          <div class="w-full max-w-[580px] mt-4 p-4 bg-white rounded-3xl shadow-lg border-2 border-purple-200 flex flex-col items-center">
+            <div id="p3-step-title" class="text-xs sm:text-sm font-black text-purple-950 mb-2 font-jua hidden"></div>
+            <div id="p3-feedback-banner" class="w-full p-2 rounded-2xl bg-purple-50 text-purple-900 text-xs sm:text-sm font-extrabold text-center mb-3 hidden"></div>
+
+            <!-- 2단계 곱셈식 상자 -->
+            <div id="p3-equation-box" class="hidden flex-col items-center gap-2 w-full bg-slate-50 p-3 rounded-2xl border border-purple-200">
+              <div class="text-xs sm:text-sm font-black text-slate-700 text-center font-jua">
+                🎉 짝꿍 위치 성공! 이제 짝꿍 기호의 곱셈식을 완성해 보세요:
+              </div>
+              <div class="flex items-center justify-center gap-2 flex-wrap">
+                <input type="number" id="p3-input-r" inputmode="numeric" class="w-12 h-12 text-center text-lg font-black rounded-xl border-2 border-amber-300 bg-amber-50 focus:bg-white outline-none" placeholder="행">
+                <span class="text-xl font-black text-slate-400">×</span>
+                <input type="number" id="p3-input-c" inputmode="numeric" class="w-12 h-12 text-center text-lg font-black rounded-xl border-2 border-sky-300 bg-sky-50 focus:bg-white outline-none" placeholder="열">
+                <span class="text-xl font-black text-slate-400">=</span>
+                <input type="number" id="p3-input-ans" inputmode="numeric" class="w-16 h-12 text-center text-lg font-black rounded-xl border-2 border-purple-300 bg-purple-50 focus:bg-white outline-none" placeholder="곱">
+                <button onclick="checkP3Formula()" class="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-black text-sm rounded-xl shadow transition font-jua cursor-pointer">
+                  정답 확인
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      initPage3Question();
+    }
+
+    function initPage3Question() {
+      p3RevealedPartner = false;
+      const eqBox = document.getElementById('p3-equation-box');
+      if (eqBox) eqBox.classList.add('hidden');
+
+      let r = Math.floor(Math.random() * 8) + 1;
+      let c = Math.floor(Math.random() * 8) + 1;
+      while (r === c) {
+        c = Math.floor(Math.random() * 8) + 1;
+      }
+      p3TargetR = r;
+      p3TargetC = c;
+      p3SymbolType = Math.random() < 0.5 ? 'star' : 'heart';
+
+      p3TableData = Array(10).fill(null).map(() => Array(10).fill(null));
+      p3TableData[p3TargetR][p3TargetC] = (p3SymbolType === 'star') ? '★' : '♥';
+
+      let counts = [3, 4, 3, 3, 3, 3, 4, 3, 4, 3];
+      for (let row = 0; row <= 9; row++) {
+        let avail = [];
+        for (let col = 0; col <= 9; col++) {
+          if (p3TableData[row][col] === null && !(row === p3TargetC && col === p3TargetR)) {
+            avail.push(col);
+          }
+        }
+        avail.sort(() => Math.random() - 0.5);
+        for (let i = 0; i < counts[row] && i < avail.length; i++) {
+          p3TableData[row][avail[i]] = row * avail[i];
+        }
+      }
+
+      renderPage3Grid();
+    }
+
+    function renderPage3Grid() {
+      const grid = document.getElementById('p3-grid-container');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      grid.appendChild(createHeaderCell('×', 'rounded-tl-2xl bg-white border border-slate-300 font-black text-slate-700 text-base sm:text-xl flex items-center justify-center'));
+
+      for (let c = 0; c <= 9; c++) {
+        const cls = `header-col-bg font-black text-slate-800 text-sm sm:text-lg border border-slate-300 flex items-center justify-center ${c === 9 ? 'rounded-tr-2xl' : ''}`;
+        grid.appendChild(createHeaderCell(c, cls));
+      }
+
+      for (let r = 0; r <= 9; r++) {
+        const rowCls = `header-row-bg font-black text-slate-800 text-sm sm:text-lg border border-slate-300 flex items-center justify-center ${r === 9 ? 'rounded-bl-2xl' : ''}`;
+        grid.appendChild(createHeaderCell(r, rowCls));
+
+        for (let c = 0; c <= 9; c++) {
+          const cell = document.createElement('div');
+          const isCorner = (r === 9 && c === 9);
+          cell.className = `w-full h-full border border-slate-200 flex items-center justify-center font-black cursor-pointer transition ${isCorner ? 'rounded-br-2xl' : ''}`;
+
+          if (r === c) cell.classList.add('diagonal-bg');
+          else if (r < c) cell.classList.add('upper-triangle-bg');
+          else cell.classList.add('lower-triangle-bg');
+
+          const val = p3TableData[r][c];
+          if (val === '★') {
+            cell.innerHTML = `<span class="text-pink-600 text-lg sm:text-2xl font-black animate-bounce">★</span>`;
+            cell.classList.add('ring-2', 'ring-pink-500', 'bg-pink-100');
+          } else if (val === '♥') {
+            cell.innerHTML = `<span class="text-rose-600 text-lg sm:text-2xl font-black animate-bounce">♥</span>`;
+            cell.classList.add('ring-2', 'ring-rose-500', 'bg-rose-100');
+          } else if (p3RevealedPartner && r === p3TargetC && c === p3TargetR) {
+            const partnerChar = (p3SymbolType === 'star') ? '♥' : '★';
+            cell.innerHTML = `<span class="text-purple-600 text-lg sm:text-2xl font-black">${partnerChar}</span>`;
+            cell.classList.add('ring-2', 'ring-purple-500', 'bg-purple-100');
+          } else if (val !== null) {
+            cell.textContent = val;
+            cell.className += ' text-xs sm:text-lg text-slate-700';
+          }
+
+          cell.onclick = () => onPage3CellClick(r, c);
+          grid.appendChild(cell);
+        }
+      }
+    }
+
+    function onPage3CellClick(r, c) {
+      if (p3RevealedPartner) return;
+      const expectedR = p3TargetC;
+      const expectedC = p3TargetR;
+      const banner = document.getElementById('p3-feedback-banner');
+
+      if (r === expectedR && c === expectedC) {
+        playSound('correct');
+        p3RevealedPartner = true;
+        renderPage3Grid();
+
+        if (banner) banner.innerHTML = `<span class="text-emerald-700 font-black">🎉 대칭 위치 성공! 아래 네모에 짝꿍의 곱셈식을 완성하세요!</span>`;
+        const eqBox = document.getElementById('p3-equation-box');
+        if (eqBox) {
+          eqBox.classList.remove('hidden');
+          const inR = document.getElementById('p3-input-r');
+          const inC = document.getElementById('p3-input-c');
+          const inAns = document.getElementById('p3-input-ans');
+          if (inR) inR.value = '';
+          if (inC) inC.value = '';
+          if (inAns) inAns.value = '';
+          if (inR) {
+            inR.oninput = () => { if (inR.value.length >= 1) inC.focus(); };
+            inC.oninput = () => { if (inC.value.length >= 1) inAns.focus(); };
+            inAns.onkeydown = (e) => { if (e.key === 'Enter') checkP3Formula(); };
+            inR.focus();
+          }
+        }
+      } else {
+        playSound('wrong');
+        p3Streak = 0;
+        updateStreakDisplay('p3', p3Streak);
+        showNoticeModal(`❌ 대칭 위치가 아니에요! (${p3TargetC}행 ${p3TargetR}열)\n연속 성공이 0으로 리셋됩니다. 새로운 문제로 다시 시작합니다!`);
+        setTimeout(initPage3Question, 1000);
+      }
+    }
+
+    function checkP3Formula() {
+      const inR = parseInt(document.getElementById('p3-input-r')?.value.trim(), 10);
+      const inC = parseInt(document.getElementById('p3-input-c')?.value.trim(), 10);
+      const inAns = parseInt(document.getElementById('p3-input-ans')?.value.trim(), 10);
+
+      const partnerR = p3TargetC;
+      const partnerC = p3TargetR;
+      const expectedAns = partnerR * partnerC;
+
+      if (isNaN(inR) || isNaN(inC) || isNaN(inAns)) {
+        showNoticeModal('⚠️ 행, 열, 곱을 모두 입력해 주세요!');
+        return;
+      }
+
+      if (inR === partnerR && inC === partnerC && inAns === expectedAns) {
+        playSound('correct');
+        p3Streak++;
+        updateStreakDisplay('p3', p3Streak);
+
+        if (p3Streak >= 5) {
+          playSound('fanfare');
+          triggerConfetti();
+          const letter = awardKeywordLetter(3);
+          p3Streak = 0;
+          openSuccessModal({
+            title: '3단계 5연속 정답 성공! 🎉',
+            badge: '3단계 마스터 배지 & 비밀 글자 획득!',
+            desc: `축하합니다! 5번 연속으로 모두 정확하게 맞혔습니다!\n[3번째 비밀 글자: '${letter}']을 획득했습니다!\n다음 4단계(묶음 교환법칙)로 이동해 보세요! 🚀`,
+            nextPageNum: 4
+          });
+        } else {
+          showNoticeModal(`🎉 정답입니다! (${p3Streak}/5 성공)\n연속 5번 성공을 향해 다음 문제로 이동합니다! 🚀`);
+          setTimeout(initPage3Question, 700);
+        }
+      } else {
+        playSound('wrong');
+        p3Streak = 0;
+        updateStreakDisplay('p3', p3Streak);
+        showNoticeModal(`❌ 곱셈식이 틀렸어요! (${partnerR} × ${partnerC} = ${expectedAns})\n연속 성공이 0으로 리셋됩니다. 처음부터 다시 도전해 보세요!`);
+        setTimeout(initPage3Question, 1000);
+      }
+    }
+
+    function renderPage4View() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="w-full max-w-[650px] bg-white p-4 sm:p-6 rounded-3xl shadow-xl border-4 border-purple-200 flex flex-col items-center">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 w-full border-b border-purple-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full bg-purple-600"></span>
+              <h2 class="text-base sm:text-lg font-black text-slate-800 font-jua">
+                4단계 · 묶음 교환법칙 탐구
+              </h2>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap">
+              <button onclick="initPage4Question()" class="px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-900 rounded-xl text-xs sm:text-sm font-black font-jua transition shadow-xs cursor-pointer flex items-center gap-1 active:scale-95">
+                <span>🎲</span> <span>랜덤 문제</span>
+              </button>
+              <div class="flex items-center gap-2 bg-purple-50 px-3.5 py-1.5 rounded-2xl border border-purple-200">
+                <span class="text-xs sm:text-sm font-jua text-slate-600 font-bold">⭐ 연속 성공:</span>
+                <span id="p4-streak-stars" class="text-amber-500 font-bold tracking-widest text-base sm:text-lg">
+                  ${'★'.repeat(p4Streak)}${'☆'.repeat(5 - p4Streak)}
+                </span>
+                <span class="text-xs sm:text-sm font-jua font-bold text-purple-800">(${p4Streak}/5)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 구슬 판 -->
+          <div class="relative w-full min-h-[200px] flex items-center justify-center p-4 bg-gradient-to-b from-sky-50/50 to-purple-50/50 rounded-3xl border-2 border-purple-200 shadow-inner overflow-hidden my-2">
+            <div id="p4-board-box" class="relative inline-block">
+              <div id="p4-vert-outlines" class="absolute inset-0 flex items-stretch justify-center gap-2 p-2 smooth-transition pointer-events-none z-0 opacity-100 scale-100"></div>
+              <div id="p4-horiz-outlines" class="absolute inset-0 flex flex-col items-stretch justify-center gap-2 p-2 smooth-transition pointer-events-none z-0 opacity-0 scale-95"></div>
+              <div id="p4-beads-layer" class="relative grid gap-2 p-2 z-10"></div>
+            </div>
+          </div>
+
+          <!-- 곱셈식 입력 (곱해지는 수, 곱하는 수, 결과 모두 네모) -->
+          <div class="w-full flex flex-col items-center justify-center gap-2 mt-3">
+            <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
+              <input type="number" id="p4-input-a" inputmode="numeric" class="w-12 h-12 text-center text-xl font-black rounded-xl border-2 border-amber-300 bg-amber-50 focus:bg-white outline-none" placeholder="?">
+              <span class="text-2xl font-black text-slate-400 self-center">×</span>
+              <input type="number" id="p4-input-b" inputmode="numeric" class="w-12 h-12 text-center text-xl font-black rounded-xl border-2 border-sky-300 bg-sky-50 focus:bg-white outline-none" placeholder="?">
+              <span class="text-2xl font-black text-slate-400 self-center">=</span>
+              <input type="number" id="p4-input-ans" inputmode="numeric" class="w-16 h-12 text-center text-xl font-black rounded-xl border-2 border-indigo-300 bg-indigo-50 focus:bg-white outline-none" placeholder="?">
+              <button onclick="submitP4Answer()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-xl shadow-md transition active:scale-95 font-jua cursor-pointer">
+                정답 확인
+              </button>
+            </div>
+            <div id="p4-feedback-text" class="text-xs sm:text-sm font-extrabold text-slate-600 text-center min-h-[20px]"></div>
+          </div>
+        </div>
+      `;
+
+      initPage4Question();
+    }
+
+    function initPage4Question() {
+      p4Phase = 1;
+      isAnimatingP4 = false;
+
+      let newA, newB;
+      do {
+        newA = Math.floor(Math.random() * 8) + 2;
+        newB = Math.floor(Math.random() * 8) + 2;
+      } while (newA === newB || (newA === p4NumA && newB === p4NumB));
+      p4NumA = newA;
+      p4NumB = newB;
+
+      const inA = document.getElementById('p4-input-a');
+      const inB = document.getElementById('p4-input-b');
+      const inAns = document.getElementById('p4-input-ans');
+      if (inA) inA.value = '';
+      if (inB) inB.value = '';
+      if (inAns) inAns.value = '';
+      if (inA) inA.disabled = false;
+      if (inB) inB.disabled = false;
+      if (inAns) inAns.disabled = false;
+
+      setupP4AutoAdvance();
+      setTimeout(() => { if (inA) inA.focus(); }, 100);
+
+      renderP4Beads();
+    }
+
+    function renderP4Beads() {
+      const beadsLayer = document.getElementById('p4-beads-layer');
+      const vOutlines = document.getElementById('p4-vert-outlines');
+      const hOutlines = document.getElementById('p4-horiz-outlines');
+      if (!beadsLayer) return;
+
+      beadsLayer.innerHTML = '';
+      beadsLayer.style.gridTemplateColumns = `repeat(${p4NumB}, minmax(0, 1fr))`;
+      beadsLayer.style.gridTemplateRows = `repeat(${p4NumA}, minmax(0, 1fr))`;
+
+      for (let r = 0; r < p4NumA; r++) {
+        for (let c = 0; c < p4NumB; c++) {
+          const bead = document.createElement('div');
+          bead.className = 'w-7 h-7 sm:w-9 sm:h-9 rounded-full bead-sphere flex items-center justify-center transform transition-transform duration-300 hover:scale-110 cursor-pointer';
+          beadsLayer.appendChild(bead);
+        }
+      }
+
+      if (vOutlines) {
+        vOutlines.innerHTML = '';
+        vOutlines.className = 'absolute inset-0 flex items-stretch justify-center gap-2 p-2 smooth-transition pointer-events-none z-0 opacity-100 scale-100';
+        for (let c = 0; c < p4NumB; c++) {
+          const box = document.createElement('div');
+          box.className = 'flex-1 border-2 border-dashed border-indigo-400 bg-indigo-500/10 rounded-2xl';
+          vOutlines.appendChild(box);
+        }
+      }
+
+      if (hOutlines) {
+        hOutlines.innerHTML = '';
+        hOutlines.className = 'absolute inset-0 flex flex-col items-stretch justify-center gap-2 p-2 smooth-transition pointer-events-none z-0 opacity-0 scale-95';
+        for (let r = 0; r < p4NumA; r++) {
+          const box = document.createElement('div');
+          box.className = 'flex-1 border-2 border-dashed border-purple-400 bg-purple-500/10 rounded-2xl';
+          hOutlines.appendChild(box);
+        }
+      }
+    }
+
+    function setupP4AutoAdvance() {
+      const inA = document.getElementById('p4-input-a');
+      const inB = document.getElementById('p4-input-b');
+      const inAns = document.getElementById('p4-input-ans');
+      if (inA && inB && inAns) {
+        inA.oninput = () => { if (inA.value.length >= 1) inB.focus(); };
+        inB.oninput = () => { if (inB.value.length >= 1) inAns.focus(); };
+        inAns.onkeydown = (e) => { if (e.key === 'Enter') submitP4Answer(); };
+      }
+    }
+    function submitP4Answer() {
+      if (isAnimatingP4) return;
+      const inA = parseInt(document.getElementById('p4-input-a')?.value.trim(), 10);
+      const inB = parseInt(document.getElementById('p4-input-b')?.value.trim(), 10);
+      const inAns = parseInt(document.getElementById('p4-input-ans')?.value.trim(), 10);
+      const expectedAns = p4NumA * p4NumB;
+
+      if (isNaN(inA) || isNaN(inB) || isNaN(inAns)) {
+        showNoticeModal('⚠️ 네모 칸에 숫자를 모두 입력해 주세요!');
+        return;
+      }
+
+      if (p4Phase === 1) {
+        if (inA === p4NumA && inB === p4NumB && inAns === expectedAns) {
+          playSound('correct');
+          const inputA = document.getElementById('p4-input-a');
+          const inputB = document.getElementById('p4-input-b');
+          const inputAns = document.getElementById('p4-input-ans');
+          if (inputA) inputA.disabled = true;
+          if (inputB) inputB.disabled = true;
+          if (inputAns) inputAns.disabled = true;
+          startP4RebundlingAnimation();
+        } else {
+          playSound('wrong');
+          p4Streak = 0;
+          updateStreakDisplay('p4', p4Streak);
+          showNoticeModal(`❌ 틀렸어요! (${p4NumA} × ${p4NumB} = ${expectedAns})\n연속 성공이 0으로 리셋됩니다. 처음부터 다시 시작합니다!`);
+          setTimeout(initPage4Question, 1000);
+        }
+      } else if (p4Phase === 2) {
+        if (inA === p4NumB && inB === p4NumA && inAns === expectedAns) {
+          playSound('correct');
+          p4Streak++;
+          updateStreakDisplay('p4', p4Streak);
+
+          if (p4Streak >= 5) {
+            playSound('fanfare');
+            triggerConfetti();
+            const letter = awardKeywordLetter(4);
+            p4Streak = 0;
+            openSuccessModal({
+              title: '4단계 5연속 정답 성공! 🎉',
+              badge: '4단계 마스터 배지 & 비밀 글자 획득!',
+              desc: `축하합니다! 5번 연속으로 모두 정확하게 맞혔습니다!\n[4번째 비밀 글자: '${letter}']을 획득했습니다!\n다음 5단계(수수께끼)로 이동해 보세요! 🚀`,
+              nextPageNum: 5
+            });
+          } else {
+            showNoticeModal(`🎉 정답입니다! (${p4Streak}/5 성공)\n연속 5번 성공을 향해 다음 문제로 이동합니다! 🚀`);
+            setTimeout(initPage4Question, 700);
+          }
+        } else {
+          playSound('wrong');
+          p4Streak = 0;
+          updateStreakDisplay('p4', p4Streak);
+          showNoticeModal(`❌ 틀렸어요! 묶음이 바뀌어 (${p4NumB} × ${p4NumA} = ${expectedAns})가 됩니다.\n연속 성공이 0으로 리셋됩니다.`);
+          setTimeout(initPage4Question, 1000);
+        }
+      }
+    }
+
+    function startP4RebundlingAnimation() {
+      isAnimatingP4 = true;
+      const vOutlines = document.getElementById('p4-vert-outlines');
+      const hOutlines = document.getElementById('p4-horiz-outlines');
+
+      if (vOutlines) vOutlines.className = 'absolute inset-0 flex items-stretch justify-center gap-2 p-2 smooth-transition pointer-events-none z-0 opacity-0 scale-95';
+
+      setTimeout(() => {
+        if (hOutlines) hOutlines.className = 'absolute inset-0 flex flex-col items-stretch justify-center gap-2 p-2 smooth-transition pointer-events-none z-0 opacity-100 scale-100';
+
+        p4Phase = 2;
+        isAnimatingP4 = false;
+
+        const inA = document.getElementById('p4-input-a');
+        const inB = document.getElementById('p4-input-b');
+        const inAns = document.getElementById('p4-input-ans');
+        if (inA) { inA.value = ''; inA.disabled = false; }
+        if (inB) { inB.value = ''; inB.disabled = false; }
+        if (inAns) { inAns.value = ''; inAns.disabled = false; }
+
+        setupP4AutoAdvance();
+        if (inA) inA.focus();
+      }, 550);
+    }
+
+    function renderPage5View() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="w-full max-w-4xl flex flex-col items-center">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 w-full max-w-[500px]">
+            <div class="flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full bg-amber-600"></span>
+              <h2 class="text-lg sm:text-xl font-black text-amber-950 font-jua">
+                5단계 · 곱셈구구 수수께끼
+              </h2>
+            </div>
+            <div class="flex items-center gap-2 bg-amber-50 px-3.5 py-1.5 rounded-2xl border border-amber-200">
+              <span class="text-xs sm:text-sm font-jua text-slate-600 font-bold">⭐ 연속 성공:</span>
+              <span id="p5-streak-stars" class="text-amber-500 font-bold tracking-widest text-base sm:text-lg">
+                ${'★'.repeat(p5Streak)}${'☆'.repeat(5 - p5Streak)}
+              </span>
+              <span class="text-xs sm:text-sm font-jua font-bold text-amber-800">(${p5Streak}/5)</span>
+            </div>
+          </div>
+
+          <!-- 아담한 전체 곱셈표 (상단 배치) -->
+          <div class="relative w-full max-w-[310px] sm:max-w-[420px] bg-white p-2 rounded-3xl shadow-xl border-4 border-indigo-200 mb-4">
+            <div id="p5-grid-container" class="grid grid-cols-11 gap-0.5 sm:gap-1 w-full aspect-square relative z-10"></div>
+          </div>
+
+          <!-- 수수께끼 단서 카드 -->
+          <div class="w-full max-w-[500px] bg-gradient-to-br from-amber-50 via-white to-orange-50 p-4 rounded-3xl shadow-lg border-2 border-amber-200 flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-amber-100 pb-2">
+              <span class="text-xs sm:text-sm font-black text-amber-900 flex items-center gap-1.5 font-jua">
+                🔍 나는 어떤 수일까요?
+              </span>
+              <button onclick="initPage5Question()" class="px-3 py-1.5 bg-amber-200/80 hover:bg-amber-300 text-amber-950 rounded-xl text-xs sm:text-sm font-black font-jua transition shadow-xs cursor-pointer flex items-center gap-1 active:scale-95">
+                <span>🎲</span> <span>랜덤 문제</span>
+              </button>
+            </div>
+
+            <div class="flex flex-col gap-2 text-slate-800 text-sm sm:text-base font-extrabold px-1 font-jua">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-amber-200 text-amber-900 text-xs font-black flex items-center justify-center shrink-0">1</span>
+                <span><strong id="p5-clue-1" class="text-indigo-600 font-black">2단</strong>에 있어요.</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-amber-200 text-amber-900 text-xs font-black flex items-center justify-center shrink-0">2</span>
+                <span><strong id="p5-clue-2-expr" class="text-rose-600 font-black">3 × 5</strong>보다 <strong id="p5-clue-2-cmp" class="text-rose-600 font-black">커요</strong>.</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-amber-200 text-amber-900 text-xs font-black flex items-center justify-center shrink-0">3</span>
+                <span><strong id="p5-clue-3" class="text-indigo-600 font-black">4단</strong>에도 있어요.</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-center gap-2 pt-2 border-t border-amber-100 flex-wrap">
+              <span class="text-xs sm:text-sm font-black text-slate-600 font-jua">➡️ 정답 수:</span>
+              <input type="number" id="p5-answer-input" inputmode="numeric" class="w-16 h-11 text-center text-xl font-black rounded-xl border-2 border-amber-300 bg-white focus:border-amber-600 outline-none" placeholder="?">
+              <button onclick="checkP5Answer()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-xs sm:text-sm rounded-xl shadow transition font-jua cursor-pointer">
+                정답 확인
+              </button>
+            </div>
+            <div id="p5-feedback" class="text-xs sm:text-sm font-black text-slate-500 text-center min-h-[20px]"></div>
+          </div>
+        </div>
+      `;
+
+      renderPage5FullGrid();
+      initPage5Question();
+    }
+
+    function renderPage5FullGrid() {
+      const grid = document.getElementById('p5-grid-container');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      grid.appendChild(createHeaderCell('×', 'rounded-tl-xl bg-white border border-slate-300 font-black text-slate-700 text-xs sm:text-base flex items-center justify-center'));
+
+      for (let c = 0; c <= 9; c++) {
+        const cls = `header-col-bg font-black text-slate-800 text-xs sm:text-base border border-slate-300 flex items-center justify-center ${c === 9 ? 'rounded-tr-xl' : ''}`;
+        grid.appendChild(createHeaderCell(c, cls));
+      }
+
+      for (let r = 0; r <= 9; r++) {
+        const rowCls = `header-row-bg font-black text-slate-800 text-xs sm:text-base border border-slate-300 flex items-center justify-center ${r === 9 ? 'rounded-bl-xl' : ''}`;
+        grid.appendChild(createHeaderCell(r, rowCls));
+
+        for (let c = 0; c <= 9; c++) {
+          const cell = document.createElement('div');
+          const isCorner = (r === 9 && c === 9);
+          const prod = r * c;
+
+          cell.className = `w-full h-full bg-[#e0ecfb] hover:bg-sky-200 border border-slate-200 flex items-center justify-center font-black text-slate-800 text-[11px] sm:text-sm cursor-pointer transition select-none ${isCorner ? 'rounded-br-xl' : ''}`;
+          cell.textContent = prod;
+
+          cell.onclick = () => {
+            const input = document.getElementById('p5-answer-input');
+            if (input) {
+              input.value = prod;
+              checkP5Answer();
+            }
+          };
+
+          grid.appendChild(cell);
+        }
+      }
+    }
+
+    function initPage5Question() {
+      const danMultiples = {};
+      for (let d = 2; d <= 9; d++) {
+        danMultiples[d] = [];
+        for (let k = 1; k <= 9; k++) danMultiples[d].push(d * k);
+      }
+
+      const candidates = [];
+      for (let d1 = 2; d1 <= 9; d1++) {
+        for (let d2 = 2; d2 <= 9; d2++) {
+          if (d1 >= d2) continue;
+          const common = danMultiples[d1].filter(v => danMultiples[d2].includes(v));
+          if (common.length < 2) continue;
+
+          for (let target of common) {
+            for (let a = 2; a <= 9; a++) {
+              for (let b = 2; b <= 9; b++) {
+                const compVal = a * b;
+                const gt = common.filter(v => v > compVal);
+                if (gt.length === 1 && gt[0] === target) {
+                  candidates.push({ d1, d2, a, b, compVal, cmpText: '커요', target });
+                }
+                const lt = common.filter(v => v < compVal);
+                if (lt.length === 1 && lt[0] === target) {
+                  candidates.push({ d1, d2, a, b, compVal, cmpText: '작아요', target });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      let nextRiddle;
+      do {
+        nextRiddle = candidates[Math.floor(Math.random() * candidates.length)];
+      } while (candidates.length > 1 && p5CurrentRiddle && nextRiddle.target === p5CurrentRiddle.target && Math.random() < 0.8);
+      p5CurrentRiddle = nextRiddle;
+
+      let clueDanA = p5CurrentRiddle.d1;
+      let clueDanB = p5CurrentRiddle.d2;
+      if (Math.random() < 0.5) {
+        clueDanA = p5CurrentRiddle.d2;
+        clueDanB = p5CurrentRiddle.d1;
+      }
+
+      document.getElementById('p5-clue-1').textContent = `${clueDanA}단`;
+      document.getElementById('p5-clue-2-expr').textContent = `${p5CurrentRiddle.a} × ${p5CurrentRiddle.b}`;
+      document.getElementById('p5-clue-2-cmp').textContent = p5CurrentRiddle.cmpText;
+      document.getElementById('p5-clue-3').textContent = `${clueDanB}단`;
+
+      const input = document.getElementById('p5-answer-input');
+      if (input) {
+        input.value = '';
+        input.onkeydown = (e) => { if (e.key === 'Enter') checkP5Answer(); };
+        input.focus();
+      }
+
+      const feedback = document.getElementById('p5-feedback');
+      if (feedback) feedback.textContent = '';
+    }
+
+    function checkP5Answer() {
+      if (!p5CurrentRiddle) return;
+      const input = document.getElementById('p5-answer-input');
+      const val = parseInt(input?.value.trim(), 10);
+
+      if (isNaN(val)) {
+        showNoticeModal('⚠️ 생각한 숫자를 입력해 주세요!');
+        return;
+      }
+
+      if (val === p5CurrentRiddle.target) {
+        playSound('correct');
+        p5Streak++;
+        updateStreakDisplay('p5', p5Streak);
+
+        if (p5Streak >= 5) {
+          playSound('fanfare');
+          triggerConfetti();
+          const letter = awardKeywordLetter(5);
+          p5Streak = 0;
+          openSuccessModal({
+            title: '5단계 5연속 정답 성공! 🎉',
+            badge: '5단계 마스터 배지 & 비밀 글자 획득!',
+            desc: `축하합니다! 5번 연속으로 모든 수수께끼를 맞혔습니다!\n[5번째 비밀 글자: '${letter}']을 획득했습니다!\n다음 6단계(60초 스피드 챌린지)로 이동해 보세요! 🚀`,
+            nextPageNum: 6
+          });
+        } else {
+          showNoticeModal(`🎉 정답입니다! (${p5Streak}/5 성공)\n연속 5번 성공을 향해 다음 문제로 이동합니다! 🚀`);
+          setTimeout(initPage5Question, 700);
+        }
+      } else {
+        playSound('wrong');
+        p5Streak = 0;
+        updateStreakDisplay('p5', p5Streak);
+        showNoticeModal(`❌ 아쉬워요! 정답은 [ ${p5CurrentRiddle.target} ]이었습니다!\n연속 성공이 0으로 리셋됩니다. 처음부터 다시 도전해 보세요!`);
+        setTimeout(initPage5Question, 1000);
+      }
+    }
+
+    function updateStreakDisplay(prefix, streak) {
+      const starsEl = document.getElementById(`${prefix}-streak-stars`);
+      if (starsEl) starsEl.innerText = '★'.repeat(streak) + '☆'.repeat(5 - streak);
+    }
+
+    function renderPage6View() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      if (!p6IsStarted) {
+        container.innerHTML = `
+          <div class="w-full flex flex-col items-center justify-center py-6 px-4 text-center max-w-xl bg-white/95 rounded-3xl shadow-xl border-4 border-rose-200">
+            <div class="inline-flex items-center gap-2 px-5 py-2 bg-rose-100 text-rose-900 rounded-full font-jua text-sm sm:text-base mb-4 border border-rose-300">
+              <span>⏱️</span> <span>6단계 · 0단부터 9단까지 스피드 챌린지</span>
+            </div>
+            
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mb-3 tracking-tight font-jua">
+              🔥 60초 스피드 곱셈 12제
+            </h2>
+            
+            <p class="text-slate-600 text-sm sm:text-base font-bold mb-6 leading-relaxed font-jua">
+              [🚀 문제 시작] 버튼을 누르는 순간 12문제가 공개되고 타이머가 작동합니다!<br>
+              <strong class="text-rose-600">60.0초 이내</strong>에 12문제를 모두 맞히면 <strong>마지막 6번째 비밀 글자</strong>를 받아요!
+            </p>
+
+            <div class="w-full bg-slate-50 border-2 border-dashed border-slate-300 rounded-3xl p-5 mb-6 flex flex-col items-center gap-3">
+              <div class="text-4xl animate-bounce">⏱️ ➡️ 🎯</div>
+              <div class="text-xs sm:text-sm font-extrabold text-slate-700 leading-relaxed text-left font-jua">
+                • 출제 범위: <strong>0단부터 9단까지</strong> 무작위 12문제<br>
+                • 60초가 넘어도 멈추지 않고 끝까지 풀 수 있어요!<br>
+                • 답을 적고 <kbd class="px-2 py-0.5 bg-white border border-slate-300 rounded-md font-mono text-xs">Enter</kbd>를 누르면 다음 칸으로 이동해요!
+              </div>
+            </div>
+
+            <button onclick="startP6Challenge()" class="py-4 px-10 bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-jua text-lg sm:text-xl rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center gap-2 animate-pulse cursor-pointer">
+              <span>🚀 문제 시작!</span>
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      const timeDisplay = p6ElapsedTime.toFixed(1);
+      const isOverTime = p6ElapsedTime > 60.0;
+      const isWarning = p6ElapsedTime >= 45.0;
+
+      let timerColorClass = 'text-sky-600 border-sky-300 bg-sky-50';
+      if (isOverTime) timerColorClass = 'text-rose-600 border-rose-400 bg-rose-50';
+      else if (isWarning) timerColorClass = 'text-amber-600 border-amber-400 bg-amber-50';
+
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center">
+          <div class="w-full max-w-2xl flex flex-wrap items-center justify-between gap-3 mb-5 p-3.5 rounded-2xl bg-white border-2 border-indigo-200 shadow-md">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl sm:text-3xl">⏱️</span>
+              <div class="text-2xl sm:text-3xl px-4 py-1.5 rounded-2xl border-2 ${timerColorClass} font-black font-mono tracking-wider shadow-inner transition-colors font-jua">
+                <span id="p6-timer-display">${timeDisplay}</span><span class="text-base sm:text-xl font-bold">초</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span class="text-xs sm:text-sm font-black text-slate-500 font-jua">
+                ${isOverTime ? '🚨 60초 초과 (끝까지 도전해 보세요!)' : (isWarning ? '⚡ 45초 돌파! 힘내요!' : '🎯 목표: 60.0초 이내!')}
+              </span>
+              <button onclick="resetP6Challenge()" class="py-2 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-black rounded-xl transition-all active:scale-95 cursor-pointer font-jua">
+                🔄 다시 시작
+              </button>
+            </div>
+          </div>
+
+          <div class="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+            ${p6Questions.map((q, idx) => `
+              <div id="p6-card-${idx}" class="flex items-center justify-between p-3.5 bg-white rounded-2xl border-2 border-slate-200 shadow-sm transition-all">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-7 h-7 rounded-full bg-slate-100 border border-slate-300 text-xs text-slate-600 flex items-center justify-center font-black">
+                    ${idx + 1}
+                  </span>
+                  <span class="text-xl sm:text-2xl text-slate-800 font-black tracking-wide font-jua">
+                    ${q.dan} × ${q.mult} =
+                  </span>
+                </div>
+                <input 
+                  type="number" 
+                  id="p6-ans-${idx}" 
+                  inputmode="numeric" 
+                  pattern="[0-9]*" 
+                  maxlength="2" 
+                  placeholder="?" 
+                  class="w-16 h-12 text-center font-black text-2xl text-indigo-700 bg-indigo-50/50 border-2 border-indigo-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:bg-white shadow-inner transition-all font-jua"
+                />
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="flex flex-col items-center gap-3 w-full">
+            <button onclick="checkP6Answer()" class="py-3.5 px-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-jua text-lg sm:text-xl rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+              <span>🎯 채점하기</span>
+            </button>
+            <div id="p6-feedback" class="text-sm sm:text-base font-black text-center min-h-[28px] font-jua"></div>
+          </div>
+        </div>
+      `;
+
+      p6Questions.forEach((_, idx) => {
+        const inp = document.getElementById(`p6-ans-${idx}`);
+        if (inp) {
+          inp.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+              if (idx < p6Questions.length - 1) {
+                const next = document.getElementById(`p6-ans-${idx + 1}`);
+                if (next) next.focus();
+              } else {
+                checkP6Answer();
+              }
+            }
+          });
+        }
+      });
+
+      const firstInput = document.getElementById('p6-ans-0');
+      if (firstInput) firstInput.focus();
+    }
+
+    function startP6Challenge() {
+      const dans = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+      p6Questions = [];
+      const used = new Set();
+      while (p6Questions.length < 12) {
+        const dan = dans[Math.floor(Math.random() * dans.length)];
+        const mult = Math.floor(Math.random() * 10);
+        const key = `${dan}x${mult}`;
+        if (!used.has(key)) {
+          used.add(key);
+          p6Questions.push({ dan, mult, ans: dan * mult });
+        }
+      }
+
+      p6IsStarted = true;
+      p6IsFinished = false;
+      p6ElapsedTime = 0;
+      p6StartTime = Date.now();
+
+      renderPage6View();
+      playSound('correct');
+
+      if (p6TimerId) clearInterval(p6TimerId);
+      p6TimerId = setInterval(() => {
+        p6ElapsedTime = (Date.now() - p6StartTime) / 1000;
+        const disp = document.getElementById('p6-timer-display');
+        if (disp) {
+          disp.innerText = p6ElapsedTime.toFixed(1);
+          const box = disp.parentElement;
+          if (box) {
+            if (p6ElapsedTime > 60.0) {
+              box.className = 'text-2xl sm:text-3xl px-4 py-1.5 rounded-2xl border-2 text-rose-600 border-rose-400 bg-rose-50 font-black font-mono tracking-wider shadow-inner transition-colors font-jua';
+            } else if (p6ElapsedTime >= 45.0) {
+              box.className = 'text-2xl sm:text-3xl px-4 py-1.5 rounded-2xl border-2 text-amber-600 border-amber-400 bg-amber-50 font-black font-mono tracking-wider shadow-inner transition-colors font-jua';
+            }
+          }
+        }
+      }, 100);
+    }
+
+    function resetP6Challenge() {
+      if (p6TimerId) {
+        clearInterval(p6TimerId);
+        p6TimerId = null;
+      }
+      p6IsStarted = false;
+      p6ElapsedTime = 0;
+      p6IsFinished = false;
+      renderPage6View();
+    }
+
+    function checkP6Answer() {
+      if (p6IsFinished) return;
+
+      const feedback = document.getElementById('p6-feedback');
+      const allValues = p6Questions.map((_, i) => document.getElementById(`p6-ans-${i}`)?.value.trim());
+
+      if (allValues.every(v => v === '')) {
+        showNoticeModal('⚠️ 답을 하나도 적지 않았어요! 먼저 문제를 풀어보세요.');
+        return;
+      }
+
+      if (allValues.some(v => v === '')) {
+        showNoticeModal('⚠️ 아직 풀지 않은 빈칸이 있어요! 모든 문제를 채워주세요.');
+        return;
+      }
+
+      clearInterval(p6TimerId);
+      p6TimerId = null;
+      p6IsFinished = true;
+
+      const recordedTime = p6ElapsedTime.toFixed(1);
+      let correctCount = 0;
+
+      p6Questions.forEach((q, idx) => {
+        const inp = document.getElementById(`p6-ans-${idx}`);
+        const card = document.getElementById(`p6-card-${idx}`);
+        const val = parseInt(allValues[idx], 10);
+        if (val === q.ans) {
+          correctCount++;
+          if (inp) inp.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+          if (card) card.classList.add('border-emerald-300', 'bg-emerald-50/50');
+        } else {
+          if (inp) inp.classList.add('border-rose-400', 'bg-rose-50', 'text-rose-600');
+          if (card) card.classList.add('border-rose-300', 'bg-rose-50/50');
+        }
+      });
+
+      const isSuccess = (correctCount === 12) && (p6ElapsedTime <= 60.0);
+
+      if (isSuccess) {
+        playSound('fanfare');
+        triggerConfetti();
+        const letter6 = awardKeywordLetter(6);
+        if (feedback) {
+          feedback.className = 'text-base sm:text-lg font-black text-center text-emerald-600 font-jua';
+          feedback.innerHTML = `🎉 대성공! 기록: <strong>${recordedTime}초</strong> (12/12 정답) 완벽한 곱셈구구 마스터! 🏆`;
+        }
+        openSuccessModal({
+          title: '스피드 챌린지 클리어! 🏆',
+          badge: '스피드 마스터 배지 & 6번째 보물 열쇠 획득!',
+          desc: `기록: ${recordedTime}초! 60초 내 12문제 올 클리어!\n[6번째 마지막 비밀 글자: '${letter6}']을 획득했습니다!\n이제 '7. 키워드' 단계에서 6글자 최종 보물을 열어보세요!`,
+          nextPageNum: 7
+        });
+      } else {
+        playSound('wrong');
+        if (feedback) {
+          feedback.className = 'text-sm sm:text-base font-black text-center text-rose-500 font-jua';
+          if (p6ElapsedTime > 60.0 && correctCount === 12) {
+            feedback.innerText = `⏱️ ${recordedTime}초로 아쉽게 60초를 넘겼어요! 조금만 더 빠르게 다시 도전해 보세요!`;
+          } else {
+            feedback.innerText = `❌ 기록: ${recordedTime}초, 정답: ${correctCount}/12개. 틀린 문제를 확인하고 다시 도전해 보세요!`;
+          }
+        }
+      }
+    }
+
+    function renderPage7View() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      const missingSteps = [1, 2, 3, 4, 5, 6].filter(i => !unlockedLetters[i]);
+      const collectedCount = 6 - missingSteps.length;
+      const isAllCollected = collectedCount === 6;
+
+      const lettersClues = [1, 2, 3, 4, 5, 6].map(i => {
+        const char = unlockedLetters[i];
+        const isFound = !!char;
+        return `
+          <div class="flex flex-col items-center">
+            <span class="text-[11px] font-jua ${isFound ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold'} mb-1">${i}단계</span>
+            <div class="w-11 h-13 sm:w-12 sm:h-14 rounded-2xl ${isFound ? 'bg-gradient-to-b from-amber-100 to-amber-200 border-2 border-amber-400 text-amber-950 shadow-sm scale-105' : 'bg-slate-100 border-2 border-dashed border-slate-300 text-slate-400'} font-jua text-xl sm:text-2xl flex items-center justify-center font-black transition-all">
+              ${isFound ? char : '🔒'}
+            </div>
+            ${!isFound ? `<button onclick="switchPage(${i})" class="mt-1 px-2 py-0.5 bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 rounded-lg text-[10px] font-jua transition-all cursor-pointer">도전하기</button>` : '<span class="text-[10px] text-emerald-600 font-jua mt-1 font-bold">획득 완료</span>'}
+          </div>
+        `;
+      }).join('');
+
+      if (!isAllCollected) {
+        container.innerHTML = `
+          <div class="w-full flex flex-col items-center justify-center py-4 px-2 text-center max-w-xl">
+            <div class="inline-flex items-center gap-2 px-5 py-2 bg-rose-100 text-rose-900 rounded-full font-jua text-sm sm:text-base mb-3 border border-rose-300 shadow-2xs">
+              <span>🔒</span> <span>보물 상자가 굳게 잠겨 있습니다</span>
+            </div>
+
+            <h2 class="font-jua text-3xl sm:text-4xl text-slate-900 mb-2 drop-shadow-xs">
+              ${currentStudent ? `👑 ${currentStudent} 학생의 잠긴 보물 상자` : '👑 잠긴 보물 상자'}
+            </h2>
+
+            <p class="font-jua text-rose-600 text-base sm:text-lg mb-4 font-bold leading-relaxed">
+              비밀 글자를 모두 모으지 않으면 암호를 열 수 없어요!<br>
+              <span class="text-slate-600 font-medium text-sm sm:text-base">1~5단계 미션과 6단계 60초 챌린지를 성공하여 6개의 글자를 모두 모아오세요.</span>
+            </p>
+
+            <div class="w-full bg-white rounded-3xl p-5 border-2 border-slate-200 shadow-sm mb-5 flex flex-col items-center">
+              <div class="w-full flex items-center justify-between mb-3 px-1">
+                <span class="text-xs sm:text-sm font-jua text-slate-700 font-bold">
+                  비밀 글자 수집 현황
+                </span>
+                <span class="font-jua text-sm sm:text-base px-3 py-1 bg-amber-50 border border-amber-300 rounded-full text-amber-800 font-bold">
+                  ${collectedCount} / 6개 완료
+                </span>
+              </div>
+              
+              <div class="flex items-center justify-center gap-2 sm:gap-3 flex-wrap mb-2">
+                ${lettersClues}
+              </div>
+            </div>
+
+            <div class="w-full bg-rose-50/70 rounded-2xl p-4 border-2 border-dashed border-rose-300 flex flex-col items-center gap-2 mb-4">
+              <div class="text-3xl">⛔</div>
+              <p class="font-jua text-rose-700 text-base font-bold">
+                아직 모든 비밀 글자를 획득하지 않아 입력창이 열리지 않아요!
+              </p>
+              <button onclick="switchPage(6)" class="mt-2 px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-base font-jua shadow-sm cursor-pointer transition-all active:scale-95">
+                ⏱️ 60초 챌린지 도전하러 가기
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="w-full flex flex-col items-center justify-center py-4 px-2 text-center max-w-xl">
+          <div class="inline-flex items-center gap-2 px-5 py-2 bg-emerald-100 text-emerald-900 rounded-full font-jua text-sm sm:text-base mb-3 border border-emerald-300 shadow-2xs">
+            <span>🔓</span> <span>모든 비밀 글자 수집 완료! 봉인 해제</span>
+          </div>
+
+          <h2 class="font-jua text-3xl sm:text-4xl text-slate-900 mb-2 drop-shadow-xs">
+            👑 ${currentStudent} 학생의 보물 상자
+          </h2>
+
+          <p class="font-jua text-slate-600 text-base sm:text-lg mb-5 leading-relaxed">
+            축하합니다! <strong>6개의 비밀 글자</strong>를 모두 모았습니다.<br>
+            모은 글자를 순서대로 입력하여 최종 보물을 열고 전자칠판에 등록하세요!
+          </p>
+
+          <div class="w-full bg-white rounded-3xl p-5 border-2 border-emerald-400 shadow-sm mb-5 flex flex-col items-center">
+            <span class="text-xs sm:text-sm font-jua text-emerald-800 font-bold mb-3">
+              수집 완료된 6글자 보물 열쇠 (6/6)
+            </span>
+            <div class="flex items-center justify-center gap-2 sm:gap-3 flex-wrap mb-1">
+              ${lettersClues}
+            </div>
+          </div>
+
+          <div class="w-full bg-slate-50 rounded-2xl p-5 border border-slate-200 flex flex-col items-center gap-3 mb-5 shadow-xs">
+            <label for="p10-final-input" class="font-jua text-base sm:text-lg text-slate-800 font-bold">
+              🗝️ 6글자 비밀 키워드를 입력하세요:
+            </label>
+            <input 
+              type="text" 
+              id="p10-final-input" 
+              maxlength="6" 
+              placeholder="모은 6글자 입력" 
+              autocomplete="off"
+              class="w-full max-w-sm h-14 text-center font-jua text-2xl text-amber-900 bg-white border-2 border-amber-400 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-200 shadow-inner transition-all tracking-widest font-black placeholder:text-slate-300 placeholder:font-normal placeholder:text-lg"
+            />
+          </div>
+
+          <button id="p10-submit-btn" onclick="checkP10Answer()" class="py-3.5 px-12 bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-jua text-xl rounded-2xl shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2 cursor-pointer">
+            <span>🏆 제출하고 전자칠판에 등록하기!</span>
+          </button>
+
+          <div id="p10-feedback" class="mt-4 font-jua text-base sm:text-lg text-center min-h-[30px]"></div>
+
+          <!-- 교사용 구글 앱스 스크립트 웹 앱 URL 설정 -->
+          <div class="mt-6 w-full max-w-md bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left text-xs text-slate-600">
+            <details>
+              <summary class="cursor-pointer font-bold text-slate-700 select-none">⚙️ 선생님 전용: 전자칠판(구글 시트) 웹 앱 URL 설정</summary>
+              <div class="mt-2 flex flex-col gap-2">
+                <input 
+                  type="text" 
+                  id="gas-url-input" 
+                  placeholder="https://script.google.com/macros/s/.../exec" 
+                  value="${GOOGLE_SCRIPT_URL}" 
+                  class="w-full px-3 py-2 border rounded-xl font-mono text-[11px] bg-white outline-none focus:ring-2 focus:ring-indigo-300"
+                />
+                <button onclick="saveGasUrl()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-jua text-xs transition cursor-pointer">
+                  URL 저장하기
+                </button>
+              </div>
+            </details>
+          </div>
+
+          <!-- Printable Master Certificate -->
+          <div id="certificate-print-area" class="hidden w-full bg-gradient-to-b from-amber-50 to-white border-4 border-amber-400 rounded-3xl p-6 sm:p-8 mt-6 shadow-xl flex-col items-center text-center">
+            <div class="text-4xl mb-2">📜 🌟 🎓</div>
+            <h3 class="font-jua text-2xl sm:text-3xl text-amber-900 mb-1">곱셈표 탐험 마스터 인증서</h3>
+            <p class="font-jua text-sm text-amber-700 mb-4">초등학교 곱셈구구 마스터 챌린지 과정</p>
+            
+            <div class="w-full py-4 border-y-2 border-dashed border-amber-300 my-2">
+              <p class="font-jua text-xl sm:text-2xl text-slate-800 mb-2">
+                학생 성명: <strong class="text-indigo-700 underline underline-offset-4 decoration-indigo-400">${currentStudent}</strong>
+              </p>
+              <p class="font-jua text-slate-600 text-sm sm:text-base leading-relaxed">
+                위 학생은 곱셈표 탐험 미션과 60초 스피드 챌린지를 우수한 실력으로 마스터하고,<br>
+                비밀 보물 키워드 <strong class="text-amber-800 text-lg sm:text-xl font-black">[ ${studentTargetSentence} ]</strong>을<br>
+                성공적으로 완성하였으므로 이 상장을 수여합니다.
+              </p>
+            </div>
+
+            <div class="w-full flex items-center justify-between text-xs sm:text-sm font-jua text-slate-500 mt-4 px-2">
+              <span>인증 일자: ${new Date().toLocaleDateString('ko-KR')}</span>
+              <button onclick="window.print()" class="px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-xs transition-all cursor-pointer">
+                🖨️ 인증서 인쇄하기
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const inp = document.getElementById('p10-final-input');
+      if (inp) {
+        inp.addEventListener('keydown', e => {
+          if (e.key === 'Enter') checkP10Answer();
+        });
+        inp.focus();
+      }
+    }
+
+    function saveGasUrl() {
+      const inp = document.getElementById('gas-url-input');
+      if (inp) {
+        GOOGLE_SCRIPT_URL = inp.value.trim();
+        localStorage.setItem('gas_web_app_url', GOOGLE_SCRIPT_URL);
+        showNoticeModal('✅ 구글 앱스 스크립트 웹 앱 URL이 성공적으로 저장되었습니다!');
+      }
+    }
+
+    async function checkP10Answer() {
+      const inp = document.getElementById('p10-final-input');
+      const feedback = document.getElementById('p10-feedback');
+      const submitBtn = document.getElementById('p10-submit-btn');
+      if (!inp) return;
+
+      const userVal = inp.value.trim().replace(/\s+/g, '');
+      const targetVal = studentTargetSentence.replace(/\s+/g, '');
+
+      if (!userVal) {
+        if (feedback) {
+          feedback.className = 'mt-4 font-jua text-base text-amber-600';
+          feedback.innerText = '⚠️ 비밀 키워드를 입력해 주세요!';
+        }
+        inp.focus();
+        return;
+      }
+
+      if (userVal === targetVal) {
+        playSound('fanfare');
+        triggerConfetti();
+
+        if (feedback) {
+          feedback.className = 'mt-4 font-jua text-lg text-emerald-600 font-bold';
+          feedback.innerHTML = `🎉 정답 성공! [ <strong>${studentTargetSentence}</strong> ]`;
+        }
+
+        const cert = document.getElementById('certificate-print-area');
+        if (cert) {
+          cert.classList.remove('hidden');
+          cert.classList.add('flex');
+        }
+
+        // 구글 앱스 스크립트(GAS)로 학생 이름 및 키워드 자동 전송
+        if (GOOGLE_SCRIPT_URL) {
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = '📡 전자칠판에 등록 중...';
+          }
+          try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: currentStudent,
+                keyword: userVal,
+                time: new Date().toLocaleTimeString('ko-KR')
+              })
+            });
+
+            if (feedback) {
+              feedback.innerHTML = `🎉 대성공! 완벽한 정답입니다! "${studentTargetSentence}"<br><span class="text-indigo-600 text-sm">📡 전자칠판(구글 시트)에 성공적으로 등록되었습니다! ✨</span>`;
+            }
+          } catch (err) {
+            console.warn('전송 중 오류 발생:', err);
+            if (feedback) {
+              feedback.innerHTML = `🎉 대성공! 완벽한 정답입니다! "${studentTargetSentence}"<br><span class="text-amber-600 text-xs">⚠️ 전자칠판 전송에 실패했으나 정답은 인증되었습니다.</span>`;
+            }
+          } finally {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerText = '✅ 제출 완료!';
+            }
+          }
+        }
+
+        openSuccessModal({
+          title: '🎉 모든 모험 완료! 챔피언! 🎉',
+          badge: '최종 보물 인증서 발급 완료!',
+          desc: `축하합니다! ${currentStudent} 학생은 모든 곱셈 미션과 60초 챌린지를 클리어하여 보물 키워드 ["${studentTargetSentence}"]를 완성했습니다!\n화면 아래의 인증서를 확인하고 전자칠판 명단을 확인해 보세요! 🎓✨`,
+          nextPageNum: 0
+        });
+      } else {
+        playSound('wrong');
+        if (feedback) {
+          feedback.className = 'mt-4 font-jua text-base text-rose-500';
+          feedback.innerText = `❌ 아직 일치하지 않아요! 모은 6글자를 순서대로 차근차근 이어 써보세요!`;
+        }
+      }
+    }
+
+    function createHeaderCell(text, className) {
+      const el = document.createElement('div');
+      el.textContent = text;
+      el.className = className;
+      return el;
+    }
+
+    // 앱 시작 시 표지 렌더링
+    window.onload = function() {
+      switchPage(0);
+    };
+  </script>
+</body>
+</html>
