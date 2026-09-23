@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>위인을 찾아서</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts & FontAwesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            jua: ['Jua', 'sans-serif'],
+            sans: ['Noto Sans KR', 'sans-serif'],
+          },
+          colors: {
+            chalk: '#F8FAFC',
+            schoolYellow: '#FEF08A',
+            schoolGreen: '#10B981',
+            warmSky: '#E0F2FE',
+            accentOrange: '#F97316',
+          },
+          borderRadius: {
+            '4xl': '2rem',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #F0F9FF;
+      background-image: radial-gradient(#BAE6FD 1.2px, transparent 1.2px);
+      background-size: 24px 24px;
+    }
+    .font-jua {
+      font-family: 'Jua', sans-serif;
+    }
+    .custom-shadow {
+      box-shadow: 0 10px 0 #CBD5E1;
+    }
+    .btn-press:active {
+      transform: translateY(4px);
+      box-shadow: 0 4px 0 #94A3B8;
+    }
+    /* 인쇄 최적화 스타일 (배움 공책이나 학습지에 붙일 수 있도록) */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-area {
+        box-shadow: none !important;
+        border: 2px solid #333 !important;
+        margin: 0 !important;
+        padding: 16px !important;
+      }
+    }
+    @keyframes bounce-slow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-bounce-slow {
+      animation: bounce-slow 2.5s infinite ease-in-out;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+  <header class="w-full bg-amber-300 border-b-4 border-amber-400 py-4 px-4 sm:px-8 shadow-sm no-print">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="resetToHome()">
+        <span class="text-3xl sm:text-4xl animate-bounce-slow">📚</span>
+        <div>
+          <h1 class="font-jua text-2xl sm:text-3xl text-amber-950 tracking-wide">
+            위인을 찾아서
+          </h1>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl w-full mx-auto p-4 sm:p-6 flex-grow">
+    
+    <!-- 배움 가이드 알림창 -->
+    <div class="bg-white rounded-3xl p-4 sm:p-5 border-2 border-sky-200 shadow-sm mb-6 flex items-start gap-3 no-print">
+      <div class="text-2xl sm:text-3xl text-sky-500 mt-0.5">💡</div>
+      <div>
+        <p class="text-sm sm:text-base font-bold text-sky-950">선생님이 알려주는 위인 검색 꿀팁!</p>
+        <p class="text-xs sm:text-sm text-slate-600 mt-0.5">
+          "세종대왕", "이순신", "유관순", "헬렌 켈러" 처럼 알고 싶은 <strong>위인의 이름</strong>을 적어보세요. 게임 이름이나 만화 캐릭터를 치면 위인 탐구기가 알려준답니다!
+        </p>
+      </div>
+    </div>
+
+    <!-- 위인 검색창 -->
+    <section class="bg-white rounded-3xl sm:rounded-4xl p-6 sm:p-8 border-4 border-amber-300 shadow-md mb-8 no-print">
+      <label for="searchInput" class="block font-jua text-xl sm:text-2xl text-slate-800 mb-3 text-center">
+        🔎 어떤 훌륭한 위인에 대해 알아볼까요?
+      </label>
+      
+      <form id="searchForm" onsubmit="handleSearch(event)" class="relative max-w-2xl mx-auto">
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div class="relative flex-grow">
+            <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 text-lg">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input 
+              type="text" 
+              id="searchInput" 
+              placeholder="예) 세종대왕, 방정환, 장영실, 에디슨" 
+              class="w-full pl-12 pr-10 py-3.5 sm:py-4 rounded-2xl border-2 border-slate-300 focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-200 text-base sm:text-lg font-bold transition placeholder:font-normal placeholder:text-slate-400"
+              autocomplete="off"
+              maxlength="25"
+              required
+            />
+            <button 
+              type="button" 
+              id="clearBtn" 
+              onclick="clearInput()" 
+              class="hidden absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
+              title="지우기"
+            >
+              <i class="fa-solid fa-circle-xmark text-lg"></i>
+            </button>
+          </div>
+          <button 
+            type="submit" 
+            id="searchBtn"
+            class="bg-amber-400 hover:bg-amber-500 text-amber-950 font-jua text-lg sm:text-xl px-8 py-3.5 sm:py-4 rounded-2xl shadow-md btn-press transition flex items-center justify-center gap-2 shrink-0"
+          >
+            <span>탐구 시작!</span>
+            <i class="fa-solid fa-rocket"></i>
+          </button>
+        </div>
+      </form>
+
+      <div class="mt-5 pt-4 border-t border-slate-100">
+        <div class="flex items-center gap-2 text-xs font-bold text-slate-500 mb-2.5">
+          <i class="fa-solid fa-star text-amber-400"></i>
+          <span>초등 3학년 추천 위인 클릭해보기:</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="quickSearch('세종대왕')" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs sm:text-sm font-bold rounded-xl border border-amber-200 transition">👑 세종대왕</button>
+          <button onclick="quickSearch('이순신')" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs sm:text-sm font-bold rounded-xl border border-blue-200 transition">⚔️ 이순신</button>
+          <button onclick="quickSearch('유관순')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs sm:text-sm font-bold rounded-xl border border-rose-200 transition">🇰🇷 유관순</button>
+          <button onclick="quickSearch('장영실')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold rounded-xl border border-emerald-200 transition">⏰ 장영실</button>
+          <button onclick="quickSearch('방정환')" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 text-xs sm:text-sm font-bold rounded-xl border border-purple-200 transition">🎈 방정환</button>
+          <button onclick="quickSearch('김구')" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs sm:text-sm font-bold rounded-xl border border-amber-200 transition">👓 김구</button>
+          <button onclick="quickSearch('헬렌 켈러')" class="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs sm:text-sm font-bold rounded-xl border border-teal-200 transition">🌻 헬렌 켈러</button>
+          <button onclick="quickSearch('토머스 에디슨')" class="px-3 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-900 text-xs sm:text-sm font-bold rounded-xl border border-yellow-200 transition">💡 에디슨</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="loadingBox" class="hidden text-center py-16 bg-white rounded-3xl border-2 border-slate-200 shadow-sm mb-8">
+      <div class="inline-block relative">
+        <div class="w-16 h-16 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin"></div>
+        <div class="absolute inset-0 flex items-center justify-center text-xl">📖</div>
+      </div>
+      <p class="font-jua text-xl text-slate-800 mt-4">선생님 AI가 위인 이야기를 재미있게 정리하고 있어요...</p>
+      <p class="text-sm text-slate-500 mt-1">초등학교 3학년 눈높이로 알기 쉽게 설명해 줄게요!</p>
+    </div>
+
+    <div id="notFigureBox" class="hidden bg-rose-50 border-3 border-rose-300 rounded-3xl p-6 sm:p-8 text-center shadow-md mb-8">
+      <div class="text-5xl mb-3">🛑 🤔</div>
+      <h3 id="notFigureTitle" class="font-jua text-2xl text-rose-900 mb-2">잠깐만요! 위인의 이름이 맞나요?</h3>
+      <p id="notFigureMsg" class="text-slate-700 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
+        이곳은 역사와 세상에 훌륭한 일을 하신 '위인'을 알아보는 곳이에요.
+      </p>
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <button onclick="clearAndFocus()" class="px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl shadow transition">
+          다시 다른 위인 검색하기
+        </button>
+      </div>
+    </div>
+
+    <article id="resultCard" class="hidden bg-white rounded-3xl sm:rounded-4xl p-6 sm:p-10 border-4 border-sky-300 shadow-lg print-area mb-8">
+      
+      <!-- 상단 액션바 (소리내어 읽기, 인쇄하기, 배움완료 스탬프) -->
+      <div class="flex flex-wrap items-center justify-between pb-5 mb-6 border-b-2 border-sky-100 gap-3 no-print">
+        <div class="flex items-center gap-2">
+          <span id="eraBadge" class="bg-sky-100 text-sky-800 text-xs sm:text-sm font-bold px-3 py-1 rounded-full">
+            조선 시대
+          </span>
+          <span class="bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-bold px-3 py-1 rounded-full">
+            초3 맞춤 배움 자료
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button 
+            id="ttsBtn" 
+            onclick="toggleSpeech()" 
+            class="px-3.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-sm font-bold rounded-xl transition flex items-center gap-2"
+          >
+            <i id="ttsIcon" class="fa-solid fa-volume-high"></i>
+            <span id="ttsText">소리내어 읽기</span>
+          </button>
+          <button 
+            onclick="window.print()" 
+            class="px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-sm font-bold rounded-xl transition flex items-center gap-2"
+            title="학습지로 바로 인쇄"
+          >
+            <i class="fa-solid fa-print"></i>
+            <span>학습지 인쇄</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 위인 메인 타이틀 & 한 줄 슬로건 -->
+      <div class="text-center sm:text-left flex flex-col sm:flex-row items-center gap-5 mb-8">
+        <div class="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-tr from-amber-200 to-yellow-100 rounded-3xl border-4 border-amber-300 flex items-center justify-center text-4xl sm:text-5xl shadow-inner shrink-0">
+          <span id="figureEmoji">🌟</span>
+        </div>
+        <div>
+          <div class="flex items-center justify-center sm:justify-start gap-2 mb-1">
+            <h2 id="figureName" class="font-jua text-3xl sm:text-4xl text-slate-900 tracking-wide">세종대왕</h2>
+            <button onclick="markStudied()" id="stampBtn" class="text-xs bg-yellow-100 hover:bg-yellow-200 text-amber-800 font-bold px-2.5 py-1 rounded-full border border-yellow-300 transition no-print">
+              ⭐ 공부 완료 스탬프 쾅!
+            </button>
+          </div>
+          <p id="figureTagline" class="font-bold text-amber-600 text-base sm:text-lg">
+            백성을 깊이 사랑하여 훈민정음(한글)을 만드신 겨레의 큰 스승
+          </p>
+          <p id="figureIntro" class="text-slate-600 text-sm sm:text-base mt-2 leading-relaxed">
+            백성들이 글을 몰라 억울한 일을 당하는 것을 마음 아파하시며 누구나 쉽게 배울 수 있는 글자인 한글을 선물해 주셨어요.
+          </p>
+        </div>
+      </div>
+
+      <div class="mb-8">
+        <h3 class="font-jua text-xl sm:text-2xl text-slate-800 mb-4 flex items-center gap-2">
+          <span class="bg-amber-400 text-amber-950 w-7 h-7 rounded-full flex items-center justify-center text-sm">1</span>
+          어떤 훌륭한 일을 하셨나요? (핵심 업적)
+        </h3>
+        <div id="achievementsList" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- 업적 카드들이 동적으로 들어갑니다 -->
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+        <!-- 재미있는 이야기 -->
+        <div class="bg-amber-50 rounded-2xl p-5 border-2 border-amber-200">
+          <div class="flex items-center gap-2 text-amber-900 font-jua text-lg mb-2">
+            <span>✨</span>
+            <h4>재미있는 비하인드 이야기</h4>
+          </div>
+          <p id="funFactText" class="text-slate-700 text-sm sm:text-base leading-relaxed">
+            세종대왕님은 어렸을 때 책을 너무 좋아해서 눈병이 날 때까지 책을 읽으셨다고 해요!
+          </p>
+        </div>
+
+        <!-- 본받을 점 -->
+        <div class="bg-emerald-50 rounded-2xl p-5 border-2 border-emerald-200">
+          <div class="flex items-center gap-2 text-emerald-900 font-jua text-lg mb-2">
+            <span>💖</span>
+            <h4>우리가 본받을 점 (마음가짐)</h4>
+          </div>
+          <p id="lessonText" class="text-slate-700 text-sm sm:text-base leading-relaxed">
+            어려운 사람의 입장을 먼저 생각하고, 사람들을 돕기 위해 끝까지 노력하는 따뜻한 사랑의 마음을 본받을 수 있어요.
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-sky-50 rounded-3xl p-5 sm:p-6 border-2 border-sky-200 mb-8">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-jua text-lg sm:text-xl text-sky-950 flex items-center gap-2">
+            <span>🎯</span>
+            <span>3학년 1분 퀴즈! 잘 기억하고 있나요?</span>
+          </h3>
+          <span class="text-xs text-sky-600 font-bold bg-white px-2 py-1 rounded-lg border border-sky-200">배움 확인</span>
+        </div>
+        <p id="quizQuestion" class="font-bold text-slate-800 text-base sm:text-lg mb-4">
+          세종대왕님이 백성들을 위해 만드신 글자의 원래 이름은 무엇일까요?
+        </p>
+        <div id="quizOptions" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
+          <!-- 퀴즈 보기 버튼 동적 생성 -->
+        </div>
+        <div id="quizFeedback" class="hidden p-3.5 rounded-xl text-sm font-bold text-center"></div>
+      </div>
+
+      <!-- 연관 위인 추천 태그 -->
+      <div class="mt-6 pt-4 border-t border-slate-100 no-print">
+        <span class="text-xs font-bold text-slate-500 mr-2">함께 조사하면 좋은 위인:</span>
+        <span id="relatedFigures" class="inline-flex flex-wrap gap-2">
+          <!-- 연관 위인 태그 -->
+        </span>
+      </div>
+    </article>
+
+    <section class="bg-white rounded-3xl p-5 sm:p-6 border-2 border-amber-200 shadow-sm mb-6 no-print">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-jua text-lg text-amber-950 flex items-center gap-2">
+          <span>🌟</span>
+          <span>나의 위인 탐구 도장판</span>
+        </h3>
+        <span id="stampCount" class="text-xs font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full">
+          0명 탐구 완료
+        </span>
+      </div>
+      <p class="text-xs text-slate-500 mb-3">위인을 조사하고 [공부 완료 스탬프]를 누르면 여기에 별이 모여요!</p>
+      <div id="stampList" class="flex flex-wrap gap-2">
+        <span class="text-xs text-slate-400 italic py-2">아직 탐구한 위인이 없어요. 첫 번째 위인을 검색해 보세요!</span>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="bg-amber-100 border-t border-amber-200 py-5 text-center text-xs sm:text-sm text-amber-900 no-print">
+    <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>🏫 우리 학교 3학년 교실 안전 검색 도우미</p>
+      <p class="text-amber-700">인터넷 유해정보 없이 건강하고 바르게 위인을 탐구해요.</p>
+    </div>
+  </footer>
+
+  <script>
+    // 전역 상태
+    let currentFigureData = null;
+    let studiedFigures = JSON.parse(localStorage.getItem('studied_figures') || '[]');
+    let currentUtterance = null;
+    let isSpeaking = false;
+
+    // 인풋 엘리먼트 실시간 감지
+    const searchInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('clearBtn');
+    
+    searchInput.addEventListener('input', (e) => {
+      if (e.target.value.trim().length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+    });
+
+    function clearInput() {
+      searchInput.value = '';
+      clearBtn.classList.add('hidden');
+      searchInput.focus();
+    }
+
+    function clearAndFocus() {
+      document.getElementById('notFigureBox').classList.add('hidden');
+      searchInput.value = '';
+      clearBtn.classList.add('hidden');
+      searchInput.focus();
+    }
+
+    function resetToHome() {
+      document.getElementById('notFigureBox').classList.add('hidden');
+      document.getElementById('resultCard').classList.add('hidden');
+      document.getElementById('loadingBox').classList.add('hidden');
+      clearInput();
+      stopSpeech();
+    }
+
+    function quickSearch(name) {
+      searchInput.value = name;
+      clearBtn.classList.remove('hidden');
+      handleSearch(new Event('submit'));
+    }
+
+    async function handleSearch(e) {
+      if (e) e.preventDefault();
+      const query = searchInput.value.trim();
+      if (!query) return;
+
+      stopSpeech();
+
+      // UI 상태 전환
+      document.getElementById('resultCard').classList.add('hidden');
+      document.getElementById('notFigureBox').classList.add('hidden');
+      document.getElementById('loadingBox').classList.remove('hidden');
+      document.getElementById('searchBtn').disabled = true;
+
+      const systemPrompt = `
+당신은 대한민국 초등학교 3학년 학생들을 가장 사랑하고 눈높이를 잘 맞추는 다정하고 지혜로운 초등학교 선생님입니다.
+학생이 검색한 단어가 '실제 역사적 인물이나 사회/과학/예술 등에 큰 기여를 한 위인(국내외 위인)'인지 판별하십시오.
+
+[판별 기준]
+- 세종대왕, 이순신, 유관순, 장영실, 방정환, 안중근, 김구, 정약용, 헬렌 켈러, 에디슨, 링컨, 마리 퀴리, 슈바이처, 간디, 베토벤 등 실제 위인이면 isHistoricalFigure: true
+- 만약 검색어가 게임(마인크래프트, 로블록스, 브롤스타즈 등), 만화 캐릭터(피카츄, 짱구 등), 일반 사물, 음식, 욕설, 장난, 또는 아직 검증되지 않은 일반인이면 isHistoricalFigure: false
+- 연예인/아이돌의 경우 전통적인 초등 3학년 교육과정의 '위인 탐구'에는 부합하지 않으므로 isHistoricalFigure: false로 하고 다정하게 다른 위인을 안내합니다.
+
+[언어 및 문체 규칙]
+- 모든 설명은 초등학교 3학년(만 8~9세)이 혼자서도 술술 읽을 수 있도록 친절한 존댓말(~했어요, ~했답니다, ~해요)로 작성하세요.
+- 어려운 한자어나 전문 용어는 피하고, 초등 3학년 사회/도덕 교과 수준으로 쉽게 풀어서 설명하세요.
+`;
+
+      const userPrompt = `학생이 검색한 단어: "${query}". 이 단어가 위인인지 판별하고, 초등 3학년 수준의 유익하고 재미있는 탐구 학습 데이터를 JSON 형식으로 제공해주세요.`;
+
+      // API Key는 Canvas 환경에서 런타임에 자동 주입됨
+      const apiKey = "";
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const payload = {
+        contents: [{ parts: [{ text: userPrompt }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              isHistoricalFigure: { type: "BOOLEAN", description: "위인 여부" },
+              notFigureReason: { type: "STRING", description: "위인이 아닐 때 초3 아이에게 다정하게 설명하는 문장과 추천 검색어" },
+              name: { type: "STRING", description: "위인의 정확한 이름" },
+              era: { type: "STRING", description: "살았던 시대나 나라 (예: 조선 시대, 일제 강점기, 미국 등)" },
+              emoji: { type: "STRING", description: "위인을 상징하는 대표 이모지 1개" },
+              tagline: { type: "STRING", description: "초등학생 눈높이 한 줄 별명 및 요약" },
+              intro: { type: "STRING", description: "초등 3학년이 이해하기 쉬운 2~3문장의 소개글" },
+              achievements: {
+                type: "ARRAY",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    title: { type: "STRING", description: "업적 제목 (쉬운 말)" },
+                    desc: { type: "STRING", description: "업적 설명 (초3 눈높이, 1~2문장)" }
+                  },
+                  required: ["title", "desc"]
+                },
+                description: "가장 중요한 핵심 업적 3가지"
+              },
+              funFact: { type: "STRING", description: "초등학생이 흥미를 가질 만한 어릴 적 일화나 숨은 이야기" },
+              lesson: { type: "STRING", description: "이 위인의 삶에서 우리가 본받고 배울 점" },
+              quiz: {
+                type: "OBJECT",
+                properties: {
+                  question: { type: "STRING", description: "초3 눈높이 퀴즈 질문" },
+                  options: {
+                    type: "ARRAY",
+                    items: { type: "STRING" },
+                    description: "3개의 보기"
+                  },
+                  correctIndex: { type: "INTEGER", description: "정답 보기 번호 (0, 1, 2)" },
+                  explanation: { type: "STRING", description: "정답 해설 (다정한 말투)" }
+                },
+                required: ["question", "options", "correctIndex", "explanation"]
+              },
+              relatedFigures: {
+                type: "ARRAY",
+                items: { type: "STRING" },
+                description: "함께 탐구하면 좋은 다른 위인 이름 3명"
+              }
+            },
+            required: ["isHistoricalFigure"]
+          }
+        }
+      };
+
+      try {
+        const response = await fetchWithRetry(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        const rawJsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!rawJsonText) {
+          throw new Error("결과를 불러오지 못했습니다.");
+        }
+
+        const data = JSON.parse(rawJsonText);
+        handleApiResponse(data, query);
+      } catch (err) {
+        console.error("검색 중 오류 발생:", err);
+        showFallbackError(query);
+      } finally {
+        document.getElementById('loadingBox').classList.add('hidden');
+        document.getElementById('searchBtn').disabled = false;
+      }
+    }
+
+    async function fetchWithRetry(url, options, maxRetries = 3) {
+      let delay = 1000;
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          const res = await fetch(url, options);
+          if (res.ok) return res;
+          if (res.status === 429 || res.status >= 500) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 2;
+            continue;
+          }
+          return res;
+        } catch (err) {
+          if (i === maxRetries - 1) throw err;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+        }
+      }
+      return fetch(url, options);
+    }
+
+    function handleApiResponse(data, query) {
+      if (!data.isHistoricalFigure) {
+        // 위인이 아닌 경우 (게임, 욕설, 엉뚱한 검색어 방어)
+        document.getElementById('notFigureBox').classList.remove('hidden');
+        document.getElementById('notFigureTitle').textContent = `"${query}"(은)는 위인이 아니에요! 🤔`;
+        document.getElementById('notFigureMsg').textContent = data.notFigureReason || 
+          `"${query}"은(는) 정말 흥미롭고 신기하지만, 역사와 사람들을 위해 훌륭한 업적을 남긴 위인은 아니에요. 세종대왕, 이순신, 유관순 같은 멋진 위인을 찾아볼까요?`;
+        return;
+      }
+
+      currentFigureData = data;
+      renderFigure(data);
+    }
+
+    function renderFigure(data) {
+      document.getElementById('figureName').textContent = data.name;
+      document.getElementById('eraBadge').textContent = data.era || '위인 탐구';
+      document.getElementById('figureEmoji').textContent = data.emoji || '🌟';
+      document.getElementById('figureTagline').textContent = data.tagline;
+      document.getElementById('figureIntro').textContent = data.intro;
+
+      // 업적 3가지 렌더링
+      const achievementsContainer = document.getElementById('achievementsList');
+      achievementsContainer.innerHTML = '';
+      if (data.achievements && data.achievements.length > 0) {
+        data.achievements.forEach((ach, index) => {
+          const colors = [
+            'border-amber-200 bg-amber-50/50 text-amber-900',
+            'border-sky-200 bg-sky-50/50 text-sky-900',
+            'border-emerald-200 bg-emerald-50/50 text-emerald-900'
+          ];
+          const colorClass = colors[index % colors.length];
+          const div = document.createElement('div');
+          div.className = `p-4 rounded-2xl border-2 ${colorClass} transition hover:shadow-sm`;
+          div.innerHTML = `
+            <div class="font-jua text-base sm:text-lg mb-1 flex items-center gap-1.5">
+              <span>📌</span>
+              <span>${escapeHtml(ach.title)}</span>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">${escapeHtml(ach.desc)}</p>
+          `;
+          achievementsContainer.appendChild(div);
+        });
+      }
+
+      // 비하인드 스토리 및 교훈
+      document.getElementById('funFactText').textContent = data.funFact || '더 많은 배움 이야기가 있어요!';
+      document.getElementById('lessonText').textContent = data.lesson || '우리의 마음을 성장시켜주는 위인이에요.';
+
+      // 퀴즈 렌더링
+      renderQuiz(data.quiz);
+
+      // 연관 위인 렌더링
+      const relatedContainer = document.getElementById('relatedFigures');
+      relatedContainer.innerHTML = '';
+      if (data.relatedFigures && data.relatedFigures.length > 0) {
+        data.relatedFigures.forEach(fig => {
+          const btn = document.createElement('button');
+          btn.className = "px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition";
+          btn.textContent = fig;
+          btn.onclick = () => quickSearch(fig);
+          relatedContainer.appendChild(btn);
+        });
+      }
+
+      // 스탬프 버튼 상태 갱신
+      updateStampButtonState(data.name);
+
+      // 카드 보이기 및 스크롤
+      const resultCard = document.getElementById('resultCard');
+      resultCard.classList.remove('hidden');
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderQuiz(quiz) {
+      if (!quiz) return;
+      document.getElementById('quizQuestion').textContent = quiz.question;
+      const optionsContainer = document.getElementById('quizOptions');
+      optionsContainer.innerHTML = '';
+      
+      const feedback = document.getElementById('quizFeedback');
+      feedback.className = 'hidden p-3.5 rounded-xl text-sm font-bold text-center';
+      feedback.textContent = '';
+
+      quiz.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "quiz-opt-btn p-3 bg-white hover:bg-sky-100 border-2 border-sky-200 rounded-xl font-bold text-sm text-slate-800 transition text-left flex items-center gap-2";
+        btn.innerHTML = `<span class="w-6 h-6 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs shrink-0">${idx + 1}</span> <span>${escapeHtml(opt)}</span>`;
+        btn.onclick = () => checkQuiz(idx, quiz.correctIndex, quiz.explanation);
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function checkQuiz(selectedIndex, correctIndex, explanation) {
+      const feedback = document.getElementById('quizFeedback');
+      const buttons = document.querySelectorAll('.quiz-opt-btn');
+
+      buttons.forEach((btn, idx) => {
+        btn.disabled = true;
+        if (idx === correctIndex) {
+          btn.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-900');
+        } else if (idx === selectedIndex) {
+          btn.classList.add('border-rose-400', 'bg-rose-50', 'text-rose-900');
+        }
+      });
+
+      feedback.classList.remove('hidden');
+      if (selectedIndex === correctIndex) {
+        feedback.className = "p-3.5 rounded-xl text-sm font-bold text-center bg-emerald-100 text-emerald-900 border border-emerald-300";
+        feedback.innerHTML = `🎉 정답이에요! 참 잘했어요! <br><span class="font-normal text-xs sm:text-sm mt-1 block">${escapeHtml(explanation)}</span>`;
+      } else {
+        feedback.className = "p-3.5 rounded-xl text-sm font-bold text-center bg-amber-100 text-amber-900 border border-amber-300";
+        feedback.innerHTML = `아쉬워요! 정답은 ${correctIndex + 1}번이었어요! <br><span class="font-normal text-xs sm:text-sm mt-1 block">${escapeHtml(explanation)}</span>`;
+      }
+    }
+
+    function toggleSpeech() {
+      if (!currentFigureData) return;
+
+      if (isSpeaking) {
+        stopSpeech();
+      } else {
+        startSpeech();
+      }
+    }
+
+    function startSpeech() {
+      if (!('speechSynthesis' in window)) {
+        showTemporaryNotice("이 브라우저는 소리 읽기를 지원하지 않아요.");
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const textToRead = `${currentFigureData.name}. ${currentFigureData.tagline}. ${currentFigureData.intro}. ${currentFigureData.lesson}`;
+      
+      currentUtterance = new SpeechSynthesisUtterance(textToRead);
+      currentUtterance.lang = 'ko-KR';
+      currentUtterance.rate = 0.9; // 초3 눈높이에 맞게 차분하고 또박또박한 속도
+      currentUtterance.pitch = 1.05;
+
+      currentUtterance.onstart = () => {
+        isSpeaking = true;
+        document.getElementById('ttsIcon').className = 'fa-solid fa-stop text-rose-500';
+        document.getElementById('ttsText').textContent = '읽기 멈추기';
+      };
+
+      currentUtterance.onend = () => {
+        stopSpeech();
+      };
+
+      currentUtterance.onerror = () => {
+        stopSpeech();
+      };
+
+      window.speechSynthesis.speak(currentUtterance);
+    }
+
+    function stopSpeech() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      isSpeaking = false;
+      const ttsIcon = document.getElementById('ttsIcon');
+      const ttsText = document.getElementById('ttsText');
+      if (ttsIcon && ttsText) {
+        ttsIcon.className = 'fa-solid fa-volume-high';
+        ttsText.textContent = '소리내어 읽기';
+      }
+    }
+
+    function markStudied() {
+      if (!currentFigureData) return;
+      const name = currentFigureData.name;
+      
+      if (!studiedFigures.includes(name)) {
+        studiedFigures.push(name);
+        localStorage.setItem('studied_figures', JSON.stringify(studiedFigures));
+        renderStampBoard();
+        updateStampButtonState(name);
+        showTemporaryNotice(`⭐ ${name} 탐구 도장을 찍었어요! 참 잘했어요!`);
+      } else {
+        showTemporaryNotice(`이미 탐구 도장을 찍은 위인이에요!`);
+      }
+    }
+
+    function updateStampButtonState(name) {
+      const stampBtn = document.getElementById('stampBtn');
+      if (studiedFigures.includes(name)) {
+        stampBtn.innerHTML = '✅ 탐구 완료됨!';
+        stampBtn.className = 'text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full border border-emerald-300 no-print cursor-default';
+      } else {
+        stampBtn.innerHTML = '⭐ 공부 완료 스탬프 쾅!';
+        stampBtn.className = 'text-xs bg-yellow-100 hover:bg-yellow-200 text-amber-800 font-bold px-2.5 py-1 rounded-full border border-yellow-300 transition no-print';
+      }
+    }
+
+    function renderStampBoard() {
+      const stampList = document.getElementById('stampList');
+      const stampCount = document.getElementById('stampCount');
+
+      stampCount.textContent = `${studiedFigures.length}명 탐구 완료`;
+
+      if (studiedFigures.length === 0) {
+        stampList.innerHTML = '<span class="text-xs text-slate-400 italic py-2">아직 탐구한 위인이 없어요. 첫 번째 위인을 검색해 보세요!</span>';
+        return;
+      }
+
+      stampList.innerHTML = '';
+      studiedFigures.forEach(name => {
+        const span = document.createElement('span');
+        span.className = "inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 border border-amber-300 rounded-full text-xs font-bold text-amber-900 shadow-2xs";
+        span.innerHTML = `<span>⭐</span> <span>${escapeHtml(name)}</span>`;
+        span.title = "클릭해서 다시 보기";
+        span.style.cursor = "pointer";
+        span.onclick = () => quickSearch(name);
+        stampList.appendChild(span);
+      });
+    }
+
+    function showTemporaryNotice(msg) {
+      const notice = document.createElement('div');
+      notice.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-sm font-bold px-5 py-3 rounded-2xl shadow-xl z-50 transition transform duration-300 flex items-center gap-2";
+      notice.innerHTML = `<span>✨</span> <span>${msg}</span>`;
+      document.body.appendChild(notice);
+      setTimeout(() => {
+        notice.style.opacity = '0';
+        setTimeout(() => notice.remove(), 300);
+      }, 2500);
+    }
+
+    function showFallbackError(query) {
+      document.getElementById('notFigureBox').classList.remove('hidden');
+      document.getElementById('notFigureTitle').textContent = `연결을 확인해 주세요`;
+      document.getElementById('notFigureMsg').textContent = `선생님 AI와 연결하는 동안 작은 문제가 생겼어요. 잠시 후 다시 검색하거나 다른 위인 이름을 입력해 보세요!`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // 초기 스탬프 로드
+    window.addEventListener('load', () => {
+      renderStampBoard();
+    });
+  </script>
+</body>
+</html>
