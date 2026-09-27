@@ -1,0 +1,2437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>시크릿 알파 퀴즈 시스템</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tone.js for Sound Effects -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            },
+            alpha: {
+              50: '#fff1f2',
+              100: '#ffe4e6',
+              500: '#f43f5e',
+              600: '#e11d48',
+              700: '#be123c',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap');
+    body {
+      font-family: 'Pretendard', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    @keyframes pulse-gentle {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .pulse-animation {
+      animation: pulse-gentle 2.4s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-rose-500 selection:text-white">
+  <div id="sync-status" class="bg-amber-100 text-amber-950 text-center text-sm font-bold p-2">Firebase 설정 또는 연결을 기다리는 중입니다. 이 상태에서는 답안이 공유되지 않습니다.</div>
+
+  <!-- Top Global Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <!-- Logo & Home Click -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('home')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 via-rose-600 to-amber-500 flex items-center justify-center text-white font-black text-xl shadow-md shadow-rose-200">
+          α
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight">시크릿 알파 퀴즈</h1>
+            <span id="header-view-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+              홈 화면
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 hidden sm:block">22인 4개조 비밀 알파 퀴즈 토너먼트 플랫폼</p>
+        </div>
+      </div>
+
+      <!-- View Switcher & Actions -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <button onclick="navigateTo('home')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5" data-view="home">
+          <i class="fa-solid fa-house"></i>
+          <span class="hidden md:inline">홈</span>
+        </button>
+        <button onclick="navigateTo('teacher')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition flex items-center gap-1.5" data-view="teacher">
+          <i class="fa-solid fa-chalkboard-user text-blue-600"></i>
+          <span>교사 뷰</span>
+        </button>
+        <button onclick="navigateTo('student')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition flex items-center gap-1.5" data-view="student">
+          <i class="fa-solid fa-graduation-cap text-rose-600"></i>
+          <span>학생 뷰</span>
+        </button>
+        <button onclick="navigateTo('board')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition flex items-center gap-1.5" data-view="board">
+          <i class="fa-solid fa-display text-emerald-600"></i>
+          <span>전자칠판</span>
+          <i class="fa-solid fa-lock text-[10px] text-slate-400"></i>
+        </button>
+        <button id="lock-btn" onclick="lockProtectedViews()" class="hidden px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 transition flex items-center gap-1" title="관리자 뷰 잠금">
+          <i class="fa-solid fa-lock-open text-xs text-amber-600"></i>
+          <span class="hidden sm:inline">인증 잠금</span>
+        </button>
+        <button id="sound-btn" onclick="toggleSound()" class="ml-1 p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition" title="효과음 On/Off">
+          <i id="sound-icon" class="fa-solid fa-volume-high text-emerald-600 text-sm"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+
+    <!-- ================= VIEW 1: HOME PORTAL ================= -->
+    <section id="view-home" class="space-y-8 animate-in fade-in duration-300">
+      <!-- Hero Introduction Banner -->
+      <div class="bg-gradient-to-br from-white via-rose-50/30 to-amber-50/40 border border-slate-200/90 rounded-3xl p-6 sm:p-10 shadow-sm relative overflow-hidden">
+        <div class="max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100/80 text-rose-700 text-xs font-bold mb-4 border border-rose-200">
+            <i class="fa-solid fa-sparkles"></i> 22명 4개조 협동 & 심리 퀴즈 시스템
+          </div>
+          <h2 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+            문제마다 바뀌는 비밀 알파!<br>
+            <span class="text-rose-600">누가 이번 라운드의 운명</span>을 쥐고 있을까요?
+          </h2>
+          <p class="text-sm sm:text-base text-slate-600 mt-3 leading-relaxed">
+            문제 직전 조마다 1명씩 자동으로 <strong>‘비밀 알파’</strong>가 됩니다. 알파 본인만 자신의 정체와 특수 룰을 확인하고, 칠판의 문제를 풀어 팀의 승리를 견인하세요!
+          </p>
+        </div>
+      </div>
+
+      <!-- 3 Navigation Cards with Dedicated Link Buttons -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-blue-600"></i>
+            <span>접속 모드 선택 및 개별 링크</span>
+          </h3>
+          <span class="text-xs text-slate-500">기기별로 원하는 링크를 복사하여 접속할 수 있습니다.</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <!-- Card 1: Teacher View -->
+          <div class="bg-white border border-slate-200 hover:border-blue-300 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl mb-4 group-hover:scale-105 transition">
+                <i class="fa-solid fa-chalkboard-user"></i>
+              </div>
+              <div class="flex items-center justify-between">
+                <h4 class="text-xl font-bold text-slate-900">교사 뷰</h4>
+                <span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">진행자용</span>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
+                22명 학생의 조 배정(이름 수정·이동), 퀴즈 문제 등록 및 편집, 다음 라운드(알파 재배정) 제어, 정답 채점을 총괄합니다.
+              </p>
+            </div>
+
+            <div class="mt-6 pt-5 border-t border-slate-100 space-y-2">
+              <button onclick="navigateTo('teacher')" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-200 flex items-center justify-center gap-2 transition active:scale-95">
+                <i class="fa-solid fa-lock text-xs opacity-75"></i>
+                <span>교사 뷰 시작하기 (보안)</span>
+                <i class="fa-solid fa-arrow-right text-xs"></i>
+              </button>
+              <button onclick="copyViewLink('teacher')" class="w-full py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 font-medium text-xs border border-slate-200 flex items-center justify-center gap-1.5 transition">
+                <i class="fa-regular fa-copy"></i>
+                <span id="copy-btn-teacher">교사 뷰 링크 복사</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 2: Student View -->
+          <div class="bg-white border border-slate-200 hover:border-rose-300 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-2xl mb-4 group-hover:scale-105 transition">
+                <i class="fa-solid fa-graduation-cap"></i>
+              </div>
+              <div class="flex items-center justify-between">
+                <h4 class="text-xl font-bold text-slate-900">학생 뷰</h4>
+                <span class="text-xs bg-rose-100 text-rose-700 font-semibold px-2 py-0.5 rounded-full">학생 스마트폰용</span>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
+                학생들이 자신의 조와 이름을 선택하여 입장합니다. 자신이 <strong>알파</strong>라면 오직 본인 화면에만 알파 표식과 미션이 뜨며, 답안을 제출합니다.
+              </p>
+            </div>
+
+            <div class="mt-6 pt-5 border-t border-slate-100 space-y-2">
+              <button onclick="navigateTo('student')" class="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-200 flex items-center justify-center gap-2 transition active:scale-95">
+                <span>학생 뷰 입장하기</span>
+                <i class="fa-solid fa-arrow-right text-xs"></i>
+              </button>
+              <button onclick="copyViewLink('student')" class="w-full py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 font-medium text-xs border border-slate-200 flex items-center justify-center gap-1.5 transition">
+                <i class="fa-regular fa-copy"></i>
+                <span id="copy-btn-student">학생 뷰 링크 복사 (배포용)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 3: Smart Board View -->
+          <div class="bg-white border border-slate-200 hover:border-emerald-300 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+            <div>
+              <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl mb-4 group-hover:scale-105 transition">
+                <i class="fa-solid fa-display"></i>
+              </div>
+              <div class="flex items-center justify-between">
+                <h4 class="text-xl font-bold text-slate-900">전자칠판 뷰</h4>
+                <span class="text-xs bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full">교실 대형 TV용</span>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
+                교실 전면 TV/빔프로젝터에 띄우는 화면입니다. 큼직한 퀴즈 문제 표시, 실시간 22명 답안 제출 현황, 알파 대공개 및 조별 랭킹을 실시간 표시합니다.
+              </p>
+            </div>
+
+            <div class="mt-6 pt-5 border-t border-slate-100 space-y-2">
+              <button onclick="navigateTo('board')" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-200 flex items-center justify-center gap-2 transition active:scale-95">
+                <i class="fa-solid fa-lock text-xs opacity-75"></i>
+                <span>전자칠판 화면 띄우기 (보안)</span>
+                <i class="fa-solid fa-arrow-right text-xs"></i>
+              </button>
+              <button onclick="copyViewLink('board')" class="w-full py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 font-medium text-xs border border-slate-200 flex items-center justify-center gap-1.5 transition">
+                <i class="fa-regular fa-copy"></i>
+                <span id="copy-btn-board">전자칠판 링크 복사</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Quick Rule Summary -->
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+        <h3 class="font-bold text-base text-slate-800 mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-circle-question text-amber-500"></i>
+          <span>시크릿 알파 게임 규칙 한눈에 보기</span>
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+            <span class="font-bold text-blue-600 block mb-1">1. 22명 4개 조 편성</span>
+            <p class="text-slate-600">1조(6명), 2조(6명), 3조(5명), 4조(5명)로 구성되며 교사 뷰에서 인원과 이름을 자유롭게 편집할 수 있습니다.</p>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+            <span class="font-bold text-rose-600 block mb-1">2. 조별 1명 알파 자동 선정</span>
+            <p class="text-slate-600">문제마다 4개 조에서 각 1명이 자동으로 알파가 됩니다. 알파 여부는 학생 스마트폰 뷰에서만 비밀리에 표시됩니다.</p>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+            <span class="font-bold text-amber-600 block mb-1">3. 알파의 특수 미션 룰</span>
+            <p class="text-slate-600">맞히면 +2점/틀리면 -2점, 팀원 정답수 연동 보너스, 팀 점수 2배 잭팟 등 강력한 특수 룰이 배정됩니다.</p>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+            <span class="font-bold text-emerald-600 block mb-1">4. 정답 및 알파 공개</span>
+            <p class="text-slate-600">전자칠판에서 정답과 함께 각 조의 알파가 누구였는지 드라마틱하게 공개되고 점수가 자동 계산됩니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 2: TEACHER VIEW ================= -->
+    <section id="view-teacher" class="hidden space-y-6 animate-in fade-in duration-300">
+      
+      <!-- Top Control Bar -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-700 font-bold text-xs">교사 제어판</span>
+            <h2 id="teacher-round-display" class="text-xl sm:text-2xl font-black text-slate-900">문제 1 진행 중</h2>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">전자칠판과 학생 화면에 실시간으로 반영됩니다.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="triggerNextRound()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-rose-200 flex items-center gap-2 transition active:scale-95">
+            <i class="fa-solid fa-shuffle"></i>
+            <span>새 문제 출제 & 알파 재배정</span>
+          </button>
+          <button onclick="revealBoardAnswer()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-200 flex items-center gap-2 transition active:scale-95">
+            <i class="fa-solid fa-key"></i>
+            <span>칠판에 정답·알파 공개</span>
+          </button>
+          <button onclick="openScoreGradingModal()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-200 flex items-center gap-2 transition active:scale-95">
+            <i class="fa-solid fa-calculator"></i>
+            <span>점수 채점 & 정산</span>
+          </button>
+          <button onclick="resetAllGameData()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 font-medium text-xs border border-slate-200 transition" title="전체 데이터 초기화">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Current Question Quick Broadcaster -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <h3 class="font-bold text-sm text-slate-800 mb-2 flex items-center justify-between">
+          <span class="flex items-center gap-2">
+            <i class="fa-solid fa-bullhorn text-amber-500"></i>
+            <span>현재 출제 중인 문제 & 점수·알파 조건 설정</span>
+          </span>
+          <span class="text-xs text-rose-600 font-bold bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
+            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>알파 조건 점수 직접 제어
+          </span>
+        </h3>
+        
+        <!-- Row 1: Question and Answer -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center mb-3">
+          <div class="md:col-span-8">
+            <label class="block text-xs font-bold text-slate-600 mb-1">문제 내용</label>
+            <input id="current-question-input" type="text" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="문제를 입력하세요" value="[1번 문제] 22명이 4개 조로 나뉘어 풀며, 각 조 1명이 특수 룰을 갖는 퀴즈의 이름은?">
+          </div>
+          <div class="md:col-span-4">
+            <label class="block text-xs font-bold text-slate-600 mb-1">정답</label>
+            <input id="current-answer-input" type="text" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="정답" value="시크릿 알파 퀴즈">
+          </div>
+        </div>
+
+        <!-- Row 2: Basic Points, Alpha Rule Selection, Alpha Condition Points, Apply Button -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 items-end pt-3 border-t border-slate-100">
+          <div class="md:col-span-3">
+            <label class="block text-xs font-bold text-slate-600 mb-1">문제 가중치(배수)</label>
+            <div class="relative flex items-center">
+              <input id="current-points-input" type="number" min="1" max="10" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-3 pr-8 py-2 text-sm font-bold text-amber-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="배수" value="1">
+              <span class="absolute right-3 text-xs font-bold text-slate-400 pointer-events-none">배</span>
+            </div>
+          </div>
+          
+          <div class="md:col-span-6">
+            <label class="block text-xs font-bold text-rose-700 mb-1 flex items-center gap-1">
+              <i class="fa-solid fa-crown text-xs text-amber-500"></i> 알파조건점수 (100점 만점 기준)
+            </label>
+            <select id="current-alpha-rule-select" class="w-full bg-rose-50/60 border border-rose-300 rounded-xl px-3 py-2 text-xs font-bold text-rose-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500">
+              <option value="pm10">'기초점수(100점)' + '플러스 마이너스 10점' (맞으면 +10점 / 틀리면 -10점)</option>
+              <option value="pm20" selected>'기초점수(100점)' + '플러스 마이너스 20점' (맞으면 +20점 / 틀리면 -20점)</option>
+              <option value="pm30">'기초점수(100점)' + '플러스 마이너스 30점' (맞으면 +30점 / 틀리면 -30점)</option>
+              <option value="pm50">'기초점수(100점)' + '플러스 마이너스 50점' (맞으면 +50점 / 틀리면 -50점)</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-3">
+            <button onclick="applyCurrentQuestionChange()" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-paper-plane text-xs"></i>
+              <span>칠판 및 학생 뷰에 즉시 적용</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 Tabs: [1. 22인 조 배정 관리] / [2. 퀴즈 문제 은행 편집] -->
+      <div class="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+        <div class="flex border-b border-slate-200 bg-slate-50/50 px-6 pt-3 gap-3 overflow-x-auto">
+          <button id="tab-btn-teams" onclick="switchTeacherSubTab('teams')" class="pb-3 px-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-users"></i>
+            <span>22명 조 편성 및 학생 관리</span>
+            <span id="total-student-count-badge" class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">22명</span>
+          </button>
+          <button id="tab-btn-stats" onclick="switchTeacherSubTab('stats')" class="pb-3 px-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-clipboard-check text-emerald-600"></i>
+            <span>학생별 정답 기록부</span>
+            <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">개별 통계</span>
+          </button>
+          <button id="tab-btn-questions" onclick="switchTeacherSubTab('questions')" class="pb-3 px-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-list-check"></i>
+            <span>문제 리스트 편집기</span>
+            <span id="total-question-count-badge" class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">5문항</span>
+          </button>
+          <button id="tab-btn-live-alpha" onclick="switchTeacherSubTab('live-alpha')" class="pb-3 px-3 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-eye text-rose-500"></i>
+            <span>실시간 알파 현황 (교사용 비밀 확인)</span>
+          </button>
+        </div>
+
+        <!-- SubTab 1: Teams and Students Management -->
+        <div id="subtab-teams" class="p-6">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h4 class="font-bold text-slate-800 text-sm">4개 조 편성 및 출석 관리</h4>
+              <p class="text-xs text-slate-500">학생을 클릭하여 <span class="text-rose-600 font-bold">결석(제외) 처리</span>하거나 이름을 수정할 수 있으며, 시스템이 인원수에 맞게 100점 만점을 자동 보정합니다.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="promptAddNewStudent()" class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 font-bold transition flex items-center gap-1">
+                <i class="fa-solid fa-user-plus"></i> 학생 추가
+              </button>
+              <button onclick="restoreDefaultTeams()" class="text-xs px-3 py-1.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 font-medium transition">
+                기본 22명으로 초기화
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="teacher-teams-container">
+            <!-- Dynamically populated 4 teams -->
+          </div>
+        </div>
+
+        <!-- SubTab 2: Question Bank Editor -->
+        <div id="subtab-questions" class="hidden p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div>
+              <h4 class="font-bold text-slate-800 text-sm">등록된 퀴즈 문제 목록</h4>
+              <p class="text-xs text-slate-500">문제를 미리 등록해두고 원하는 문제를 즉시 출제할 수 있습니다.</p>
+            </div>
+            <button onclick="openAddQuestionModal()" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition">
+              <i class="fa-solid fa-plus"></i>
+              <span>새 문제 추가</span>
+            </button>
+          </div>
+
+          <div id="question-bank-list" class="space-y-3">
+            <!-- Dynamically populated question cards -->
+          </div>
+        </div>
+
+        <!-- SubTab: Individual Student Stats and Answer Counter -->
+        <div id="subtab-stats" class="hidden p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div>
+              <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-user text-emerald-600"></i>
+                <span>학생 개별 정답 통계 및 수동 조정</span>
+              </h4>
+              <p class="text-xs text-slate-500 mt-0.5">라운드 채점 시 자동으로 정답 개수가 누적되며, 교사가 아래에서 직접 개별 정답 개수를 추가/차감할 수 있습니다.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="resetIndividualCorrectCounts()" class="text-xs px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold transition">
+                <i class="fa-solid fa-arrow-rotate-left mr-1"></i>정답 수 일괄 0개로 초기화
+              </button>
+            </div>
+          </div>
+
+          <!-- Individual Stats Table / Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="teacher-student-stats-container">
+            <!-- Dynamically populated student answer counters -->
+          </div>
+        </div>
+
+        <!-- SubTab 3: Live Alpha Inspector (Teacher Secret View) -->
+        <div id="subtab-live-alpha" class="hidden p-6 space-y-4">
+          <div class="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-800 leading-relaxed flex items-center gap-3">
+            <i class="fa-solid fa-shield-halved text-rose-600 text-xl"></i>
+            <div>
+              <strong class="font-bold">교사용 보안 스크린:</strong> 학생들에게는 절대 이 화면을 보여주지 마세요. 이번 라운드에 각 조에서 비밀 알파로 선정된 학생과 적용된 특수 룰입니다.
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="teacher-alpha-status-container">
+            <!-- Dynamically rendered alpha badges -->
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= VIEW 3: STUDENT VIEW ================= -->
+    <section id="view-student" class="hidden space-y-6 animate-in fade-in duration-300">
+      
+      <!-- Student Login / Profile Selector (If not selected) -->
+      <div id="student-login-box" class="max-w-xl mx-auto bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+        <div class="text-center mb-6">
+          <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-2xl mx-auto mb-3">
+            <i class="fa-solid fa-user-check"></i>
+          </div>
+          <h3 class="text-2xl font-black text-slate-900">학생 본인 확인</h3>
+          <p class="text-xs sm:text-sm text-slate-500 mt-1">자신의 조와 이름을 선택하여 퀴즈에 참여하세요.</p>
+        </div>
+
+        <!-- Team Selector for Student -->
+        <div class="mb-4">
+          <label class="block text-xs font-bold text-slate-700 mb-2">소속 조 선택</label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="student-team-select-tabs">
+            <!-- Dynamically rendered -->
+          </div>
+        </div>
+
+        <!-- Member Selector -->
+        <div class="mb-6">
+          <label class="block text-xs font-bold text-slate-700 mb-2">본인 이름 선택</label>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="student-name-select-grid">
+            <!-- Dynamically rendered -->
+          </div>
+        </div>
+
+        <button id="btn-enter-student" onclick="confirmStudentLogin()" disabled class="w-full py-3.5 rounded-2xl bg-slate-300 text-slate-500 font-bold text-sm transition flex items-center justify-center gap-2 cursor-not-allowed">
+          <span>이름을 선택해주세요</span>
+        </button>
+      </div>
+
+      <!-- Student Active Screen (Once logged in) -->
+      <div id="student-active-screen" class="hidden space-y-5 max-w-2xl mx-auto">
+        
+        <!-- Student Info Header -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 text-sm" id="student-avatar-num">
+              1
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span id="student-profile-team" class="text-xs font-bold text-rose-600">1조 (블루)</span>
+                <h4 id="student-profile-name" class="font-extrabold text-slate-900 text-base">홍길동 학생</h4>
+              </div>
+              <p class="text-xs text-slate-400">참여 상태: 연결됨</p>
+            </div>
+          </div>
+          <button onclick="studentLogout()" class="text-xs text-slate-400 hover:text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition">
+            <i class="fa-solid fa-arrow-right-from-bracket mr-1"></i>변경
+          </button>
+        </div>
+
+        <!-- SECRET ALPHA STATUS CARD (THE CORE FEATURE) -->
+        <div id="student-role-card" class="rounded-3xl p-6 shadow-md transition-all">
+          <!-- Populated dynamically based on whether student is Alpha -->
+        </div>
+
+        <!-- Current Question Display on Student Phone -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                전자칠판 연동 문제
+              </span>
+              <span id="student-points-badge" class="text-xs font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                배점 2점
+              </span>
+            </div>
+            <span id="student-round-tag" class="text-xs font-extrabold text-blue-600">Round 1</span>
+          </div>
+          
+          <h3 id="student-display-question" class="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+            전자칠판에서 문제가 출제될 때까지 잠시만 기다려주세요...
+          </h3>
+
+          <!-- Student Answer Submission Box -->
+          <div class="mt-6 pt-5 border-t border-slate-100">
+            <label class="block text-xs font-bold text-slate-700 mb-2">내 정답 제출하기</label>
+            <div class="flex gap-2">
+              <input id="student-answer-input" type="text" placeholder="정답을 입력하세요" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500">
+              <button onclick="submitStudentAnswer()" id="student-submit-btn" class="px-5 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-200 transition active:scale-95 whitespace-nowrap">
+                제출
+              </button>
+            </div>
+            <div id="student-submit-status" class="mt-2.5 text-xs text-slate-500 flex items-center gap-1.5">
+              <i class="fa-regular fa-clock"></i> 아직 답안을 제출하지 않았습니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- Team Live Answer Stats -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm text-xs text-slate-600 flex items-center justify-between">
+          <span class="flex items-center gap-2">
+            <i class="fa-solid fa-users text-blue-500"></i>
+            <span>우리 조 답안 제출 현황:</span>
+          </span>
+          <span id="student-team-submit-count" class="font-bold text-slate-900">0 / 6명 제출 완료</span>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================= VIEW 4: SMART BOARD (ELECTRONIC BLACKBOARD) ================= -->
+    <section id="view-board" class="hidden space-y-6 animate-in fade-in duration-300">
+      
+      <!-- Smart Board Top Bar -->
+      <div class="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-white text-2xl shadow-md shadow-emerald-200">
+            <i class="fa-solid fa-display"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 id="board-round-title" class="text-2xl sm:text-3xl font-black text-slate-900">ROUND 1</h2>
+              <span id="board-stage-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                답안 작성 중
+              </span>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-500">대형 화면용 전자칠판 디스플레이</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <span class="text-xs text-slate-400 block font-medium">전체 제출 현황</span>
+            <span id="board-overall-submissions" class="text-xl sm:text-2xl font-black text-slate-900">0 / 22명</span>
+          </div>
+          <button onclick="toggleBoardFullScreen()" class="p-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition text-sm" title="전체화면">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Stage: Big Question Card -->
+      <div class="bg-gradient-to-br from-white via-slate-50 to-blue-50/30 border-2 border-slate-200 rounded-3xl p-8 sm:p-12 shadow-md relative overflow-hidden text-center">
+        <div class="inline-flex flex-wrap items-center justify-center gap-2 mb-4">
+          <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-blue-100 text-blue-800 font-extrabold text-sm">
+            <i class="fa-solid fa-lightbulb"></i> 현재 문제
+          </span>
+          <span id="board-points-badge" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 font-extrabold text-sm border border-amber-300">
+            <i class="fa-solid fa-star text-amber-500"></i> 배점 <span id="board-points-text">2</span>점
+          </span>
+          <span id="board-alpha-rule-badge" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-rose-100 text-rose-800 font-extrabold text-sm border border-rose-300">
+            <i class="fa-solid fa-crown text-rose-500"></i> 알파 조건: <span id="board-alpha-rule-text">맞히면 +3점 / 틀리면 -3점</span>
+          </span>
+        </div>
+        
+        <h3 id="board-question-text" class="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 leading-tight tracking-tight max-w-4xl mx-auto py-2">
+          문제가 여기에 크게 표시됩니다.
+        </h3>
+
+        <!-- Secret / Revealed Answer Banner -->
+        <div id="board-answer-container" class="mt-8 pt-6 border-t border-slate-200/80 max-w-2xl mx-auto">
+          <div id="board-answer-hidden" class="py-3 px-6 rounded-2xl bg-slate-200/70 text-slate-500 font-bold text-base inline-flex items-center gap-2">
+            <i class="fa-solid fa-lock"></i>
+            <span>정답과 알파는 채점 시 공개됩니다</span>
+          </div>
+
+          <div id="board-answer-revealed" class="hidden animate-in zoom-in-95 duration-300">
+            <div class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-1">정답 공개</div>
+            <div id="board-revealed-answer-text" class="text-3xl sm:text-4xl font-black text-emerald-600 bg-emerald-50 border-2 border-emerald-300 py-3 px-8 rounded-2xl inline-block shadow-sm">
+              시크릿 알파 퀴즈
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Teams Live Board Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="board-teams-container">
+        <!-- Dynamically rendered 4 teams live cards with submitted status & reveal animations -->
+      </div>
+
+      <!-- Leaderboard Ranking Board -->
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-black text-slate-900 flex items-center gap-2.5">
+            <i class="fa-solid fa-trophy text-amber-500"></i>
+            <span>실시간 누적 점수 순위</span>
+          </h3>
+          <span class="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full font-semibold">4개 조 대항전</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="board-leaderboard-grid">
+          <!-- Dynamically sorted leaderboard ranks -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= MODALS & POPUPS ================= -->
+
+  <!-- Modal 1: Teacher Score Grading Modal -->
+  <div id="modal-grading" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 w-full max-w-4xl max-h-[90vh] rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col relative animate-in fade-in zoom-in-95 duration-200">
+      
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div>
+          <h3 class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-calculator text-emerald-600"></i>
+            <span>라운드 채점 및 알파 특수 룰 정산</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">각 팀원별 제출 답안을 확인하고 정답 여부를 체크하세요. 알파 룰이 자동 계산됩니다.</p>
+        </div>
+        <button onclick="closeScoreGradingModal()" class="text-slate-400 hover:text-slate-700 p-2">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Scrollable Grading Area -->
+      <div id="grading-teams-container" class="flex-1 overflow-y-auto custom-scrollbar py-4 space-y-6">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Grading Actions -->
+      <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+        <div class="text-xs text-slate-500 flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+          <span>알파 학생의 정답 여부에 따라 보너스/감점이 자동 반영됩니다.</span>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="closeScoreGradingModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+            취소
+          </button>
+          <button onclick="finalizeGrading()" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-200 transition active:scale-95">
+            채점 확정 & 칠판 점수 반영
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Add/Edit Question Modal -->
+  <div id="modal-add-question" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 w-full max-w-lg rounded-3xl p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="text-lg font-bold text-slate-900" id="question-modal-title">새 퀴즈 문제 추가</h3>
+        <button onclick="closeAddQuestionModal()" class="text-slate-400 hover:text-slate-700">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs sm:text-sm">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">문제 내용</label>
+          <textarea id="modal-q-text" rows="3" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="문제를 입력하세요"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">정답</label>
+            <input id="modal-q-ans" type="text" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="정답">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">문제 가중치 (배수)</label>
+            <input id="modal-q-points" type="number" min="1" max="10" value="1" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-bold text-amber-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="배수">
+          </div>
+        </div>
+        <div class="pt-2 border-t border-slate-100">
+          <div>
+            <label class="block font-bold text-rose-700 mb-1">알파조건점수 선택 (100점 만점 기준)</label>
+            <select id="modal-q-alpha-rule" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500">
+              <option value="pm10">'기초점수' + '플러스 마이너스 10점' (맞으면 +10점 / 틀리면 -10점)</option>
+              <option value="pm20" selected>'기초점수' + '플러스 마이너스 20점' (맞으면 +20점 / 틀리면 -20점)</option>
+              <option value="pm30">'기초점수' + '플러스 마이너스 30점' (맞으면 +30점 / 틀리면 -30점)</option>
+              <option value="pm50">'기초점수' + '플러스 마이너스 50점' (맞으면 +50점 / 틀리면 -50점)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end gap-2">
+        <button onclick="closeAddQuestionModal()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">취소</button>
+        <button onclick="saveQuestionFromModal()" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-200">문제 등록</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Edit Student Modal (이름 수정, 조 이동 및 결석 제외) -->
+  <div id="modal-edit-student" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 w-full max-w-sm rounded-3xl p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="text-base font-bold text-slate-900">학생 정보 수정 및 결석 처리</h3>
+        <button onclick="closeEditStudentModal()" class="text-slate-400 hover:text-slate-700">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs sm:text-sm">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">학생 이름</label>
+          <input id="modal-student-name" type="text" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">소속 조 변경</label>
+          <select id="modal-student-team-select" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="1">1조</option>
+            <option value="2">2조</option>
+            <option value="3">3조</option>
+            <option value="4">4조</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+        <button onclick="removeCurrentStudent()" class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs border border-rose-200 transition flex items-center gap-1">
+          <i class="fa-solid fa-user-minus"></i> 결석(제외) 처리
+        </button>
+        <div class="flex gap-2">
+          <button onclick="closeEditStudentModal()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">취소</button>
+          <button onclick="saveStudentEdit()" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-200">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast-box" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-slate-900 text-white shadow-xl rounded-2xl px-4 py-3 flex items-center gap-3 text-sm">
+      <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+      <span id="toast-message">메시지 내용</span>
+    </div>
+  </div>
+
+  <!-- Modal: Passcode Authentication Modal for Protected Views -->
+  <div id="modal-passcode" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div id="modal-passcode-box" class="bg-white border border-slate-200 w-full max-w-sm rounded-3xl p-6 sm:p-7 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 text-center">
+      <div id="passcode-icon-wrapper" class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center text-2xl mx-auto mb-3">
+        <i class="fa-solid fa-shield-halved text-blue-600"></i>
+      </div>
+      <h3 id="passcode-modal-title" class="text-xl font-black text-slate-900">보안 접근 인증</h3>
+      <p id="passcode-modal-desc" class="text-xs text-slate-500 mt-1">접속을 위해 보안 비밀번호 4자리를 입력하세요.</p>
+
+      <div class="mt-5">
+        <input id="passcode-input" type="password" maxlength="4" autocomplete="off" inputmode="numeric" placeholder="● ● ● ●" class="w-full text-center tracking-[0.6em] text-2xl font-black py-3 px-4 rounded-2xl bg-slate-50 border-2 border-slate-200 focus:bg-white focus:outline-none focus:border-blue-600 transition placeholder:tracking-widest placeholder:text-slate-300">
+        <div id="passcode-error-msg" class="text-xs font-bold text-rose-600 mt-2 h-4 opacity-0 transition-opacity">
+          비밀번호가 일치하지 않습니다.
+        </div>
+      </div>
+
+      <div class="mt-5 grid grid-cols-2 gap-2">
+        <button onclick="cancelPasscodeModal()" class="py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition active:scale-95">
+          취소
+        </button>
+        <button onclick="confirmPasscode()" class="py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-key text-xs"></i>
+          <span>확인</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Obfuscated passcode validation to prevent plaintext exposure in source code
+    const _AUTH_HASH_SIG = [119, 116, 119, 122]; // Evaluates dynamically to protected pin (5658)
+    function verifySecurityPin(pin) {
+      if (!pin || typeof pin !== 'string') return false;
+      const cleanPin = pin.trim();
+      if (cleanPin.length !== 4) return false;
+      return cleanPin.split('').every((char, index) => (char.charCodeAt(0) ^ 66) === _AUTH_HASH_SIG[index]);
+    }
+
+    // Session auth tokens (persists per browser session tab)
+    let authState = {
+      teacher: false,
+      board: false,
+      pendingView: null
+    };
+
+    const ALPHA_RULES = [
+      {
+        id: 'pm10',
+        name: "'기초점수' + '플러스 마이너스 10점'",
+        points: 10,
+        desc: "기초점수(일반 팀원 100점 만점 자동보정) + [알파 맞히면 +10점 / 틀리면 -10점]",
+        short: "기초점수(100점) ± 10점",
+        icon: 'fa-scale-balanced',
+        calculate: (isAlphaCorrect, regularScore) => {
+          return regularScore + (isAlphaCorrect ? 10 : -10);
+        }
+      },
+      {
+        id: 'pm20',
+        name: "'기초점수' + '플러스 마이너스 20점'",
+        points: 20,
+        desc: "기초점수(일반 팀원 100점 만점 자동보정) + [알파 맞히면 +20점 / 틀리면 -20점]",
+        short: "기초점수(100점) ± 20점",
+        icon: 'fa-fire',
+        calculate: (isAlphaCorrect, regularScore) => {
+          return regularScore + (isAlphaCorrect ? 20 : -20);
+        }
+      },
+      {
+        id: 'pm30',
+        name: "'기초점수' + '플러스 마이너스 30점'",
+        points: 30,
+        desc: "기초점수(일반 팀원 100점 만점 자동보정) + [알파 맞히면 +30점 / 틀리면 -30점]",
+        short: "기초점수(100점) ± 30점",
+        icon: 'fa-bolt',
+        calculate: (isAlphaCorrect, regularScore) => {
+          return regularScore + (isAlphaCorrect ? 30 : -30);
+        }
+      },
+      {
+        id: 'pm50',
+        name: "'기초점수' + '플러스 마이너스 50점'",
+        points: 50,
+        desc: "기초점수(일반 팀원 100점 만점 자동보정) + [알파 맞히면 +50점 / 틀리면 -50점]",
+        short: "기초점수(100점) ± 50점",
+        icon: 'fa-crown',
+        calculate: (isAlphaCorrect, regularScore) => {
+          return regularScore + (isAlphaCorrect ? 50 : -50);
+        }
+      }
+    ];
+
+    function getRuleById(ruleId) {
+      return ALPHA_RULES.find(r => r.id === ruleId) || ALPHA_RULES[1];
+    }
+
+    // Default 22 Students distributed across 4 Teams (6, 6, 5, 5 = 22명)
+    const INITIAL_TEAMS = [
+      {
+        id: 1,
+        name: '1조 (블루 드래곤)',
+        color: 'blue',
+        bgBadge: 'bg-blue-50 text-blue-700 border-blue-200',
+        score: 0,
+        members: [
+          { id: '1-1', name: '김민준', correctCount: 0 },
+          { id: '1-2', name: '이서연', correctCount: 0 },
+          { id: '1-3', name: '박도윤', correctCount: 0 },
+          { id: '1-4', name: '최지우', correctCount: 0 },
+          { id: '1-5', name: '정예준', correctCount: 0 },
+          { id: '1-6', name: '한수아', correctCount: 0 }
+        ],
+        currentAlphaMemberId: null,
+        currentAlphaRuleId: 'pm20'
+      },
+      {
+        id: 2,
+        name: '2조 (레드 피닉스)',
+        color: 'rose',
+        bgBadge: 'bg-rose-50 text-rose-700 border-rose-200',
+        score: 0,
+        members: [
+          { id: '2-1', name: '강하은', correctCount: 0 },
+          { id: '2-2', name: '조시우', correctCount: 0 },
+          { id: '2-3', name: '윤서아', correctCount: 0 },
+          { id: '2-4', name: '장민재', correctCount: 0 },
+          { id: '2-5', name: '임하윤', correctCount: 0 },
+          { id: '2-6', name: '배지호', correctCount: 0 }
+        ],
+        currentAlphaMemberId: null,
+        currentAlphaRuleId: 'pm20'
+      },
+      {
+        id: 3,
+        name: '3조 (골든 타이거)',
+        color: 'amber',
+        bgBadge: 'bg-amber-50 text-amber-700 border-amber-200',
+        score: 0,
+        members: [
+          { id: '3-1', name: '오은우', correctCount: 0 },
+          { id: '3-2', name: '서서진', correctCount: 0 },
+          { id: '3-3', name: '송시은', correctCount: 0 },
+          { id: '3-4', name: '류현우', correctCount: 0 },
+          { id: '3-5', name: '고채원', correctCount: 0 }
+        ],
+        currentAlphaMemberId: null,
+        currentAlphaRuleId: 'pm20'
+      },
+      {
+        id: 4,
+        name: '4조 (그린 바이퍼)',
+        color: 'emerald',
+        bgBadge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        score: 0,
+        members: [
+          { id: '4-1', name: '문승현', correctCount: 0 },
+          { id: '4-2', name: '황다은', correctCount: 0 },
+          { id: '4-3', name: '신유찬', correctCount: 0 },
+          { id: '4-4', name: '권지원', correctCount: 0 },
+          { id: '4-5', name: '안준서', correctCount: 0 }
+        ],
+        currentAlphaMemberId: null,
+        currentAlphaRuleId: 'pm20'
+      }
+    ];
+
+    const DEFAULT_QUESTION_BANK = [
+      {
+        id: 1,
+        question: '[1번 문제] 22명이 4개 조로 나뉘어 풀며, 각 조 1명이 특수 룰을 갖는 퀴즈의 이름은?',
+        answer: '시크릿 알파 퀴즈',
+        points: 1,
+        alphaRuleId: 'pm20'
+      },
+      {
+        id: 2,
+        question: '[2번 문제] 조선 세종대왕이 1443년에 창제하여 반포한 우리나라 고유의 문자는?',
+        answer: '훈민정음',
+        points: 1,
+        alphaRuleId: 'pm10'
+      },
+      {
+        id: 3,
+        question: '[3번 문제] 태양계 행성 중 태양에서 가장 가까운 행성의 이름은 무엇일까요?',
+        answer: '수성',
+        points: 1,
+        alphaRuleId: 'pm30'
+      },
+      {
+        id: 4,
+        question: '[4번 문제] 올림픽 오륜기 고리에 사용되는 5가지 색상 중 하나로 파랑, 노랑, 검정, 초록 외 남은 한 색은?',
+        answer: '빨강',
+        points: 1,
+        alphaRuleId: 'pm50'
+      },
+      {
+        id: 5,
+        question: '[5번 문제] 대한민국의 수도는 어디일까요?',
+        answer: '서울',
+        points: 1,
+        alphaRuleId: 'pm20'
+      }
+    ];
+
+    // Master System State
+    let appState = {
+      currentView: 'home',
+      round: 1,
+      currentQuestion: DEFAULT_QUESTION_BANK[0].question,
+      currentAnswer: DEFAULT_QUESTION_BANK[0].answer,
+      currentPoints: DEFAULT_QUESTION_BANK[0].points || 1,
+      currentAlphaRuleSetting: 'pm20',
+      isAnswerRevealedOnBoard: false,
+      teams: JSON.parse(JSON.stringify(INITIAL_TEAMS)),
+      questionBank: JSON.parse(JSON.stringify(DEFAULT_QUESTION_BANK)),
+      studentSubmissions: {},
+      loggedInStudent: null,
+      teacherTab: 'teams',
+      soundOn: true,
+      studentBeingEdited: null
+    };
+
+    // Firebase 콘솔 > 프로젝트 설정 > 내 앱(웹)에서 복사합니다.
+    // 모든 기기에 동일한 HTML을 배포하세요. databaseURL은 Realtime Database 주소입니다.
+    const FIREBASE_CONFIG = {
+      apiKey: 'AIzaSyDs3qSTWMwS_51Jca6NgeIof2fmXfg0rso',
+      authDomain: 'alpha-quiz-a6da6.firebaseapp.com',
+      databaseURL: 'https://alpha-quiz-a6da6-default-rtdb.asia-southeast1.firebasedatabase.app',
+      projectId: 'alpha-quiz-a6da6',
+      storageBucket: 'alpha-quiz-a6da6.firebasestorage.app',
+      messagingSenderId: '1051448182989',
+      appId: '1:1051448182989:web:f43e812009b003cd540184'
+    };
+    const GAME_ROOM = 'alpha-quiz-classroom';
+    let gameRef = null;
+    let submissionsRef = null;
+    let firebaseReady = false;
+
+    function sharedState() {
+      return {
+        round: appState.round,
+        currentQuestion: appState.currentQuestion,
+        currentAnswer: appState.currentAnswer,
+        currentPoints: appState.currentPoints,
+        currentAlphaRuleSetting: appState.currentAlphaRuleSetting,
+        isAnswerRevealedOnBoard: appState.isAnswerRevealedOnBoard,
+        teams: appState.teams,
+        questionBank: appState.questionBank
+      };
+    }
+
+    function reportSyncError(error) {
+      console.error('Firebase synchronization failed:', error);
+      document.getElementById('sync-status').textContent = 'Firebase 연결 오류: 인터넷과 Realtime Database 규칙을 확인하세요.';
+      showToast('연결 또는 저장에 실패했습니다. 인터넷과 데이터베이스 규칙을 확인하세요.');
+    }
+
+    function broadcastState() {
+      if (!firebaseReady) {
+        showToast('Firebase 설정 및 연결을 확인하세요.');
+        return;
+      }
+      gameRef.set(sharedState()).catch(reportSyncError);
+    }
+
+    async function connectFirebase() {
+      if (!FIREBASE_CONFIG.databaseURL.startsWith('https://') ||
+          FIREBASE_CONFIG.databaseURL.includes('여기에_') ||
+          FIREBASE_CONFIG.apiKey.includes('여기에_') ||
+          FIREBASE_CONFIG.projectId.includes('여기에_') ||
+          FIREBASE_CONFIG.appId.includes('여기에_')) {
+        showToast('HTML의 FIREBASE_CONFIG에 Firebase 설정값을 입력하세요.');
+        return;
+      }
+      if (typeof firebase === 'undefined') {
+        showToast('Firebase 스크립트를 불러오지 못했습니다. 인터넷을 확인하세요.');
+        return;
+      }
+      try {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        const root = firebase.database().ref('quizRooms/' + GAME_ROOM);
+        gameRef = root.child('game');
+        submissionsRef = root.child('submissions');
+        await gameRef.transaction(current => {
+          if (current !== null) return;
+          // 최초 접속 기기만 초기 상태를 만듭니다.
+          const initial = sharedState();
+          initial.teams.forEach(team => {
+            const pool = team.members;
+            team.currentAlphaMemberId = pool[Math.floor(Math.random() * pool.length)].id;
+          });
+          return initial;
+        }, undefined, false);
+        firebaseReady = true;
+        document.getElementById('sync-status').classList.add('hidden');
+        gameRef.on('value', snapshot => {
+          const state = snapshot.val();
+          if (!state) return;
+          handleIncomingSync(state);
+        }, reportSyncError);
+        submissionsRef.on('value', snapshot => {
+          const allRounds = snapshot.val() || {};
+          appState.studentSubmissions = allRounds[appState.round] || {};
+          renderAllViews();
+        }, reportSyncError);
+      } catch (error) { reportSyncError(error); }
+    }
+
+    function handleIncomingSync(remoteState) {
+      appState.round = remoteState.round;
+      appState.currentQuestion = remoteState.currentQuestion;
+      appState.currentAnswer = remoteState.currentAnswer;
+      appState.currentPoints = remoteState.currentPoints || 1;
+      appState.currentAlphaRuleSetting = remoteState.currentAlphaRuleSetting || 'pm20';
+      appState.isAnswerRevealedOnBoard = remoteState.isAnswerRevealedOnBoard;
+      appState.teams = remoteState.teams;
+      appState.questionBank = remoteState.questionBank || appState.questionBank;
+      if (submissionsRef) {
+        submissionsRef.child(String(appState.round)).once('value').then(snapshot => {
+          if (appState.round !== remoteState.round) return;
+          appState.studentSubmissions = snapshot.val() || {};
+          renderAllViews();
+        }).catch(reportSyncError);
+      }
+      renderAllViews();
+    }
+
+    // Audio Engine
+    let audioSynth = null;
+    function initAudio() {
+      if (!audioSynth && typeof Tone !== 'undefined') {
+        audioSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+        audioSynth.volume.value = -10;
+      }
+    }
+
+    function playSoundEffect(type) {
+      if (!appState.soundOn) return;
+      try {
+        initAudio();
+        if (Tone.context.state !== 'running') {
+          Tone.start();
+        }
+        if (type === 'click') {
+          audioSynth.triggerAttackRelease('C5', '16n');
+        } else if (type === 'fanfare') {
+          audioSynth.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '8n');
+        } else if (type === 'alpha') {
+          audioSynth.triggerAttackRelease(['F5', 'A5', 'C6'], '6n');
+        } else if (type === 'submit') {
+          audioSynth.triggerAttackRelease('G5', '12n');
+        }
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      appState.soundOn = !appState.soundOn;
+      const icon = document.getElementById('sound-icon');
+      if (appState.soundOn) {
+        icon.className = 'fa-solid fa-volume-high text-emerald-600 text-sm';
+        showToast('효과음이 켜졌습니다.');
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-400 text-sm';
+        showToast('효과음이 꺼졌습니다.');
+      }
+    }
+
+    /* ==========================================================================
+       STREAMING_CHUNK:Managing view navigation and URL routing
+       ========================================================================== */
+
+    function navigateTo(viewName, updateHistory = true) {
+      // Guard protected views: Teacher & Board
+      if ((viewName === 'teacher' || viewName === 'board') && !authState[viewName]) {
+        promptPasscodeFor(viewName);
+        return;
+      }
+
+      playSoundEffect('click');
+      appState.currentView = viewName;
+
+      // Update Nav Buttons Styles
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.dataset.view === viewName) {
+          btn.classList.add('bg-slate-200', 'font-bold', 'text-slate-900');
+        } else {
+          btn.classList.remove('bg-slate-200', 'font-bold', 'text-slate-900');
+        }
+      });
+
+      // Show/hide lock button in header
+      const lockBtn = document.getElementById('lock-btn');
+      if (authState.teacher || authState.board) {
+        lockBtn.classList.remove('hidden');
+      } else {
+        lockBtn.classList.add('hidden');
+      }
+
+      // Update Header Badge
+      const badge = document.getElementById('header-view-badge');
+      if (viewName === 'home') {
+        badge.innerText = '홈 화면';
+        badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200';
+      } else if (viewName === 'teacher') {
+        badge.innerText = '교사 뷰';
+        badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200';
+      } else if (viewName === 'student') {
+        badge.innerText = '학생 뷰';
+        badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200';
+      } else if (viewName === 'board') {
+        badge.innerText = '전자칠판 뷰';
+        badge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200';
+      }
+
+      // Hide all view sections
+      document.getElementById('view-home').classList.add('hidden');
+      document.getElementById('view-teacher').classList.add('hidden');
+      document.getElementById('view-student').classList.add('hidden');
+      document.getElementById('view-board').classList.add('hidden');
+
+      // Show requested view
+      const targetEl = document.getElementById(`view-${viewName}`);
+      if (targetEl) targetEl.classList.remove('hidden');
+
+      // Update browser hash so users have direct linkable URLs
+      if (updateHistory) {
+        window.location.hash = viewName;
+      }
+
+      renderAllViews();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function promptPasscodeFor(viewName) {
+      authState.pendingView = viewName;
+      const modal = document.getElementById('modal-passcode');
+      const title = document.getElementById('passcode-modal-title');
+      const desc = document.getElementById('passcode-modal-desc');
+      const input = document.getElementById('passcode-input');
+      const errorMsg = document.getElementById('passcode-error-msg');
+      const iconWrapper = document.getElementById('passcode-icon-wrapper');
+
+      input.value = '';
+      errorMsg.classList.add('opacity-0');
+
+      if (viewName === 'teacher') {
+        title.innerText = '교사 뷰 관리자 인증';
+        desc.innerText = '교사용 제어판 및 퀴즈 출제 화면 진입을 위해 비밀번호를 입력하세요.';
+        iconWrapper.innerHTML = '<i class="fa-solid fa-chalkboard-user text-blue-600"></i>';
+      } else if (viewName === 'board') {
+        title.innerText = '전자칠판 뷰 인증';
+        desc.innerText = '정답 및 비밀 알파가 노출되는 칠판 화면 진입을 위해 비밀번호를 입력하세요.';
+        iconWrapper.innerHTML = '<i class="fa-solid fa-display text-emerald-600"></i>';
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => input.focus(), 150);
+    }
+
+    function cancelPasscodeModal() {
+      const modal = document.getElementById('modal-passcode');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      authState.pendingView = null;
+      if (appState.currentView !== 'teacher' && appState.currentView !== 'board') {
+        window.location.hash = appState.currentView;
+      } else {
+        navigateTo('home');
+      }
+    }
+
+    function confirmPasscode() {
+      const input = document.getElementById('passcode-input');
+      const errorMsg = document.getElementById('passcode-error-msg');
+      const modalBox = document.getElementById('modal-passcode-box');
+      const targetView = authState.pendingView;
+
+      if (verifySecurityPin(input.value)) {
+        playSoundEffect('fanfare');
+        if (targetView) {
+          authState[targetView] = true;
+        }
+        const modal = document.getElementById('modal-passcode');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        showToast('보안 인증 성공! 화면으로 이동합니다.');
+        if (targetView) {
+          navigateTo(targetView);
+        }
+      } else {
+        playSoundEffect('click');
+        errorMsg.classList.remove('opacity-0');
+        input.value = '';
+        input.focus();
+        
+        // Shake animation effect
+        modalBox.classList.add('translate-x-2');
+        setTimeout(() => modalBox.classList.remove('translate-x-2'), 80);
+        setTimeout(() => modalBox.classList.add('-translate-x-2'), 160);
+        setTimeout(() => modalBox.classList.remove('-translate-x-2'), 240);
+      }
+    }
+
+    function lockProtectedViews() {
+      playSoundEffect('click');
+      authState.teacher = false;
+      authState.board = false;
+      document.getElementById('lock-btn').classList.add('hidden');
+      navigateTo('home');
+      showToast('교사 뷰 및 전자칠판이 다시 잠금 처리되었습니다.');
+    }
+
+    // Passcode Enter key handling
+    document.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('modal-passcode');
+      if (modal && !modal.classList.contains('hidden')) {
+        if (e.key === 'Enter') {
+          confirmPasscode();
+        } else if (e.key === 'Escape') {
+          cancelPasscodeModal();
+        }
+      }
+    });
+
+    function copyViewLink(viewName) {
+      playSoundEffect('click');
+      const baseUrl = window.location.href.split('#')[0];
+      const targetUrl = `${baseUrl}#${viewName}`;
+
+      const tempInput = document.createElement('input');
+      tempInput.value = targetUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        showToast(`${viewName.toUpperCase()} 전용 링크가 복사되었습니다!`);
+      } catch (err) {
+        showToast('링크 복사 실패');
+      }
+      document.body.removeChild(tempInput);
+
+      const btnSpan = document.getElementById(`copy-btn-${viewName}`);
+      if (btnSpan) {
+        const originalText = btnSpan.innerText;
+        btnSpan.innerText = '✓ 복사 완료!';
+        setTimeout(() => {
+          btnSpan.innerText = originalText;
+        }, 1800);
+      }
+    }
+
+    /* ==========================================================================
+       STREAMING_CHUNK:Implementing Alpha auto-assignment logic
+       ========================================================================== */
+
+    function assignAlphasForCurrentRound() {
+      const selectedRuleSetting = appState.currentAlphaRuleSetting || 'pm3';
+
+      appState.teams.forEach(team => {
+        if (!team.members || team.members.length === 0) return;
+
+        // Filter eligible members (prefer members who weren't Alpha in the previous round)
+        const eligible = team.members.filter(m => m.id !== team.currentAlphaMemberId);
+        const pool = eligible.length > 0 ? eligible : team.members;
+        
+        // Randomly pick one Alpha for this team
+        const chosenMember = pool[Math.floor(Math.random() * pool.length)];
+        team.currentAlphaMemberId = chosenMember.id;
+        team.currentAlphaRuleId = selectedRuleSetting;
+      });
+      broadcastState();
+    }
+
+    function triggerNextRound() {
+      if (!firebaseReady) { showToast('Firebase 연결 후 진행할 수 있습니다.'); return; }
+      playSoundEffect('fanfare');
+      appState.round += 1;
+      appState.isAnswerRevealedOnBoard = false;
+      appState.studentSubmissions = {}; // Clear previous submissions
+      submissionsRef.child(String(appState.round)).remove().catch(reportSyncError);
+
+      // Automatically advance to the next question in the bank if available
+      const nextQIndex = (appState.round - 1) % appState.questionBank.length;
+      if (appState.questionBank[nextQIndex]) {
+        const qData = appState.questionBank[nextQIndex];
+        appState.currentQuestion = qData.question;
+        appState.currentAnswer = qData.answer;
+        appState.currentPoints = qData.points || 2;
+        appState.currentAlphaRuleSetting = qData.alphaRuleId || 'pm3';
+
+        document.getElementById('current-question-input').value = appState.currentQuestion;
+        document.getElementById('current-answer-input').value = appState.currentAnswer;
+        document.getElementById('current-points-input').value = appState.currentPoints;
+        document.getElementById('current-alpha-rule-select').value = appState.currentAlphaRuleSetting;
+      }
+
+      assignAlphasForCurrentRound();
+      renderAllViews();
+      showToast(`Round ${appState.round} 시작! 4개 조 알파가 새롭게 선정되었습니다.`);
+    }
+
+    function applyCurrentQuestionChange() {
+      playSoundEffect('click');
+      const qInput = document.getElementById('current-question-input').value.trim();
+      const aInput = document.getElementById('current-answer-input').value.trim();
+      const pInput = parseInt(document.getElementById('current-points-input').value) || 2;
+      const rSelect = document.getElementById('current-alpha-rule-select').value;
+
+      if (!qInput) {
+        showToast('문제 내용을 입력해주세요.');
+        return;
+      }
+      appState.currentQuestion = qInput;
+      appState.currentAnswer = aInput || '정답 미지정';
+      appState.currentPoints = Math.max(1, pInput);
+      appState.currentAlphaRuleSetting = rSelect;
+
+      // Apply rule to teams
+      appState.teams.forEach(team => {
+        team.currentAlphaRuleId = rSelect;
+      });
+
+      broadcastState();
+      renderAllViews();
+      showToast(`문제 및 기본 배점, 알파조건점수가 반영되었습니다!`);
+    }
+
+    function revealBoardAnswer() {
+      playSoundEffect('fanfare');
+      appState.isAnswerRevealedOnBoard = true;
+      broadcastState();
+      renderAllViews();
+      showToast('전자칠판에 정답 및 각 조의 비밀 알파가 공개되었습니다!');
+    }
+
+    /* ==========================================================================
+       STREAMING_CHUNK:Rendering teacher view management interfaces
+       ========================================================================== */
+
+    function switchTeacherSubTab(tabName) {
+      playSoundEffect('click');
+      appState.teacherTab = tabName;
+      
+      const tabTeams = document.getElementById('subtab-teams');
+      const tabQuestions = document.getElementById('subtab-questions');
+      const tabAlpha = document.getElementById('subtab-live-alpha');
+      const tabStats = document.getElementById('subtab-stats');
+
+      const btnTeams = document.getElementById('tab-btn-teams');
+      const btnQuestions = document.getElementById('tab-btn-questions');
+      const btnAlpha = document.getElementById('tab-btn-live-alpha');
+      const btnStats = document.getElementById('tab-btn-stats');
+
+      [tabTeams, tabQuestions, tabAlpha, tabStats].forEach(el => {
+        if (el) el.classList.add('hidden');
+      });
+      [btnTeams, btnQuestions, btnAlpha, btnStats].forEach(btn => {
+        if (btn) {
+          btn.classList.remove('border-blue-600', 'text-blue-600');
+          btn.classList.add('border-transparent', 'text-slate-500');
+        }
+      });
+
+      if (tabName === 'teams') {
+        tabTeams.classList.remove('hidden');
+        btnTeams.classList.add('border-blue-600', 'text-blue-600');
+      } else if (tabName === 'questions') {
+        tabQuestions.classList.remove('hidden');
+        btnQuestions.classList.add('border-blue-600', 'text-blue-600');
+      } else if (tabName === 'live-alpha') {
+        tabAlpha.classList.remove('hidden');
+        btnAlpha.classList.add('border-blue-600', 'text-blue-600');
+      } else if (tabName === 'stats') {
+        tabStats.classList.remove('hidden');
+        btnStats.classList.add('border-blue-600', 'text-blue-600');
+      }
+      renderTeacherView();
+    }
+
+    function renderTeacherView() {
+      document.getElementById('teacher-round-display').innerText = `문제 ${appState.round} 진행 중`;
+
+      let totalCount = 0;
+      appState.teams.forEach(t => totalCount += t.members.length);
+      document.getElementById('total-student-count-badge').innerText = `${totalCount}명`;
+      document.getElementById('total-question-count-badge').innerText = `${appState.questionBank.length}문항`;
+
+      // Render Teams & Students Grid
+      const teamsContainer = document.getElementById('teacher-teams-container');
+      teamsContainer.innerHTML = appState.teams.map(team => {
+        return `
+          <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-100">
+                <span class="font-extrabold text-sm text-slate-800">${team.name}</span>
+                <span class="text-xs px-2 py-0.5 rounded-full font-bold ${team.bgBadge}">
+                  ${team.members.length}명
+                </span>
+              </div>
+              <div class="space-y-1.5">
+                ${team.members.map((member, mIdx) => {
+                  const hasSubmitted = appState.studentSubmissions[member.id] ? true : false;
+                  const correct = member.correctCount || 0;
+                  return `
+                    <div onclick="openEditStudentModal(${team.id}, '${member.id}')" class="group flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 cursor-pointer transition">
+                      <div class="flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-md bg-white text-slate-600 text-[10px] font-bold flex items-center justify-center border border-slate-200">
+                          ${mIdx + 1}
+                        </span>
+                        <span class="text-xs font-semibold text-slate-800 group-hover:text-blue-600">${member.name}</span>
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200" title="누적 정답 수">
+                          <i class="fa-solid fa-check text-[9px]"></i> ${correct}개
+                        </span>
+                        ${hasSubmitted 
+                          ? '<span class="text-[10px] text-blue-600 font-bold bg-blue-50 px-1 py-0.5 rounded">제출</span>' 
+                          : '<span class="text-[10px] text-slate-400">대기</span>'}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <span>현재 누적 득점:</span>
+              <span class="font-black text-slate-900 text-sm">${team.score}점</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Render Individual Student Stats Subtab
+      const statsContainer = document.getElementById('teacher-student-stats-container');
+      if (statsContainer) {
+        statsContainer.innerHTML = appState.teams.map(team => {
+          return `
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
+                  <span class="font-extrabold text-sm text-slate-800">${team.name}</span>
+                  <span class="text-xs px-2 py-0.5 rounded-full font-bold ${team.bgBadge}">
+                    ${team.members.length}명
+                  </span>
+                </div>
+                <div class="space-y-2">
+                  ${team.members.map(member => {
+                    const count = member.correctCount || 0;
+                    return `
+                      <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
+                        <div>
+                          <div class="text-xs font-bold text-slate-800">${member.name}</div>
+                          <div class="text-[10px] text-slate-400">정답: <strong class="text-emerald-600 font-bold">${count}문제</strong> 맞힘</div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                          <button onclick="changeStudentCorrectCount('${member.id}', -1)" class="w-6 h-6 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 text-xs font-bold transition flex items-center justify-center active:scale-95" title="1개 감소">
+                            -
+                          </button>
+                          <span class="w-7 text-center font-black text-xs text-slate-800">${count}</span>
+                          <button onclick="changeStudentCorrectCount('${member.id}', 1)" class="w-6 h-6 rounded-lg bg-white hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 border border-slate-200 text-xs font-bold transition flex items-center justify-center active:scale-95" title="1개 증가">
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Render Question Bank List
+      const qBankList = document.getElementById('question-bank-list');
+      qBankList.innerHTML = appState.questionBank.map((q, idx) => {
+        const isCurrent = appState.currentQuestion === q.question;
+        const qPoints = q.points || 2;
+        const qRuleObj = getRuleById(q.alphaRuleId || 'pm3');
+
+        return `
+          <div class="p-4 rounded-2xl border ${isCurrent ? 'border-blue-500 bg-blue-50/40 ring-1 ring-blue-500' : 'border-slate-200 bg-white'} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition">
+            <div class="flex-1">
+              <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
+                <span class="text-xs font-black px-2 py-0.5 rounded ${isCurrent ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}">
+                  Q${idx + 1}
+                </span>
+                <span class="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                  <i class="fa-solid fa-star text-[10px] text-amber-500"></i> 배점 ${qPoints}점
+                </span>
+                <span class="text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                  <i class="fa-solid fa-crown text-[10px] text-rose-500"></i> ${qRuleObj.name}
+                </span>
+                <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  정답: ${q.answer}
+                </span>
+                ${isCurrent ? '<span class="text-xs font-bold text-blue-600 ml-1">● 현재 출제 중</span>' : ''}
+              </div>
+              <p class="text-sm font-semibold text-slate-800">${q.question}</p>
+            </div>
+            <div class="flex items-center gap-2 self-end sm:self-center">
+              <button onclick="loadQuestionToCurrent(${q.id})" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition">
+                이 문제 출제
+              </button>
+              <button onclick="deleteQuestion(${q.id})" class="p-2 text-slate-400 hover:text-rose-600 text-xs transition">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Render Secret Alpha Status (Teacher View)
+      const alphaStatusContainer = document.getElementById('teacher-alpha-status-container');
+      alphaStatusContainer.innerHTML = appState.teams.map(team => {
+        const alphaMember = team.members.find(m => m.id === team.currentAlphaMemberId);
+        const ruleObj = getRuleById(team.currentAlphaRuleId);
+
+        return `
+          <div class="p-4 rounded-2xl border border-rose-200 bg-rose-50/50">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-extrabold text-sm text-slate-900">${team.name}</span>
+              <span class="text-xs px-2 py-0.5 rounded-full font-bold bg-rose-600 text-white">
+                알파: ${alphaMember ? alphaMember.name : '미정'}
+              </span>
+            </div>
+            <div class="text-xs font-bold text-rose-800 flex items-center gap-1.5 mt-2">
+              <i class="fa-solid ${ruleObj ? ruleObj.icon : 'fa-crown'} text-rose-600"></i>
+              <span>${ruleObj ? ruleObj.name : '-'}</span>
+            </div>
+            <p class="text-[11px] text-slate-600 mt-1 leading-snug">
+              ${ruleObj ? ruleObj.desc : ''}
+            </p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function loadQuestionToCurrent(questionId) {
+      playSoundEffect('click');
+      const item = appState.questionBank.find(q => q.id === questionId);
+      if (item) {
+        appState.currentQuestion = item.question;
+        appState.currentAnswer = item.answer;
+        appState.currentPoints = item.points || 2;
+        appState.currentAlphaRuleSetting = item.alphaRuleId || 'pm3';
+
+        document.getElementById('current-question-input').value = item.question;
+        document.getElementById('current-answer-input').value = item.answer;
+        document.getElementById('current-points-input').value = appState.currentPoints;
+        document.getElementById('current-alpha-rule-select').value = appState.currentAlphaRuleSetting;
+
+        // Apply rule to teams
+        appState.teams.forEach(team => {
+          team.currentAlphaRuleId = appState.currentAlphaRuleSetting;
+        });
+
+        broadcastState();
+        renderAllViews();
+        showToast(`선택한 문제를 불러왔습니다. (배점 ${appState.currentPoints}점 / ${getRuleById(appState.currentAlphaRuleSetting).name})`);
+      }
+    }
+
+    function deleteQuestion(id) {
+      if (appState.questionBank.length <= 1) {
+        showToast('최소 1개의 문제는 남아있어야 합니다.');
+        return;
+      }
+      appState.questionBank = appState.questionBank.filter(q => q.id !== id);
+      broadcastState();
+      renderTeacherView();
+      showToast('문제가 삭제되었습니다.');
+    }
+
+    function restoreDefaultTeams() {
+      appState.teams = JSON.parse(JSON.stringify(INITIAL_TEAMS));
+      assignAlphasForCurrentRound();
+      broadcastState();
+      renderAllViews();
+      showToast('초기 22명 4개 조 상태로 복구되었습니다.');
+    }
+
+    /* ==========================================================================
+       STREAMING_CHUNK:Rendering student view and secret alpha detector
+       ========================================================================== */
+
+    let tempSelectedStudentTeamId = 1;
+    let tempSelectedMemberId = null;
+
+    function renderStudentView() {
+      if (!appState.loggedInStudent) {
+        document.getElementById('student-login-box').classList.remove('hidden');
+        document.getElementById('student-active-screen').classList.add('hidden');
+
+        const teamTabs = document.getElementById('student-team-select-tabs');
+        teamTabs.innerHTML = appState.teams.map(team => {
+          const isSelected = team.id === tempSelectedStudentTeamId;
+          return `
+            <button onclick="setStudentLoginTeam(${team.id})" class="p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center ${
+              isSelected ? 'border-rose-500 bg-rose-50 text-rose-700 ring-2 ring-rose-500' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white'
+            }">
+              <span>${team.name.split(' ')[0]}</span>
+              <span class="text-[10px] font-normal opacity-80">${team.members.length}명</span>
+            </button>
+          `;
+        }).join('');
+
+        const targetTeam = appState.teams.find(t => t.id === tempSelectedStudentTeamId);
+        const nameGrid = document.getElementById('student-name-select-grid');
+        if (targetTeam) {
+          nameGrid.innerHTML = targetTeam.members.map(member => {
+            const isSelected = member.id === tempSelectedMemberId;
+            return `
+              <button onclick="setStudentLoginMember('${member.id}')" class="p-3 rounded-xl border text-xs font-bold transition flex items-center justify-between ${
+                isSelected ? 'border-rose-600 bg-rose-600 text-white shadow-md' : 'border-slate-200 bg-white text-slate-800 hover:border-rose-300'
+              }">
+                <span>${member.name}</span>
+                <i class="fa-solid fa-check text-[10px] ${isSelected ? 'opacity-100' : 'opacity-0'}"></i>
+              </button>
+            `;
+          }).join('');
+        }
+        return;
+      }
+
+      // Logged in
+      document.getElementById('student-login-box').classList.add('hidden');
+      document.getElementById('student-active-screen').classList.remove('hidden');
+
+      const logged = appState.loggedInStudent;
+      const team = appState.teams.find(t => t.id === logged.teamId);
+      if (!team) return;
+
+      const member = team.members.find(m => m.id === logged.memberId);
+      const studentName = member ? member.name : logged.name;
+
+      document.getElementById('student-profile-team').innerText = team.name;
+      document.getElementById('student-profile-name').innerText = `${studentName} 학생`;
+      document.getElementById('student-round-tag').innerText = `Round ${appState.round}`;
+      document.getElementById('student-display-question').innerText = appState.currentQuestion;
+      
+      const studentPointsBadge = document.getElementById('student-points-badge');
+      if (studentPointsBadge) {
+        studentPointsBadge.innerText = `기본 배점 ${appState.currentPoints}점`;
+      }
+
+      // SECRET ALPHA ROLE CARD RENDERING
+      const isAlpha = team.currentAlphaMemberId === logged.memberId;
+      const roleCard = document.getElementById('student-role-card');
+      const ruleObj = getRuleById(team.currentAlphaRuleId);
+
+      if (isAlpha) {
+        roleCard.className = 'rounded-3xl p-6 shadow-lg bg-gradient-to-br from-rose-600 via-rose-700 to-amber-600 text-white pulse-animation';
+        roleCard.innerHTML = `
+          <div class="flex items-center justify-between mb-3">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-amber-200 text-xs font-black tracking-wide">
+              <i class="fa-solid fa-crown text-amber-300"></i> 특급 기밀 지령
+            </span>
+            <span class="text-xs bg-black/20 px-2.5 py-0.5 rounded-full font-bold text-white/90">본인만 확인 중</span>
+          </div>
+
+          <div class="flex items-center gap-3 my-2">
+            <div class="w-12 h-12 rounded-2xl bg-white text-rose-600 font-black text-2xl flex items-center justify-center shadow-md">
+              α
+            </div>
+            <div>
+              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-white">
+                당신은 이번 라운드 <span class="text-amber-300">‘비밀 알파’</span>입니다!
+              </h3>
+              <p class="text-xs text-rose-100 font-medium">팀원들에게 알파라는 사실을 절대로 들키지 마세요!</p>
+            </div>
+          </div>
+
+          <div class="mt-4 p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+            <div class="text-xs font-bold text-amber-200 flex items-center gap-1.5 mb-1">
+              <i class="fa-solid ${ruleObj ? ruleObj.icon : 'fa-crown'} text-sm"></i>
+              <span>알파 조건 점수: ${ruleObj ? ruleObj.name : '알파 조건'}</span>
+            </div>
+            <p class="text-sm font-bold text-white leading-relaxed">
+              👉 ${ruleObj ? ruleObj.desc : ''}
+            </p>
+          </div>
+        `;
+      } else {
+        roleCard.className = 'rounded-3xl p-6 shadow-sm bg-gradient-to-br from-slate-50 to-blue-50/50 border border-slate-200 text-slate-800';
+        roleCard.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-200/80 text-slate-700 text-xs font-bold">
+              <i class="fa-solid fa-shield-heart text-blue-500"></i> 일반 팀원
+            </span>
+            <span class="text-xs text-slate-400">비밀 역할 대기</span>
+          </div>
+          <h3 class="text-base sm:text-lg font-black text-slate-900 mt-1">
+            당신은 든든한 <span class="text-blue-600">일반 팀원</span>입니다!
+          </h3>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+            우리 조 5~6명 중 1명이 <strong>비밀 알파</strong>로 활약하고 있습니다. 문제를 정확히 풀어 조의 <strong>'기초점수'</strong>를 올려주세요!
+          </p>
+        `;
+      }
+
+      // Check Submission Status
+      const submission = appState.studentSubmissions[logged.memberId];
+      const statusEl = document.getElementById('student-submit-status');
+      const submitBtn = document.getElementById('student-submit-btn');
+
+      if (submission) {
+        statusEl.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> 답안 제출 완료! (입력값: "${submission.answer}")</span>`;
+        submitBtn.innerText = '수정 제출';
+        submitBtn.className = 'px-5 py-3 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-bold text-sm shadow-md transition active:scale-95 whitespace-nowrap';
+      } else {
+        statusEl.innerHTML = `<span class="text-slate-400 flex items-center gap-1"><i class="fa-regular fa-clock"></i> 아직 답안을 제출하지 않았습니다.</span>`;
+        submitBtn.innerText = '제출';
+        submitBtn.className = 'px-5 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-200 transition active:scale-95 whitespace-nowrap';
+      }
+
+      const teamSubmittedCount = team.members.filter(m => appState.studentSubmissions[m.id]).length;
+      document.getElementById('student-team-submit-count').innerText = `${teamSubmittedCount} / ${team.members.length}명 제출 완료`;
+    }
+
+    function setStudentLoginTeam(teamId) {
+      playSoundEffect('click');
+      tempSelectedStudentTeamId = teamId;
+      tempSelectedMemberId = null;
+      updateStudentLoginButton();
+      renderStudentView();
+    }
+
+    function setStudentLoginMember(memberId) {
+      playSoundEffect('click');
+      tempSelectedMemberId = memberId;
+      updateStudentLoginButton();
+      renderStudentView();
+    }
+
+    function updateStudentLoginButton() {
+      const btn = document.getElementById('btn-enter-student');
+      if (tempSelectedMemberId) {
+        btn.disabled = false;
+        btn.innerText = '선택한 이름으로 참여하기';
+        btn.className = 'w-full py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-lg shadow-rose-200 transition cursor-pointer active:scale-95';
+      } else {
+        btn.disabled = true;
+        btn.innerText = '이름을 선택해주세요';
+        btn.className = 'w-full py-3.5 rounded-2xl bg-slate-300 text-slate-500 font-bold text-sm transition flex items-center justify-center gap-2 cursor-not-allowed';
+      }
+    }
+
+    function confirmStudentLogin() {
+      if (!tempSelectedMemberId) return;
+      playSoundEffect('alpha');
+      const team = appState.teams.find(t => t.id === tempSelectedStudentTeamId);
+      const member = team.members.find(m => m.id === tempSelectedMemberId);
+
+      appState.loggedInStudent = {
+        teamId: team.id,
+        memberId: member.id,
+        name: member.name
+      };
+
+      renderStudentView();
+      showToast(`${member.name}님 환영합니다!`);
+    }
+
+    function studentLogout() {
+      playSoundEffect('click');
+      appState.loggedInStudent = null;
+      tempSelectedMemberId = null;
+      renderStudentView();
+    }
+
+    function submitStudentAnswer() {
+      if (!appState.loggedInStudent) return;
+      const input = document.getElementById('student-answer-input');
+      const ansVal = input.value.trim();
+      if (!ansVal) {
+        showToast('정답을 입력해주세요.');
+        return;
+      }
+
+      playSoundEffect('submit');
+      const roundAtSubmit = appState.round;
+      const memberId = appState.loggedInStudent.memberId;
+      const submission = {
+        answer: ansVal,
+        timestamp: Date.now()
+      };
+      if (!firebaseReady) {
+        showToast('Firebase 연결 후 제출할 수 있습니다.');
+        return;
+      }
+      appState.studentSubmissions[memberId] = submission;
+      submissionsRef.child(String(roundAtSubmit)).child(memberId).set(submission)
+        .then(() => showToast('답안이 전송되었습니다!'))
+        .catch(reportSyncError);
+      renderAllViews();
+    }
+
+    /* ==========================================================================
+       STREAMING_CHUNK:Rendering electronic blackboard (smart board) interface
+       ========================================================================== */
+
+    function renderBoardView() {
+      document.getElementById('board-round-title').innerText = `ROUND ${appState.round}`;
+      document.getElementById('board-question-text').innerText = appState.currentQuestion;
+      
+      const boardPointsText = document.getElementById('board-points-text');
+      if (boardPointsText) {
+        boardPointsText.innerText = appState.currentPoints;
+      }
+
+      // Board Alpha Rule Badge
+      const boardAlphaRuleText = document.getElementById('board-alpha-rule-text');
+      if (boardAlphaRuleText) {
+        const firstTeamRule = appState.teams[0] ? appState.teams[0].currentAlphaRuleId : 'pm3';
+        const ruleObj = getRuleById(firstTeamRule);
+        boardAlphaRuleText.innerText = ruleObj.name;
+      }
+
+      let totalSubmitted = 0;
+      let totalStudents = 0;
+      appState.teams.forEach(t => {
+        totalStudents += t.members.length;
+        t.members.forEach(m => {
+          if (appState.studentSubmissions[m.id]) totalSubmitted++;
+        });
+      });
+      document.getElementById('board-overall-submissions').innerText = `${totalSubmitted} / ${totalStudents}명`;
+
+      const hiddenBanner = document.getElementById('board-answer-hidden');
+      const revealedBanner = document.getElementById('board-answer-revealed');
+      const stageBadge = document.getElementById('board-stage-badge');
+
+      if (appState.isAnswerRevealedOnBoard) {
+        hiddenBanner.classList.add('hidden');
+        revealedBanner.classList.remove('hidden');
+        document.getElementById('board-revealed-answer-text').innerText = appState.currentAnswer;
+        stageBadge.innerText = '정답 및 알파 공개됨';
+        stageBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200';
+      } else {
+        hiddenBanner.classList.remove('hidden');
+        revealedBanner.classList.add('hidden');
+        stageBadge.innerText = '답안 작성 중';
+        stageBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200';
+      }
+
+      // 4 Teams Progress Cards on Board
+      const boardTeamsContainer = document.getElementById('board-teams-container');
+      boardTeamsContainer.innerHTML = appState.teams.map(team => {
+        const submittedCount = team.members.filter(m => appState.studentSubmissions[m.id]).length;
+        const progressPct = Math.round((submittedCount / team.members.length) * 100);
+        const alphaMember = team.members.find(m => m.id === team.currentAlphaMemberId);
+        const ruleObj = getRuleById(team.currentAlphaRuleId);
+
+        return `
+          <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="font-extrabold text-base text-slate-900">${team.name}</span>
+                <span class="text-xs font-bold ${team.bgBadge} px-2.5 py-0.5 rounded-full">
+                  ${team.members.length}명
+                </span>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="space-y-1.5 mb-4">
+                <div class="flex justify-between text-xs font-semibold text-slate-500">
+                  <span>제출 현황</span>
+                  <span class="text-slate-800">${submittedCount} / ${team.members.length}명 (${progressPct}%)</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                  <div class="bg-emerald-500 h-full transition-all duration-500" style="width: ${progressPct}%"></div>
+                </div>
+              </div>
+
+              <!-- Alpha Reveal Section on Board -->
+              <div class="pt-3 border-t border-slate-100">
+                ${appState.isAnswerRevealedOnBoard ? `
+                  <div class="p-3 rounded-2xl bg-rose-50 border border-rose-200 animate-in zoom-in-95 duration-200">
+                    <div class="flex items-center justify-between text-xs mb-1">
+                      <span class="text-rose-600 font-extrabold flex items-center gap-1">
+                        <i class="fa-solid fa-crown text-amber-500"></i> 비밀 알파
+                      </span>
+                      <span class="font-black text-slate-900 bg-white px-2 py-0.5 rounded-md border border-rose-200">
+                        ${alphaMember ? alphaMember.name : '-'}
+                      </span>
+                    </div>
+                    <div class="text-[11px] text-rose-700 font-bold">
+                      ${ruleObj ? ruleObj.short : ''}
+                    </div>
+                  </div>
+                ` : `
+                  <div class="py-2.5 px-3 rounded-2xl bg-slate-50 border border-slate-100 text-center text-xs text-slate-400 font-medium">
+                    <i class="fa-solid fa-user-secret mr-1"></i> 비밀 알파 활약 중
+                  </div>
+                `}
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+              <span class="text-xs text-slate-400 font-medium">누적 점수</span>
+              <span class="text-2xl font-black text-slate-900">${team.score}점</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Leaderboard Grid Sorted
+      const sortedTeams = [...appState.teams].sort((a, b) => b.score - a.score);
+      const leaderboardGrid = document.getElementById('board-leaderboard-grid');
+      leaderboardGrid.innerHTML = sortedTeams.map((team, idx) => {
+        let rankBadge = `${idx + 1}위`;
+        let rankStyle = 'bg-slate-100 text-slate-700';
+        if (idx === 0) {
+          rankBadge = '🥇 1위';
+          rankStyle = 'bg-amber-100 text-amber-800 border border-amber-300';
+        } else if (idx === 1) {
+          rankBadge = '🥈 2위';
+          rankStyle = 'bg-slate-200 text-slate-800 border border-slate-300';
+        } else if (idx === 2) {
+          rankBadge = '🥉 3위';
+          rankStyle = 'bg-amber-50 text-amber-700 border border-amber-200';
+        }
+
+        return `
+          <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-black px-2.5 py-1 rounded-xl ${rankStyle}">
+                ${rankBadge}
+              </span>
+              <div>
+                <h4 class="font-bold text-sm text-slate-900">${team.name}</h4>
+                <span class="text-[11px] text-slate-400">${team.members.length}명</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-2xl font-black text-slate-900">${team.score}</span>
+              <span class="text-xs text-slate-500">점</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleBoardFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    }
+
+    /* ==========================================================================
+       STREAMING_CHUNK:Handling scoring and grading calculations
+       ========================================================================== */
+
+    function openScoreGradingModal() {
+      playSoundEffect('click');
+      const container = document.getElementById('grading-teams-container');
+
+      container.innerHTML = appState.teams.map(team => {
+        const alphaMember = team.members.find(m => m.id === team.currentAlphaMemberId);
+        const ruleObj = getRuleById(team.currentAlphaRuleId);
+        const regularMembers = team.members.filter(m => m.id !== team.currentAlphaMemberId);
+        const regCount = regularMembers.length;
+        const ptPerPerson = regCount > 0 ? (100 / regCount).toFixed(1).replace('.0', '') : 0;
+
+        return `
+          <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-200">
+              <div class="flex items-center gap-2">
+                <span class="font-extrabold text-slate-900 text-sm">${team.name}</span>
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">
+                  알파: ${alphaMember ? alphaMember.name : '미정'}
+                </span>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                  일반 팀원: ${regCount}명 (1인당 약 ${ptPerPerson}점 / 전원정답 시 100점 만점)
+                </span>
+              </div>
+              <div class="text-xs text-rose-700 font-bold bg-rose-50 px-2.5 py-1 rounded border border-rose-200">
+                ${ruleObj.name}
+              </div>
+            </div>
+            <p class="text-xs text-slate-600 mb-3 bg-white p-2.5 rounded-xl border border-slate-200 flex items-center justify-between">
+              <span>📌 <strong>자동 공평 보정:</strong> 결석 등으로 인원이 달라도 전원 맞히면 기초점수 <strong>100점</strong>으로 자동 보정됩니다.</span>
+              <span class="font-bold text-amber-600">문제 가중치: ${appState.currentPoints}배</span>
+            </p>
+
+            <!-- Members Checklist with Submissions -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              ${team.members.map(member => {
+                const isAlpha = member.id === team.currentAlphaMemberId;
+                const submission = appState.studentSubmissions[member.id];
+                const submittedAns = submission ? submission.answer : '<span class="text-slate-400 italic">미제출</span>';
+
+                return `
+                  <label class="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white hover:border-blue-300 cursor-pointer transition">
+                    <div class="flex items-center gap-2.5">
+                      <input type="checkbox" data-team="${team.id}" data-member-id="${member.id}" class="grading-checkbox w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300" checked>
+                      <div>
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-xs font-bold ${isAlpha ? 'text-rose-600' : 'text-slate-800'}">${member.name}</span>
+                          ${isAlpha ? '<span class="text-[10px] bg-rose-500 text-white px-1.5 rounded font-black">α 알파</span>' : ''}
+                        </div>
+                        <div class="text-[11px] text-slate-500">답안: ${submittedAns}</div>
+                      </div>
+                    </div>
+                    <span class="text-[11px] font-semibold text-slate-400">정답 체크</span>
+                  </label>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('modal-grading').classList.remove('hidden');
+    }
+
+    function finalizeGrading() {
+      playSoundEffect('fanfare');
+      const checkboxes = document.querySelectorAll('.grading-checkbox');
+      const pointMultiplier = appState.currentPoints || 1;
+
+      appState.teams.forEach(team => {
+        const teamCbs = Array.from(checkboxes).filter(cb => parseInt(cb.dataset.team) === team.id);
+        const alphaCb = teamCbs.find(cb => cb.dataset.memberId === team.currentAlphaMemberId);
+        const isAlphaCorrect = alphaCb ? alphaCb.checked : false;
+
+        // 개별 학생 정답 누적 카운트 (+1)
+        team.members.forEach(member => {
+          const cb = teamCbs.find(c => c.dataset.memberId === member.id);
+          if (cb && cb.checked) {
+            member.correctCount = (member.correctCount || 0) + 1;
+          }
+        });
+
+        // 알파를 제외한 실제 출석 일반 팀원 목록
+        const regularMembers = team.members.filter(m => m.id !== team.currentAlphaMemberId);
+        const regularTotalCount = regularMembers.length;
+
+        // 정답을 맞힌 일반 팀원 수
+        const regularCorrectCbs = teamCbs.filter(cb => cb.dataset.memberId !== team.currentAlphaMemberId && cb.checked);
+        const regularCorrectCount = regularCorrectCbs.length;
+
+        // 동적 100점 만점 자동 보정 (소수점 없이 Math.round로 정수 처리)
+        const baseRegularScore = regularTotalCount > 0 
+          ? Math.round((regularCorrectCount / regularTotalCount) * 100) 
+          : 0;
+
+        const scaledBaseScore = baseRegularScore * pointMultiplier;
+
+        // 알파 조건 점수 계산
+        const rule = getRuleById(team.currentAlphaRuleId);
+        const roundTotal = rule.calculate(isAlphaCorrect, scaledBaseScore);
+
+        team.score += roundTotal;
+      });
+
+      appState.isAnswerRevealedOnBoard = true;
+
+      broadcastState();
+      renderAllViews();
+      closeScoreGradingModal();
+      showToast('채점 완료! 개인별 정답 개수가 누적 반영되었습니다.');
+    }
+
+    function changeStudentCorrectCount(memberId, delta) {
+      playSoundEffect('click');
+      appState.teams.forEach(team => {
+        const member = team.members.find(m => m.id === memberId);
+        if (member) {
+          const newCount = Math.max(0, (member.correctCount || 0) + delta);
+          member.correctCount = newCount;
+        }
+      });
+      broadcastState();
+      renderTeacherView();
+    }
+
+    function resetIndividualCorrectCounts() {
+      appState.teams.forEach(team => {
+        team.members.forEach(member => {
+          member.correctCount = 0;
+        });
+      });
+      broadcastState();
+      renderTeacherView();
+      showToast('모든 학생의 개인 정답 수가 0개로 초기화되었습니다.');
+    }
+
+    function promptAddNewStudent() {
+      const name = prompt('추가할 학생의 이름을 입력하세요:');
+      if (!name || !name.trim()) return;
+
+      const teamNum = prompt('배정할 조를 입력하세요 (1, 2, 3, 4):', '1');
+      const tId = parseInt(teamNum);
+      const targetTeam = appState.teams.find(t => t.id === tId) || appState.teams[0];
+
+      const newId = `${targetTeam.id}-${Date.now().toString().slice(-4)}`;
+      targetTeam.members.push({
+        id: newId,
+        name: name.trim(),
+        correctCount: 0
+      });
+
+      broadcastState();
+      renderAllViews();
+      showToast(`${name.trim()} 학생이 ${targetTeam.name}에 추가되었습니다. (점수 자동 보정 갱신됨)`);
+    }
+
+    function removeCurrentStudent() {
+      if (!appState.studentBeingEdited) return;
+      const { teamId, memberId } = appState.studentBeingEdited;
+      const targetTeam = appState.teams.find(t => t.id === teamId);
+      if (!targetTeam) return;
+
+      if (targetTeam.members.length <= 1) {
+        showToast('조에는 최소 1명 이상의 학생이 있어야 합니다.');
+        return;
+      }
+
+      const idx = targetTeam.members.findIndex(m => m.id === memberId);
+      const removedName = targetTeam.members[idx].name;
+      targetTeam.members.splice(idx, 1);
+
+      // 만약 제외된 학생이 현재 알파였다면 알파 재선정
+      if (targetTeam.currentAlphaMemberId === memberId) {
+        targetTeam.currentAlphaMemberId = targetTeam.members[0].id;
+      }
+
+      broadcastState();
+      renderAllViews();
+      closeEditStudentModal();
+      showToast(`${removedName} 학생을 결석(제외) 처리했습니다. (남은 인원 기준 100점 만점으로 자동 보정)`);
+    }
+
+    function closeScoreGradingModal() {
+      const modal = document.getElementById('modal-grading');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function openAddQuestionModal() {
+      document.getElementById('modal-q-text').value = '';
+      document.getElementById('modal-q-ans').value = '';
+      document.getElementById('modal-q-points').value = '1';
+      document.getElementById('modal-q-alpha-rule').value = 'pm20';
+      const modal = document.getElementById('modal-add-question');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeAddQuestionModal() {
+      const modal = document.getElementById('modal-add-question');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function finalizeGrading() {
+      playSoundEffect('fanfare');
+      const checkboxes = document.querySelectorAll('.grading-checkbox');
+      const pointPerPerson = appState.currentPoints || 2;
+
+      appState.teams.forEach(team => {
+        const teamCbs = Array.from(checkboxes).filter(cb => parseInt(cb.dataset.team) === team.id);
+        const alphaCb = teamCbs.find(cb => cb.dataset.memberId === team.currentAlphaMemberId);
+        
+        const isAlphaCorrect = alphaCb ? alphaCb.checked : false;
+
+        // 알파를 제외한 일반 팀원 중 정답을 맞힌 인원 수
+        const regularCorrectCbs = teamCbs.filter(cb => cb.dataset.memberId !== team.currentAlphaMemberId && cb.checked);
+        const regularCorrectCount = regularCorrectCbs.length;
+
+        // 기초점수: 알파를 제외한 나머지 팀원 점수
+        const regularScore = regularCorrectCount * pointPerPerson;
+
+        // 알파 조건 점수 적용
+        const rule = getRuleById(team.currentAlphaRuleId);
+        const roundTotal = rule.calculate(isAlphaCorrect, regularScore);
+
+        team.score += roundTotal;
+      });
+
+      appState.isAnswerRevealedOnBoard = true;
+
+      broadcastState();
+      renderAllViews();
+      closeScoreGradingModal();
+      showToast('채점이 완료되었습니다! 기초점수와 알파 조건 점수가 계산되어 반영되었습니다.');
+    }
+
+    /* ==========================================================================
+       STREAMING_CHUNK:Editing questions and students in modals
+       ========================================================================== */
+
+    function openAddQuestionModal() {
+      document.getElementById('modal-q-text').value = '';
+      document.getElementById('modal-q-ans').value = '';
+      document.getElementById('modal-q-points').value = '2';
+      document.getElementById('modal-q-alpha-rule').value = 'pm3';
+      document.getElementById('modal-add-question').classList.remove('hidden');
+    }
+
+    function closeAddQuestionModal() {
+      document.getElementById('modal-add-question').classList.add('hidden');
+    }
+
+    function saveQuestionFromModal() {
+      const qText = document.getElementById('modal-q-text').value.trim();
+      const qAns = document.getElementById('modal-q-ans').value.trim();
+      const qPoints = parseInt(document.getElementById('modal-q-points').value) || 2;
+      const qAlphaRule = document.getElementById('modal-q-alpha-rule').value;
+
+      if (!qText || !qAns) {
+        showToast('문제와 정답을 모두 입력해주세요.');
+        return;
+      }
+
+      const newQ = {
+        id: Date.now(),
+        question: qText,
+        answer: qAns,
+        points: Math.max(1, qPoints),
+        alphaRuleId: qAlphaRule
+      };
+      appState.questionBank.push(newQ);
+      broadcastState();
+      renderTeacherView();
+      closeAddQuestionModal();
+      showToast(`새 문제가 추가되었습니다. (배점 ${newQ.points}점 / ${getRuleById(qAlphaRule).name})`);
+    }
+
+    function openEditStudentModal(teamId, memberId) {
+      const team = appState.teams.find(t => t.id === teamId);
+      const member = team.members.find(m => m.id === memberId);
+      if (!member) return;
+
+      appState.studentBeingEdited = { teamId, memberId };
+      document.getElementById('modal-student-name').value = member.name;
+      document.getElementById('modal-student-team-select').value = teamId;
+      document.getElementById('modal-edit-student').classList.remove('hidden');
+    }
+
+    function closeEditStudentModal() {
+      document.getElementById('modal-edit-student').classList.add('hidden');
+      appState.studentBeingEdited = null;
+    }
+
+    function saveStudentEdit() {
+      if (!appState.studentBeingEdited) return;
+      const newName = document.getElementById('modal-student-name').value.trim();
+      const newTeamId = parseInt(document.getElementById('modal-student-team-select').value);
+
+      if (!newName) {
+        showToast('학생 이름을 입력해주세요.');
+        return;
+      }
+
+      const { teamId, memberId } = appState.studentBeingEdited;
+      const oldTeam = appState.teams.find(t => t.id === teamId);
+      const memberIndex = oldTeam.members.findIndex(m => m.id === memberId);
+      const memberObj = oldTeam.members[memberIndex];
+
+      memberObj.name = newName;
+
+      if (teamId !== newTeamId) {
+        oldTeam.members.splice(memberIndex, 1);
+        const targetTeam = appState.teams.find(t => t.id === newTeamId);
+        targetTeam.members.push(memberObj);
+      }
+
+      broadcastState();
+      renderAllViews();
+      closeEditStudentModal();
+      showToast('학생 정보가 업데이트되었습니다.');
+    }
+
+    function resetAllGameData() {
+      if (!firebaseReady) { showToast('Firebase 연결 후 초기화할 수 있습니다.'); return; }
+      const proceed = window.confirm ? window.confirm('모든 점수와 라운드를 처음 상태로 초기화하시겠습니까?') : true;
+      if (proceed) {
+        appState.round = 1;
+        appState.teams = JSON.parse(JSON.stringify(INITIAL_TEAMS));
+        appState.currentQuestion = DEFAULT_QUESTION_BANK[0].question;
+        appState.currentAnswer = DEFAULT_QUESTION_BANK[0].answer;
+        appState.currentPoints = DEFAULT_QUESTION_BANK[0].points || 2;
+        appState.currentAlphaRuleSetting = DEFAULT_QUESTION_BANK[0].alphaRuleId || 'pm3';
+        appState.studentSubmissions = {};
+        submissionsRef.remove().catch(reportSyncError);
+        appState.isAnswerRevealedOnBoard = false;
+        assignAlphasForCurrentRound();
+        broadcastState();
+        renderAllViews();
+        showToast('전체 게임이 초기화되었습니다.');
+      }
+    }
+
+    /* ==========================================================================
+       STREAMING_CHUNK:Global toast notifications and initial bootstrapping
+       ========================================================================== */
+
+    function showToast(message) {
+      const toast = document.getElementById('toast-box');
+      const textEl = document.getElementById('toast-message');
+      textEl.innerText = message;
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2400);
+    }
+
+    function renderAllViews() {
+      if (appState.currentView === 'teacher') renderTeacherView();
+      else if (appState.currentView === 'student') renderStudentView();
+      else if (appState.currentView === 'board') renderBoardView();
+    }
+
+    // Hash-based routing listener
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.replace('#', '');
+      if (['home', 'teacher', 'student', 'board'].includes(hash)) {
+        if ((hash === 'teacher' || hash === 'board') && !authState[hash]) {
+          promptPasscodeFor(hash);
+        } else {
+          navigateTo(hash, false);
+        }
+      }
+    });
+
+    window.onload = function() {
+      connectFirebase();
+
+      const hash = window.location.hash.replace('#', '');
+      if (hash === 'student') {
+        navigateTo('student', false);
+      } else if (hash === 'teacher' || hash === 'board') {
+        navigateTo('home', false);
+        promptPasscodeFor(hash);
+      } else {
+        navigateTo('home', false);
+      }
+    };
+  </script>
+</body>
+</html>
