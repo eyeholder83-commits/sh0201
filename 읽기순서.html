@@ -1,0 +1,2250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스마트 교실 연동 도구 플랫폼 - ClassTool Live</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Tone.js for web audio -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          },
+          animation: {
+            'bounce-slow': 'bounce 2s infinite',
+            'pulse-fast': 'pulse 0.7s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'scale-up': 'scaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+          },
+          keyframes: {
+            scaleUp: {
+              '0%': { transform: 'scale(0.82)', opacity: '0.3' },
+              '100%': { transform: 'scale(1)', opacity: '1' }
+            },
+            shake: {
+              '10%, 90%': { transform: 'translate3d(-2px, 0, 0)' },
+              '20%, 80%': { transform: 'translate3d(4px, 0, 0)' },
+              '30%, 50%, 70%': { transform: 'translate3d(-6px, 0, 0)' },
+              '40%, 60%': { transform: 'translate3d(6px, 0, 0)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap');
+    * {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    input, textarea, select {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 8px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.4);
+      border-radius: 8px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.7);
+    }
+    @keyframes secret-flame {
+      0%, 100% { filter: drop-shadow(0 0 10px rgba(244, 63, 94, 0.9)) drop-shadow(0 0 25px rgba(245, 158, 11, 0.7)); transform: scale(1); }
+      50% { filter: drop-shadow(0 0 22px rgba(239, 68, 68, 1)) drop-shadow(0 0 40px rgba(251, 146, 60, 0.9)); transform: scale(1.06); }
+    }
+    .animate-secret-flame {
+      animation: secret-flame 1.1s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+  <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('home')">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
+        <i class="fa-solid fa-chalkboard-user text-lg"></i>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-sm sm:text-base tracking-tight text-white flex items-center gap-2">
+          ClassTool <span class="text-xs px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-400 font-bold border border-sky-500/30">LIVE</span>
+        </h1>
+        <p class="text-[11px] text-slate-400">스마트 교실 실시간 연동 플랫폼</p>
+      </div>
+    </div>
+
+    <!-- Quick View Switcher & Audio Controls -->
+    <div class="flex items-center gap-2">
+      <div id="header-student-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-sky-950/80 border border-sky-800/80 text-xs text-sky-300 font-semibold">
+        <i class="fa-solid fa-user-check text-sky-400"></i>
+        <span id="header-student-name">김서아</span>
+      </div>
+
+      <nav class="flex items-center bg-slate-800/80 rounded-xl p-1 border border-slate-700">
+        <button onclick="navigateTo('home')" id="nav-btn-home" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 text-slate-300 hover:text-white">
+          <i class="fa-solid fa-house"></i> <span class="hidden md:inline">홈</span>
+        </button>
+        <button onclick="navigateTo('teacher')" id="nav-btn-teacher" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 text-slate-300 hover:text-white">
+          <i class="fa-solid fa-chalkboard-teacher text-indigo-400"></i> <span class="hidden md:inline">교사뷰</span>
+        </button>
+        <button onclick="navigateTo('student')" id="nav-btn-student" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 text-slate-300 hover:text-white">
+          <i class="fa-solid fa-mobile-screen text-sky-400"></i> <span class="hidden md:inline">학생뷰</span>
+        </button>
+        <button onclick="navigateTo('board')" id="nav-btn-board" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 text-slate-300 hover:text-white">
+          <i class="fa-solid fa-display text-emerald-400"></i> <span class="hidden md:inline">전자칠판</span>
+        </button>
+      </nav>
+
+      <button onclick="toggleSound()" id="sound-btn" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center justify-center text-sm transition" title="소리 켜기/끄기">
+        <i class="fa-solid fa-volume-high text-sky-400" id="sound-icon"></i>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 flex flex-col p-3 sm:p-6 max-w-7xl mx-auto w-full">
+
+    <!-- VIEW 1: Home View -->
+    <section id="view-home" class="flex-1 flex flex-col justify-center items-center py-6">
+      <div class="text-center max-w-2xl mx-auto mb-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-bold mb-4">
+          <i class="fa-solid fa-wifi text-[10px]"></i> 우리 반 22명 실시간 연동 수업
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-black tracking-tight text-white mb-3">
+          스마트 교실 인터랙티브 도구
+        </h2>
+        <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+          교사가 도구를 세팅하고, 배정된 학생이 스마트폰으로 직접 조작하면 전자칠판에서 모두가 함께 결과를 확인합니다.
+        </p>
+      </div>
+
+      <!-- 3 Master Access Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+        <!-- Teacher Card -->
+        <div class="bg-gradient-to-b from-indigo-950/40 to-slate-900 border border-indigo-500/30 hover:border-indigo-400 rounded-3xl p-6 flex flex-col justify-between shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-2xl mb-4">
+              <i class="fa-solid fa-chalkboard-teacher"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">교사 뷰</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">
+              룰렛 항목 설정, 학생 릴레이 지목 첫 주자 지정, 폭탄 타이머를 제어하고 학생 권한을 관리합니다.
+            </p>
+          </div>
+          <div class="space-y-2 pt-4 border-t border-slate-800">
+            <button onclick="navigateTo('teacher')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
+              <span>교사 뷰로 접속</span> <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+            <button onclick="copyViewLink('teacher')" class="w-full py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-2 border border-slate-700">
+              <i class="fa-solid fa-link text-indigo-400"></i> 교사 전용 링크 복사
+            </button>
+          </div>
+        </div>
+
+        <!-- Student Card -->
+        <div class="bg-gradient-to-b from-sky-950/40 to-slate-900 border border-sky-500/30 hover:border-sky-400 rounded-3xl p-6 flex flex-col justify-between shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center text-2xl mb-4">
+              <i class="fa-solid fa-mobile-screen"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">학생 뷰</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">
+              내 이름으로 로그인하여 지목 권한을 얻었을 때 스마트폰에서 다음 친구를 직접 선택합니다.
+            </p>
+          </div>
+          <div class="space-y-2 pt-4 border-t border-slate-800">
+            <button onclick="navigateTo('student')" class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-sky-600/30 flex items-center justify-center gap-2">
+              <span>학생 뷰로 접속</span> <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+            <button onclick="copyViewLink('student')" class="w-full py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-2 border border-slate-700">
+              <i class="fa-solid fa-link text-sky-400"></i> 학생 배포 링크 복사
+            </button>
+          </div>
+        </div>
+
+        <!-- Board Card -->
+        <div class="bg-gradient-to-b from-emerald-950/40 to-slate-900 border border-emerald-500/30 hover:border-emerald-400 rounded-3xl p-6 flex flex-col justify-between shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-2xl mb-4">
+              <i class="fa-solid fa-display"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">전자칠판 뷰</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">
+              교실 대형 화면에 현재 지목당한 학생의 이름을 초대형으로 실시간 표출하고 룰렛과 폭탄을 띄웁니다.
+            </p>
+          </div>
+          <div class="space-y-2 pt-4 border-t border-slate-800">
+            <button onclick="navigateTo('board')" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
+              <span>전자칠판 열기</span> <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+            <button onclick="copyViewLink('board')" class="w-full py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-2 border border-slate-700">
+              <i class="fa-solid fa-link text-emerald-400"></i> 전자칠판 링크 복사
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: Teacher View -->
+    <section id="view-teacher" class="hidden flex-1 flex flex-col gap-6">
+      <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-4 rounded-3xl">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-sliders"></i>
+          </div>
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-white">교사 도구 관리 제어 센터</h2>
+            <p class="text-xs text-slate-400">전자칠판에 띄울 도구를 선택하고 학생들의 활동을 실시간 제어하세요.</p>
+          </div>
+        </div>
+
+        <!-- Tool Selection Radio Tabs -->
+        <div class="flex items-center bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
+          <button onclick="teacherSelectTool('roulette')" id="tool-tab-roulette" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-slate-400 hover:text-white">
+            <i class="fa-solid fa-dharmachakra"></i> <span>1. 룰렛</span>
+          </button>
+          <button onclick="teacherSelectTool('picker')" id="tool-tab-picker" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-slate-400 hover:text-white">
+            <i class="fa-solid fa-user-check"></i> <span>2. 학생 릴레이 지목</span>
+          </button>
+          <button onclick="teacherSelectTool('bomb')" id="tool-tab-bomb" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-rose-400 bg-rose-500/20 border border-rose-500/30">
+            <i class="fa-solid fa-bomb"></i> <span>3. 폭탄 터뜨리기</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TOOL 1: 룰렛 제어 패널 -->
+      <div id="teacher-panel-roulette" class="space-y-6 hidden">
+        <div class="p-5 bg-gradient-to-r from-purple-950/70 to-slate-900 border border-purple-800/60 rounded-3xl space-y-4 shadow-xl">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid fa-crown"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="text-sm sm:text-base font-bold text-white">룰렛 조작 권한 배정</h4>
+                  <span id="teacher-roulette-badge" class="px-2 py-0.5 rounded text-[11px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">지정 모드</span>
+                </div>
+                <p class="text-xs text-slate-400">선택된 학생만 스마트폰 리모컨으로 룰렛을 돌릴 수 있습니다.</p>
+              </div>
+            </div>
+
+            <!-- 운영 모드 선택 버튼 -->
+            <div class="flex items-center gap-2">
+              <button onclick="setRouletteAssignMode('manual')" id="btn-mode-manual" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-purple-600 text-white shadow">
+                특정 학생 지정
+              </button>
+              <button onclick="setRouletteAssignMode('random_cycle')" id="btn-mode-cycle" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-300 hover:text-white border border-slate-700">
+                랜덤 전원 순환 (한 바퀴)
+              </button>
+            </div>
+          </div>
+
+          <!-- 세부 컨트롤 라인 -->
+          <div class="pt-3 border-t border-purple-800/40 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-purple-300 font-bold">현재 조작자:</span>
+              <select id="teacher-roulette-student-select" onchange="teacherAssignRoulette(this.value)" class="bg-slate-900 border border-purple-700/60 rounded-xl px-3 py-1.5 text-xs text-purple-200 font-bold focus:outline-none focus:border-purple-400">
+              </select>
+              <button onclick="teacherRandomAssignRoulette()" class="px-3 py-1.5 bg-purple-700/60 hover:bg-purple-600 text-white font-bold rounded-xl transition flex items-center gap-1 border border-purple-500/40">
+                <i class="fa-solid fa-dice"></i> 랜덤 1명 배정
+              </button>
+            </div>
+
+            <div id="teacher-cycle-info-box" class="hidden flex items-center gap-2">
+              <span class="text-slate-300 font-medium">순환 대기열:</span>
+              <span id="teacher-cycle-count-badge" class="px-2.5 py-1 rounded-lg bg-slate-950 font-bold text-amber-300 border border-slate-800">1 / 22명 (1바퀴)</span>
+              <button onclick="advanceRouletteCycle()" class="px-2.5 py-1 bg-amber-600/80 hover:bg-amber-500 text-white rounded-lg font-bold">다음 학생으로</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 룰렛 항목 관리 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-3xl p-5 space-y-4">
+            <div class="flex justify-between items-center">
+              <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-purple-400"></i> 룰렛 판 항목 목록 (<span id="teacher-roulette-item-count">0</span>개)
+              </h3>
+              <div class="flex gap-2">
+                <button onclick="loadPresetToRoulette('students')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition">
+                  <i class="fa-solid fa-users text-sky-400"></i> 학생 22명 일괄 등록
+                </button>
+                <button onclick="loadPresetToRoulette('rewards')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg border border-slate-700 transition">
+                  🎁 미션/보상 프리셋
+                </button>
+              </div>
+            </div>
+
+            <div class="flex gap-2">
+              <input type="text" id="roulette-new-item" placeholder="새 항목 입력 (예: 발표하기, 칭찬스티커 1장)" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-purple-500">
+              <button onclick="addRouletteItem()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1 shadow">
+                <i class="fa-solid fa-plus"></i> 추가
+              </button>
+            </div>
+
+            <div id="teacher-roulette-items" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto custom-scroll pr-1">
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between space-y-4">
+            <div>
+              <h3 class="font-bold text-white text-sm mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-play text-emerald-400"></i> 교사용 즉시 테스트
+              </h3>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                학생 스마트폰 없이 교사가 직접 전자칠판의 룰렛을 즉시 시험 회전시킬 수 있습니다.
+              </p>
+            </div>
+            <button onclick="triggerRouletteSpin('선생님')" class="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold rounded-2xl shadow-lg shadow-purple-600/30 transition text-sm">
+              <i class="fa-solid fa-rotate"></i> 룰렛 즉시 돌리기
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOOL 2: 학생 릴레이 지목 패널 -->
+      <div id="teacher-panel-picker" class="space-y-6 hidden">
+        <div class="p-5 bg-gradient-to-r from-sky-950/70 to-slate-900 border border-sky-800/60 rounded-3xl space-y-4 shadow-xl">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid fa-people-arrows"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="text-sm sm:text-base font-bold text-white">친구 릴레이 직접 지목 (한 바퀴 순환)</h4>
+                  <span id="teacher-picker-relay-badge" class="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">1회차 진행 중</span>
+                </div>
+                <p class="text-xs text-slate-400">선생님이 첫 학생을 지목하면, 지목당한 학생이 스마트폰에서 다음 친구를 직접 클릭하여 지목합니다.</p>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <select id="picker-first-select" class="bg-slate-900 border border-sky-700/60 rounded-xl px-3 py-2 text-xs text-sky-200 font-bold focus:outline-none focus:border-sky-400">
+              </select>
+              <button onclick="teacherAssignFirstPicker(document.getElementById('picker-first-select').value)" class="px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1 shadow">
+                <i class="fa-solid fa-user-check"></i> 첫 주자로 지목
+              </button>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-sky-800/40 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-2 bg-slate-900/80 px-3 py-2 rounded-xl border border-sky-800">
+              <span class="text-sky-300 font-semibold">현재 지목당한 학생:</span>
+              <span id="teacher-picker-current-holder" class="font-extrabold text-amber-300 text-sm">교사 지정 대기</span>
+              <span class="text-slate-600">|</span>
+              <span class="text-slate-400">남은 미지목 학생:</span>
+              <span id="teacher-picker-remaining-count" class="font-bold text-emerald-400">22명</span>
+            </div>
+
+            <button onclick="resetPickerRelay()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition flex items-center gap-1">
+              <i class="fa-solid fa-rotate-left"></i> 릴레이 처음부터 다시 시작
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 space-y-4">
+          <div class="flex justify-between items-center">
+            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+              <i class="fa-solid fa-users text-sky-400"></i> 학급 학생 명단 (<span id="picker-student-count">22</span>명)
+            </h3>
+            <button onclick="resetToDefault22Students()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-sky-300 text-xs font-semibold rounded-lg border border-slate-700 transition">
+              <i class="fa-solid fa-rotate"></i> 기본 22명 명단 복구
+            </button>
+          </div>
+
+          <div id="picker-students-list" class="flex flex-wrap gap-2 p-3 bg-slate-950/60 rounded-2xl border border-slate-800 max-h-48 overflow-y-auto custom-scroll">
+          </div>
+        </div>
+      </div>
+
+      <!-- TOOL 3: 폭탄 터뜨리기 완전 제어 패널 -->
+      <div id="teacher-panel-bomb" class="space-y-6">
+        
+        <!-- Live Bomb Status Dashboard -->
+        <div class="p-5 bg-gradient-to-r from-rose-950/70 via-slate-900 to-amber-950/50 border border-rose-800/60 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center text-2xl shrink-0">
+              <i id="teacher-bomb-status-icon" class="fa-solid fa-bomb"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="text-base sm:text-lg font-black text-white">폭탄 게임 상태 모니터</h4>
+                <span id="teacher-bomb-state-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">대기 중</span>
+              </div>
+              <p class="text-xs text-slate-400">설정한 시간(초) 동안 학생들 사이에 폭탄이 실시간으로 오고 갑니다.</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4 bg-slate-950/80 px-4 py-2.5 rounded-2xl border border-rose-900/50">
+            <div class="text-center">
+              <span class="text-[10px] text-slate-400 font-bold block">현재 남은 시간</span>
+              <span id="teacher-bomb-cur-timer" class="text-2xl font-black text-rose-400 tracking-wider">20초</span>
+            </div>
+            <div class="w-[1px] h-8 bg-slate-800"></div>
+            <div class="text-center">
+              <span class="text-[10px] text-slate-400 font-bold block">현재 폭탄 소지자</span>
+              <span id="teacher-bomb-cur-holder" class="text-base font-extrabold text-amber-300">김서아 학생</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2 Grid Columns: Timer Configuration & Comprehensive Game Controls -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- Column 1: 폭탄 타이머 설정 -->
+          <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 space-y-5">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-white text-base flex items-center gap-2">
+                <i class="fa-solid fa-stopwatch text-rose-400"></i> 폭탄 타이머 설정
+              </h3>
+              <span class="text-xs text-slate-400 font-medium">최대 3분(180초)까지 설정 가능</span>
+            </div>
+
+            <!-- Slider Duration -->
+            <div class="space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <label class="font-semibold text-slate-300">제한시간 직접 조절 (5초 ~ 3분)</label>
+                <span id="bomb-time-label" class="font-black text-rose-400 text-lg">20초</span>
+              </div>
+              <input type="range" id="bomb-time-range" min="5" max="180" value="20" oninput="updateBombDuration(this.value)" class="w-full accent-rose-500 cursor-pointer">
+            </div>
+
+            <!-- Quick Duration Presets -->
+            <div class="space-y-1.5">
+              <span class="text-[11px] font-bold text-slate-400 block">빠른 프리셋 선택:</span>
+              <div class="grid grid-cols-4 gap-2">
+                <button onclick="setBombPresetTime(30)" class="py-2 rounded-xl bg-slate-800 hover:bg-rose-950/60 hover:border-rose-500 border border-slate-700 text-xs font-bold text-slate-200 transition">30초</button>
+                <button onclick="setBombPresetTime(60)" class="py-2 rounded-xl bg-slate-800 hover:bg-rose-950/60 hover:border-rose-500 border border-slate-700 text-xs font-bold text-slate-200 transition">1분 (60초)</button>
+                <button onclick="setBombPresetTime(120)" class="py-2 rounded-xl bg-slate-800 hover:bg-rose-950/60 hover:border-rose-500 border border-slate-700 text-xs font-bold text-slate-200 transition">2분 (120초)</button>
+                <button onclick="setBombPresetTime(180)" class="py-2 rounded-xl bg-slate-800 hover:bg-rose-950/60 hover:border-rose-500 border border-slate-700 text-xs font-bold text-slate-200 transition">3분 (180초)</button>
+              </div>
+            </div>
+
+            <!-- Random Secret Mode -->
+            <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                  <i class="fa-solid fa-fire-burner text-amber-400"></i> 미스터리 시크릿 도화선 모드
+                </span>
+                <span class="text-[11px] text-slate-400">시간을 숨기고 불타는 시크릿 도화선 이펙트로 교실의 긴장감을 극대화합니다.</span>
+              </div>
+              <input type="checkbox" id="bomb-random-mode" onchange="toggleBombRandom(this.checked)" class="w-5 h-5 accent-rose-500 cursor-pointer">
+            </div>
+
+            <!-- Initial Bomb Holder Assignment -->
+            <div class="pt-4 border-t border-slate-800 space-y-2">
+              <label class="block text-xs font-bold text-slate-300">첫 번째 폭탄을 쥘 학생 지정</label>
+              <div class="flex gap-2">
+                <select id="teacher-bomb-holder-select" onchange="teacherAssignBombHolder(this.value)" class="flex-1 bg-slate-950 border border-rose-900/60 rounded-xl px-3 py-2 text-xs text-rose-200 font-bold focus:outline-none focus:border-rose-500">
+                </select>
+                <button onclick="teacherRandomAssignBombHolder()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs border border-slate-700 transition flex items-center gap-1">
+                  <i class="fa-solid fa-dice"></i> 랜덤
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: 게임 제어 (시동, 일시정지, 재개, 즉시 폭발, 리셋) -->
+          <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between space-y-5">
+            <div>
+              <h3 class="font-bold text-white text-base flex items-center gap-2 mb-1">
+                <i class="fa-solid fa-gamepad text-amber-400"></i> 게임 실시간 제어
+              </h3>
+              <p class="text-xs text-slate-400">
+                선생님이 폭탄을 시동하거나 질문이 필요할 때 일시정지하고, 필요 시 즉시 폭발시킬 수 있습니다.
+              </p>
+            </div>
+
+            <!-- Master Control Action Buttons -->
+            <div class="space-y-3">
+              <button id="teacher-btn-bomb-toggle" onclick="toggleBombPlayPause()" class="w-full py-4 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-2xl text-base transition flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30">
+                <i class="fa-solid fa-play"></i> <span>폭탄 시동 (카운트다운 시작)</span>
+              </button>
+
+              <div class="grid grid-cols-2 gap-3">
+                <button onclick="triggerInstantBombExplode()" class="py-3 bg-amber-600/90 hover:bg-amber-500 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow">
+                  <i class="fa-solid fa-burst text-sm"></i> <span>즉시 펑! (강제 폭발)</span>
+                </button>
+
+                <button onclick="resetBombGame()" class="py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 border border-slate-700">
+                  <i class="fa-solid fa-rotate-left"></i> <span>시간 초기화 (리셋)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Helpful Guide note -->
+            <div class="p-3 bg-slate-950/70 border border-slate-800/80 rounded-2xl text-[11px] text-slate-400 space-y-1">
+              <span class="font-bold text-rose-300 block"><i class="fa-solid fa-lightbulb"></i> 수업 운영 팁:</span>
+              <p>1. 폭탄을 쥔 학생에게 질문을 던진 뒤 <span class="text-white font-semibold">[폭탄 일시정지]</span>를 누르고 대답을 들을 수 있습니다.</p>
+              <p>2. 학생이 정답을 맞히면 <span class="text-white font-semibold">[이어서 재개]</span>를 눌러 다음 친구에게 넘기게 하세요!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: Student View -->
+    <section id="view-student" class="hidden flex-1 flex flex-col items-center justify-center py-4">
+
+      <!-- Student Step 1: Login / Name Selection Grid -->
+      <div id="student-login-box" class="w-full max-w-xl bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5">
+        <div class="text-center space-y-1">
+          <div class="w-12 h-12 rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center text-xl mx-auto mb-2">
+            <i class="fa-solid fa-user-pen"></i>
+          </div>
+          <h3 class="text-xl font-bold text-white">학생 로그인</h3>
+          <p class="text-xs text-slate-400">본인의 이름을 선택해주세요. (총 22명)</p>
+        </div>
+
+        <div id="student-login-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-2.5 max-h-72 overflow-y-auto custom-scroll p-1">
+        </div>
+      </div>
+
+      <!-- Student Step 2: Interactive Remote Controller -->
+      <div id="student-remote-box" class="hidden w-full max-w-lg bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center space-y-5">
+        
+        <!-- Active User Profile Bar -->
+        <div class="w-full flex items-center justify-between bg-slate-950 px-4 py-2.5 rounded-2xl border border-slate-800 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-slate-400">내 이름:</span>
+            <span id="student-my-name" class="font-extrabold text-sky-400 text-sm">김서아</span>
+          </div>
+          <button onclick="logoutStudent()" class="text-slate-400 hover:text-rose-400 font-semibold transition">
+            이름 변경
+          </button>
+        </div>
+
+        <!-- 1. Roulette Student Controller -->
+        <div id="student-ctrl-roulette" class="w-full space-y-5 hidden">
+          <div id="student-roulette-auth-banner" class="p-3 rounded-2xl border text-xs font-semibold flex items-center justify-center gap-2">
+            <i id="student-roulette-auth-icon" class="fa-solid fa-lock"></i>
+            <span id="student-roulette-auth-msg">권한 확인 중...</span>
+          </div>
+
+          <div class="w-44 h-44 mx-auto rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 p-2.5 shadow-2xl shadow-purple-500/30 flex items-center justify-center">
+            <div class="w-full h-full rounded-full bg-slate-900 flex flex-col items-center justify-center text-purple-400">
+              <i class="fa-solid fa-dharmachakra text-5xl mb-2" id="student-roulette-wheel-icon"></i>
+              <span id="student-roulette-state-txt" class="text-xs font-semibold text-slate-300">회전 대기</span>
+            </div>
+          </div>
+
+          <button id="student-btn-spin" onclick="studentTriggerSpin()" class="w-full py-4 sm:py-5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-2xl font-black text-lg sm:text-xl shadow-xl shadow-purple-600/30 active:scale-95 transition-all">
+            룰렛 돌리기! 🎯
+          </button>
+          <p id="student-roulette-hint" class="text-xs text-slate-400">전자칠판의 룰렛이 신나게 회전합니다!</p>
+        </div>
+
+        <!-- 2. Picker Student Controller -->
+        <div id="student-ctrl-picker" class="w-full space-y-4 hidden">
+          <div id="student-picker-auth-banner" class="p-3 rounded-2xl border text-xs font-semibold flex items-center justify-center gap-2">
+            <i id="student-picker-auth-icon" class="fa-solid fa-lock"></i>
+            <span id="student-picker-auth-msg">지목 권한을 확인하는 중...</span>
+          </div>
+
+          <div id="student-picker-active-area" class="w-full space-y-3">
+            <div class="flex items-center justify-between text-xs px-1">
+              <span class="font-bold text-sky-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-hand-pointer text-sky-400"></i> 지목할 친구를 터치하세요:
+              </span>
+              <span id="student-picker-avail-count-badge" class="px-2 py-0.5 rounded-full bg-sky-950 text-sky-400 font-bold border border-sky-800 text-[11px]">
+                남은 친구 21명
+              </span>
+            </div>
+
+            <div id="student-picker-classmates-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto custom-scroll p-1 bg-slate-950/70 rounded-2xl border border-slate-800">
+            </div>
+            
+            <p id="student-picker-hint" class="text-xs text-slate-400">
+              친구 이름을 터치하면 즉시 전자칠판에 해당 친구의 이름이 크게 발표됩니다!
+            </p>
+          </div>
+
+          <div id="student-picker-wait-area" class="w-full py-8 text-center space-y-3 bg-slate-950/60 rounded-2xl border border-slate-800 hidden">
+            <div class="w-16 h-16 mx-auto rounded-full bg-sky-500/10 text-sky-400 flex items-center justify-center text-3xl animate-pulse">
+              <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+            <div class="space-y-1">
+              <h4 id="student-picker-wait-title" class="font-bold text-white text-base">
+                친구를 기다리는 중입니다
+              </h4>
+              <p class="text-xs text-slate-400">
+                전자칠판을 보며 다음 지목 친구를 함께 확인해주세요!
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Bomb Student Controller -->
+        <div id="student-ctrl-bomb" class="w-full space-y-5">
+          <div id="student-bomb-banner" class="p-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs font-bold flex items-center justify-center gap-2">
+            <i class="fa-solid fa-bomb text-rose-400"></i>
+            <span id="student-bomb-msg">선생님이 폭탄 시동을 걸면 타이머가 시작됩니다!</span>
+          </div>
+
+          <div class="w-44 h-44 mx-auto rounded-full bg-gradient-to-tr from-rose-500 to-amber-500 p-2.5 shadow-2xl shadow-rose-500/30 flex items-center justify-center">
+            <div class="w-full h-full rounded-full bg-slate-900 flex flex-col items-center justify-center text-rose-400">
+              <i class="fa-solid fa-bomb text-5xl mb-2" id="student-bomb-icon"></i>
+              <span id="student-bomb-time-txt" class="text-2xl font-black text-rose-400">20초</span>
+            </div>
+          </div>
+
+          <!-- Dynamic Student Action Button -->
+          <button id="student-btn-bomb-action" onclick="studentTriggerBombAction()" class="w-full py-4 sm:py-5 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white rounded-2xl font-black text-lg sm:text-xl shadow-xl shadow-rose-600/30 active:scale-95 transition-all">
+            다른 친구에게 폭탄 넘기기! 💨
+          </button>
+          <p id="student-bomb-hint" class="text-xs text-slate-400">폭탄을 받으면 재빨리 다음 친구에게 넘기세요!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: Smartboard View -->
+    <section id="view-board" class="hidden flex-1 flex flex-col items-center justify-center relative min-h-[580px]">
+      <div class="w-full flex flex-wrap items-center justify-between gap-3 mb-4 bg-slate-900/60 backdrop-blur border border-slate-800 px-5 py-3 rounded-2xl">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="board-current-tool-label" class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">3. 폭탄 터뜨리기</span>
+        </div>
+
+        <div id="board-operator-tag" class="hidden items-center gap-2 px-3 py-1 rounded-xl bg-purple-950/80 border border-purple-700/80 text-xs text-purple-300 font-bold">
+          <i class="fa-solid fa-gamepad text-purple-400"></i>
+          <span>실시간 조작: <span id="board-operator-name" class="text-amber-300 font-black">김서아</span> 학생</span>
+        </div>
+      </div>
+
+      <!-- BOARD DISPLAY: 1. 룰렛 -->
+      <div id="board-display-roulette" class="flex flex-col items-center justify-center w-full max-w-xl my-auto z-10 hidden">
+        <div id="board-roulette-assigned-badge" class="mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-200 text-xs sm:text-sm font-bold shadow-lg shadow-purple-900/30">
+          <i class="fa-solid fa-crown text-amber-400"></i>
+          <span>룰렛 조작 담당: <span id="board-roulette-assigned-name" class="text-white font-black underline underline-offset-4 decoration-purple-400">김서아</span> 학생</span>
+          <span id="board-roulette-cycle-status" class="text-[11px] px-2 py-0.5 rounded-full bg-purple-900/90 text-purple-300 border border-purple-700 ml-1">
+            순환 1/22명
+          </span>
+        </div>
+
+        <div class="relative w-80 h-80 sm:w-96 sm:h-96">
+          <div class="absolute -top-4 left-1/2 -translate-x-1/2 z-20 w-8 h-10 flex items-center justify-center">
+            <i class="fa-solid fa-location-pin text-3xl text-rose-500 drop-shadow-[0_4px_8px_rgba(244,63,94,0.6)]"></i>
+          </div>
+          <canvas id="roulette-canvas" width="400" height="400" class="w-full h-full rounded-full shadow-2xl shadow-purple-500/20 border-4 border-slate-800 bg-slate-900"></canvas>
+          <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-gradient-to-tr from-slate-900 to-slate-800 border-4 border-slate-700 shadow-xl flex items-center justify-center text-white z-10">
+            <i class="fa-solid fa-star text-amber-400 text-base"></i>
+          </div>
+        </div>
+
+        <div id="board-roulette-result" class="mt-6 px-8 py-3 rounded-2xl bg-slate-900/90 border border-purple-500/40 text-center shadow-xl transition-all">
+          <span class="text-xs text-slate-400 font-semibold block">추첨 결과</span>
+          <span id="board-roulette-result-text" class="text-xl sm:text-2xl font-black text-amber-300">
+            배정된 학생이 리모컨을 돌려주세요!
+          </span>
+        </div>
+      </div>
+
+      <!-- BOARD DISPLAY: 2. 학생 릴레이 지목 (초대형 이름 강조) -->
+      <div id="board-display-picker" class="flex flex-col items-center justify-center w-full max-w-4xl my-auto z-10 py-6 hidden">
+        <div class="mb-5 flex flex-wrap items-center justify-center gap-3">
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-950/80 border border-sky-500/40 text-sky-300 text-xs sm:text-sm font-bold shadow-lg shadow-sky-900/30">
+            <i class="fa-solid fa-people-arrows text-sky-400"></i>
+            <span id="board-picker-relation-text">선생님이 첫 번째 학생을 지목했습니다</span>
+          </div>
+
+          <div id="board-picker-relay-info" class="text-xs px-3 py-1.5 rounded-full bg-slate-900 text-amber-300 font-extrabold border border-amber-500/30">
+            진행: 1/22명 완주 (1회차)
+          </div>
+        </div>
+
+        <div id="picker-card" class="relative w-full max-w-2xl bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950 border-4 border-sky-500/50 rounded-3xl p-8 sm:p-14 text-center shadow-2xl shadow-sky-500/20 transition-all duration-300">
+          <div class="flex items-center justify-center gap-2 mb-3">
+            <span class="inline-block w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
+            <span class="text-xs sm:text-sm font-extrabold tracking-widest text-sky-400 uppercase">
+              🎯 현재 지목된 학생 (발표 / 다음 지목자)
+            </span>
+          </div>
+
+          <div class="py-6 flex items-center justify-center overflow-hidden">
+            <h2 id="picker-selected-name" class="text-6xl sm:text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-sky-200 to-sky-400 tracking-wider drop-shadow-[0_10px_25px_rgba(56,189,248,0.5)] transition-all transform animate-scale-up">
+              김서아
+            </h2>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-slate-800/80">
+            <p id="picker-status-sub" class="text-sm sm:text-lg text-amber-300 font-bold flex items-center justify-center gap-2">
+              <i class="fa-solid fa-mobile-screen-button text-sky-400"></i>
+              <span>지목당한 학생이 스마트폰에서 다음 친구를 직접 선택하고 있습니다!</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="w-full max-w-2xl mt-6 px-4">
+          <div class="text-[11px] font-bold text-slate-400 uppercase mb-2 flex items-center justify-between">
+            <span><i class="fa-solid fa-check-double text-emerald-400"></i> 지금까지 지목된 친구들:</span>
+            <span id="board-picker-picked-count-txt" class="text-sky-400">0 / 22명</span>
+          </div>
+          <div id="board-picker-history-chips" class="flex flex-wrap gap-1.5 justify-center max-h-20 overflow-y-auto custom-scroll p-1">
+          </div>
+        </div>
+      </div>
+
+      <!-- BOARD DISPLAY: 3. 폭탄 터뜨리기 대형 디스플레이 -->
+      <div id="board-display-bomb" class="flex flex-col items-center justify-center w-full max-w-lg my-auto z-10">
+        <div id="bomb-board-container" class="relative w-72 h-72 sm:w-88 sm:h-88 flex items-center justify-center transition-transform">
+          <div id="bomb-pulse-ring" class="absolute inset-0 rounded-full border-4 border-rose-500/30"></div>
+          
+          <div id="bomb-display-icon-wrap" class="w-52 h-52 sm:w-60 sm:h-60 rounded-full bg-slate-900 border-4 border-rose-500/60 flex flex-col items-center justify-center shadow-2xl shadow-rose-500/30 transition-all duration-300 relative overflow-hidden">
+            <i id="board-bomb-icon" class="fa-solid fa-bomb text-6xl sm:text-7xl text-rose-500 mb-2"></i>
+            <div id="board-bomb-timer-container" class="flex flex-col items-center justify-center text-center">
+              <span id="board-bomb-timer-num" class="text-3xl sm:text-4xl font-black text-white tracking-wider">20초</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Bomb Holder Card on Smartboard -->
+        <div id="board-bomb-holder-card" class="mt-8 px-8 py-4 rounded-3xl bg-slate-900/90 border-2 border-rose-500/50 text-center shadow-2xl w-full max-w-md transition-all">
+          <span class="text-xs text-slate-400 font-bold block mb-1">현재 폭탄을 쥐고 있는 학생</span>
+          <div class="flex items-center justify-center gap-2">
+            <i class="fa-solid fa-user-tag text-rose-400"></i>
+            <span id="board-bomb-holder-name" class="text-2xl sm:text-3xl font-black text-white">김서아</span>
+            <span class="text-rose-400 font-bold text-sm">학생</span>
+          </div>
+          <p id="board-bomb-status-txt" class="text-xs text-rose-300 mt-2 font-semibold">
+            선생님이 [폭탄 시동]을 걸어 카운트다운을 시작해주세요!
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Password Protection Modal Dialog -->
+  <div id="password-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden p-4">
+    <div id="password-modal-card" class="w-full max-w-sm bg-slate-900 border border-slate-700/80 rounded-3xl p-6 shadow-2xl space-y-5 text-center transform transition-all">
+      <div class="w-14 h-14 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-2xl mx-auto">
+        <i class="fa-solid fa-shield-halved" id="pw-modal-icon"></i>
+      </div>
+      <div>
+        <h3 id="pw-modal-title" class="text-lg font-bold text-white">보안 인증</h3>
+        <p id="pw-modal-desc" class="text-xs text-slate-400 mt-1">접근을 위한 비밀번호 4자리를 입력해주세요.</p>
+      </div>
+      <div class="space-y-3">
+        <div class="relative">
+          <input type="password" id="pw-modal-input" maxlength="4" placeholder="••••" class="w-full text-center tracking-[0.5em] text-2xl font-black bg-slate-950 border border-slate-700 rounded-2xl py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition" autocomplete="off" onkeydown="if(event.key==='Enter') submitPasswordAuth()">
+        </div>
+        <p id="pw-modal-error" class="text-xs font-semibold text-rose-400 hidden">비밀번호가 올바르지 않습니다.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5 pt-1">
+        <button onclick="closePasswordModal()" class="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs border border-slate-700 transition">
+          취소
+        </button>
+        <button onclick="submitPasswordAuth()" class="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30">
+          확인
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-box" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 max-w-sm w-full bg-slate-900/95 border border-slate-700 p-4 rounded-2xl shadow-2xl flex items-center gap-3 pointer-events-none">
+    <div id="toast-icon" class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center text-lg shrink-0">
+      <i class="fa-solid fa-check"></i>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h5 id="toast-title" class="text-sm font-bold text-white truncate">알림</h5>
+      <p id="toast-desc" class="text-xs text-slate-400 line-clamp-2">안내 메시지</p>
+    </div>
+  </div>
+
+  <div id="cloud-status" role="status" class="fixed bottom-3 left-3 z-[90] rounded-xl bg-slate-800 border border-slate-600 px-3 py-2 text-xs text-amber-300 shadow-lg">실시간 연결 중…</div>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
+    import { getDatabase, ref, onValue, runTransaction } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js';
+    const firebaseConfig = {
+      apiKey: 'AIzaSyBCKTJfCAapZ6Q_CBLeBgfJWjhXtaDdAhQ',
+      authDomain: 'reading-number.firebaseapp.com',
+      databaseURL: 'https://reading-number-default-rtdb.asia-southeast1.firebasedatabase.app',
+      projectId: 'reading-number',
+      storageBucket: 'reading-number.firebasestorage.app',
+      messagingSenderId: '563218475295',
+      appId: '1:563218475295:web:a3894c6aff9396b3a8282a'
+    };
+    try {
+      const db = getDatabase(initializeApp(firebaseConfig));
+      const stateRef = ref(db, 'classroom/reading-order/state');
+      window.cloudCommit = async (partial, expectedPicker) => {
+        const result = await runTransaction(stateRef, current => {
+          if (expectedPicker && current && current.picker && current.picker.currentPicker !== expectedPicker) return;
+          const base = current || JSON.parse(JSON.stringify(window.readingDefaultState));
+          // Preserve unrelated tools changed by another device.
+          return { ...base, ...partial };
+        }, { applyLocally: false });
+        if (!result.committed) throw new Error('이미 다른 기기에서 차례가 바뀌었습니다.');
+      };
+      onValue(stateRef, snapshot => {
+        if (snapshot.exists()) window.receiveCloudState(snapshot.val());
+        else window.cloudCommit({}).catch(window.cloudError);
+        window.cloudReady = true;
+        window.updateCloudStatus('실시간 연결됨', true);
+      }, error => window.cloudError(error));
+    } catch (error) { window.addEventListener('DOMContentLoaded', () => window.cloudError(error)); }
+  </script>
+  <script>
+    /* 22명 기본 학생 명단 */
+    const CLASS_STUDENTS = [
+      '김서아', '김수현', '김윤아', '김태영', '김하랑',
+      '나예린', '박민제', '박선우', '양수빈', '유소영',
+      '이대운', '이새봄', '이서율', '이진서', '이채원',
+      '이초은', '이태환', '이하린', '한규빈', '한유은',
+      '현지우', '황지우'
+    ];
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function formatTimeDisplay(totalSeconds) {
+      if (isNaN(totalSeconds) || totalSeconds < 0) totalSeconds = 0;
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
+      if (m > 0) {
+        return s === 0 ? `${m}분` : `${m}분 ${s}초`;
+      }
+      return `${s}초`;
+    }
+
+    function getMysteryDisplayHTML(isBoard = false) {
+      if (isBoard) {
+        return `
+          <div class="flex flex-col items-center animate-secret-flame">
+            <div class="flex items-center gap-2 text-amber-400 text-xs sm:text-sm font-black tracking-widest uppercase">
+              <i class="fa-solid fa-radiation animate-spin text-rose-400"></i>
+              <span>도화선 연소 중</span>
+              <i class="fa-solid fa-fire text-amber-400 animate-bounce"></i>
+            </div>
+            <div class="text-lg sm:text-xl font-black text-rose-300 tracking-wider mt-0.5">
+              언제 터질지 몰라요!
+            </div>
+          </div>
+        `;
+      }
+      return `
+        <div class="flex items-center gap-1.5 text-amber-300 text-xs font-black animate-secret-flame">
+          <i class="fa-solid fa-fire text-rose-400 animate-bounce"></i>
+          <span>도화선 타는 중 🔥</span>
+        </div>
+      `;
+    }
+
+    const DEFAULT_STATE = {
+      activeTool: 'bomb',
+      lastOperator: '',
+      roulette: {
+        items: [...CLASS_STUDENTS],
+        assignedStudent: '김서아',
+        assignMode: 'manual',
+        cycleRound: 1,
+        cycleQueue: [...CLASS_STUDENTS],
+        cycleDone: [],
+        status: 'idle',
+        spinAngle: 0,
+        selectedItem: '',
+        spinDuration: 4000,
+        updatedAt: Date.now()
+      },
+      picker: {
+        students: [...CLASS_STUDENTS],
+        availableStudents: [...CLASS_STUDENTS],
+        currentPicker: '김서아',
+        prevPicker: '선생님',
+        pickedHistory: ['김서아'],
+        round: 1,
+        status: 'selected',
+        selectedStudent: '김서아',
+        updatedAt: Date.now()
+      },
+      bomb: {
+        duration: 20,
+        remaining: 20,
+        status: 'idle',
+        isRandom: false,
+        holderName: '김서아',
+        clicks: 0,
+        updatedAt: Date.now()
+      }
+    };
+
+    let appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    let loggedInStudentName = '김서아';
+    let isSoundEnabled = true;
+    let audioInitialized = false;
+
+    const VIEW_AUTH_PASSWORD = '5658';
+    const unlockedViews = { teacher: false, board: false };
+    let pendingAuthView = null;
+
+    let synthTick, synthWin, synthExplode;
+
+    function initAudio() {
+      if (audioInitialized || !isSoundEnabled) return;
+      try {
+        Tone.start();
+        synthTick = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 2, envelope: { attack: 0.001, decay: 0.05, sustain: 0 } }).toDestination();
+        synthWin = new Tone.PolySynth(Tone.Synth).toDestination();
+        synthExplode = new Tone.NoiseSynth({ noise: { type: 'brown' }, envelope: { attack: 0.005, decay: 0.8, sustain: 0 } }).toDestination();
+        audioInitialized = true;
+      } catch (e) {
+        console.warn('Tone.js init error:', e);
+      }
+    }
+
+    function playTickSound() {
+      if (!isSoundEnabled || !audioInitialized) return;
+      try { synthTick.triggerAttackRelease('C5', '32n'); } catch (e) {}
+    }
+
+    function playWinFanfare() {
+      if (!isSoundEnabled || !audioInitialized) return;
+      try {
+        const now = Tone.now();
+        synthWin.triggerAttackRelease(['C5', 'E5', 'G5'], '8n', now);
+        synthWin.triggerAttackRelease(['G5', 'C6'], '4n', now + 0.2);
+      } catch (e) {}
+    }
+
+    function playExplodeSound() {
+      if (!isSoundEnabled || !audioInitialized) return;
+      try { synthExplode.triggerAttackRelease('4n'); } catch (e) {}
+    }
+
+    function toggleSound() {
+      isSoundEnabled = !isSoundEnabled;
+      const icon = document.getElementById('sound-icon');
+      if (isSoundEnabled) {
+        icon.className = 'fa-solid fa-volume-high text-sky-400';
+        showToast('소리 켜짐', '효과음이 재생됩니다.', 'fa-volume-high');
+        initAudio();
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+        showToast('소리 꺼짐', '효과음이 음소거되었습니다.', 'fa-volume-xmark');
+      }
+    }
+
+    // Firebase is authoritative. Local state renders immediately while the transaction is pending.
+    window.readingDefaultState = DEFAULT_STATE;
+    window.cloudReady = false;
+    window.updateCloudStatus = function(message, connected) {
+      const el = document.getElementById('cloud-status');
+      if (el) {
+        el.textContent = message;
+        el.className = `fixed bottom-3 left-3 z-[90] rounded-xl bg-slate-800 border px-3 py-2 text-xs shadow-lg ${connected ? 'border-emerald-700 text-emerald-300' : 'border-rose-600 text-rose-300'}`;
+      }
+    };
+    window.cloudError = function(error) {
+      console.error('Firebase connection:', error);
+      window.updateCloudStatus('연결 오류: 데이터베이스 규칙과 인터넷을 확인하세요', false);
+      showToast('실시간 연결 오류', error.message || '데이터베이스 규칙을 확인하세요.', 'fa-triangle-exclamation');
+    };
+    window.receiveCloudState = function(newState) {
+      if (newState && newState.roulette && newState.picker && newState.bomb) handleIncomingState(newState);
+    };
+    function syncStateToCloud(partial) {
+      if (!window.cloudReady || !window.cloudCommit) {
+        showToast('연결 중', '실시간 연결이 완료된 뒤 다시 눌러주세요.', 'fa-wifi');
+        return false;
+      }
+      const expectedPicker = partial.picker && partial.lastOperator && partial.lastOperator !== '선생님'
+        ? appState.picker.currentPicker : null;
+      appState = { ...appState, ...partial };
+      renderAll();
+      window.cloudCommit(partial, expectedPicker).catch(error => {
+        window.cloudError(error);
+      });
+      return true;
+    }
+
+    function handleIncomingState(newState) {
+      const prevBombStatus = appState.bomb.status;
+      const prevRouletteStatus = appState.roulette.status;
+      const prevSelectedStudent = appState.picker.selectedStudent;
+
+      appState = newState;
+      renderAll();
+
+      if (prevBombStatus !== 'running' && appState.bomb.status === 'running') {
+        startBombTimerLoop();
+      } else if (appState.bomb.status !== 'running') {
+        stopBombTimerLoop();
+      }
+
+      if (prevRouletteStatus !== 'spinning' && appState.roulette.status === 'spinning') {
+        startRoulettePhysicsAnimation();
+      }
+
+      if (prevSelectedStudent !== appState.picker.selectedStudent && appState.picker.selectedStudent) {
+        triggerSpotlightAnimation(appState.picker.selectedStudent);
+      }
+    }
+
+    function navigateTo(viewName) {
+      // 교사 뷰 및 전자칠판 뷰 비밀번호 보호 확인 (비밀번호: 5658)
+      if ((viewName === 'teacher' || viewName === 'board') && !unlockedViews[viewName]) {
+        openPasswordModal(viewName);
+        return;
+      }
+
+      const views = ['home', 'teacher', 'student', 'board'];
+      views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        const navBtn = document.getElementById(`nav-btn-${v}`);
+        if (el) {
+          if (v === viewName) el.classList.remove('hidden');
+          else el.classList.add('hidden');
+        }
+        if (navBtn) {
+          if (v === viewName) {
+            navBtn.classList.add('bg-slate-700', 'text-white', 'shadow');
+            navBtn.classList.remove('text-slate-300');
+          } else {
+            navBtn.classList.remove('bg-slate-700', 'text-white', 'shadow');
+            navBtn.classList.add('text-slate-300');
+          }
+        }
+      });
+
+      try {
+        if (window.location.protocol !== 'blob:') {
+          const url = new URL(window.location.href);
+          url.searchParams.set('view', viewName);
+          window.history.replaceState({}, '', url.toString());
+        } else {
+          window.location.hash = `view=${viewName}`;
+        }
+      } catch (err) {}
+
+      renderAll();
+      if (viewName === 'board' && appState.activeTool === 'roulette') {
+        drawRouletteWheel();
+      }
+    }
+
+    function openPasswordModal(viewName) {
+      pendingAuthView = viewName;
+      const modal = document.getElementById('password-modal');
+      const input = document.getElementById('pw-modal-input');
+      const errorMsg = document.getElementById('pw-modal-error');
+      const modalTitle = document.getElementById('pw-modal-title');
+      const modalDesc = document.getElementById('pw-modal-desc');
+      const icon = document.getElementById('pw-modal-icon');
+
+      if (!modal || !input) return;
+
+      const isTeacher = viewName === 'teacher';
+      modalTitle.innerText = isTeacher ? '교사 뷰 보안 인증' : '전자칠판 뷰 보안 인증';
+      modalDesc.innerText = isTeacher 
+        ? '교사용 수업 제어 센터 접근을 위해 비밀번호 4자리를 입력하세요.'
+        : '대형 전자칠판 화면 실행을 위해 비밀번호 4자리를 입력하세요.';
+      icon.className = isTeacher ? 'fa-solid fa-chalkboard-user text-indigo-400' : 'fa-solid fa-display text-emerald-400';
+
+      input.value = '';
+      if (errorMsg) errorMsg.classList.add('hidden');
+      modal.classList.remove('hidden');
+      setTimeout(() => input.focus(), 80);
+    }
+
+    function closePasswordModal() {
+      const modal = document.getElementById('password-modal');
+      if (modal) modal.classList.add('hidden');
+      pendingAuthView = null;
+    }
+
+    function submitPasswordAuth() {
+      const input = document.getElementById('pw-modal-input');
+      const errorMsg = document.getElementById('pw-modal-error');
+      const card = document.getElementById('password-modal-card');
+      const val = input ? input.value.trim() : '';
+
+      if (val === VIEW_AUTH_PASSWORD) {
+        if (pendingAuthView) {
+          unlockedViews[pendingAuthView] = true;
+          const target = pendingAuthView;
+          closePasswordModal();
+          showToast('인증 완료', `${target === 'teacher' ? '교사 뷰' : '전자칠판'} 잠금이 해제되었습니다.`, 'fa-lock-open');
+          navigateTo(target);
+        }
+      } else {
+        if (errorMsg) {
+          errorMsg.innerText = '비밀번호(4자리)가 일치하지 않습니다.';
+          errorMsg.classList.remove('hidden');
+        }
+        if (card) {
+          card.classList.remove('animate-shake');
+          void card.offsetWidth;
+          card.classList.add('animate-shake');
+        }
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+      }
+    }
+
+    function copyViewLink(viewName) {
+      let shareUrl = window.location.href;
+      try {
+        if (window.location.protocol !== 'blob:') {
+          const url = new URL(window.location.href);
+          url.searchParams.set('view', viewName);
+          shareUrl = url.toString();
+        } else {
+          shareUrl = window.location.href.split('#')[0] + `#view=${viewName}`;
+        }
+      } catch (e) {}
+
+      const tempArea = document.createElement('textarea');
+      tempArea.value = shareUrl;
+      tempArea.style.position = 'fixed';
+      tempArea.style.opacity = '0';
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('링크 복사 완료', `${viewName.toUpperCase()} 뷰 접속 링크가 복사되었습니다.`, 'fa-copy');
+      } catch (err) {
+        showToast('복사 완료', '클립보드에 링크가 복사되었습니다.', 'fa-copy');
+      }
+      document.body.removeChild(tempArea);
+    }
+
+    function showToast(title, desc, icon = 'fa-check') {
+      const box = document.getElementById('toast-box');
+      const tTitle = document.getElementById('toast-title');
+      const tDesc = document.getElementById('toast-desc');
+      const tIcon = document.getElementById('toast-icon');
+
+      tTitle.innerText = title;
+      tDesc.innerText = desc;
+      tIcon.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+
+      box.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        box.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+
+    function triggerConfetti() {
+      try {
+        confetti({ particleCount: 80, spread: 90, origin: { y: 0.6 } });
+      } catch (e) {}
+    }
+
+    function teacherSelectTool(tool) {
+      ['roulette', 'picker', 'bomb'].forEach(t => {
+        const panel = document.getElementById(`teacher-panel-${t}`);
+        const tab = document.getElementById(`tool-tab-${t}`);
+        if (panel && tab) {
+          if (t === tool) {
+            panel.classList.remove('hidden');
+            tab.className = t === 'bomb'
+              ? 'px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-rose-400 bg-rose-500/20 border border-rose-500/30'
+              : 'px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-indigo-400 bg-indigo-500/20 border border-indigo-500/30';
+          } else {
+            panel.classList.add('hidden');
+            tab.className = 'px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-slate-400 hover:text-white';
+          }
+        }
+      });
+      syncStateToCloud({ activeTool: tool });
+      showToast('도구 변경', `${tool === 'roulette' ? '룰렛' : tool === 'picker' ? '학생 릴레이 지목' : '폭탄 터뜨리기'} 도구가 전자칠판에 활성화되었습니다.`, 'fa-sliders');
+    }
+
+    let bombTimerInterval = null;
+
+    function startBombTimerLoop() {
+      stopBombTimerLoop();
+      initAudio();
+
+      bombTimerInterval = setInterval(() => {
+        if (appState.bomb.status !== 'running') {
+          stopBombTimerLoop();
+          return;
+        }
+
+        if (appState.bomb.remaining > 0) {
+          appState.bomb.remaining -= 1;
+          playTickSound();
+          updateBombLiveDisplays();
+
+          if (appState.bomb.remaining <= 0) {
+            stopBombTimerLoop();
+            triggerBombExplosion();
+          }
+        }
+      }, 1000);
+    }
+
+    function stopBombTimerLoop() {
+      if (bombTimerInterval) {
+        clearInterval(bombTimerInterval);
+        bombTimerInterval = null;
+      }
+    }
+
+    function toggleBombPlayPause() {
+      initAudio();
+      if (appState.bomb.status === 'idle') {
+        startBombCountdown('선생님');
+      } else if (appState.bomb.status === 'running') {
+        pauseBombCountdown();
+      } else if (appState.bomb.status === 'paused') {
+        resumeBombCountdown();
+      } else if (appState.bomb.status === 'exploded') {
+        resetBombGame();
+        startBombCountdown('선생님');
+      }
+    }
+
+    function startBombCountdown(operator) {
+      let dur = appState.bomb.duration;
+      if (appState.bomb.isRandom) {
+        dur = Math.floor(Math.random() * (appState.bomb.duration - 10 > 10 ? appState.bomb.duration - 10 : 35)) + 15;
+      }
+
+      syncStateToCloud({
+        lastOperator: operator,
+        bomb: {
+          ...appState.bomb,
+          duration: appState.bomb.duration,
+          remaining: dur,
+          status: 'running',
+          holderName: appState.bomb.holderName || CLASS_STUDENTS[0],
+          updatedAt: Date.now()
+        }
+      });
+      startBombTimerLoop();
+      showToast('폭탄 시동!', `폭탄 타이머(${formatTimeDisplay(dur)})가 작동하기 시작했습니다!`, 'fa-play');
+    }
+
+    function pauseBombCountdown() {
+      stopBombTimerLoop();
+      syncStateToCloud({
+        bomb: {
+          ...appState.bomb,
+          status: 'paused',
+          updatedAt: Date.now()
+        }
+      });
+      showToast('폭탄 일시정지', `타이머가 ${formatTimeDisplay(appState.bomb.remaining)}에서 멈췄습니다.`, 'fa-pause');
+    }
+
+    function resumeBombCountdown() {
+      syncStateToCloud({
+        bomb: {
+          ...appState.bomb,
+          status: 'running',
+          updatedAt: Date.now()
+        }
+      });
+      startBombTimerLoop();
+      showToast('폭탄 재개', '카운트다운이 이어서 시작됩니다!', 'fa-forward');
+    }
+
+    function triggerInstantBombExplode() {
+      stopBombTimerLoop();
+      appState.bomb.remaining = 0;
+      triggerBombExplosion();
+      showToast('강제 폭발!', '선생님이 폭탄을 즉시 폭발시켰습니다!', 'fa-burst');
+    }
+
+    function resetBombGame() {
+      stopBombTimerLoop();
+      syncStateToCloud({
+        bomb: {
+          ...appState.bomb,
+          remaining: appState.bomb.duration,
+          status: 'idle',
+          clicks: 0,
+          updatedAt: Date.now()
+        }
+      });
+
+      const boardBombWrap = document.getElementById('bomb-display-icon-wrap');
+      const boardContainer = document.getElementById('bomb-board-container');
+      const holderCard = document.getElementById('board-bomb-holder-card');
+      const statusTxt = document.getElementById('board-bomb-status-txt');
+
+      if (boardBombWrap) {
+        boardBombWrap.className = 'w-52 h-52 sm:w-60 sm:h-60 rounded-full bg-slate-900 border-4 border-rose-500/60 flex flex-col items-center justify-center shadow-2xl shadow-rose-500/30 transition-all duration-300 relative overflow-hidden';
+      }
+      if (boardContainer) {
+        boardContainer.classList.remove('animate-shake');
+      }
+      if (holderCard) {
+        holderCard.className = 'mt-8 px-8 py-4 rounded-3xl bg-slate-900/90 border-2 border-rose-500/50 text-center shadow-2xl w-full max-w-md transition-all';
+      }
+      if (statusTxt) {
+        statusTxt.innerText = '선생님이 [폭탄 시동]을 걸어 카운트다운을 시작해주세요!';
+      }
+
+      showToast('타이머 초기화', `폭탄이 ${formatTimeDisplay(appState.bomb.duration)}로 리셋되었습니다.`, 'fa-rotate-left');
+    }
+
+    function updateBombDuration(sec) {
+      const val = parseInt(sec, 10);
+      document.getElementById('bomb-time-label').innerText = formatTimeDisplay(val);
+      syncStateToCloud({
+        bomb: {
+          ...appState.bomb,
+          duration: val,
+          remaining: appState.bomb.status === 'idle' ? val : appState.bomb.remaining,
+          updatedAt: Date.now()
+        }
+      });
+    }
+
+    function setBombPresetTime(sec) {
+      document.getElementById('bomb-time-range').value = sec;
+      updateBombDuration(sec);
+    }
+
+    function toggleBombRandom(checked) {
+      syncStateToCloud({
+        bomb: {
+          ...appState.bomb,
+          isRandom: checked,
+          updatedAt: Date.now()
+        }
+      });
+      showToast('모드 변경', checked ? '미스터리 도화선 모드가 활성화되었습니다.' : '일반 타이머 모드로 전환되었습니다.', 'fa-fire');
+    }
+
+    function teacherAssignBombHolder(name) {
+      if (!name) return;
+      syncStateToCloud({
+        bomb: {
+          ...appState.bomb,
+          holderName: name,
+          updatedAt: Date.now()
+        }
+      });
+      showToast('폭탄 소지자 지정', `[${name}] 학생이 폭탄을 쥐었습니다.`, 'fa-user');
+    }
+
+    function teacherRandomAssignBombHolder() {
+      const randIdx = Math.floor(Math.random() * CLASS_STUDENTS.length);
+      const chosen = CLASS_STUDENTS[randIdx];
+      teacherAssignBombHolder(chosen);
+    }
+
+    function studentTriggerBombAction() {
+      initAudio();
+      if (appState.bomb.status === 'idle') {
+        startBombCountdown(loggedInStudentName || '학생');
+      } else if (appState.bomb.status === 'running') {
+        passBombToNext(loggedInStudentName || '학생');
+      } else if (appState.bomb.status === 'exploded') {
+        resetBombGame();
+      }
+    }
+
+    function passBombToNext(fromName) {
+      const otherStudents = CLASS_STUDENTS.filter(s => s !== fromName);
+      const nextHolder = otherStudents[Math.floor(Math.random() * otherStudents.length)];
+
+      playTickSound();
+      syncStateToCloud({
+        lastOperator: fromName,
+        bomb: {
+          ...appState.bomb,
+          holderName: nextHolder,
+          clicks: (appState.bomb.clicks || 0) + 1,
+          updatedAt: Date.now()
+        }
+      });
+      showToast('폭탄 패스!', `[${fromName}] ➔ [${nextHolder}] 친구에게 폭탄 전달!`, 'fa-fire');
+    }
+
+    function triggerBombExplosion() {
+      playExplodeSound();
+
+      const boardBombWrap = document.getElementById('bomb-display-icon-wrap');
+      const boardContainer = document.getElementById('bomb-board-container');
+      const timeContainerEl = document.getElementById('board-bomb-timer-container');
+      const holderCard = document.getElementById('board-bomb-holder-card');
+      const statusTxt = document.getElementById('board-bomb-status-txt');
+
+      if (timeContainerEl) {
+        timeContainerEl.innerHTML = '<span id="board-bomb-timer-num" class="text-4xl sm:text-5xl font-black text-white tracking-wider animate-bounce">💥 펑!</span>';
+      }
+      if (boardBombWrap) {
+        boardBombWrap.className = 'w-52 h-52 sm:w-60 sm:h-60 rounded-full bg-rose-600 border-4 border-white flex flex-col items-center justify-center shadow-2xl scale-125 transition-transform duration-300';
+      }
+      if (boardContainer) {
+        boardContainer.classList.add('animate-shake');
+      }
+      if (holderCard) {
+        holderCard.className = 'mt-8 px-8 py-4 rounded-3xl bg-rose-950/90 border-2 border-rose-400 text-center shadow-2xl w-full max-w-md transition-all';
+      }
+      if (statusTxt) {
+        statusTxt.innerHTML = `<span class="text-rose-200 font-extrabold text-sm sm:text-base">💥 펑! [${appState.bomb.holderName}] 친구 차례에서 폭탄이 터졌습니다! 벌칙 당첨! 😱</span>`;
+      }
+
+      syncStateToCloud({
+        bomb: {
+          ...appState.bomb,
+          remaining: 0,
+          status: 'exploded',
+          updatedAt: Date.now()
+        }
+      });
+    }
+
+    function updateBombLiveDisplays() {
+      const remain = appState.bomb.remaining;
+      const isRandom = appState.bomb.isRandom;
+
+      const timeContainerEl = document.getElementById('board-bomb-timer-container');
+      const pulseRing = document.getElementById('bomb-pulse-ring');
+      if (timeContainerEl) {
+        if (isRandom) {
+          timeContainerEl.innerHTML = getMysteryDisplayHTML(true);
+        } else {
+          timeContainerEl.innerHTML = `<span id="board-bomb-timer-num" class="text-3xl sm:text-5xl font-black text-white tracking-wider">${formatTimeDisplay(remain)}</span>`;
+        }
+      }
+      if (pulseRing) {
+        pulseRing.className = (remain <= 5 || isRandom)
+          ? 'absolute inset-0 rounded-full border-4 border-rose-500 animate-ping opacity-90'
+          : 'absolute inset-0 rounded-full border-4 border-rose-500/40 animate-pulse';
+      }
+
+      const teacherTimerEl = document.getElementById('teacher-bomb-cur-timer');
+      if (teacherTimerEl) {
+        teacherTimerEl.innerText = isRandom ? `${formatTimeDisplay(remain)} (시크릿)` : formatTimeDisplay(remain);
+      }
+
+      const sBombTimeTxt = document.getElementById('student-bomb-time-txt');
+      if (sBombTimeTxt) {
+        if (isRandom) {
+          sBombTimeTxt.innerHTML = getMysteryDisplayHTML(false);
+        } else {
+          sBombTimeTxt.innerText = formatTimeDisplay(remain);
+        }
+      }
+    }
+
+    let currentWheelAngle = 0;
+    let rouletteAnimationId = null;
+
+    function setRouletteAssignMode(mode) {
+      let queue = appState.roulette.cycleQueue;
+      let nextStudent = appState.roulette.assignedStudent;
+
+      if (mode === 'random_cycle') {
+        queue = shuffleArray(CLASS_STUDENTS);
+        nextStudent = queue[0];
+        showToast('전원 순환 모드', '22명 학생이 무작위 순서로 1명씩 돌아갑니다.', 'fa-arrows-rotate');
+      } else {
+        showToast('지정 모드', '교사가 직접 지정한 학생만 조작합니다.', 'fa-crown');
+      }
+
+      syncStateToCloud({
+        roulette: {
+          ...appState.roulette,
+          assignMode: mode,
+          assignedStudent: nextStudent,
+          cycleQueue: queue,
+          cycleDone: [],
+          cycleRound: 1,
+          updatedAt: Date.now()
+        }
+      });
+    }
+
+    function teacherAssignRoulette(studentName) {
+      if (!studentName) return;
+      syncStateToCloud({
+        roulette: {
+          ...appState.roulette,
+          assignedStudent: studentName,
+          assignMode: 'manual',
+          updatedAt: Date.now()
+        }
+      });
+      showToast('운영자 배정', `[${studentName}] 학생에게 룰렛 조작 권한이 부여되었습니다.`, 'fa-crown');
+    }
+
+    function teacherRandomAssignRoulette() {
+      const randIdx = Math.floor(Math.random() * CLASS_STUDENTS.length);
+      const chosen = CLASS_STUDENTS[randIdx];
+      teacherAssignRoulette(chosen);
+    }
+
+    function advanceRouletteCycle() {
+      let queue = [...(appState.roulette.cycleQueue || [])];
+      let done = [...(appState.roulette.cycleDone || [])];
+      let round = appState.roulette.cycleRound || 1;
+      const current = appState.roulette.assignedStudent;
+
+      if (current && !done.includes(current)) {
+        done.push(current);
+      }
+
+      let nextStudent = '';
+      if (queue.length > 0) {
+        nextStudent = queue.shift();
+      } else {
+        round += 1;
+        queue = shuffleArray(CLASS_STUDENTS);
+        nextStudent = queue.shift();
+        done = [];
+        showToast('한 바퀴 완료! 🎉', `전원 룰렛 1바퀴를 마쳤습니다! (${round}회차 시작)`, 'fa-trophy');
+      }
+
+      syncStateToCloud({
+        roulette: {
+          ...appState.roulette,
+          assignedStudent: nextStudent,
+          cycleQueue: queue,
+          cycleDone: done,
+          cycleRound: round,
+          status: 'idle',
+          updatedAt: Date.now()
+        }
+      });
+    }
+
+    function addRouletteItem() {
+      const input = document.getElementById('roulette-new-item');
+      const val = input.value.trim();
+      if (!val) return;
+      const updated = [...appState.roulette.items, val];
+      syncStateToCloud({
+        roulette: { ...appState.roulette, items: updated, updatedAt: Date.now() }
+      });
+      input.value = '';
+    }
+
+    function removeRouletteItem(idx) {
+      if (appState.roulette.items.length <= 2) {
+        showToast('알림', '룰렛 항목은 최소 2개 이상이어야 합니다.', 'fa-circle-exclamation');
+        return;
+      }
+      const updated = appState.roulette.items.filter((_, i) => i !== idx);
+      syncStateToCloud({
+        roulette: { ...appState.roulette, items: updated, updatedAt: Date.now() }
+      });
+    }
+
+    function loadPresetToRoulette(type) {
+      let items = [];
+      if (type === 'students') {
+        items = [...CLASS_STUDENTS];
+      } else {
+        items = ['발표하기 🎤', '칭찬스티커 1장 🌟', '친구 칭찬하기 💖', '보너스 점수 +10 🎯', '자유 질문권 🙋', '선생님과 하이파이브 ✋'];
+      }
+      syncStateToCloud({
+        roulette: { ...appState.roulette, items, updatedAt: Date.now() }
+      });
+      showToast('프리셋 적용', `${items.length}개 항목이 룰렛에 등록되었습니다.`, 'fa-check');
+    }
+
+    function studentTriggerSpin() {
+      if (!loggedInStudentName) {
+        showToast('알림', '먼저 본인의 이름을 선택해주세요.', 'fa-user-pen');
+        return;
+      }
+      if (appState.roulette.assignedStudent !== loggedInStudentName) {
+        showToast('권한 없음', `현재 룰렛 조작 권한은 [${appState.roulette.assignedStudent}] 학생에게 있습니다.`, 'fa-lock');
+        return;
+      }
+      if (appState.roulette.status === 'spinning') return;
+      triggerRouletteSpin(loggedInStudentName);
+    }
+
+    function triggerRouletteSpin(operator) {
+      initAudio();
+      syncStateToCloud({
+        lastOperator: operator,
+        roulette: {
+          ...appState.roulette,
+          status: 'spinning',
+          updatedAt: Date.now()
+        }
+      });
+      startRoulettePhysicsAnimation();
+    }
+
+    function drawRouletteWheel() {
+      const canvas = document.getElementById('roulette-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const items = appState.roulette.items;
+      if (!items || items.length === 0) return;
+
+      const numItems = items.length;
+      const arc = (2 * Math.PI) / numItems;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = canvas.width / 2 - 12;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const palette = [
+        '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', 
+        '#0ea5e9', '#10b981', '#f59e0b', '#14b8a6', 
+        '#3b82f6', '#a855f7', '#06b6d4', '#eab308'
+      ];
+
+      for (let i = 0; i < numItems; i++) {
+        const angle = currentWheelAngle + i * arc;
+        ctx.beginPath();
+        ctx.fillStyle = palette[i % palette.length];
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, angle, angle + arc);
+        ctx.lineTo(centerX, centerY);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle + arc / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 15px Pretendard, sans-serif';
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 4;
+
+        let text = items[i];
+        if (text.length > 8) text = text.substring(0, 7) + '..';
+        ctx.fillText(text, radius - 20, 5);
+        ctx.restore();
+      }
+    }
+
+    function startRoulettePhysicsAnimation() {
+      initAudio();
+      cancelAnimationFrame(rouletteAnimationId);
+
+      const items = appState.roulette.items;
+      const numItems = items.length;
+      const arc = (2 * Math.PI) / numItems;
+
+      let velocity = Math.random() * 0.25 + 0.35;
+      const friction = 0.988;
+      let lastTickAngle = currentWheelAngle;
+
+      function frame() {
+        velocity *= friction;
+        currentWheelAngle += velocity;
+
+        if (Math.abs(currentWheelAngle - lastTickAngle) >= arc) {
+          playTickSound();
+          lastTickAngle = currentWheelAngle;
+        }
+
+        drawRouletteWheel();
+
+        if (velocity > 0.0015) {
+          rouletteAnimationId = requestAnimationFrame(frame);
+        } else {
+          velocity = 0;
+          drawRouletteWheel();
+          onRouletteFinished();
+        }
+      }
+      rouletteAnimationId = requestAnimationFrame(frame);
+    }
+
+    function onRouletteFinished() {
+      const items = appState.roulette.items;
+      const numItems = items.length;
+      const arc = (2 * Math.PI) / numItems;
+
+      let norm = (currentWheelAngle % (2 * Math.PI) + (2 * Math.PI)) % (2 * Math.PI);
+      let pointerRelative = (Math.PI * 1.5 - norm + (2 * Math.PI)) % (2 * Math.PI);
+      let winningIndex = Math.floor(pointerRelative / arc) % numItems;
+      let winnerText = items[winningIndex];
+
+      playWinFanfare();
+      triggerConfetti();
+
+      const resultTextEl = document.getElementById('board-roulette-result-text');
+      if (resultTextEl) {
+        resultTextEl.innerHTML = `🎉 당첨: <span class="text-white underline font-black">${winnerText}</span>`;
+      }
+
+      syncStateToCloud({
+        roulette: {
+          ...appState.roulette,
+          status: 'finished',
+          selectedItem: winnerText,
+          updatedAt: Date.now()
+        }
+      });
+
+      if (appState.roulette.assignMode === 'random_cycle') {
+        setTimeout(() => {
+          advanceRouletteCycle();
+        }, 4500);
+      }
+    }
+
+    function teacherAssignFirstPicker(studentName) {
+      if (!studentName) return;
+      initAudio();
+      const roster = CLASS_STUDENTS;
+      const remaining = roster.filter(s => s !== studentName);
+
+      syncStateToCloud({
+        lastOperator: '선생님',
+        picker: {
+          ...appState.picker,
+          currentPicker: studentName,
+          prevPicker: '선생님',
+          selectedStudent: studentName,
+          availableStudents: remaining,
+          pickedHistory: [studentName],
+          status: 'selected',
+          round: 1,
+          updatedAt: Date.now()
+        }
+      });
+
+      triggerSpotlightAnimation(studentName);
+      showToast('첫 주자 지정 완료', `선생님이 첫 학생으로 [${studentName}] 학생을 지목했습니다!`, 'fa-user-check');
+    }
+
+    function resetPickerRelay() {
+      const roster = CLASS_STUDENTS;
+      syncStateToCloud({
+        picker: {
+          ...appState.picker,
+          availableStudents: [...roster],
+          currentPicker: '',
+          prevPicker: '선생님',
+          pickedHistory: [],
+          status: 'idle',
+          selectedStudent: '대기 중',
+          round: 1,
+          updatedAt: Date.now()
+        }
+      });
+      showToast('릴레이 초기화', '지목 릴레이가 초기화되었습니다. 교사 뷰에서 첫 주자를 지정해주세요.', 'fa-rotate-left');
+    }
+
+    function resetToDefault22Students() {
+      resetPickerRelay();
+      showToast('명단 복구', '22명 학생 기본 명단이 복구되었습니다.', 'fa-users');
+    }
+
+    function studentChooseNextStudent(targetStudent) {
+      if (!loggedInStudentName) {
+        showToast('알림', '먼저 본인의 이름을 선택하여 로그인해주세요.', 'fa-user-pen');
+        return;
+      }
+
+      if (appState.picker.currentPicker !== loggedInStudentName) {
+        showToast('권한 없음', `현재 지목 차례는 [${appState.picker.currentPicker}] 학생입니다.`, 'fa-lock');
+        return;
+      }
+
+      if (!targetStudent || targetStudent === loggedInStudentName) {
+        showToast('선택 불가', '자신이 아닌 다른 친구를 선택해주세요.', 'fa-circle-xmark');
+        return;
+      }
+
+      const roster = CLASS_STUDENTS;
+      let history = Array.isArray(appState.picker.pickedHistory) ? [...appState.picker.pickedHistory] : [];
+      let round = appState.picker.round || 1;
+
+      if (history.includes(targetStudent)) {
+        showToast('이미 지목된 친구', `[${targetStudent}] 친구는 이번 회차에서 이미 지목되었습니다.`, 'fa-circle-exclamation');
+        return;
+      }
+
+      initAudio();
+      history.push(targetStudent);
+
+      let avail = roster.filter(s => !history.includes(s));
+      let isFullCycleFinished = false;
+
+      if (avail.length === 0) {
+        isFullCycleFinished = true;
+        round += 1;
+        avail = roster.filter(s => s !== targetStudent);
+        history = [targetStudent];
+      }
+
+      syncStateToCloud({
+        lastOperator: loggedInStudentName,
+        picker: {
+          ...appState.picker,
+          prevPicker: loggedInStudentName,
+          currentPicker: targetStudent,
+          selectedStudent: targetStudent,
+          availableStudents: avail,
+          pickedHistory: history,
+          round: round,
+          status: 'selected',
+          updatedAt: Date.now()
+        }
+      });
+
+      triggerSpotlightAnimation(targetStudent);
+
+      if (isFullCycleFinished) {
+        showToast('한 바퀴 완주! 🎉', `우리 반 22명 모든 친구가 지목되었습니다! (${round}회차 시작)`, 'fa-trophy');
+      } else {
+        showToast('지목 완료!', `[${targetStudent}] 친구를 다음 주자로 지목했습니다!`, 'fa-paper-plane');
+      }
+    }
+
+    function triggerSpotlightAnimation(studentName) {
+      playWinFanfare();
+      triggerConfetti();
+
+      const nameEl = document.getElementById('picker-selected-name');
+      const cardEl = document.getElementById('picker-card');
+      if (nameEl) {
+        nameEl.innerText = studentName;
+        nameEl.classList.remove('animate-scale-up');
+        void nameEl.offsetWidth;
+        nameEl.classList.add('animate-scale-up');
+      }
+      if (cardEl) {
+        cardEl.classList.remove('border-sky-500/50');
+        cardEl.classList.add('border-emerald-400', 'shadow-emerald-500/40');
+        setTimeout(() => {
+          cardEl.classList.remove('border-emerald-400', 'shadow-emerald-500/40');
+          cardEl.classList.add('border-sky-500/50');
+        }, 1200);
+      }
+    }
+
+    function renderStudentLoginGrid() {
+      const grid = document.getElementById('student-login-grid');
+      if (!grid) return;
+      grid.innerHTML = CLASS_STUDENTS.map(name => `
+        <button onclick="loginAsStudent('${name}')" class="py-3 px-2 rounded-2xl border text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 ${
+          loggedInStudentName === name 
+            ? 'bg-sky-600 border-sky-400 text-white shadow-lg shadow-sky-600/30' 
+            : 'bg-slate-950/80 hover:bg-slate-800 border-slate-800 text-slate-300 hover:text-white'
+        }">
+          <i class="fa-solid fa-user text-[11px] ${loggedInStudentName === name ? 'text-white' : 'text-sky-400'}"></i>
+          <span>${name}</span>
+        </button>
+      `).join('');
+    }
+
+    function loginAsStudent(name) {
+      initAudio();
+      loggedInStudentName = name;
+      document.getElementById('student-login-box').classList.add('hidden');
+      document.getElementById('student-remote-box').classList.remove('hidden');
+      document.getElementById('student-my-name').innerText = name;
+      
+      const badge = document.getElementById('header-student-badge');
+      const badgeName = document.getElementById('header-student-name');
+      if (badge && badgeName) {
+        badge.classList.remove('hidden');
+        badgeName.innerText = name;
+      }
+
+      showToast('로그인 성공', `${name} 학생으로 로그인되었습니다!`, 'fa-circle-check');
+      renderAll();
+    }
+
+    function logoutStudent() {
+      loggedInStudentName = '';
+      document.getElementById('student-login-box').classList.remove('hidden');
+      document.getElementById('student-remote-box').classList.add('hidden');
+      const badge = document.getElementById('header-student-badge');
+      if (badge) badge.classList.add('hidden');
+      renderStudentLoginGrid();
+    }
+
+    function renderAll() {
+      const tool = appState.activeTool;
+      const roster = CLASS_STUDENTS;
+
+      // 1. Teacher Bomb Control updates
+      const tBombHolder = document.getElementById('teacher-bomb-cur-holder');
+      const tBombTimer = document.getElementById('teacher-bomb-cur-timer');
+      const tBombBadge = document.getElementById('teacher-bomb-state-badge');
+      const tBombBtnToggle = document.getElementById('teacher-btn-bomb-toggle');
+      const tBombIcon = document.getElementById('teacher-bomb-status-icon');
+      const tBombSelect = document.getElementById('teacher-bomb-holder-select');
+
+      if (tBombHolder) tBombHolder.innerText = `${appState.bomb.holderName} 학생`;
+      if (tBombTimer) {
+        tBombTimer.innerText = appState.bomb.status === 'exploded' ? '💥 펑!' : formatTimeDisplay(appState.bomb.remaining);
+      }
+
+      if (tBombSelect && tBombSelect.options.length !== roster.length) {
+        tBombSelect.innerHTML = roster.map(st => `
+          <option value="${st}" ${st === appState.bomb.holderName ? 'selected' : ''}>👤 ${st} 학생</option>
+        `).join('');
+      } else if (tBombSelect) {
+        tBombSelect.value = appState.bomb.holderName;
+      }
+
+      if (tBombBadge) {
+        if (appState.bomb.status === 'running') {
+          tBombBadge.innerText = '진행 중 🔥';
+          tBombBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse';
+        } else if (appState.bomb.status === 'paused') {
+          tBombBadge.innerText = '일시정지 ⏸️';
+          tBombBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+        } else if (appState.bomb.status === 'exploded') {
+          tBombBadge.innerText = '폭발 완료 💥';
+          tBombBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-600 text-white border border-rose-400';
+        } else {
+          tBombBadge.innerText = '대기 중';
+          tBombBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700';
+        }
+      }
+
+      if (tBombBtnToggle && tBombIcon) {
+        if (appState.bomb.status === 'running') {
+          tBombBtnToggle.className = 'w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-extrabold rounded-2xl text-base transition flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30';
+          tBombBtnToggle.innerHTML = '<i class="fa-solid fa-pause"></i> <span>폭탄 일시정지 (PAUSE)</span>';
+          tBombIcon.className = 'fa-solid fa-fire text-rose-500 animate-bounce';
+        } else if (appState.bomb.status === 'paused') {
+          tBombBtnToggle.className = 'w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-2xl text-base transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30';
+          tBombBtnToggle.innerHTML = '<i class="fa-solid fa-play"></i> <span>이어서 재개 (RESUME)</span>';
+          tBombIcon.className = 'fa-solid fa-pause text-amber-400';
+        } else if (appState.bomb.status === 'exploded') {
+          tBombBtnToggle.className = 'w-full py-4 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-2xl text-base transition flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30';
+          tBombBtnToggle.innerHTML = '<i class="fa-solid fa-rotate-right"></i> <span>새 게임 폭탄 시동</span>';
+          tBombIcon.className = 'fa-solid fa-burst text-rose-500';
+        } else {
+          tBombBtnToggle.className = 'w-full py-4 bg-rose-600 hover:bg-rose-500 text-white font-extrabold rounded-2xl text-base transition flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30';
+          tBombBtnToggle.innerHTML = '<i class="fa-solid fa-play"></i> <span>폭탄 시동 (카운트다운 시작)</span>';
+          tBombIcon.className = 'fa-solid fa-bomb text-rose-400';
+        }
+      }
+
+      // 2. Teacher Roulette & Picker Updates
+      const rSelect = document.getElementById('teacher-roulette-student-select');
+      if (rSelect && rSelect.options.length !== roster.length) {
+        rSelect.innerHTML = roster.map(st => `
+          <option value="${st}" ${st === appState.roulette.assignedStudent ? 'selected' : ''}>👤 ${st} 학생</option>
+        `).join('');
+      } else if (rSelect) {
+        rSelect.value = appState.roulette.assignedStudent;
+      }
+
+      const pFirstSelect = document.getElementById('picker-first-select');
+      if (pFirstSelect && pFirstSelect.options.length !== roster.length) {
+        pFirstSelect.innerHTML = roster.map(st => `
+          <option value="${st}">👤 ${st} 학생</option>
+        `).join('');
+      }
+
+      const tPickerHolder = document.getElementById('teacher-picker-current-holder');
+      const tPickerRemain = document.getElementById('teacher-picker-remaining-count');
+      const tPickerBadge = document.getElementById('teacher-picker-relay-badge');
+      if (tPickerHolder && tPickerRemain) {
+        const curPicker = appState.picker.currentPicker;
+        const remainCount = (appState.picker.availableStudents || []).length;
+        tPickerHolder.innerText = curPicker ? `${curPicker} 학생` : '교사 지정 대기 중';
+        tPickerRemain.innerText = `${remainCount}명 / 총 ${roster.length}명`;
+        if (tPickerBadge) {
+          tPickerBadge.innerText = `${appState.picker.round || 1}회차 (${(appState.picker.pickedHistory || []).length}/${roster.length}명 완주)`;
+        }
+      }
+
+      const pList = document.getElementById('picker-students-list');
+      if (pList) {
+        pList.innerHTML = roster.map((st) => `
+          <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-xl text-xs text-white">
+            <i class="fa-solid fa-user text-sky-400 text-[10px]"></i>
+            <span>${st}</span>
+          </div>
+        `).join('');
+        document.getElementById('picker-student-count').innerText = roster.length;
+      }
+
+      // 3. Student Remote View Updates
+      ['roulette', 'picker', 'bomb'].forEach(t => {
+        const ctrl = document.getElementById(`student-ctrl-${t}`);
+        if (ctrl) {
+          if (t === tool) ctrl.classList.remove('hidden');
+          else ctrl.classList.add('hidden');
+        }
+      });
+
+      // Student Bomb Controller
+      const sBombActionBtn = document.getElementById('student-btn-bomb-action');
+      const sBombTimeTxt = document.getElementById('student-bomb-time-txt');
+      const sBombMsg = document.getElementById('student-bomb-msg');
+      const sBombHint = document.getElementById('student-bomb-hint');
+      const isHolder = loggedInStudentName === appState.bomb.holderName;
+
+      if (sBombActionBtn && sBombTimeTxt) {
+        if (appState.bomb.status === 'idle') {
+          sBombTimeTxt.innerText = formatTimeDisplay(appState.bomb.duration);
+          sBombActionBtn.disabled = false;
+          sBombActionBtn.innerText = '폭탄 시작하기! 🔥';
+          sBombActionBtn.className = 'w-full py-4 sm:py-5 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white rounded-2xl font-black text-lg sm:text-xl shadow-xl shadow-rose-600/30 active:scale-95 transition-all cursor-pointer';
+          if (sBombMsg) sBombMsg.innerText = '선생님이 폭탄 시동을 걸면 타이머가 시작됩니다!';
+          if (sBombHint) sBombHint.innerText = `현재 첫 폭탄 소지자: [${appState.bomb.holderName}]`;
+        } else if (appState.bomb.status === 'running') {
+          if (appState.bomb.isRandom) {
+            sBombTimeTxt.innerHTML = getMysteryDisplayHTML(false);
+          } else {
+            sBombTimeTxt.innerText = formatTimeDisplay(appState.bomb.remaining);
+          }
+
+          if (isHolder) {
+            sBombActionBtn.disabled = false;
+            sBombActionBtn.innerText = '다른 친구에게 폭탄 넘기기! 💨';
+            sBombActionBtn.className = 'w-full py-4 sm:py-5 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white rounded-2xl font-black text-lg sm:text-xl shadow-xl shadow-amber-600/30 active:scale-95 transition-all animate-pulse cursor-pointer';
+            if (sBombMsg) sBombMsg.innerText = `🚨 당신(${loggedInStudentName})이 폭탄을 쥐고 있습니다! 서둘러 넘기세요!`;
+            if (sBombHint) sBombHint.innerText = '버튼을 터치하면 다른 친구에게 폭탄이 넘어갑니다!';
+          } else {
+            sBombActionBtn.disabled = true;
+            sBombActionBtn.innerText = `[${appState.bomb.holderName}] 학생이 폭탄을 쥐고 있음`;
+            sBombActionBtn.className = 'w-full py-4 sm:py-5 bg-slate-800 text-slate-500 rounded-2xl font-black text-base cursor-not-allowed opacity-60';
+            if (sBombMsg) sBombMsg.innerText = `현재 폭탄을 쥔 사람: [${appState.bomb.holderName}] 학생`;
+            if (sBombHint) sBombHint.innerText = '폭탄이 나에게 넘어오는지 주시하세요!';
+          }
+        } else if (appState.bomb.status === 'paused') {
+          sBombTimeTxt.innerText = '일시정지';
+          sBombActionBtn.disabled = true;
+          sBombActionBtn.innerText = '선생님이 일시정지함 ⏸️';
+          sBombActionBtn.className = 'w-full py-4 sm:py-5 bg-amber-900/40 text-amber-300 border border-amber-500/40 rounded-2xl font-black text-base cursor-not-allowed';
+          if (sBombMsg) sBombMsg.innerText = '선생님이 질문 또는 지도를 위해 폭탄을 멈췄습니다.';
+        } else if (appState.bomb.status === 'exploded') {
+          sBombTimeTxt.innerText = '💥 펑!';
+          sBombActionBtn.disabled = false;
+          sBombActionBtn.innerText = '다시 시작하기 🔄';
+          sBombActionBtn.className = 'w-full py-4 sm:py-5 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-black text-lg transition cursor-pointer';
+          if (sBombMsg) sBombMsg.innerText = `💥 [${appState.bomb.holderName}] 친구에서 폭탄 폭발! 벌칙 당첨!`;
+        }
+      }
+
+      // Student Picker Selection Grid
+      const pAuthBanner = document.getElementById('student-picker-auth-banner');
+      const pAuthIcon = document.getElementById('student-picker-auth-icon');
+      const pAuthMsg = document.getElementById('student-picker-auth-msg');
+      const pActiveArea = document.getElementById('student-picker-active-area');
+      const pWaitArea = document.getElementById('student-picker-wait-area');
+      const pWaitTitle = document.getElementById('student-picker-wait-title');
+      const pGrid = document.getElementById('student-picker-classmates-grid');
+      const pAvailBadge = document.getElementById('student-picker-avail-count-badge');
+
+      const currentPicker = appState.picker.currentPicker;
+      const history = appState.picker.pickedHistory || [];
+      const availStudents = appState.picker.availableStudents || [];
+
+      if (pAuthBanner && pActiveArea && pWaitArea) {
+        if (!currentPicker) {
+          pAuthBanner.className = 'p-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-semibold flex items-center justify-center gap-2';
+          pAuthIcon.className = 'fa-solid fa-chalkboard-user text-amber-400';
+          pAuthMsg.innerText = '선생님이 첫 번째 학생을 지목하는 중입니다.';
+          pActiveArea.classList.add('hidden');
+          pWaitArea.classList.remove('hidden');
+          if (pWaitTitle) pWaitTitle.innerText = '선생님이 첫 학생을 지목할 때까지 대기해주세요';
+        } else if (loggedInStudentName === currentPicker) {
+          pAuthBanner.className = 'p-3 rounded-2xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-300 text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20';
+          pAuthIcon.className = 'fa-solid fa-crown text-amber-400 text-sm';
+          pAuthMsg.innerText = `당신(${loggedInStudentName})이 지목되었습니다! 다음 친구를 터치하세요!`;
+          
+          pActiveArea.classList.remove('hidden');
+          pWaitArea.classList.add('hidden');
+
+          if (pAvailBadge) {
+            pAvailBadge.innerText = `선택 가능한 친구: ${availStudents.length}명`;
+          }
+
+          if (pGrid) {
+            pGrid.innerHTML = roster.map(student => {
+              const isSelf = student === loggedInStudentName;
+              const isAlreadyPicked = history.includes(student) && !isSelf;
+
+              if (isSelf) {
+                return `
+                  <button disabled class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/40 text-slate-500 text-xs font-bold cursor-not-allowed flex flex-col items-center justify-center gap-1 opacity-50">
+                    <span class="text-[10px] text-slate-500">나</span>
+                    <span>${student}</span>
+                  </button>
+                `;
+              } else if (isAlreadyPicked) {
+                return `
+                  <button disabled class="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-slate-600 text-xs font-bold cursor-not-allowed flex flex-col items-center justify-center gap-1 opacity-40">
+                    <span class="text-[10px] text-emerald-600 font-extrabold">지목완료 ✓</span>
+                    <span>${student}</span>
+                  </button>
+                `;
+              } else {
+                return `
+                  <button onclick="studentChooseNextStudent('${student}')" class="p-2.5 rounded-xl border-2 border-sky-500/60 hover:border-sky-400 bg-sky-950/60 hover:bg-sky-600 text-white text-xs font-extrabold active:scale-95 transition-all flex flex-col items-center justify-center gap-1 shadow-md shadow-sky-500/20">
+                    <span class="text-[10px] text-sky-400 group-hover:text-white">선택 가능</span>
+                    <span>${student}</span>
+                  </button>
+                `;
+              }
+            }).join('');
+          }
+        } else {
+          pAuthBanner.className = 'p-3 rounded-2xl border border-sky-500/30 bg-sky-500/10 text-sky-300 text-xs font-semibold flex items-center justify-center gap-2';
+          pAuthIcon.className = 'fa-solid fa-lock text-sky-400';
+          pAuthMsg.innerText = `현재 [${currentPicker}] 학생이 다음 친구를 고르고 있습니다`;
+
+          pActiveArea.classList.add('hidden');
+          pWaitArea.classList.remove('hidden');
+          if (pWaitTitle) {
+            pWaitTitle.innerText = `[${currentPicker}] 학생이 스마트폰에서 친구를 선택 중입니다`;
+          }
+        }
+      }
+
+      // 4. Smartboard Updates
+      const bToolLabel = document.getElementById('board-current-tool-label');
+      if (bToolLabel) {
+        bToolLabel.innerText = tool === 'roulette' ? '1. 룰렛 회전판' : tool === 'picker' ? '2. 학생 릴레이 지목' : '3. 시한폭탄 게임';
+      }
+
+      ['roulette', 'picker', 'bomb'].forEach(t => {
+        const boardDisplay = document.getElementById(`board-display-${t}`);
+        if (boardDisplay) {
+          if (t === tool) boardDisplay.classList.remove('hidden');
+          else boardDisplay.classList.add('hidden');
+        }
+      });
+
+      // Board Bomb updates
+      const bBombHolder = document.getElementById('board-bomb-holder-name');
+      const bBombTimeContainer = document.getElementById('board-bomb-timer-container');
+      const bBombStatusTxt = document.getElementById('board-bomb-status-txt');
+
+      if (bBombHolder) bBombHolder.innerText = appState.bomb.holderName;
+      if (bBombTimeContainer && appState.bomb.status !== 'exploded') {
+        if (appState.bomb.isRandom && appState.bomb.status === 'running') {
+          bBombTimeContainer.innerHTML = getMysteryDisplayHTML(true);
+        } else {
+          bBombTimeContainer.innerHTML = `<span id="board-bomb-timer-num" class="text-3xl sm:text-5xl font-black text-white tracking-wider">${formatTimeDisplay(appState.bomb.remaining)}</span>`;
+        }
+      }
+      if (bBombStatusTxt && appState.bomb.status === 'running') {
+        bBombStatusTxt.innerHTML = `<span class="text-rose-400 font-bold">폭탄이 째깍째깍 흐르고 있습니다! [${appState.bomb.holderName}] 친구는 어서 넘기세요!</span>`;
+      } else if (bBombStatusTxt && appState.bomb.status === 'paused') {
+        bBombStatusTxt.innerHTML = `<span class="text-amber-300 font-bold">⏸️ 선생님이 폭탄을 일시정지했습니다.</span>`;
+      }
+
+      // Board Picker updates
+      const bSelectedName = document.getElementById('picker-selected-name');
+      const bRelationText = document.getElementById('board-picker-relation-text');
+      const bRelayInfo = document.getElementById('board-picker-relay-info');
+      const bStatusSub = document.getElementById('picker-status-sub');
+      const bPickedCountTxt = document.getElementById('board-picker-picked-count-txt');
+      const bHistoryChips = document.getElementById('board-picker-history-chips');
+
+      if (bSelectedName) {
+        bSelectedName.innerText = appState.picker.selectedStudent || '대기 중';
+      }
+
+      if (bRelationText) {
+        const cur = appState.picker.currentPicker;
+        const prev = appState.picker.prevPicker;
+        if (!cur) {
+          bRelationText.innerText = '교사 뷰에서 첫 번째 릴레이 주자를 지정해주세요';
+        } else if (prev === '선생님') {
+          bRelationText.innerHTML = `선생님이 <span class="text-white font-extrabold">[${cur}]</span> 학생을 첫 주자로 지목했습니다!`;
+        } else {
+          bRelationText.innerHTML = `<span class="text-sky-300 font-extrabold">[${prev}]</span> 학생이 ➔ <span class="text-amber-300 font-extrabold">[${cur}]</span> 학생을 지목했습니다!`;
+        }
+      }
+
+      if (bRelayInfo) {
+        bRelayInfo.innerText = `진행: ${history.length}/${roster.length}명 완주 (${appState.picker.round || 1}회차)`;
+      }
+
+      if (bStatusSub) {
+        if (!currentPicker) {
+          bStatusSub.innerHTML = `<i class="fa-solid fa-chalkboard-user text-sky-400"></i> 선생님 화면에서 첫 주자를 지정하면 릴레이가 시작됩니다!`;
+        } else {
+          bStatusSub.innerHTML = `<i class="fa-solid fa-mobile-screen-button text-sky-400"></i> <span>지목된 <span class="text-white font-black underline underline-offset-4 decoration-amber-400">[${currentPicker}]</span> 학생이 스마트폰에서 다음 친구를 직접 고르고 있습니다!</span>`;
+        }
+      }
+
+      if (bPickedCountTxt) {
+        bPickedCountTxt.innerText = `${history.length} / ${roster.length}명`;
+      }
+
+      if (bHistoryChips) {
+        bHistoryChips.innerHTML = history.map((st, i) => `
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold ${
+            st === currentPicker 
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow' 
+              : 'bg-slate-900 text-slate-300 border border-slate-800'
+          }">
+            <span class="text-[10px] text-slate-500">${i + 1}.</span>
+            <span>${st}</span>
+          </span>
+        `).join('');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderStudentLoginGrid();
+      drawRouletteWheel();
+
+      let targetView = 'home';
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const vParam = urlParams.get('view');
+        if (vParam && ['home', 'teacher', 'student', 'board'].includes(vParam)) {
+          targetView = vParam;
+        } else if (window.location.hash.includes('view=')) {
+          const hashParam = window.location.hash.split('view=')[1];
+          if (hashParam && ['home', 'teacher', 'student', 'board'].includes(hashParam)) {
+            targetView = hashParam;
+          }
+        }
+      } catch (e) {}
+
+      navigateTo(targetView);
+
+      document.body.addEventListener('click', () => {
+        initAudio();
+      }, { once: true });
+    });
+  </script>
+</body>
+</html>
