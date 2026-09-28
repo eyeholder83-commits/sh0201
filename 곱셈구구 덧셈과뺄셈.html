@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>구구단 묶음 배열 탐구기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap');
+    * {
+      font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
+      box-sizing: border-box;
+    }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    /* 2. 나머지 ~ 5. 빼기: 입력 숫자를 네모 정중앙에 배치 */
+    input[id^="s2_"],
+    input[id^="s3_"],
+    input[id^="s4_"],
+    input[id^="s5_"] {
+      text-align: center !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      text-indent: 0 !important;
+      line-height: 2.75rem;
+    }
+    .pop-in {
+      animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.92); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .shake {
+      animation: shakeAnim 0.35s ease-in-out;
+    }
+    @keyframes shakeAnim {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    /* 스크롤바 숨김 처리 */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100/80 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-purple-200">
+
+  <!-- 상단 네비게이션 헤더 -->
+  <header class="w-full bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 px-2 py-1.5 sm:px-4 sm:py-2 shadow-xs">
+    <div class="w-full mx-auto flex items-center justify-between gap-1 sm:gap-2">
+      <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        <span class="text-base sm:text-lg">✨</span>
+        <h1 class="text-xs sm:text-sm font-black text-slate-900 tracking-tight hidden sm:inline">구구단 탐구기</h1>
+        <span id="currentStudentBadge" class="text-[9px] sm:text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-bold">
+          로그인 필요
+        </span>
+        <span id="unlockedCharsPreview" class="hidden text-[10px] sm:text-xs font-black text-amber-700 bg-amber-100/90 px-1.5 sm:px-2 py-0.5 rounded-lg border border-amber-300">
+          🔑 [ ? ? ? ? ? ? ]
+        </span>
+      </div>
+
+      <nav class="flex items-center gap-0.5 sm:gap-1 text-[11px] sm:text-xs font-bold no-scrollbar overflow-x-auto py-0.5">
+        <button id="navSlide0" onclick="handleNavClick(0)" class="px-1.5 sm:px-2 py-1 rounded-lg transition-all bg-white text-purple-700 shadow-xs flex items-center gap-0.5 shrink-0 font-black">
+          <span>🏠 표지</span>
+        </button>
+        <button id="navSlide1" onclick="handleNavClick(1)" class="px-1.5 sm:px-2 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-0.5 shrink-0">
+          <span>1단계</span>
+          <span id="navBadge1" class="text-[9px] bg-slate-100 text-slate-600 px-1 rounded">0/5</span>
+        </button>
+        <button id="navSlide2" onclick="handleNavClick(2)" class="px-1.5 sm:px-2 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-0.5 shrink-0">
+          <span>2단계</span>
+          <span id="navBadge2" class="text-[9px] bg-slate-100 text-slate-600 px-1 rounded">0/5</span>
+        </button>
+        <button id="navSlide3" onclick="handleNavClick(3)" class="px-1.5 sm:px-2 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-0.5 shrink-0">
+          <span>3단계</span>
+          <span id="navBadge3" class="text-[9px] bg-slate-100 text-slate-600 px-1 rounded">0/5</span>
+        </button>
+        <button id="navSlide4" onclick="handleNavClick(4)" class="px-1.5 sm:px-2 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-0.5 shrink-0">
+          <span>4단계</span>
+          <span id="navBadge4" class="text-[9px] bg-slate-100 text-slate-600 px-1 rounded">0/5</span>
+        </button>
+        <button id="navSlide5" onclick="handleNavClick(5)" class="px-1.5 sm:px-2 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-0.5 shrink-0">
+          <span>5단계</span>
+          <span id="navBadge5" class="text-[9px] bg-slate-100 text-slate-600 px-1 rounded">0/5</span>
+        </button>
+        <button id="navSlide6" onclick="handleNavClick(6)" class="px-1.5 sm:px-2 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-0.5 shrink-0">
+          <span>6단계</span>
+          <span id="navBadge6" class="text-[9px] bg-slate-100 text-slate-600 px-1 rounded">도전</span>
+        </button>
+        <button id="navSlide7" onclick="handleNavClick(7)" class="px-1.5 sm:px-2 py-1 rounded-lg transition-all text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 flex items-center gap-0.5 shrink-0 font-black border border-amber-200">
+          <span>📋 설문</span>
+        </button>
+        <button id="headerLogoutBtn" onclick="logoutStudent()" class="hidden px-1.5 py-0.5 ml-0.5 text-[10px] font-bold text-rose-600 hover:bg-rose-50 rounded-lg transition shrink-0">
+          로그아웃
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- 슬라이드 0: 표지 및 학생 로그인 화면 -->
+  <!-- ========================================== -->
+  <main id="slide0View" class="w-full max-w-xl mx-auto my-auto p-4 flex flex-col items-center">
+    <div class="w-full bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-lg text-center flex flex-col items-center pop-in">
+      <div class="w-16 h-16 rounded-3xl bg-purple-100 text-purple-600 flex items-center justify-center text-3xl mb-3 shadow-inner">
+        🎯
+      </div>
+      <span class="px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-black mb-2">수학 탐구 활동</span>
+      <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mb-2">구구단 묶음 배열 탐구기</h2>
+      <p class="text-xs sm:text-sm text-slate-500 font-semibold mb-6 leading-relaxed">
+        이름을 입력하고 로그인하여 6단계 연속 정답 챌린지에 도전하세요!<br/>
+        각 슬라이드를 통과할 때마다 지급되는 비밀 글자를 모아 최종 설문지에 제출하세요.
+      </p>
+
+      <!-- 미로그인 상태 입력창 -->
+      <div id="loginFormArea" class="w-full flex flex-col gap-3">
+        <div class="relative w-full">
+          <input 
+            type="text" 
+            id="studentNameInput" 
+            placeholder="학생 이름을 정확히 입력하세요" 
+            autocomplete="off"
+            oninput="onInputStudent(this.value)"
+            onkeydown="if(event.key==='Enter') loginStudent()"
+            class="w-full h-12 text-center text-base sm:text-lg font-bold rounded-2xl border-2 border-slate-200 focus:border-purple-600 outline-none bg-slate-50 focus:bg-white transition"
+          />
+        </div>
+        <div id="coverNotice" class="text-xs font-bold min-h-[18px] text-slate-400">
+          * 명부에 등록된 이름을 적어야 로그인할 수 있습니다.
+        </div>
+        <button onclick="loginStudent()" class="w-full py-3.5 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-black text-sm sm:text-base rounded-2xl shadow-md transition">
+          🚀 로그인하고 시작하기
+        </button>
+      </div>
+
+      <!-- 로그인 완료 후 상태 표시 영역 -->
+      <div id="loggedInArea" class="w-full flex flex-col items-center gap-4 hidden">
+        <div class="w-full bg-purple-50/70 border-2 border-purple-200 rounded-2xl p-4 flex items-center justify-between">
+          <div class="text-left">
+            <span class="text-[11px] font-bold text-purple-500">현재 접속 학생</span>
+            <div id="loggedInStudentName" class="text-lg font-black text-purple-900">홍길동</div>
+          </div>
+          <button onclick="logoutStudent()" class="px-3 py-1.5 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold rounded-xl transition">
+            로그아웃
+          </button>
+        </div>
+
+        <button onclick="switchSlide(1)" class="w-full py-3.5 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-black text-base rounded-2xl shadow-md transition flex items-center justify-center gap-2">
+          <span>🎮 슬라이드 문제 풀러 가기</span>
+          <span>➔</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 슬라이드 1: 직사각형 묶음 탐구 (연속 5문제) -->
+  <!-- ========================================== -->
+  <main id="slide1View" class="w-full max-w-4xl mx-auto my-auto p-3 sm:p-4 flex flex-col items-center gap-3 hidden">
+    <div class="w-full bg-white rounded-2xl p-3 border border-slate-200 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-lg font-black text-xs">
+          1. 직사각형 배열
+        </span>
+        <span id="s1StreakBadge" class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-lg font-black text-xs">
+          🔥 연속 정답: 0 / 5
+        </span>
+        <button type="button" onclick="randomizeSlideProblem(1)" class="px-2.5 py-1 bg-purple-100 hover:bg-purple-200 active:scale-95 text-purple-700 rounded-lg font-black text-xs transition shadow-xs" title="새로운 문제를 무작위로 만듭니다">
+          🎲 랜덤 문제
+        </button>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="flex items-center bg-slate-100 p-0.5 rounded-xl gap-0.5 text-xs font-black">
+          <button id="s1Tab0" class="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center text-xs">1</button>
+          <button id="s1Tab1" class="w-7 h-7 rounded-lg text-slate-500 flex items-center justify-center text-xs">2</button>
+          <button id="s1Tab2" class="w-7 h-7 rounded-lg text-slate-500 flex items-center justify-center text-xs">3</button>
+        </div>
+        <span id="s1KeywordRewardBadge" class="hidden text-xs font-black bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg">
+          🎉 클리어 완료!
+        </span>
+      </div>
+    </div>
+
+    <div class="w-full bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col items-center gap-4">
+      <div id="s1StatusDesc" class="text-xs sm:text-sm font-bold text-slate-500 text-center">
+        [1/3] 묶음 없는 원의 배열을 관찰한 뒤 [다음]을 누르세요.
+      </div>
+
+      <div class="w-full flex items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-200/80 min-h-[280px]">
+        <div id="slide1Board" class="w-full flex items-center justify-center overflow-x-auto py-2"></div>
+      </div>
+
+      <div id="s1FormulaArea" class="w-full flex flex-col items-center gap-2.5 hidden">
+        <div class="text-xs font-bold text-purple-700" id="s1InputGuide">묶음을 보고 알맞은 곱셈식을 적으세요</div>
+        <div class="flex items-center justify-center gap-2 text-xl font-black text-slate-800">
+          <input id="s1_in1" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-purple-300 focus:border-purple-600 outline-none bg-white" onkeydown="if(event.key==='Enter') submitSlide1Step()" />
+          <span class="text-slate-400 font-bold">×</span>
+          <input id="s1_in2" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-purple-300 focus:border-purple-600 outline-none bg-white" onkeydown="if(event.key==='Enter') submitSlide1Step()" />
+          <span class="text-slate-400 font-bold">=</span>
+          <input id="s1_ans" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-purple-400 focus:border-purple-600 outline-none bg-white" onkeydown="if(event.key==='Enter') submitSlide1Step()" />
+        </div>
+      </div>
+
+      <div id="s1Feedback" class="text-xs sm:text-sm font-bold min-h-[20px] flex items-center justify-center text-center"></div>
+
+      <div class="w-full flex items-center justify-between gap-3 pt-2 border-t border-slate-100">
+        <div class="text-xs text-slate-400 font-semibold">
+          * 틀리면 1번 문제부터 다시 시작됩니다.
+        </div>
+        <button id="s1ActionBtn" onclick="onSlide1Action()" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition flex items-center gap-1.5">
+          <span id="s1StepFraction" class="px-1.5 py-0.5 rounded bg-purple-800/40 text-[10px]">1/3</span>
+          <span id="s1ActionBtnText">다음</span>
+          <span>➔</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 슬라이드 2: 묶음과 나머지 (연속 5문제) -->
+  <!-- ========================================== -->
+  <main id="slide2View" class="w-full max-w-4xl mx-auto my-auto p-3 sm:p-4 flex flex-col items-center gap-3 hidden">
+    <div class="w-full bg-white rounded-2xl p-3 border border-slate-200 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-lg font-black text-xs">
+          2. 묶음과 나머지
+        </span>
+        <span id="s2StreakBadge" class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-lg font-black text-xs">
+          🔥 연속 정답: 0 / 5
+        </span>
+        <button type="button" onclick="randomizeSlideProblem(2)" class="px-2.5 py-1 bg-purple-100 hover:bg-purple-200 active:scale-95 text-purple-700 rounded-lg font-black text-xs transition shadow-xs" title="새로운 문제를 무작위로 만듭니다">
+          🎲 랜덤 문제
+        </button>
+      </div>
+      <span id="s2KeywordRewardBadge" class="hidden text-xs font-black bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg">
+        🎉 클리어 완료!
+      </span>
+    </div>
+
+    <div class="w-full bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col lg:flex-row items-center gap-5 min-h-[440px]">
+      <div class="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-200 min-h-[300px]">
+        <span id="s2ModeBadge" class="text-xs font-bold text-purple-700 mb-2">↔️ 가로줄 묶음</span>
+        <div id="slide2Board" class="w-full flex items-center justify-center overflow-x-auto py-2"></div>
+      </div>
+
+      <div class="w-full lg:w-1/2 flex flex-col justify-between self-stretch bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs">
+        <div class="space-y-3">
+          <h3 class="text-sm font-black text-slate-800 border-b border-slate-100 pb-2">식을 모두 완성하고 확인을 누르세요</h3>
+          
+          <div class="bg-purple-50/60 rounded-xl p-2.5 border border-purple-100">
+            <div id="s2Step1Title" class="text-xs font-bold text-purple-700 mb-1.5 text-center">1️⃣ 완전하게 채워진 줄</div>
+            <div class="flex items-center justify-center gap-1.5 text-base font-black text-slate-800">
+              <input id="s2_in1" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-purple-300 focus:border-purple-600 outline-none bg-white" />
+              <span class="text-slate-400">×</span>
+              <input id="s2_in2" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-purple-300 focus:border-purple-600 outline-none bg-white" />
+              <span class="text-slate-400">=</span>
+              <input id="s2_ans1" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-purple-300 focus:border-purple-600 outline-none bg-white" />
+            </div>
+          </div>
+
+          <div class="bg-amber-50/60 rounded-xl p-2.5 border border-amber-100">
+            <div id="s2Step2Title" class="text-xs font-bold text-amber-700 mb-1.5 text-center">2️⃣ 남은 동그라미 줄</div>
+            <div class="flex items-center justify-center gap-1.5 text-base font-black text-slate-800">
+              <input id="s2_in3" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-amber-300 focus:border-amber-600 outline-none bg-white" />
+              <span class="text-slate-400">×</span>
+              <input id="s2_in4" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-amber-300 focus:border-amber-600 outline-none bg-white" />
+              <span class="text-slate-400">=</span>
+              <input id="s2_ans2" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-amber-300 focus:border-amber-600 outline-none bg-white" />
+            </div>
+          </div>
+
+          <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
+            <div class="text-xs font-bold text-slate-700 mb-1.5 text-center">3️⃣ 두 결과를 더해서 전체 개수 구하기</div>
+            <div class="flex items-center justify-center gap-1.5 text-base font-black text-slate-800">
+              <input id="s2_calc1" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-slate-300 focus:border-purple-600 outline-none bg-white" />
+              <span class="text-slate-600">+</span>
+              <input id="s2_calc2" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-slate-300 focus:border-purple-600 outline-none bg-white" />
+              <span class="text-slate-400">=</span>
+              <input id="s2_tot" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-purple-500 bg-purple-50 text-purple-700 outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <div id="slide2Feedback" class="text-xs font-bold min-h-[20px] text-center my-2"></div>
+
+        <button onclick="submitSlide2()" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-extrabold text-sm rounded-xl shadow-md transition">
+          정답 확인하기
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 슬라이드 3: 빠진 것 빼기 (연속 5문제) -->
+  <!-- ========================================== -->
+  <main id="slide3View" class="w-full max-w-4xl mx-auto my-auto p-3 sm:p-4 flex flex-col items-center gap-3 hidden">
+    <div class="w-full bg-white rounded-2xl p-3 border border-slate-200 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-lg font-black text-xs">
+          3. 빠진 것 빼기
+        </span>
+        <span id="s3StreakBadge" class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-lg font-black text-xs">
+          🔥 연속 정답: 0 / 5
+        </span>
+        <button type="button" onclick="randomizeSlideProblem(3)" class="px-2.5 py-1 bg-indigo-100 hover:bg-indigo-200 active:scale-95 text-indigo-700 rounded-lg font-black text-xs transition shadow-xs" title="새로운 문제를 무작위로 만듭니다">
+          🎲 랜덤 문제
+        </button>
+      </div>
+      <span id="s3KeywordRewardBadge" class="hidden text-xs font-black bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg">
+        🎉 클리어 완료!
+      </span>
+    </div>
+
+    <div class="w-full bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col lg:flex-row items-center gap-5 min-h-[440px]">
+      <div class="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-200 min-h-[300px]">
+        <div class="w-full flex items-center justify-between text-xs font-bold text-slate-400 px-1 mb-2">
+          <span>직사각형 틀과 빈자리 관찰</span>
+          <span id="slide3MissingInfo" class="text-rose-500 font-extrabold"></span>
+        </div>
+        <div id="slide3Board" class="w-full flex items-center justify-center overflow-x-auto py-2"></div>
+      </div>
+
+      <div class="w-full lg:w-1/2 flex flex-col justify-between self-stretch bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs">
+        <div class="space-y-3">
+          <h3 class="text-sm font-black text-slate-800 border-b border-slate-100 pb-2">완전한 직사각형에서 빼기</h3>
+
+          <div class="bg-indigo-50/60 rounded-xl p-2.5 border border-indigo-100">
+            <div class="text-xs font-bold text-indigo-700 mb-1.5">1️⃣ 완전한 직사각형 배열의 개수</div>
+            <div class="flex items-center justify-center gap-1.5 text-base font-black text-slate-800">
+              <input id="s3_1_in1" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-indigo-300 focus:border-indigo-600 outline-none bg-white" />
+              <span class="text-slate-400">×</span>
+              <input id="s3_1_in2" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-indigo-300 focus:border-indigo-600 outline-none bg-white" />
+              <span class="text-slate-400">=</span>
+              <input id="s3_1_ans" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-indigo-300 focus:border-indigo-600 outline-none bg-white" />
+            </div>
+          </div>
+
+          <div class="bg-rose-50/60 rounded-xl p-2.5 border border-rose-100">
+            <div class="text-xs font-bold text-rose-700 mb-1.5">2️⃣ 빠져 있는 빈자리의 개수</div>
+            <div class="flex items-center justify-center gap-1.5 text-base font-black text-slate-800">
+              <input id="s3_2_in1" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-rose-300 focus:border-rose-600 outline-none bg-white" />
+              <span class="text-slate-400">×</span>
+              <input id="s3_2_in2" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-rose-300 focus:border-rose-600 outline-none bg-white" />
+              <span class="text-slate-400">=</span>
+              <input id="s3_2_ans" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-rose-300 focus:border-rose-600 outline-none bg-white" />
+            </div>
+          </div>
+
+          <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
+            <div class="text-xs font-bold text-slate-700 mb-1.5 text-center">3️⃣ 완전한 개수에서 빠진 개수 빼기</div>
+            <div class="flex items-center justify-center gap-1.5 text-base font-black text-slate-800">
+              <input id="s3_calc_1" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-slate-300 focus:border-indigo-600 outline-none bg-white" />
+              <span class="text-slate-600">−</span>
+              <input id="s3_calc_2" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-slate-300 focus:border-indigo-600 outline-none bg-white" />
+              <span class="text-slate-400">=</span>
+              <input id="s3_calc_tot" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-indigo-500 bg-indigo-50 text-indigo-700 outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <div id="slide3Feedback" class="text-xs font-bold min-h-[20px] text-center my-2"></div>
+
+        <button onclick="submitSlide3()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-extrabold text-sm rounded-xl shadow-md transition">
+          정답 확인하기
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 슬라이드 4: 블록 더하기 (연속 5문제) -->
+  <!-- ========================================== -->
+  <main id="slide4View" class="w-full max-w-4xl mx-auto my-auto p-3 sm:p-4 flex flex-col items-center gap-3 hidden">
+    <div class="w-full bg-white rounded-2xl p-3 border border-slate-200 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-lg font-black text-xs">
+          4. 블록 더하기
+        </span>
+        <span id="s4StreakBadge" class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-lg font-black text-xs">
+          🔥 연속 정답: 0 / 5
+        </span>
+        <button type="button" onclick="randomizeSlideProblem(4)" class="px-2.5 py-1 bg-blue-100 hover:bg-blue-200 active:scale-95 text-blue-700 rounded-lg font-black text-xs transition shadow-xs" title="새로운 문제를 무작위로 만듭니다">
+          🎲 랜덤 문제
+        </button>
+      </div>
+      <span id="s4KeywordRewardBadge" class="hidden text-xs font-black bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg">
+        🎉 클리어 완료!
+      </span>
+    </div>
+
+    <div class="w-full bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col lg:flex-row items-center gap-5 min-h-[440px]">
+      <div class="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-200 min-h-[300px]">
+        <div class="w-full flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
+          <span>블록 배열 관찰</span>
+          <span class="text-blue-600 font-extrabold">두 직사각형으로 나눠 더하기</span>
+        </div>
+        <div id="slide4Board" class="w-full flex items-center justify-center overflow-x-auto py-2"></div>
+      </div>
+
+      <div class="w-full lg:w-1/2 flex flex-col justify-between self-stretch bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs">
+        <div class="space-y-3">
+          <h3 class="text-sm font-black text-slate-800 border-b border-slate-100 pb-2">더해서 구하는 방법</h3>
+
+          <div class="bg-blue-50/60 rounded-xl p-2.5 border border-blue-100">
+            <div class="text-xs font-bold text-blue-700 mb-1.5">1️⃣ 🟦 아래쪽 완전한 직사각형</div>
+            <div class="flex items-center justify-center gap-1.5 text-base font-black text-slate-800">
+              <input id="s4_1_in1" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-blue-300 focus:border-blue-600 outline-none bg-white" />
+              <span class="text-slate-400">×</span>
+              <input id="s4_1_in2" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-blue-300 focus:border-blue-600 outline-none bg-white" />
+              <span class="text-slate-400">=</span>
+              <input id="s4_1_ans" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-blue-300 focus:border-blue-600 outline-none bg-white" />
+            </div>
+          </div>
+
+          <div class="bg-rose-50/60 rounded-xl p-2.5 border border-rose-100">
+            <div class="text-xs font-bold text-rose-700 mb-1.5">2️⃣ 🟥 위쪽에 남은 직사각형</div>
+            <div class="flex items-center justify-center gap-1.5 text-base font-black text-slate-800">
+              <input id="s4_2_in1" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-rose-300 focus:border-rose-600 outline-none bg-white" />
+              <span class="text-slate-400">×</span>
+              <input id="s4_2_in2" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-rose-300 focus:border-rose-600 outline-none bg-white" />
+              <span class="text-slate-400">=</span>
+              <input id="s4_2_ans" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-rose-300 focus:border-rose-600 outline-none bg-white" />
+            </div>
+          </div>
+
+          <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
+            <div class="text-xs font-bold text-slate-700 mb-1.5 text-center">3️⃣ 두 곱셈식의 결과를 더하기</div>
+            <div class="flex items-center justify-center gap-1.5 text-base font-black text-slate-800">
+              <input id="s4_calc_1" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-slate-300 focus:border-blue-600 outline-none bg-white" />
+              <span class="text-slate-600">+</span>
+              <input id="s4_calc_2" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-slate-300 focus:border-blue-600 outline-none bg-white" />
+              <span class="text-slate-400">=</span>
+              <input id="s4_calc_tot" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-700 outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <div id="slide4Feedback" class="text-xs font-bold min-h-[20px] text-center my-2"></div>
+
+        <button onclick="submitSlide4()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-sm rounded-xl shadow-md transition">
+          정답 확인하기
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 슬라이드 5: 블록 빼기 (연속 5문제) -->
+  <!-- ========================================== -->
+  <main id="slide5View" class="w-full max-w-4xl mx-auto my-auto p-3 sm:p-4 flex flex-col items-center gap-3 hidden">
+    <div class="w-full bg-white rounded-2xl p-3 border border-slate-200 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-1 bg-rose-100 text-rose-700 rounded-lg font-black text-xs">
+          5. 블록 빼기
+        </span>
+        <span id="s5StreakBadge" class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-lg font-black text-xs">
+          🔥 연속 정답: 0 / 5
+        </span>
+        <button type="button" onclick="randomizeSlideProblem(5)" class="px-2.5 py-1 bg-rose-100 hover:bg-rose-200 active:scale-95 text-rose-700 rounded-lg font-black text-xs transition shadow-xs" title="새로운 문제를 무작위로 만듭니다">
+          🎲 랜덤 문제
+        </button>
+      </div>
+      <span id="s5KeywordRewardBadge" class="hidden text-xs font-black bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg">
+        🎉 클리어 완료!
+      </span>
+    </div>
+
+    <div class="w-full bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col lg:flex-row items-center gap-5 min-h-[440px]">
+      <div class="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 bg-slate-50 rounded-2xl border border-slate-200 min-h-[300px]">
+        <div class="w-full flex items-center justify-between text-xs font-bold text-slate-500 mb-2">
+          <span>블록 배열 관찰</span>
+          <span class="text-rose-600 font-extrabold">전체 직사각형에서 빈 곳 빼기</span>
+        </div>
+        <div id="slide5Board" class="w-full flex items-center justify-center overflow-x-auto py-2"></div>
+      </div>
+
+      <div class="w-full lg:w-1/2 flex flex-col justify-between self-stretch bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs">
+        <div class="space-y-3">
+          <h3 class="text-sm font-black text-slate-800 border-b border-slate-100 pb-2">빼서 구하는 방법</h3>
+
+          <div class="bg-blue-50/60 rounded-xl p-2.5 border border-blue-100">
+            <div class="text-xs font-bold text-blue-700 mb-1.5">1️⃣ 🟦 전체 완전한 직사각형</div>
+            <div class="flex items-center justify-center gap-1.5 text-base font-black text-slate-800">
+              <input id="s5_1_in1" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-blue-300 focus:border-rose-600 outline-none bg-white" />
+              <span class="text-slate-400">×</span>
+              <input id="s5_1_in2" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-blue-300 focus:border-rose-600 outline-none bg-white" />
+              <span class="text-slate-400">=</span>
+              <input id="s5_1_ans" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-blue-300 focus:border-rose-600 outline-none bg-white" />
+            </div>
+          </div>
+
+          <div class="bg-rose-50/60 rounded-xl p-2.5 border border-rose-100">
+            <div class="text-xs font-bold text-rose-700 mb-1.5">2️⃣ 🟥 비어 있는 영역</div>
+            <div class="flex items-center justify-center gap-1.5 text-base font-black text-slate-800">
+              <input id="s5_2_in1" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-rose-300 focus:border-rose-600 outline-none bg-white" />
+              <span class="text-slate-400">×</span>
+              <input id="s5_2_in2" type="number" class="w-12 h-11 text-center font-black rounded-xl border-2 border-rose-300 focus:border-rose-600 outline-none bg-white" />
+              <span class="text-slate-400">=</span>
+              <input id="s5_2_ans" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-rose-300 focus:border-rose-600 outline-none bg-white" />
+            </div>
+          </div>
+
+          <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
+            <div class="text-xs font-bold text-slate-700 mb-1.5 text-center">3️⃣ 전체에서 비어 있는 부분을 빼기</div>
+            <div class="flex items-center justify-center gap-1.5 text-base font-black text-slate-800">
+              <input id="s5_calc_1" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-slate-300 focus:border-rose-600 outline-none bg-white" />
+              <span class="text-slate-600">−</span>
+              <input id="s5_calc_2" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-slate-300 focus:border-rose-600 outline-none bg-white" />
+              <span class="text-slate-400">=</span>
+              <input id="s5_calc_tot" type="number" class="w-14 h-11 text-center font-black rounded-xl border-2 border-rose-500 bg-rose-50 text-rose-700 outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <div id="slide5Feedback" class="text-xs font-bold min-h-[20px] text-center my-2"></div>
+
+        <button onclick="submitSlide5()" class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold text-sm rounded-xl shadow-md transition">
+          정답 확인하기
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 슬라이드 6: 60초 스피드 챌린지 -->
+  <!-- ========================================== -->
+  <main id="slide6View" class="w-full max-w-lg mx-auto my-auto p-4 flex flex-col items-center gap-4 hidden">
+    <div class="w-full bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-md text-center flex flex-col items-center">
+      <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mb-2 shadow-inner">
+        ⏱️
+      </div>
+      <h2 class="text-2xl font-black text-indigo-600 mb-1">60초 스피드 챌린지</h2>
+      <p class="text-xs sm:text-sm text-slate-500 font-semibold mb-4">
+        2단부터 9단까지 서로 다른 무작위 구구단 12문제! 60초 안에 모두 맞히면 6번째 비밀 글자를 얻습니다. 시간이 지나도 문제는 계속 풀 수 있습니다.
+      </p>
+
+      <div class="w-full flex justify-around items-center bg-indigo-50/80 border border-indigo-100 p-3.5 rounded-2xl mb-4">
+        <div class="flex flex-col items-center">
+          <span class="text-xs text-slate-600 font-bold mb-0.5">남은 시간</span>
+          <span id="timer" class="text-2xl font-black text-rose-500">60초</span>
+        </div>
+        <div class="h-8 w-px bg-indigo-200"></div>
+        <div class="flex flex-col items-center">
+          <span class="text-xs text-slate-600 font-bold mb-0.5">진행도</span>
+          <span id="progress" class="text-2xl font-black text-indigo-700">0 / 12</span>
+        </div>
+      </div>
+
+      <div id="start-screen" class="w-full">
+        <button class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-base rounded-2xl shadow-md transition flex items-center justify-center gap-2" onclick="startChallenge()">
+          <span>🚀 챌린지 시작하기</span>
+        </button>
+      </div>
+
+      <div id="quiz-screen" class="w-full hidden">
+        <div class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl p-5 mb-3 flex flex-col items-center">
+          <div id="expression" class="text-4xl sm:text-5xl font-black text-slate-900 tracking-wider mb-4">
+            ? × ? =
+          </div>
+          <div class="flex items-center justify-center gap-2.5 w-full">
+            <input 
+              type="number" 
+              id="answer-input" 
+              placeholder="답" 
+              autocomplete="off" 
+              class="w-28 h-12 text-2xl font-black text-center border-2 border-slate-300 rounded-xl focus:border-indigo-600 outline-none bg-white transition shadow-inner"
+              onkeydown="checkKey(event)"
+            />
+            <button onclick="submitAnswer()" class="h-12 px-5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-extrabold text-sm rounded-xl transition shadow-md">
+              제출
+            </button>
+          </div>
+          <div id="feedback" class="h-6 mt-2 font-bold text-xs sm:text-sm flex items-center justify-center"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 슬라이드 7: 구글 폼 최종 미션 화면 -->
+  <!-- ========================================== -->
+  <main id="slide7View" class="w-full max-w-4xl mx-auto my-auto p-3 sm:p-5 flex flex-col items-center gap-4 hidden">
+    <div class="w-full bg-white rounded-3xl p-5 sm:p-7 border border-amber-200 shadow-md flex flex-col items-center text-center">
+      <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl mb-2 shadow-inner">
+        📋
+      </div>
+      <span class="px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-black mb-1">최종 확인 미션</span>
+      <h2 class="text-xl sm:text-2xl font-black text-slate-900 mb-1">구구단 탐구 최종 설문지</h2>
+      <p class="text-xs sm:text-sm text-slate-500 font-semibold mb-4 leading-relaxed">
+        아래 설문지에 지금까지 모은 <strong>6개의 비밀 글자</strong>와 학생 이름을 제출해 주세요!
+      </p>
+
+      <!-- 요청하신 이미지와 동일한 '지금까지 내가 모은 글자들' 보관함 (마지막 페이지 단독 배치) -->
+      <div class="w-full max-w-2xl bg-[#FFFDF2] border-2 border-[#FDE68A] rounded-3xl p-4 sm:p-6 mb-4 shadow-xs">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-1 mb-4">
+          <div class="flex items-center gap-1.5 font-black text-[#92400E] text-sm sm:text-base">
+            <span>🔑</span>
+            <span>지금까지 내가 모은 글자들</span>
+          </div>
+          <span class="text-[11px] sm:text-xs text-[#B45309] font-bold">*창을 닫거나 로그아웃해도 안전하게 보관됩니다</span>
+        </div>
+
+        <div class="grid grid-cols-6 gap-2 sm:gap-4 py-1">
+          <div class="flex flex-col items-center gap-1.5">
+            <span class="text-[11px] sm:text-xs text-slate-500 font-bold">1슬라이드</span>
+            <div id="s7Char1" class="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl border-2 border-dashed border-amber-400 bg-white flex items-center justify-center font-black text-amber-700 text-base sm:text-xl shadow-xs">?</div>
+          </div>
+          <div class="flex flex-col items-center gap-1.5">
+            <span class="text-[11px] sm:text-xs text-slate-500 font-bold">2슬라이드</span>
+            <div id="s7Char2" class="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl border-2 border-dashed border-amber-400 bg-white flex items-center justify-center font-black text-amber-700 text-base sm:text-xl shadow-xs">?</div>
+          </div>
+          <div class="flex flex-col items-center gap-1.5">
+            <span class="text-[11px] sm:text-xs text-slate-500 font-bold">3슬라이드</span>
+            <div id="s7Char3" class="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl border-2 border-dashed border-amber-400 bg-white flex items-center justify-center font-black text-amber-700 text-base sm:text-xl shadow-xs">?</div>
+          </div>
+          <div class="flex flex-col items-center gap-1.5">
+            <span class="text-[11px] sm:text-xs text-slate-500 font-bold">4슬라이드</span>
+            <div id="s7Char4" class="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl border-2 border-dashed border-amber-400 bg-white flex items-center justify-center font-black text-amber-700 text-base sm:text-xl shadow-xs">?</div>
+          </div>
+          <div class="flex flex-col items-center gap-1.5">
+            <span class="text-[11px] sm:text-xs text-slate-500 font-bold">5슬라이드</span>
+            <div id="s7Char5" class="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl border-2 border-dashed border-amber-400 bg-white flex items-center justify-center font-black text-amber-700 text-base sm:text-xl shadow-xs">?</div>
+          </div>
+          <div class="flex flex-col items-center gap-1.5">
+            <span class="text-[11px] sm:text-xs text-slate-500 font-bold">6슬라이드</span>
+            <div id="s7Char6" class="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl border-2 border-dashed border-amber-400 bg-white flex items-center justify-center font-black text-amber-700 text-base sm:text-xl shadow-xs">?</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 구글 폼 임베드 영역: 6개의 비밀 글자를 모두 모은 뒤에만 표시 -->
+      <div id="googleFormArea" class="hidden w-full bg-slate-50 border-2 border-slate-200 rounded-2xl overflow-hidden shadow-inner flex-col items-center p-1 sm:p-2">
+        <iframe 
+          id="googleFormIframe"
+          src="https://docs.google.com/forms/d/e/1FAIpQLSdBXY7O-5XNN_hExe2b4jx1gyUKfKerrIJPTEO-mKufCVlAFQ/viewform?embedded=true" 
+          class="w-full rounded-xl bg-white border border-slate-200"
+          style="min-height: 850px; max-width: 680px;"
+          frameborder="0" 
+          marginheight="0" 
+          marginwidth="0"
+          loading="lazy">
+          로드 중…
+        </iframe>
+      </div>
+    </div>
+  </main>
+
+  <!-- 슬라이드 보상 모달 -->
+  <div id="rewardModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border border-slate-100 pop-in">
+      <div id="rewardModalIcon" class="text-4xl mb-2">🎉</div>
+      <h2 id="rewardModalTitle" class="text-xl font-black text-slate-900 mb-1">슬라이드 클리어!</h2>
+      <p id="rewardModalDesc" class="text-xs text-slate-500 font-semibold mb-4 leading-relaxed"></p>
+      
+      <div class="bg-purple-50 rounded-2xl p-4 border border-purple-200 mb-5 flex flex-col items-center">
+        <span class="text-xs font-bold text-purple-600 mb-1">획득한 비밀 글자</span>
+        <div id="rewardModalChar" class="w-14 h-14 rounded-2xl bg-purple-600 text-white font-black text-2xl flex items-center justify-center shadow-md">
+          ?
+        </div>
+      </div>
+
+      <button onclick="closeRewardModal()" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition">
+        확인하고 계속하기
+      </button>
+    </div>
+  </div>
+
+  <!-- 6슬라이드 타임아웃 / 성공 모달 -->
+  <div id="modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border border-slate-100">
+      <h2 id="modal-title" class="text-xl font-black text-slate-900 mb-1">🎉 미션 성공!</h2>
+      <p id="modal-desc" class="text-xs font-semibold text-slate-600 mb-5 leading-relaxed">
+        60초 안에 12문제를 모두 맞혔습니다!
+      </p>
+      <button onclick="resetGame()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm rounded-xl transition shadow-md">
+        다시 도전하기
+      </button>
+    </div>
+  </div>
+
+  <footer class="w-full bg-white border-t border-slate-200/80 py-2.5 text-center text-xs text-slate-400 font-medium">
+    구구단 묶음 배열 탐구기 &bull; 6단계 비밀 암호 연속 정답 챌린지
+  </footer>
+
+  <script>
+    // 22명 + 1명 학생별 6글자 고유 키워드 맵
+    const STUDENT_KEYWORDS = {
+      "김서아": "가7나3모2",
+      "김수현": "라4누8비5",
+      "김윤아": "다6소2파9",
+      "김태영": "하3우7도4",
+      "김하랑": "마8보2구6",
+      "나예린": "바5주9로3",
+      "박민제": "포2기7차4",
+      "박선우": "사6지3노8",
+      "양수빈": "도4무9기2",
+      "유소영": "푸7마5리3",
+      "이대운": "루2호8초6",
+      "이새봄": "누9보4타7",
+      "이서율": "구3피6워8",
+      "이진서": "코8라2푸5",
+      "이채원": "비5카7모4",
+      "이초은": "주2도9히6",
+      "이태환": "와7루3보8",
+      "이하린": "아4치8포2",
+      "한규빈": "지6토2나9",
+      "한유은": "에3미7주5",
+      "현지우": "차8코4리6",
+      "황지우": "우5라9기3",
+      "이승찬": "별3달7해5"
+    };
+
+    let currentStudent = "";
+    let unlockedChars = ["", "", "", "", "", ""];
+    let streaks = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    let cleared = { 1: false, 2: false, 3: false, 4: false, 5: false, 6: false };
+
+    let audioCtx = null;
+    function playChime(freq = 523.25, isFail = false) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = isFail ? 'sawtooth' : 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (isFail ? 0.45 : 0.3));
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + (isFail ? 0.45 : 0.3));
+      } catch (e) {}
+    }
+
+    // 진행 상태와 비밀 글자를 항상 일치시키는 안전 동기화 함수
+    function syncRewardState() {
+      if (!currentStudent || !STUDENT_KEYWORDS[currentStudent]) return;
+      const secretKey = STUDENT_KEYWORDS[currentStudent];
+      if (!Array.isArray(unlockedChars)) unlockedChars = ["", "", "", "", "", ""];
+      while (unlockedChars.length < 6) unlockedChars.push("");
+      for (let i = 1; i <= 5; i++) {
+        const streak = Number(streaks[i]) || 0;
+        if (streak >= 5 || cleared[i]) {
+          cleared[i] = true;
+          streaks[i] = Math.max(5, streak);
+          unlockedChars[i - 1] = secretKey.charAt(i - 1);
+        }
+      }
+      if (cleared[6]) unlockedChars[5] = secretKey.charAt(5);
+    }
+
+    function saveStudentProgress() {
+      if (!currentStudent) return;
+      syncRewardState();
+      const data = {
+        unlockedChars,
+        cleared,
+        streaks
+      };
+      try {
+        localStorage.setItem(`gugudan_user_${currentStudent}`, JSON.stringify(data));
+      } catch (e) {}
+    }
+
+    function loadStudentProgress(name) {
+      try {
+        const raw = localStorage.getItem(`gugudan_user_${name}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.unlockedChars) unlockedChars = parsed.unlockedChars;
+          if (parsed.cleared) cleared = parsed.cleared;
+          if (parsed.streaks) streaks = parsed.streaks;
+        } else {
+          unlockedChars = ["", "", "", "", "", ""];
+          cleared = { 1: false, 2: false, 3: false, 4: false, 5: false, 6: false };
+          streaks = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        }
+      } catch (e) {
+        unlockedChars = ["", "", "", "", "", ""];
+        cleared = { 1: false, 2: false, 3: false, 4: false, 5: false, 6: false };
+        streaks = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      }
+    }
+
+    function onInputStudent(val) {
+      const name = val.trim();
+      const notice = document.getElementById('coverNotice');
+      if (!name) {
+        notice.innerHTML = '* 명부에 등록된 이름을 적어야 로그인할 수 있습니다.';
+        notice.className = 'text-xs font-bold min-h-[18px] text-slate-400';
+        return;
+      }
+      if (STUDENT_KEYWORDS[name]) {
+        notice.innerHTML = `✅ 우리 반 학생 확인: <strong>${name}</strong>`;
+        notice.className = 'text-xs font-bold min-h-[18px] text-emerald-600';
+      } else {
+        notice.innerHTML = `입력 중: <strong>${name}</strong> (명부에 있는 이름을 적어주세요)`;
+        notice.className = 'text-xs font-bold min-h-[18px] text-amber-600';
+      }
+    }
+
+    function loginStudent() {
+      const input = document.getElementById('studentNameInput');
+      const name = (input ? input.value : currentStudent).trim();
+
+      if (!name) {
+        const notice = document.getElementById('coverNotice');
+        notice.innerHTML = '⚠️ 이름을 적어야 로그인할 수 있습니다!';
+        notice.className = 'text-xs font-bold min-h-[18px] text-rose-600';
+        playChime(300, true);
+        if (input) input.focus();
+        return;
+      }
+
+      if (!STUDENT_KEYWORDS[name]) {
+        const notice = document.getElementById('coverNotice');
+        notice.innerHTML = `⚠️ '${name}' 학생은 명부에 없습니다. 올바른 이름을 적어주세요!`;
+        notice.className = 'text-xs font-bold min-h-[18px] text-rose-600';
+        playChime(300, true);
+        if (input) input.focus();
+        return;
+      }
+
+      currentStudent = name;
+      loadStudentProgress(name);
+      syncRewardState();
+      saveStudentProgress();
+
+      // UI 갱신
+      document.getElementById('currentStudentBadge').innerText = `학생: ${currentStudent}`;
+      document.getElementById('currentStudentBadge').className = 'text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold';
+      document.getElementById('unlockedCharsPreview').classList.remove('hidden');
+      document.getElementById('headerLogoutBtn').classList.remove('hidden');
+
+      document.getElementById('loginFormArea').classList.add('hidden');
+      document.getElementById('loggedInArea').classList.remove('hidden');
+      document.getElementById('loggedInStudentName').innerText = `${currentStudent} 학생`;
+
+      updateKeywordUI();
+      updateAllNavBadges();
+
+      generateSlide1Problem();
+      generateSlide2Problem();
+      generateSlide3Problem();
+      generateSlide4Problem();
+      generateSlide5Problem();
+
+      playChime(659.25);
+    }
+
+    function logoutStudent() {
+      saveStudentProgress();
+      currentStudent = "";
+      unlockedChars = ["", "", "", "", "", ""];
+      cleared = { 1: false, 2: false, 3: false, 4: false, 5: false, 6: false };
+      streaks = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+      document.getElementById('currentStudentBadge').innerText = '로그인 필요';
+      document.getElementById('currentStudentBadge').className = 'text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold';
+      document.getElementById('unlockedCharsPreview').classList.add('hidden');
+      document.getElementById('headerLogoutBtn').classList.add('hidden');
+
+      document.getElementById('loginFormArea').classList.remove('hidden');
+      document.getElementById('loggedInArea').classList.add('hidden');
+      document.getElementById('studentNameInput').value = '';
+
+      updateKeywordUI();
+      updateAllNavBadges();
+      switchSlide(0);
+      playChime(400);
+    }
+
+    function handleNavClick(slideNum) {
+      if (!currentStudent && slideNum !== 0) {
+        const notice = document.getElementById('coverNotice');
+        if (notice) {
+          notice.innerHTML = '⚠️ 이름을 먼저 입력하고 로그인해 주세요!';
+          notice.className = 'text-xs font-bold min-h-[18px] text-rose-600';
+        }
+        switchSlide(0);
+        playChime(300, true);
+        const input = document.getElementById('studentNameInput');
+        if (input) input.focus();
+        return;
+      }
+      switchSlide(slideNum);
+    }
+
+    let currentSlide = 0;
+    function switchSlide(slideNum) {
+      currentSlide = slideNum;
+      if (slideNum === 7 && currentStudent) {
+        syncRewardState();
+        saveStudentProgress();
+        updateKeywordUI();
+      }
+      if (slideNum !== 6 && typeof timerInterval !== 'undefined' && timerInterval) {
+        clearInterval(timerInterval);
+      }
+      for (let i = 0; i <= 7; i++) {
+        const view = document.getElementById(`slide${i}View`);
+        const btn = document.getElementById(`navSlide${i}`);
+        if (view) view.classList.toggle('hidden', i !== slideNum);
+        if (btn) {
+          if (i === slideNum) {
+            btn.className = (i === 7)
+              ? 'px-1.5 sm:px-2 py-1 rounded-lg transition-all text-amber-900 bg-amber-100 shadow-xs flex items-center gap-0.5 shrink-0 font-black border border-amber-300'
+              : 'px-1.5 sm:px-2 py-1 rounded-lg transition-all bg-white text-purple-700 shadow-xs flex items-center gap-0.5 shrink-0 font-black';
+          } else {
+            btn.className = (i === 7)
+              ? 'px-1.5 sm:px-2 py-1 rounded-lg transition-all text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 flex items-center gap-0.5 shrink-0 font-black border border-amber-200'
+              : 'px-1.5 sm:px-2 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-0.5 shrink-0';
+          }
+        }
+      }
+      playChime(440 + (slideNum * 25));
+    }
+
+    function grantSlideReward(slideIndex) {
+      const secretKey = STUDENT_KEYWORDS[currentStudent] || "가1나2다3";
+      const charEarned = secretKey.charAt(slideIndex - 1);
+      const wasAlreadyCleared = !!cleared[slideIndex];
+      cleared[slideIndex] = true;
+      unlockedChars[slideIndex - 1] = charEarned;
+      if (slideIndex <= 5) streaks[slideIndex] = Math.max(5, Number(streaks[slideIndex]) || 0);
+
+      saveStudentProgress();
+      updateKeywordUI();
+      updateAllNavBadges();
+
+      if (wasAlreadyCleared) return;
+
+      const modal = document.getElementById('rewardModal');
+      document.getElementById('rewardModalTitle').innerText = `${slideIndex}슬라이드 클리어!`;
+      document.getElementById('rewardModalDesc').innerHTML = `축하합니다! 5문제를 연속으로 모두 맞혔습니다.<br/><strong>${currentStudent}</strong> 학생의 ${slideIndex}번째 보물 글자를 확인하세요!`;
+      document.getElementById('rewardModalChar').innerText = charEarned;
+      modal.classList.replace('opacity-0', 'opacity-100');
+      modal.classList.replace('pointer-events-none', 'pointer-events-auto');
+      playChime(880);
+    }
+
+    function closeRewardModal() {
+      const modal = document.getElementById('rewardModal');
+      modal.classList.replace('opacity-100', 'opacity-0');
+      modal.classList.replace('pointer-events-auto', 'pointer-events-none');
+    }
+
+    function updateKeywordUI() {
+      syncRewardState();
+      const preview = unlockedChars.map(c => c ? c : '?').join(' ');
+      const previewEl = document.getElementById('unlockedCharsPreview');
+      if (previewEl) previewEl.innerText = `🔑 [ ${preview} ]`;
+
+      for (let i = 1; i <= 6; i++) {
+        const s7El = document.getElementById(`s7Char${i}`);
+        const charVal = unlockedChars[i - 1];
+
+        if (s7El) {
+          if (charVal) {
+            s7El.innerText = charVal;
+            s7El.className = 'w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-amber-500 text-white font-black text-base sm:text-xl flex items-center justify-center shadow-xs';
+          } else {
+            s7El.innerText = '?';
+            s7El.className = 'w-11 h-11 sm:w-14 sm:h-14 rounded-2xl border-2 border-dashed border-amber-400 bg-white flex items-center justify-center font-black text-amber-700 text-base sm:text-xl';
+          }
+        }
+      }
+
+      // 6개의 비밀 글자를 모두 획득한 학생에게만 Google Forms를 표시한다.
+      const allKeywordsCollected = unlockedChars.length >= 6 && unlockedChars.slice(0, 6).every(c => typeof c === 'string' && c.length > 0);
+      const googleFormArea = document.getElementById('googleFormArea');
+      if (googleFormArea) {
+        googleFormArea.classList.toggle('hidden', !allKeywordsCollected);
+        googleFormArea.classList.toggle('flex', allKeywordsCollected);
+      }
+    }
+
+    function updateAllNavBadges() {
+      for (let i = 1; i <= 5; i++) {
+        const badge = document.getElementById(`navBadge${i}`);
+        if (badge) {
+          if (cleared[i]) {
+            badge.innerText = '성공⭐';
+            badge.className = 'text-[9px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-black';
+          } else {
+            badge.innerText = `${streaks[i]}/5`;
+            badge.className = 'text-[9px] bg-slate-100 text-slate-600 px-1 rounded';
+          }
+        }
+      }
+      const b6 = document.getElementById('navBadge6');
+      if (b6) {
+        if (cleared[6]) {
+          b6.innerText = '성공⭐';
+          b6.className = 'text-[9px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-black';
+        } else {
+          b6.innerText = '도전';
+          b6.className = 'text-[9px] bg-slate-100 text-slate-600 px-1 rounded';
+        }
+      }
+    }
+
+    function copyCollectedChars() {
+      const chars = unlockedChars.filter(c => c !== "").join("");
+      const notice = document.getElementById('copyNotice');
+      if (!chars) {
+        if (notice) notice.innerHTML = `<span class="text-rose-500">⚠️ 아직 획득한 비밀 글자가 없습니다! 슬라이드를 먼저 풀어보세요.</span>`;
+        playChime(300, true);
+        return;
+      }
+
+      const tempInput = document.createElement("textarea");
+      tempInput.value = chars;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        if (notice) notice.innerHTML = `✅ 암호 [ <strong>${chars}</strong> ] 복사 완료! 설문지 입력창에 붙여넣기(Ctrl+V)하세요.`;
+        playChime(784);
+      } catch (err) {
+        if (notice) notice.innerHTML = `암호: <strong>${chars}</strong> (직접 적어주세요)`;
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    // 1~5번에서 현재 연속 정답 기록은 유지한 채 새 문제만 무작위로 생성
+    function randomizeSlideProblem(slideNum) {
+      const generators = {
+        1: generateSlide1Problem,
+        2: generateSlide2Problem,
+        3: generateSlide3Problem,
+        4: generateSlide4Problem,
+        5: generateSlide5Problem
+      };
+      const feedbackIds = {
+        1: 's1Feedback',
+        2: 'slide2Feedback',
+        3: 'slide3Feedback',
+        4: 'slide4Feedback',
+        5: 'slide5Feedback'
+      };
+      const feedback = document.getElementById(feedbackIds[slideNum]);
+      if (feedback) feedback.innerHTML = '';
+      if (generators[slideNum]) {
+        generators[slideNum]();
+        playChime(620);
+      }
+    }
+
+    let s1W = 0, s1H = 0;
+    let s1Step = 0;
+    let s1FirstIsRow = true;
+
+    function generateSlide1Problem() {
+      let w = s1W, h = s1H;
+      do {
+        w = Math.floor(Math.random() * 8) + 2;
+        h = Math.floor(Math.random() * 8) + 2;
+      } while (w === h || (w === s1W && h === s1H));
+
+      s1W = w;
+      s1H = h;
+      s1Step = 0;
+      s1FirstIsRow = Math.random() < 0.5;
+
+      updateSlide1UI();
+      renderSlide1Visual('none');
+      clearSlide1Inputs();
+    }
+
+    function updateSlide1UI() {
+      for (let i = 0; i <= 2; i++) {
+        const tab = document.getElementById(`s1Tab${i}`);
+        if (tab) {
+          tab.className = (s1Step === i)
+            ? 'w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center text-xs font-black shadow-xs'
+            : 'w-7 h-7 rounded-lg text-slate-500 hover:bg-white flex items-center justify-center text-xs font-bold';
+        }
+      }
+
+      document.getElementById('s1StreakBadge').innerText = `🔥 연속 정답: ${streaks[1]} / 5`;
+      updateAllNavBadges();
+
+      const formulaArea = document.getElementById('s1FormulaArea');
+      const actionText = document.getElementById('s1ActionBtnText');
+      const stepFraction = document.getElementById('s1StepFraction');
+      const statusDesc = document.getElementById('s1StatusDesc');
+      const inputGuide = document.getElementById('s1InputGuide');
+
+      const isFirstMode = (s1Step === 1);
+      const currentMode = isFirstMode ? (s1FirstIsRow ? 'row' : 'col') : (s1FirstIsRow ? 'col' : 'row');
+
+      if (s1Step === 0) {
+        formulaArea.classList.add('hidden');
+        actionText.innerText = '다음';
+        stepFraction.innerText = '1/3';
+        statusDesc.innerText = '[1/3] 묶음 없는 원의 배열을 관찰한 뒤 [다음]을 누르세요.';
+      } else if (s1Step === 1) {
+        formulaArea.classList.remove('hidden');
+        actionText.innerText = '정답 확인';
+        stepFraction.innerText = '2/3';
+        const modeKor = (currentMode === 'row') ? '가로줄 묶음' : '세로줄 묶음';
+        statusDesc.innerText = `[2/3] ${modeKor}을 보고 곱셈식을 작성하세요.`;
+        inputGuide.innerText = `${modeKor}의 곱셈식을 완성하세요.`;
+      } else {
+        formulaArea.classList.remove('hidden');
+        actionText.innerText = '최종 확인';
+        stepFraction.innerText = '3/3';
+        const modeKor = (currentMode === 'row') ? '가로줄 묶음' : '세로줄 묶음';
+        statusDesc.innerText = `[3/3] 반대 방향인 ${modeKor}의 곱셈식을 작성하세요.`;
+        inputGuide.innerText = `${modeKor}의 곱셈식을 완성하세요.`;
+      }
+    }
+
+    function renderSlide1Visual(mode) {
+      const container = document.getElementById('slide1Board');
+      if (!container) return;
+      container.innerHTML = '';
+      container.className = 'flex flex-col items-center justify-center gap-2 pop-in';
+
+      const dotSize = Math.max(20, Math.min(34, Math.floor(300 / Math.max(s1W, s1H))));
+
+      if (mode === 'none') {
+        const grid = document.createElement('div');
+        grid.className = 'grid gap-2 p-2';
+        grid.style.gridTemplateColumns = `repeat(${s1W}, minmax(0, 1fr))`;
+        for (let r = 0; r < s1H; r++) {
+          for (let c = 0; c < s1W; c++) {
+            const dot = document.createElement('div');
+            dot.style.width = `${dotSize}px`;
+            dot.style.height = `${dotSize}px`;
+            dot.className = 'rounded-full bg-[#f59e0b] shadow-xs';
+            grid.appendChild(dot);
+          }
+        }
+        container.appendChild(grid);
+      } else if (mode === 'row') {
+        const wrap = document.createElement('div');
+        wrap.className = 'flex flex-col gap-2';
+        for (let r = 0; r < s1H; r++) {
+          const rowCapsule = document.createElement('div');
+          rowCapsule.className = 'flex items-center gap-2 px-3 py-1 rounded-full bg-[#f5e8fb] border border-purple-200';
+          for (let c = 0; c < s1W; c++) {
+            const dot = document.createElement('div');
+            dot.style.width = `${dotSize}px`;
+            dot.style.height = `${dotSize}px`;
+            dot.className = 'rounded-full bg-[#f4ae60] shadow-xs';
+            rowCapsule.appendChild(dot);
+          }
+          wrap.appendChild(rowCapsule);
+        }
+        container.appendChild(wrap);
+      } else if (mode === 'col') {
+        const wrap = document.createElement('div');
+        wrap.className = 'flex flex-row gap-2';
+        for (let c = 0; c < s1W; c++) {
+          const colCapsule = document.createElement('div');
+          colCapsule.className = 'flex flex-col items-center gap-2 px-1.5 py-2.5 rounded-full bg-[#f5e8fb] border border-purple-200';
+          for (let r = 0; r < s1H; r++) {
+            const dot = document.createElement('div');
+            dot.style.width = `${dotSize}px`;
+            dot.style.height = `${dotSize}px`;
+            dot.className = 'rounded-full bg-[#f4ae60] shadow-xs';
+            colCapsule.appendChild(dot);
+          }
+          wrap.appendChild(colCapsule);
+        }
+        container.appendChild(wrap);
+      }
+    }
+
+    function clearSlide1Inputs() {
+      ['s1_in1', 's1_in2', 's1_ans'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('s1Feedback').innerHTML = '';
+    }
+
+    function onSlide1Action() {
+      if (s1Step === 0) {
+        s1Step = 1;
+        const currentMode = s1FirstIsRow ? 'row' : 'col';
+        renderSlide1Visual(currentMode);
+        updateSlide1UI();
+        clearSlide1Inputs();
+        playChime(520);
+        document.getElementById('s1_in1').focus();
+      } else {
+        submitSlide1Step();
+      }
+    }
+
+    function submitSlide1Step() {
+      const in1 = parseInt(document.getElementById('s1_in1').value, 10);
+      const in2 = parseInt(document.getElementById('s1_in2').value, 10);
+      const ans = parseInt(document.getElementById('s1_ans').value, 10);
+      const feedback = document.getElementById('s1Feedback');
+
+      const isFirstMode = (s1Step === 1);
+      const currentMode = isFirstMode ? (s1FirstIsRow ? 'row' : 'col') : (s1FirstIsRow ? 'col' : 'row');
+
+      const targetA = (currentMode === 'row') ? s1W : s1H;
+      const targetB = (currentMode === 'row') ? s1H : s1W;
+      const targetTot = s1W * s1H;
+
+      const isCorrect = ((in1 === targetA && in2 === targetB) || (in1 === targetB && in2 === targetA)) && (ans === targetTot);
+
+      if (isCorrect) {
+        if (s1Step === 1) {
+          playChime(660);
+          feedback.innerHTML = `<span class="text-emerald-600 font-extrabold">정답입니다! 반대 묶음도 풀어보세요!</span>`;
+          setTimeout(() => {
+            s1Step = 2;
+            const nextMode = s1FirstIsRow ? 'col' : 'row';
+            renderSlide1Visual(nextMode);
+            updateSlide1UI();
+            clearSlide1Inputs();
+            document.getElementById('s1_in1').focus();
+          }, 350);
+        } else {
+          streaks[1]++;
+          saveStudentProgress();
+          playChime(784);
+          if (streaks[1] >= 5) {
+            grantSlideReward(1);
+            document.getElementById('s1KeywordRewardBadge').classList.remove('hidden');
+          }
+          feedback.innerHTML = `<span class="text-emerald-600 font-extrabold">🎉 1문제 완벽 성공! (현재 연속: ${streaks[1]}/5)</span>`;
+          setTimeout(() => {
+            generateSlide1Problem();
+          }, 600);
+        }
+      } else {
+        playChime(260, true);
+        streaks[1] = 0;
+        saveStudentProgress();
+        feedback.innerHTML = `<span class="text-rose-600 font-black shake inline-block">❌ 오답입니다! 연속 정답이 0으로 초기화됩니다.</span>`;
+        setTimeout(() => {
+          generateSlide1Problem();
+        }, 1100);
+      }
+    }
+
+    let s2PerLine = 0, s2FullCount = 0, s2Remain = 0, s2IsRowMode = true;
+
+    function generateSlide2Problem() {
+      let pL = s2PerLine, fC = s2FullCount, rem = s2Remain;
+      do {
+        s2IsRowMode = Math.random() < 0.5;
+        pL = Math.floor(Math.random() * 4) + 4;
+        fC = Math.floor(Math.random() * 3) + 2;
+        rem = Math.floor(Math.random() * (pL - 2)) + 1;
+      } while (pL === s2PerLine && fC === s2FullCount && rem === s2Remain);
+
+      s2PerLine = pL;
+      s2FullCount = fC;
+      s2Remain = rem;
+
+      document.getElementById('s2StreakBadge').innerText = `🔥 연속 정답: ${streaks[2]} / 5`;
+      updateAllNavBadges();
+
+      const modeBadge = document.getElementById('s2ModeBadge');
+      const step1Title = document.getElementById('s2Step1Title');
+      const step2Title = document.getElementById('s2Step2Title');
+
+      if (s2IsRowMode) {
+        modeBadge.innerText = '↔️ 가로줄 묶음';
+        step1Title.innerText = '1️⃣ 완전하게 채워진 가로줄';
+        step2Title.innerText = '2️⃣ 아래에 남은 동그라미 줄';
+      } else {
+        modeBadge.innerText = '↕️ 세로줄 묶음';
+        step1Title.innerText = '1️⃣ 완전하게 채워진 세로줄';
+        step2Title.innerText = '2️⃣ 옆에 남은 동그라미 줄';
+      }
+
+      renderSlide2Board();
+      clearSlide2Inputs();
+    }
+
+    function renderSlide2Board() {
+      const board = document.getElementById('slide2Board');
+      board.innerHTML = '';
+      const dotSize = 26;
+
+      if (s2IsRowMode) {
+        const wrap = document.createElement('div');
+        wrap.className = 'flex flex-col gap-2 items-start pop-in';
+        for (let r = 0; r < s2FullCount; r++) {
+          const row = document.createElement('div');
+          row.className = 'flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#f5e8fb] border border-purple-200';
+          for (let c = 0; c < s2PerLine; c++) {
+            const dot = document.createElement('div');
+            dot.style.width = `${dotSize}px`;
+            dot.style.height = `${dotSize}px`;
+            dot.className = 'rounded-full bg-[#f4ae60] shadow-xs';
+            row.appendChild(dot);
+          }
+          wrap.appendChild(row);
+        }
+        const remainRow = document.createElement('div');
+        remainRow.className = 'flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-50 border-2 border-dashed border-amber-300';
+        for (let c = 0; c < s2Remain; c++) {
+          const dot = document.createElement('div');
+          dot.style.width = `${dotSize}px`;
+          dot.style.height = `${dotSize}px`;
+          dot.className = 'rounded-full bg-[#f4ae60] shadow-xs';
+          remainRow.appendChild(dot);
+        }
+        wrap.appendChild(remainRow);
+        board.appendChild(wrap);
+      } else {
+        const wrap = document.createElement('div');
+        wrap.className = 'flex flex-row gap-2 items-start pop-in';
+        for (let c = 0; c < s2FullCount; c++) {
+          const col = document.createElement('div');
+          col.className = 'flex flex-col items-center gap-2 px-1.5 py-2.5 rounded-full bg-[#f5e8fb] border border-purple-200';
+          for (let r = 0; r < s2PerLine; r++) {
+            const dot = document.createElement('div');
+            dot.style.width = `${dotSize}px`;
+            dot.style.height = `${dotSize}px`;
+            dot.className = 'rounded-full bg-[#f4ae60] shadow-xs';
+            col.appendChild(dot);
+          }
+          wrap.appendChild(col);
+        }
+        const remainCol = document.createElement('div');
+        remainCol.className = 'flex flex-col items-center gap-2 px-1.5 py-2.5 rounded-full bg-amber-50 border-2 border-dashed border-amber-300';
+        for (let r = 0; r < s2Remain; r++) {
+          const dot = document.createElement('div');
+          dot.style.width = `${dotSize}px`;
+          dot.style.height = `${dotSize}px`;
+          dot.className = 'rounded-full bg-[#f4ae60] shadow-xs';
+          remainCol.appendChild(dot);
+        }
+        wrap.appendChild(remainCol);
+        board.appendChild(wrap);
+      }
+    }
+
+    function clearSlide2Inputs() {
+      ['s2_in1', 's2_in2', 's2_ans1', 's2_in3', 's2_in4', 's2_ans2', 's2_calc1', 's2_calc2', 's2_tot'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('slide2Feedback').innerHTML = '';
+    }
+
+    function submitSlide2() {
+      const in1 = parseInt(document.getElementById('s2_in1').value, 10);
+      const in2 = parseInt(document.getElementById('s2_in2').value, 10);
+      const ans1 = parseInt(document.getElementById('s2_ans1').value, 10);
+
+      const in3 = parseInt(document.getElementById('s2_in3').value, 10);
+      const in4 = parseInt(document.getElementById('s2_in4').value, 10);
+      const ans2 = parseInt(document.getElementById('s2_ans2').value, 10);
+
+      const calc1 = parseInt(document.getElementById('s2_calc1').value, 10);
+      const calc2 = parseInt(document.getElementById('s2_calc2').value, 10);
+      const tot = parseInt(document.getElementById('s2_tot').value, 10);
+
+      const target1 = s2PerLine * s2FullCount;
+      const target2 = s2Remain;
+      const expectedTot = target1 + target2;
+
+      const valid1 = ((in1 === s2PerLine && in2 === s2FullCount) || (in1 === s2FullCount && in2 === s2PerLine)) && (ans1 === target1);
+      const valid2 = ((in3 === s2Remain && in4 === 1) || (in3 === 1 && in4 === s2Remain)) && (ans2 === target2);
+      const valid3 = ((calc1 === target1 && calc2 === target2) || (calc1 === target2 && calc2 === target1)) && (tot === expectedTot);
+
+      const feedback = document.getElementById('slide2Feedback');
+
+      if (valid1 && valid2 && valid3) {
+        streaks[2]++;
+        saveStudentProgress();
+        playChime(784);
+        if (streaks[2] >= 5) {
+          grantSlideReward(2);
+          document.getElementById('s2KeywordRewardBadge').classList.remove('hidden');
+        }
+        feedback.innerHTML = `<span class="text-emerald-600 font-extrabold">🎉 정답입니다! (현재 연속: ${streaks[2]}/5)</span>`;
+        setTimeout(() => {
+          generateSlide2Problem();
+        }, 600);
+      } else {
+        streaks[2] = 0;
+        saveStudentProgress();
+        playChime(260, true);
+        feedback.innerHTML = `<span class="text-rose-600 font-black shake inline-block">❌ 틀렸습니다! 연속 정답이 0으로 초기화됩니다.</span>`;
+        setTimeout(() => {
+          generateSlide2Problem();
+        }, 1100);
+      }
+    }
+
+    let s3Cols = 0, s3Rows = 0, s3Missing = 0;
+
+    function generateSlide3Problem() {
+      let c = s3Cols, r = s3Rows, m = s3Missing;
+      do {
+        c = Math.floor(Math.random() * 4) + 4;
+        r = Math.floor(Math.random() * 3) + 3;
+        m = Math.floor(Math.random() * (c - 1)) + 1;
+      } while (c === s3Cols && r === s3Rows && m === s3Missing);
+
+      s3Cols = c;
+      s3Rows = r;
+      s3Missing = m;
+
+      document.getElementById('s3StreakBadge').innerText = `🔥 연속 정답: ${streaks[3]} / 5`;
+      updateAllNavBadges();
+      document.getElementById('slide3MissingInfo').innerText = `빠진 빈자리: ${s3Missing}개`;
+
+      renderSlide3Board();
+      clearSlide3Inputs();
+    }
+
+    function renderSlide3Board() {
+      const fullCount = s3Cols * s3Rows;
+      const board = document.getElementById('slide3Board');
+      board.innerHTML = '';
+      const dotSize = Math.max(22, Math.min(30, Math.floor(260 / Math.max(s3Cols, s3Rows))));
+
+      const grid = document.createElement('div');
+      grid.className = 'grid gap-2 p-3 bg-indigo-50/50 rounded-2xl border-2 border-indigo-200 pop-in';
+      grid.style.gridTemplateColumns = `repeat(${s3Cols}, minmax(0, 1fr))`;
+
+      const missingStartIndex = fullCount - s3Missing;
+      for (let i = 0; i < fullCount; i++) {
+        const dot = document.createElement('div');
+        dot.style.width = `${dotSize}px`;
+        dot.style.height = `${dotSize}px`;
+
+        if (i < missingStartIndex) {
+          dot.className = 'rounded-full bg-[#f4ae60] shadow-xs';
+        } else {
+          dot.className = 'rounded-full border-2 border-dashed border-rose-400 bg-rose-50 flex items-center justify-center text-rose-500 font-black text-xs';
+          dot.innerText = '✕';
+        }
+        grid.appendChild(dot);
+      }
+      board.appendChild(grid);
+    }
+
+    function clearSlide3Inputs() {
+      ['s3_1_in1', 's3_1_in2', 's3_1_ans', 's3_2_in1', 's3_2_in2', 's3_2_ans', 's3_calc_1', 's3_calc_2', 's3_calc_tot'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('slide3Feedback').innerHTML = '';
+    }
+
+    function submitSlide3() {
+      const in1 = parseInt(document.getElementById('s3_1_in1').value, 10);
+      const in2 = parseInt(document.getElementById('s3_1_in2').value, 10);
+      const ans1 = parseInt(document.getElementById('s3_1_ans').value, 10);
+
+      const in3 = parseInt(document.getElementById('s3_2_in1').value, 10);
+      const in4 = parseInt(document.getElementById('s3_2_in2').value, 10);
+      const ans2 = parseInt(document.getElementById('s3_2_ans').value, 10);
+
+      const calc1 = parseInt(document.getElementById('s3_calc_1').value, 10);
+      const calc2 = parseInt(document.getElementById('s3_calc_2').value, 10);
+      const tot = parseInt(document.getElementById('s3_calc_tot').value, 10);
+
+      const targetFull = s3Cols * s3Rows;
+      const targetMissing = s3Missing;
+      const expectedActual = targetFull - targetMissing;
+
+      const valid1 = ((in1 === s3Cols && in2 === s3Rows) || (in1 === s3Rows && in2 === s3Cols)) && (ans1 === targetFull);
+      const valid2 = ((in3 === s3Missing && in4 === 1) || (in3 === 1 && in4 === s3Missing)) && (ans2 === targetMissing);
+      const valid3 = (calc1 === targetFull && calc2 === targetMissing && tot === expectedActual);
+
+      const feedback = document.getElementById('slide3Feedback');
+
+      if (valid1 && valid2 && valid3) {
+        streaks[3]++;
+        saveStudentProgress();
+        playChime(784);
+        if (streaks[3] >= 5) {
+          grantSlideReward(3);
+          document.getElementById('s3KeywordRewardBadge').classList.remove('hidden');
+        }
+        feedback.innerHTML = `<span class="text-emerald-600 font-extrabold">🎉 정답입니다! (현재 연속: ${streaks[3]}/5)</span>`;
+        setTimeout(() => {
+          generateSlide3Problem();
+        }, 600);
+      } else {
+        streaks[3] = 0;
+        saveStudentProgress();
+        playChime(260, true);
+        feedback.innerHTML = `<span class="text-rose-600 font-black shake inline-block">❌ 틀렸습니다! 연속 정답이 0으로 초기화됩니다.</span>`;
+        setTimeout(() => {
+          generateSlide3Problem();
+        }, 1100);
+      }
+    }
+
+    function createCubeElement(x, y, u, topSkew, sideSkew, hasTopStud, hasRightSide) {
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+      if (hasTopStud) {
+        const topFace = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        topFace.setAttribute('points', `${x},${y} ${x + sideSkew},${y - topSkew} ${x + u + sideSkew},${y - topSkew} ${x + u},${y}`);
+        topFace.setAttribute('fill', '#F8A94D');
+        topFace.setAttribute('stroke', '#662F00');
+        topFace.setAttribute('stroke-width', '1.3');
+        g.appendChild(topFace);
+
+        const stud = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+        stud.setAttribute('cx', `${x + (u / 2) + (sideSkew / 2)}`);
+        stud.setAttribute('cy', `${y - (topSkew / 2)}`);
+        stud.setAttribute('rx', `${u * 0.24}`);
+        stud.setAttribute('ry', `${topSkew * 0.3}`);
+        stud.setAttribute('fill', '#FFAF53');
+        stud.setAttribute('stroke', '#662F00');
+        stud.setAttribute('stroke-width', '1.1');
+        g.appendChild(stud);
+      }
+
+      if (hasRightSide) {
+        const rightFace = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        rightFace.setAttribute('points', `${x + u},${y} ${x + u + sideSkew},${y - topSkew} ${x + u + sideSkew},${y + u - topSkew} ${x + u},${y + u}`);
+        rightFace.setAttribute('fill', '#D77B26');
+        rightFace.setAttribute('stroke', '#662F00');
+        rightFace.setAttribute('stroke-width', '1.3');
+        g.appendChild(rightFace);
+      }
+
+      const frontFace = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      frontFace.setAttribute('x', x);
+      frontFace.setAttribute('y', y);
+      frontFace.setAttribute('width', u);
+      frontFace.setAttribute('height', u);
+      frontFace.setAttribute('fill', '#F59E3F');
+      frontFace.setAttribute('stroke', '#662F00');
+      frontFace.setAttribute('stroke-width', '1.3');
+      g.appendChild(frontFace);
+
+      const frontCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      frontCircle.setAttribute('cx', x + (u / 2));
+      frontCircle.setAttribute('cy', y + (u / 2));
+      frontCircle.setAttribute('r', u * 0.3);
+      frontCircle.setAttribute('fill', '#EE9231');
+      frontCircle.setAttribute('stroke', '#8A3B00');
+      frontCircle.setAttribute('stroke-width', '1.2');
+      g.appendChild(frontCircle);
+
+      return g;
+    }
+
+    let s4BottomW = 0, s4BottomH = 0, s4TopW = 0, s4TopH = 0;
+
+    function generateSlide4Problem() {
+      let bW = s4BottomW, bH = s4BottomH, tW = s4TopW, tH = s4TopH;
+      do {
+        bW = Math.floor(Math.random() * 3) + 4;
+        bH = Math.floor(Math.random() * 2) + 3;
+        tW = Math.floor(Math.random() * (bW - 2)) + 2;
+        tH = Math.floor(Math.random() * 2) + 2;
+      } while (bW === s4BottomW && bH === s4BottomH && tW === s4TopW && tH === s4TopH);
+
+      s4BottomW = bW;
+      s4BottomH = bH;
+      s4TopW = tW;
+      s4TopH = tH;
+
+      document.getElementById('s4StreakBadge').innerText = `🔥 연속 정답: ${streaks[4]} / 5`;
+      updateAllNavBadges();
+
+      renderSlide4Board();
+      clearSlide4Inputs();
+    }
+
+    function renderSlide4Board() {
+      const container = document.getElementById('slide4Board');
+      container.innerHTML = '';
+
+      const fullW = s4BottomW;
+      const fullH = s4BottomH + s4TopH;
+      const emptyW = s4BottomW - s4TopW;
+
+      const u = Math.min(34, Math.floor(240 / fullW));
+      const topSkew = u * 0.22;
+      const sideSkew = u * 0.18;
+      const pad = 14;
+
+      const svgW = (fullW * u) + sideSkew + (pad * 2);
+      const svgH = (fullH * u) + topSkew + (pad * 2);
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+      svg.setAttribute('width', `${svgW}px`);
+      svg.setAttribute('height', `${svgH}px`);
+      svg.classList.add('pop-in');
+
+      for (let r = 0; r < fullH; r++) {
+        for (let c = 0; c < fullW; c++) {
+          const isTop = (r < s4TopH);
+          const isCube = isTop ? (c >= emptyW) : true;
+          const px = pad + (c * u);
+          const py = pad + topSkew + (r * u);
+
+          if (isCube) {
+            const hasTopStud = (r === 0) || (!isTop && r === s4TopH && c < emptyW);
+            const hasRightSide = (c === fullW - 1);
+            svg.appendChild(createCubeElement(px, py, u, topSkew, sideSkew, hasTopStud, hasRightSide));
+          }
+        }
+      }
+
+      const bBox = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      bBox.setAttribute('x', pad - 4);
+      bBox.setAttribute('y', pad + topSkew + (s4TopH * u) - 4);
+      bBox.setAttribute('width', (s4BottomW * u) + sideSkew + 8);
+      bBox.setAttribute('height', (s4BottomH * u) + 8);
+      bBox.setAttribute('rx', '10');
+      bBox.setAttribute('fill', 'none');
+      bBox.setAttribute('stroke', '#0284C7');
+      bBox.setAttribute('stroke-width', '2.8');
+      bBox.setAttribute('stroke-dasharray', '6, 4');
+      svg.appendChild(bBox);
+
+      const tBox = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      tBox.setAttribute('x', pad + (emptyW * u) - 4);
+      tBox.setAttribute('y', pad - 3);
+      tBox.setAttribute('width', (s4TopW * u) + sideSkew + 8);
+      tBox.setAttribute('height', (s4TopH * u) + topSkew + 4);
+      tBox.setAttribute('rx', '10');
+      tBox.setAttribute('fill', 'none');
+      tBox.setAttribute('stroke', '#E11D48');
+      tBox.setAttribute('stroke-width', '2.8');
+      tBox.setAttribute('stroke-dasharray', '6, 4');
+      svg.appendChild(tBox);
+
+      container.appendChild(svg);
+    }
+
+    function clearSlide4Inputs() {
+      ['s4_1_in1', 's4_1_in2', 's4_1_ans', 's4_2_in1', 's4_2_in2', 's4_2_ans', 's4_calc_1', 's4_calc_2', 's4_calc_tot'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('slide4Feedback').innerHTML = '';
+    }
+
+    function submitSlide4() {
+      const in1 = parseInt(document.getElementById('s4_1_in1').value, 10);
+      const in2 = parseInt(document.getElementById('s4_1_in2').value, 10);
+      const ans1 = parseInt(document.getElementById('s4_1_ans').value, 10);
+
+      const in3 = parseInt(document.getElementById('s4_2_in1').value, 10);
+      const in4 = parseInt(document.getElementById('s4_2_in2').value, 10);
+      const ans2 = parseInt(document.getElementById('s4_2_ans').value, 10);
+
+      const calc1 = parseInt(document.getElementById('s4_calc_1').value, 10);
+      const calc2 = parseInt(document.getElementById('s4_calc_2').value, 10);
+      const calcTot = parseInt(document.getElementById('s4_calc_tot').value, 10);
+
+      const target1 = s4BottomW * s4BottomH;
+      const target2 = s4TopW * s4TopH;
+      const finalTot = target1 + target2;
+
+      const valid1 = ((in1 === s4BottomW && in2 === s4BottomH) || (in1 === s4BottomH && in2 === s4BottomW)) && (ans1 === target1);
+      const valid2 = ((in3 === s4TopW && in4 === s4TopH) || (in3 === s4TopH && in4 === s4TopW)) && (ans2 === target2);
+      const valid3 = ((calc1 === target1 && calc2 === target2) || (calc1 === target2 && calc2 === target1)) && (calcTot === finalTot);
+
+      const feedback = document.getElementById('slide4Feedback');
+
+      if (valid1 && valid2 && valid3) {
+        streaks[4]++;
+        saveStudentProgress();
+        playChime(784);
+        if (streaks[4] >= 5) {
+          grantSlideReward(4);
+          document.getElementById('s4KeywordRewardBadge').classList.remove('hidden');
+        }
+        feedback.innerHTML = `<span class="text-emerald-600 font-extrabold">🎉 정답입니다! (현재 연속: ${streaks[4]}/5)</span>`;
+        setTimeout(() => {
+          generateSlide4Problem();
+        }, 600);
+      } else {
+        streaks[4] = 0;
+        saveStudentProgress();
+        playChime(260, true);
+        feedback.innerHTML = `<span class="text-rose-600 font-black shake inline-block">❌ 틀렸습니다! 연속 정답이 0으로 초기화됩니다.</span>`;
+        setTimeout(() => {
+          generateSlide4Problem();
+        }, 1100);
+      }
+    }
+
+    let s5BottomW = 0, s5BottomH = 0, s5TopW = 0, s5TopH = 0;
+
+    function generateSlide5Problem() {
+      let bW = s5BottomW, bH = s5BottomH, tW = s5TopW, tH = s5TopH;
+      do {
+        bW = Math.floor(Math.random() * 3) + 4;
+        bH = Math.floor(Math.random() * 2) + 3;
+        tW = Math.floor(Math.random() * (bW - 2)) + 2;
+        tH = Math.floor(Math.random() * 2) + 2;
+      } while (bW === s5BottomW && bH === s5BottomH && tW === s5TopW && tH === s5TopH);
+
+      s5BottomW = bW;
+      s5BottomH = bH;
+      s5TopW = tW;
+      s5TopH = tH;
+
+      document.getElementById('s5StreakBadge').innerText = `🔥 연속 정답: ${streaks[5]} / 5`;
+      updateAllNavBadges();
+
+      renderSlide5Board();
+      clearSlide5Inputs();
+    }
+
+    function renderSlide5Board() {
+      const container = document.getElementById('slide5Board');
+      container.innerHTML = '';
+
+      const fullW = s5BottomW;
+      const fullH = s5BottomH + s5TopH;
+      const emptyW = s5BottomW - s5TopW;
+      const emptyH = s5TopH;
+
+      const u = Math.min(34, Math.floor(240 / fullW));
+      const topSkew = u * 0.22;
+      const sideSkew = u * 0.18;
+      const pad = 14;
+
+      const svgW = (fullW * u) + sideSkew + (pad * 2);
+      const svgH = (fullH * u) + topSkew + (pad * 2);
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+      svg.setAttribute('width', `${svgW}px`);
+      svg.setAttribute('height', `${svgH}px`);
+      svg.classList.add('pop-in');
+
+      for (let r = 0; r < fullH; r++) {
+        for (let c = 0; c < fullW; c++) {
+          const isTop = (r < s5TopH);
+          const isCube = isTop ? (c >= emptyW) : true;
+          const px = pad + (c * u);
+          const py = pad + topSkew + (r * u);
+
+          if (isCube) {
+            const hasTopStud = (r === 0) || (!isTop && r === s5TopH && c < emptyW);
+            const hasRightSide = (c === fullW - 1);
+            svg.appendChild(createCubeElement(px, py, u, topSkew, sideSkew, hasTopStud, hasRightSide));
+          }
+        }
+      }
+
+      const fullBox = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      fullBox.setAttribute('x', pad - 4);
+      fullBox.setAttribute('y', pad - 3);
+      fullBox.setAttribute('width', (fullW * u) + sideSkew + 8);
+      fullBox.setAttribute('height', (fullH * u) + topSkew + 8);
+      fullBox.setAttribute('rx', '10');
+      fullBox.setAttribute('fill', 'none');
+      fullBox.setAttribute('stroke', '#0284C7');
+      fullBox.setAttribute('stroke-width', '2.8');
+      fullBox.setAttribute('stroke-dasharray', '6, 4');
+      svg.appendChild(fullBox);
+
+      const emptyBox = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      emptyBox.setAttribute('x', pad + 1);
+      emptyBox.setAttribute('y', pad + 2);
+      emptyBox.setAttribute('width', (emptyW * u) - 2);
+      emptyBox.setAttribute('height', (emptyH * u) + topSkew - 2);
+      emptyBox.setAttribute('rx', '8');
+      emptyBox.setAttribute('fill', 'rgba(254, 226, 226, 0.45)');
+      emptyBox.setAttribute('stroke', '#E11D48');
+      emptyBox.setAttribute('stroke-width', '2.5');
+      emptyBox.setAttribute('stroke-dasharray', '6, 3');
+      svg.appendChild(emptyBox);
+
+      container.appendChild(svg);
+    }
+
+    function clearSlide5Inputs() {
+      ['s5_1_in1', 's5_1_in2', 's5_1_ans', 's5_2_in1', 's5_2_in2', 's5_2_ans', 's5_calc_1', 's5_calc_2', 's5_calc_tot'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('slide5Feedback').innerHTML = '';
+    }
+
+    function submitSlide5() {
+      const in1 = parseInt(document.getElementById('s5_1_in1').value, 10);
+      const in2 = parseInt(document.getElementById('s5_1_in2').value, 10);
+      const ans1 = parseInt(document.getElementById('s5_1_ans').value, 10);
+
+      const in3 = parseInt(document.getElementById('s5_2_in1').value, 10);
+      const in4 = parseInt(document.getElementById('s5_2_in2').value, 10);
+      const ans2 = parseInt(document.getElementById('s5_2_ans').value, 10);
+
+      const calc1 = parseInt(document.getElementById('s5_calc_1').value, 10);
+      const calc2 = parseInt(document.getElementById('s5_calc_2').value, 10);
+      const calcTot = parseInt(document.getElementById('s5_calc_tot').value, 10);
+
+      const fullW = s5BottomW;
+      const fullH = s5BottomH + s5TopH;
+      const targetFull = fullW * fullH;
+
+      const emptyW = s5BottomW - s5TopW;
+      const emptyH = s5TopH;
+      const targetEmpty = emptyW * emptyH;
+
+      const finalTot = targetFull - targetEmpty;
+
+      const valid1 = ((in1 === fullW && in2 === fullH) || (in1 === fullH && in2 === fullW)) && (ans1 === targetFull);
+      const valid2 = ((in3 === emptyW && in4 === emptyH) || (in3 === emptyH && in4 === emptyW)) && (ans2 === targetEmpty);
+      const valid3 = (calc1 === targetFull && calc2 === targetEmpty && calcTot === finalTot);
+
+      const feedback = document.getElementById('slide5Feedback');
+
+      if (valid1 && valid2 && valid3) {
+        streaks[5]++;
+        saveStudentProgress();
+        playChime(784);
+        if (streaks[5] >= 5) {
+          grantSlideReward(5);
+          document.getElementById('s5KeywordRewardBadge').classList.remove('hidden');
+        }
+        feedback.innerHTML = `<span class="text-emerald-600 font-extrabold">🎉 정답입니다! (현재 연속: ${streaks[5]}/5)</span>`;
+        setTimeout(() => {
+          generateSlide5Problem();
+        }, 600);
+      } else {
+        streaks[5] = 0;
+        saveStudentProgress();
+        playChime(260, true);
+        feedback.innerHTML = `<span class="text-rose-600 font-black shake inline-block">❌ 틀렸습니다! 연속 정답이 0으로 초기화됩니다.</span>`;
+        setTimeout(() => {
+          generateSlide5Problem();
+        }, 1100);
+      }
+    }
+
+    const TOTAL_QUESTIONS = 12;
+    const TIME_LIMIT = 60;
+
+    let timerInterval = null;
+    let timeLeft = TIME_LIMIT;
+    let currentCount = 0;
+    let currentAns = 0;
+    let challengeExpired = false;
+    let challengeQuestions = [];
+    let currentQuestionIndex = 0;
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // 2단~9단이 골고루 나오면서 12문제 모두 서로 다르게 구성
+    function buildChallengeQuestions() {
+      const selected = [];
+      const used = new Set();
+
+      // 각 단에서 최소 1문제씩 뽑아 2~9단을 반드시 모두 포함
+      for (let a = 2; a <= 9; a++) {
+        const b = Math.floor(Math.random() * 9) + 1;
+        selected.push({ a, b, ans: a * b });
+        used.add(`${a}x${b}`);
+      }
+
+      // 나머지 4문제는 전체 2~9단에서 중복 없이 무작위 선택
+      const pool = [];
+      for (let a = 2; a <= 9; a++) {
+        for (let b = 1; b <= 9; b++) {
+          if (!used.has(`${a}x${b}`)) pool.push({ a, b, ans: a * b });
+        }
+      }
+      shuffleArray(pool);
+      selected.push(...pool.slice(0, TOTAL_QUESTIONS - selected.length));
+
+      return shuffleArray(selected);
+    }
+
+    function startChallenge() {
+      currentCount = 0;
+      currentQuestionIndex = 0;
+      timeLeft = TIME_LIMIT;
+      challengeExpired = false;
+      challengeQuestions = buildChallengeQuestions();
+
+      document.getElementById('start-screen').classList.add('hidden');
+      document.getElementById('quiz-screen').classList.remove('hidden');
+
+      updateDashboard();
+      nextQuestion();
+
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+          timeLeft = 0;
+          challengeExpired = true;
+          clearInterval(timerInterval);
+          timerInterval = null;
+          updateDashboard();
+          showFeedback('⏰ 60초가 지났습니다. 계속 풀 수 있지만 비밀 글자는 받을 수 없습니다.', 'text-amber-600 font-extrabold');
+          playChime(261.63, true);
+          return;
+        }
+        updateDashboard();
+      }, 1000);
+      playChime(587.33);
+    }
+
+    function nextQuestion() {
+      const q = challengeQuestions[currentQuestionIndex];
+      if (!q) return;
+      currentAns = q.ans;
+
+      document.getElementById('expression').textContent = `${q.a} × ${q.b} =`;
+      const inputEl = document.getElementById('answer-input');
+      inputEl.value = '';
+      inputEl.focus();
+      if (!challengeExpired) document.getElementById('feedback').textContent = '';
+    }
+
+    function checkKey(e) {
+      if (e.key === 'Enter') submitAnswer();
+    }
+
+    function submitAnswer() {
+      const inputEl = document.getElementById('answer-input');
+      if (!inputEl) return;
+      const userVal = parseInt(inputEl.value.trim(), 10);
+
+      if (isNaN(userVal)) {
+        showFeedback('숫자를 입력해주세요!', 'text-rose-500');
+        playChime(300, true);
+        return;
+      }
+
+      if (userVal === currentAns) {
+        currentCount++;
+        currentQuestionIndex++;
+        updateDashboard();
+        playChime(784);
+
+        if (currentCount >= TOTAL_QUESTIONS) {
+          finishChallenge();
+        } else {
+          if (challengeExpired) {
+            showFeedback('정답입니다! 👏 60초는 지났으므로 비밀 글자는 획득할 수 없습니다.', 'text-amber-600 font-extrabold');
+          } else {
+            showFeedback('정답입니다! 👏', 'text-emerald-600 font-extrabold');
+          }
+          setTimeout(nextQuestion, 250);
+        }
+      } else {
+        showFeedback('아쉬워요, 다시 생각해보세요! ❌', 'text-rose-500 font-extrabold');
+        playChime(350, true);
+        inputEl.value = '';
+        inputEl.focus();
+      }
+    }
+
+    function showFeedback(msg, colorClass) {
+      const feedbackEl = document.getElementById('feedback');
+      if (feedbackEl) {
+        feedbackEl.textContent = msg;
+        feedbackEl.className = `h-6 mt-2 font-bold text-xs sm:text-sm flex items-center justify-center ${colorClass}`;
+      }
+    }
+
+    function updateDashboard() {
+      const progressEl = document.getElementById('progress');
+      const timerEl = document.getElementById('timer');
+      if (progressEl) progressEl.textContent = `${currentCount} / ${TOTAL_QUESTIONS}`;
+      if (timerEl) timerEl.textContent = challengeExpired ? '시간 종료' : `${timeLeft}초`;
+    }
+
+    function finishChallenge() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+
+      const titleEl = document.getElementById('modal-title');
+      const descEl = document.getElementById('modal-desc');
+      const modalEl = document.getElementById('modal');
+
+      if (!challengeExpired) {
+        // 성공 보상은 그대로 지급하되, 성공 후 '다시 도전하기' 팝업은 표시하지 않음.
+        grantSlideReward(6);
+        playChime(880);
+        return;
+      } else {
+        titleEl.textContent = '👏 12문제 완료!';
+        descEl.textContent = '12문제를 모두 풀었습니다. 다만 60초가 지난 뒤 완료했기 때문에 이번에는 비밀 글자를 획득하지 않습니다.';
+        playChime(587.33);
+      }
+
+      modalEl.classList.replace('opacity-0', 'opacity-100');
+      modalEl.classList.replace('pointer-events-none', 'pointer-events-auto');
+    }
+
+    function resetGame() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      const modalEl = document.getElementById('modal');
+      modalEl.classList.replace('opacity-100', 'opacity-0');
+      modalEl.classList.replace('pointer-events-auto', 'pointer-events-none');
+      document.getElementById('quiz-screen').classList.add('hidden');
+      document.getElementById('start-screen').classList.remove('hidden');
+
+      currentCount = 0;
+      currentQuestionIndex = 0;
+      timeLeft = TIME_LIMIT;
+      challengeExpired = false;
+      challengeQuestions = [];
+      updateDashboard();
+      document.getElementById('feedback').textContent = '';
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      switchSlide(0);
+      const input = document.getElementById('studentNameInput');
+      if (input) input.focus();
+    });
+  </script>
+</body>
+</html>
