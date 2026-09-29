@@ -1,0 +1,2159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>위인 프레젠테이션</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase Realtime Database -->
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-database-compat.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Jua & Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .font-jua {
+      font-family: 'Jua', sans-serif;
+    }
+    /* A4 Landscape Ratio: 297mm x 210mm (약 1.414:1) */
+    .aspect-a4-landscape {
+      aspect-ratio: 297 / 210;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    /* Presentation laser pointer animation */
+    .laser-dot {
+      box-shadow: 0 0 16px 6px rgba(239, 68, 68, 0.95), 0 0 4px 2px #fff;
+    }
+    /* Drag & drop helper styles */
+    .dragging-card {
+      opacity: 0.45;
+      transform: scale(0.97);
+    }
+    .drag-over-indicator {
+      border-color: #6366f1 !important;
+      background-color: #e0e7ff !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-indigo-100">
+
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-2.5 shadow-sm">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <!-- Brand Logo / Home Return -->
+      <div id="btn-brand-home" class="flex items-center gap-2.5 cursor-pointer group">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-amber-400 flex items-center justify-center text-white shadow-md shadow-indigo-100 group-hover:scale-105 transition-transform">
+          <i data-lucide="palette" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-jua text-lg md:text-xl text-slate-900 tracking-tight leading-none">위인 프레젠테이션</h1>
+            <span id="current-view-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">홈 로비</span>
+          </div>
+          <p class="text-[11px] text-slate-400 font-medium">A4 가로 손그림 슬라이드 & 1모니터 + N리모콘 발표</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons Right -->
+      <div class="flex items-center gap-2">
+        <!-- Return to Home / Studio Button -->
+        <button id="btn-header-home" class="hidden px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs">
+          <i id="btn-header-home-icon" data-lucide="home" class="w-4 h-4"></i>
+          <span id="btn-header-home-text">홈으로</span>
+        </button>
+
+        <!-- Studio Quick Actions (Placed side by side in Studio screen) -->
+        <div id="studio-action-buttons" class="hidden flex items-center gap-2">
+          <!-- Native Camera input fallback for Android / Galaxy Tab -->
+          <input type="file" id="native-camera-input" accept="image/*" capture="environment" class="hidden">
+
+          <button id="btn-open-camera-modal" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs md:text-sm font-bold transition shadow-sm" title="종이 그림 사진 촬영">
+            <i data-lucide="camera" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">새 손그림 촬영</span>
+            <span class="sm:hidden">촬영</span>
+          </button>
+
+          <!-- Tablet Remote QR Button Right Next to Presentation Launch Button -->
+          <button id="btn-studio-remote-qr" class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border-2 border-amber-300 rounded-xl text-xs md:text-sm font-bold transition shadow-xs" title="조원 태블릿 리모콘 연결 QR">
+            <i data-lucide="smartphone" class="w-4 h-4 text-amber-600"></i>
+            <span>조원 리모콘 QR</span>
+          </button>
+
+          <button id="btn-start-presentation-main" class="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs md:text-sm font-bold shadow-md shadow-indigo-200 transition" title="새 탭에서 모니터용 전체화면 발표 시작">
+            <i data-lucide="play" class="w-4 h-4 fill-white"></i>
+            <span>발표 시작 (모니터 탭)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 flex flex-col">
+    <!-- Screen 1: Home Lobby View (Simplified to Student & Teacher modes) -->
+    <section id="screen-home" class="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-4xl mx-auto w-full">
+      <div class="text-center mb-8 md:mb-10">
+        <span class="inline-block px-3.5 py-1 bg-indigo-100 text-indigo-700 font-bold text-xs md:text-sm rounded-full mb-3 shadow-xs">
+          A4 가로 손그림 슬라이드 & 1모니터 + N리모콘 시스템
+        </span>
+        <h2 class="font-jua text-3xl md:text-5xl text-slate-900 tracking-normal mb-3">
+          위인 프레젠테이션
+        </h2>
+      </div>
+
+      <!-- Mode Selection: 2 Clean Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
+        <!-- Student Mode Card -->
+        <button id="card-student-mode" class="group relative bg-white hover:bg-gradient-to-br hover:from-white hover:to-indigo-50/60 border-2 border-slate-200 hover:border-indigo-500 rounded-3xl p-7 text-left transition-all duration-300 shadow-sm hover:shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <i data-lucide="palette" class="w-7 h-7"></i>
+            </div>
+            <span class="text-[11px] font-bold text-indigo-600 tracking-wider uppercase">STUDENT VIEW</span>
+            <h3 class="font-jua text-2xl text-slate-900 mt-1 mb-2">학생 뷰 (조별 작업실)</h3>
+          </div>
+          <div class="mt-6 flex items-center text-sm font-bold text-indigo-600 group-hover:translate-x-1 transition-transform gap-1">
+            <span>우리 조 선택하고 입장하기</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </div>
+        </button>
+
+        <!-- Teacher Mode Card -->
+        <button id="card-teacher-mode" class="group relative bg-white hover:bg-gradient-to-br hover:from-white hover:to-slate-50 border-2 border-slate-200 hover:border-slate-500 rounded-3xl p-7 text-left transition-all duration-300 shadow-sm hover:shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <i data-lucide="lock" class="w-7 h-7"></i>
+            </div>
+            <span class="text-[11px] font-bold text-slate-500 tracking-wider uppercase">TEACHER VIEW</span>
+            <h3 class="font-jua text-2xl text-slate-900 mt-1 mb-2">교사 뷰 (관리실)</h3>
+          </div>
+          <div class="mt-6 flex items-center text-sm font-bold text-slate-700 group-hover:translate-x-1 transition-transform gap-1">
+            <span>선생님 관리소 열기</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- Screen 2: Student Group Hub -->
+    <section id="screen-student-groups" class="hidden flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-200">
+        <div>
+          <h2 class="font-jua text-2xl md:text-3xl text-slate-900">우리 조를 선택해 주세요</h2>
+          <p class="text-xs md:text-sm text-slate-500 mt-1">자신의 조를 클릭하면 해당 조의 A4 가로 손그림 슬라이드 작업실로 입장합니다.</p>
+        </div>
+        <button id="btn-back-to-home-from-groups" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-auto">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span>홈으로 돌아가기</span>
+        </button>
+      </div>
+
+      <!-- Dynamically Rendered Group Cards Grid -->
+      <div id="student-group-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- Screen 3: Teacher Admin Panel -->
+    <section id="screen-teacher" class="hidden flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
+      <div class="bg-white border-2 border-slate-200 rounded-3xl p-5 md:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold font-sans">교사 관리 권한 인증됨</span>
+            <span class="text-xs text-slate-400 font-medium">총 학생: 22명</span>
+          </div>
+          <h2 class="font-jua text-2xl md:text-3xl text-slate-900">모둠 편성 및 조 개수 관리</h2>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Group Count Adjuster -->
+          <div class="flex items-center bg-slate-100 rounded-2xl p-1 border border-slate-200">
+            <span class="text-xs font-bold text-slate-600 px-3">조 개수:</span>
+            <button id="btn-decrease-groups" class="w-8 h-8 rounded-xl bg-white hover:bg-slate-200 text-slate-800 font-bold flex items-center justify-center transition shadow-xs">-</button>
+            <span id="teacher-group-count-display" class="font-jua text-base text-indigo-600 px-3">4조</span>
+            <button id="btn-increase-groups" class="w-8 h-8 rounded-xl bg-white hover:bg-slate-200 text-slate-800 font-bold flex items-center justify-center transition shadow-xs">+</button>
+          </div>
+
+          <!-- Alphabetical Assign Button -->
+          <button id="btn-alpha-assign-groups" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs md:text-sm font-bold flex items-center gap-1.5 shadow-sm transition">
+            <i data-lucide="list-ordered" class="w-4 h-4"></i>
+            <span>가나다순 균등 배정</span>
+          </button>
+
+          <!-- Random Assign Button -->
+          <button id="btn-random-assign-groups" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs md:text-sm font-bold flex items-center gap-1.5 shadow-sm shadow-indigo-200 transition">
+            <i data-lucide="shuffle" class="w-4 h-4"></i>
+            <span>랜덤 섞기 배정</span>
+          </button>
+
+          <button id="btn-back-to-home-from-teacher" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1">
+            <i data-lucide="home" class="w-4 h-4"></i>
+            <span>홈으로</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Student Direct Assignment Roster Card -->
+      <div class="bg-white border-2 border-slate-200 rounded-3xl p-5 md:p-6 shadow-sm">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+          <div>
+            <h3 class="font-jua text-lg md:text-xl text-slate-900">학생별 조 직접 지정 (출석부)</h3>
+            <p class="text-xs text-slate-500 mt-0.5">각 학생 이름 옆의 선택창을 눌러 원하는 조(1조~N조)로 즉시 확정 배정하세요.</p>
+          </div>
+          <span class="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-xl">실시간 자동 저장됨</span>
+        </div>
+        <div id="teacher-student-roster-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 max-h-[360px] overflow-y-auto pr-1">
+          <!-- Rendered dynamically by JS -->
+        </div>
+      </div>
+
+      <!-- Teacher Group Grid Container -->
+      <div class="space-y-2">
+        <h3 class="font-jua text-lg text-slate-900">조별 배정 현황</h3>
+        <div id="teacher-groups-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Dynamically rendered per group -->
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-group-studio" class="hidden flex-1 flex flex-col max-w-7xl w-full mx-auto p-3 md:p-6 space-y-4">
+      <!-- Studio Top Info Bar -->
+      <div class="bg-white border-2 border-slate-200 rounded-2xl p-3 md:p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div id="studio-group-badge" class="px-3 py-1 rounded-xl bg-indigo-600 text-white font-jua text-base shadow-xs">
+            1조
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 id="studio-group-title" class="font-jua text-lg md:text-xl text-slate-900 leading-tight">1조 손그림 슬라이드 작업실</h2>
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">A4 가로 규격</span>
+            </div>
+            <p id="studio-members-list" class="text-xs text-slate-500 font-medium truncate max-w-md md:max-w-xl">조원: 불러오는 중...</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="btn-switch-group-studio" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1">
+            <i data-lucide="users" class="w-3.5 h-3.5"></i>
+            <span>다른 조로 이동</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Workspace Grid (Left: Slide Thumbnails, Right: Active Slide Editor) -->
+      <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-[500px]">
+        <!-- Left Thumbnail Column (lg: 4 cols) -->
+        <div class="lg:col-span-4 bg-white border-2 border-slate-200 rounded-3xl p-4 shadow-sm flex flex-col space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div class="flex items-center gap-1.5">
+              <span class="font-jua text-slate-800 text-base">슬라이드 목록</span>
+              <span id="studio-slide-count-badge" class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold">1장</span>
+            </div>
+            <span class="text-[11px] text-slate-400 font-medium">드래그나 버튼으로 순서 조정</span>
+          </div>
+
+          <!-- Slide Thumbnails Scroll List -->
+          <div id="slide-thumbnails-container" class="flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[520px]">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Add Slide Bottom Button -->
+          <button id="btn-add-slide-camera" class="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>새 A4 손그림 슬라이드 촬영</span>
+          </button>
+        </div>
+
+        <!-- Right Active Slide Editor (lg: 8 cols) -->
+        <div class="lg:col-span-8 bg-white border-2 border-slate-200 rounded-3xl p-4 md:p-6 shadow-sm flex flex-col space-y-4">
+          <!-- Editor Header -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+              <span id="active-slide-num-pill" class="px-2.5 py-1 bg-slate-900 text-white rounded-xl font-jua text-xs">1번</span>
+              <input type="text" id="slide-title-input" placeholder="슬라이드 제목을 입력하세요" class="flex-1 font-jua text-lg md:text-xl text-slate-900 border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none px-2 py-0.5 transition">
+            </div>
+
+            <!-- Editor Action Tools -->
+            <div class="flex items-center gap-1.5">
+              <button id="btn-move-slide-up" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1" title="순서 앞으로">
+                <i data-lucide="arrow-up" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">앞으로</span>
+              </button>
+              <button id="btn-move-slide-down" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1" title="순서 뒤로">
+                <i data-lucide="arrow-down" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">뒤로</span>
+              </button>
+              <button id="btn-rotate-slide" class="p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold transition flex items-center gap-1" title="사진 90도 회전">
+                <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                <span>90° 회전</span>
+              </button>
+              <button id="btn-replace-photo" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold transition flex items-center gap-1" title="사진 다시 찍기">
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">다시 촬영</span>
+              </button>
+              <button id="btn-delete-slide" class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition flex items-center gap-1" title="슬라이드 삭제">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">삭제</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Slide Image Preview Stage (A4 Landscape Aspect Ratio) -->
+          <div class="relative w-full flex items-center justify-center bg-slate-950 rounded-2xl overflow-hidden p-2 md:p-3 shadow-inner">
+            <div class="w-full max-w-3xl aspect-a4-landscape relative bg-slate-900 rounded-xl flex items-center justify-center overflow-hidden border border-slate-800">
+              <img id="active-slide-preview-img" src="" alt="손그림 슬라이드" class="w-full h-full object-contain transition-transform duration-200 shadow-md">
+              <div id="slide-preview-empty-state" class="hidden text-center text-slate-400 p-6">
+                <i data-lucide="image" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                <p class="text-sm font-semibold">촬영된 손그림이 없습니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide Presentation Script / Notes Box -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="slide-notes-input" class="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                <i data-lucide="mic" class="w-3.5 h-3.5 text-amber-500"></i>
+                <span>발표 대본 및 메모 (조원 리모콘 태블릿 화면에 실시간 프롬프터로 동기화됩니다)</span>
+              </label>
+              <span class="text-[11px] text-slate-400">자동 저장됨</span>
+            </div>
+            <textarea id="slide-notes-input" rows="3" placeholder="이 슬라이드에서 발표할 대본을 적어보세요. (예: 안녕하세요! 저희는 첫 번째로 직접 그린 환경 보호 아이디어에 대해 말씀드리겠습니다...)" class="w-full text-xs md:text-sm p-3 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:outline-none transition leading-relaxed"></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-remote-controller" class="hidden flex-1 max-w-xl w-full mx-auto p-3 md:p-6 flex flex-col space-y-3 select-none">
+      <!-- Remote Header Card -->
+      <div class="bg-slate-900 text-white rounded-3xl p-4 shadow-lg flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <button id="btn-back-from-remote" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          </button>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="remote-group-badge" class="px-2.5 py-0.5 rounded-lg bg-amber-400 text-slate-950 font-jua text-xs font-bold">1조</span>
+              <span class="text-sm font-bold text-slate-100">조원 발표 조종기</span>
+            </div>
+            <p id="remote-members-tag" class="text-[11px] text-slate-400 truncate max-w-[200px]">조원 동기화 중...</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-400 text-xs font-semibold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>화면 연결됨</span>
+          </div>
+          <select id="remote-group-select" class="bg-slate-800 text-slate-200 text-xs rounded-xl px-2.5 py-1.5 border border-slate-700 focus:outline-none focus:border-amber-400 font-bold">
+            <!-- Dynamically populated 1조 ~ N조 -->
+          </select>
+        </div>
+      </div>
+
+      <!-- Live Slide Teleprompter & Info Card -->
+      <div class="bg-white border-2 border-slate-200 rounded-3xl p-4 shadow-sm flex flex-col space-y-3 flex-1 min-h-[220px]">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">LIVE SLIDE</span>
+            <span id="remote-slide-counter" class="text-xs bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-md">1 / 1</span>
+          </div>
+          <h3 id="remote-slide-title" class="text-sm font-bold text-slate-800 truncate max-w-[200px] text-right">슬라이드 제목</h3>
+        </div>
+
+        <!-- Teleprompter Script Card (Big readable font for speaking student) -->
+        <div class="flex-1 bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4 overflow-y-auto max-h-56">
+          <div class="flex items-center gap-1.5 text-xs font-bold text-amber-800 mb-1.5">
+            <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+            <span>내 차례 발표 대본 프롬프터</span>
+          </div>
+          <p id="remote-slide-notes" class="text-sm md:text-base text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">작성된 발표 대본이 없습니다.</p>
+        </div>
+
+        <!-- Quick Slide Thumbnail Preview strip (A4 ratio thumbnail) -->
+        <div id="remote-thumbnails-strip" class="flex gap-2 overflow-x-auto py-1">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Quick Tool Action Bar -->
+      <div class="grid grid-cols-3 gap-2">
+        <button id="btn-remote-tool-laser" class="py-2.5 px-3 bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-700 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition shadow-xs">
+          <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+          <span>포인터</span>
+        </button>
+        <button id="btn-remote-tool-pen" class="py-2.5 px-3 bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-700 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition shadow-xs">
+          <i data-lucide="pen-tool" class="w-3.5 h-3.5 text-yellow-500"></i>
+          <span>형광펜</span>
+        </button>
+        <button id="btn-remote-tool-clear" class="py-2.5 px-3 bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-700 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition shadow-xs">
+          <i data-lucide="eraser" class="w-3.5 h-3.5 text-slate-400"></i>
+          <span>낙서 지우기</span>
+        </button>
+      </div>
+
+      <!-- Big Ergonomic Prev / Next Control Buttons -->
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <button id="btn-remote-prev" class="h-28 md:h-32 bg-slate-800 active:bg-slate-900 text-white rounded-3xl flex flex-col items-center justify-center gap-1 shadow-lg border-2 border-slate-700 active:scale-[0.97] transition touch-manipulation">
+          <i data-lucide="chevron-left" class="w-8 h-8"></i>
+          <span class="font-jua text-lg">이전 슬라이드</span>
+          <span class="text-[11px] text-slate-400">PREV SLIDE</span>
+        </button>
+
+        <button id="btn-remote-next" class="h-28 md:h-32 bg-indigo-600 active:bg-indigo-700 text-white rounded-3xl flex flex-col items-center justify-center gap-1 shadow-lg shadow-indigo-200 border-2 border-indigo-500 active:scale-[0.97] transition touch-manipulation">
+          <i data-lucide="chevron-right" class="w-8 h-8"></i>
+          <span class="font-jua text-lg">다음 슬라이드</span>
+          <span class="text-[11px] text-indigo-200">NEXT SLIDE</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <div id="camera-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-3 md:p-6">
+    <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col">
+      <!-- Modal Header -->
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="camera" class="w-5 h-5 text-emerald-400"></i>
+          <h3 class="font-jua text-base md:text-lg">A4 가로 손그림 촬영하기</h3>
+        </div>
+        <button id="btn-close-camera-modal" class="p-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Live Video / Canvas Container with A4 Landscape ratio outline -->
+      <div class="relative bg-black aspect-a4-landscape w-full flex items-center justify-center overflow-hidden">
+        <video id="camera-video-preview" autoplay playsinline class="w-full h-full object-contain"></video>
+        <canvas id="camera-capture-canvas" class="hidden"></canvas>
+        
+        <!-- Target Alignment Frame Outline: exact A4 landscape guide -->
+        <div class="absolute inset-5 md:inset-8 border-2 border-dashed border-amber-300/80 pointer-events-none rounded-2xl flex items-center justify-center bg-amber-400/5">
+          <span class="text-xs font-bold text-amber-200 bg-black/60 px-3.5 py-1.5 rounded-full backdrop-blur-xs shadow-md">
+            A4 종이 그림을 가로로 맞춰주세요
+          </span>
+        </div>
+
+        <!-- Camera Error / Fallback Card -->
+        <div id="camera-error-overlay" class="absolute inset-0 bg-slate-900/90 text-white p-6 hidden flex flex-col items-center justify-center text-center">
+          <i data-lucide="alert-triangle" class="w-12 h-12 text-amber-400 mb-2"></i>
+          <h4 class="font-jua text-lg mb-1">카메라 권한을 확인해주세요</h4>
+          <p class="text-xs text-slate-300 max-w-sm mb-4 leading-relaxed">
+            브라우저 권한이 차단된 경우에도 아래 [기본 카메라로 바로 찍기]를 누르면 태블릿의 기본 카메라 앱으로 원활하게 촬영할 수 있습니다!
+          </p>
+          <button id="btn-trigger-native-cam-from-error" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-md transition">
+            <i data-lucide="camera" class="w-4 h-4"></i>
+            <span>기본 카메라 앱으로 바로 찍기</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Camera Modal Footer Controls -->
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <button id="btn-switch-cam-direction" class="px-3 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>전/후면 전환</span>
+          </button>
+
+          <!-- Native App Camera Fallback Button -->
+          <button id="btn-trigger-native-cam" class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+            <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+            <span>기본 카메라 앱 실행</span>
+          </button>
+        </div>
+
+        <!-- Capture Trigger Button -->
+        <button id="btn-take-snapshot" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-jua text-base rounded-2xl flex items-center justify-center gap-2 shadow-md shadow-emerald-200 transition">
+          <i data-lucide="aperture" class="w-5 h-5"></i>
+          <span>찰칵! A4 손그림 사진 찍기</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remote QR Code Modal for Member Tablets -->
+  <div id="remote-qr-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-100 flex flex-col items-center text-center">
+      <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-3">
+        <i data-lucide="smartphone" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900"><span id="qr-modal-group-text">1조</span> 조원 태블릿 리모콘 연결</h3>
+      <p class="text-xs text-slate-500 mt-1 mb-4 leading-relaxed">
+        다른 조원들의 태블릿 카메라로 아래 QR 코드를 비추면 슬라이드를 넘기고 실시간 대본 프롬프터를 볼 수 있습니다.
+      </p>
+      
+      <!-- QR Image -->
+      <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl mb-4 flex items-center justify-center">
+        <img id="qr-code-img" src="" alt="리모콘 QR코드" class="w-48 h-48 rounded-xl shadow-xs">
+      </div>
+
+      <div class="flex flex-col gap-2 w-full">
+        <button id="btn-copy-remote-url" class="w-full py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span>리모콘 주소 링크 복사</span>
+        </button>
+        <button id="btn-open-remote-direct" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+          <span>이 태블릿에서 바로 리모콘 열기</span>
+        </button>
+        <button id="btn-close-qr-modal" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition mt-1">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teacher Password Modal -->
+  <div id="teacher-pwd-modal" class="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl border border-slate-100 text-center">
+      <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="lock" class="w-6 h-6"></i>
+      </div>
+      <h3 class="font-jua text-xl text-slate-900 mb-1">교사 비밀번호 확인</h3>
+      <p class="text-xs text-slate-500 mb-4">선생님 전용 관리 번호(5658)를 입력해주세요.</p>
+      
+      <input type="password" id="teacher-pwd-input" placeholder="비밀번호 4자리" maxlength="6" class="w-full text-center tracking-widest text-lg font-bold py-2.5 px-3 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none mb-3">
+      <p id="teacher-pwd-error" class="text-xs text-rose-500 font-semibold mb-3 hidden">비밀번호가 올바르지 않습니다.</p>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btn-cancel-teacher-pwd" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">취소</button>
+        <button id="btn-confirm-teacher-pwd" class="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-sm transition">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Box -->
+  <div id="toast-box" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-slate-900/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs md:text-sm font-semibold border border-slate-700">
+      <i id="toast-icon" data-lucide="info" class="w-4 h-4 text-emerald-400"></i>
+      <span id="toast-message">알림 메시지</span>
+    </div>
+  </div>
+
+  <script>
+    /* 22 Class Student Roster */
+    const CLASS_STUDENTS = [
+      '김서아', '김수현', '김윤아', '김태영', '김하랑',
+      '나예린', '박민제', '박선우', '양수빈', '유소영',
+      '이대운', '이새봄', '이서율', '이진서', '이채원',
+      '이초은', '이태환', '이하린', '한규빈', '한유은',
+      '현지우', '황지우'
+    ];
+
+    /* 5 Distinct A4 Landscape (891 x 630, ~1.414:1) Hand-Drawn Style Slides */
+    function createInitialGroupSlides(groupNum) {
+      return [
+        {
+          id: `slide_${groupNum}_1`,
+          title: `1. [${groupNum}조] 우리가 만난 위인 소개`,
+          notes: `안녕하세요! 저희는 ${groupNum}조입니다. 지금부터 우리가 함께 탐구하고 직접 그린 A4 손그림으로 위인 프레젠테이션을 시작하겠습니다. 경청해 주세요!`,
+          rotation: 0,
+          imageData: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='891' height='630' viewBox='0 0 891 630' style='background:%23fffbeb;'><rect width='100%25' height='100%25' fill='%23fef3c7'/><rect x='25' y='25' width='841' height='580' rx='24' fill='none' stroke='%23f59e0b' stroke-width='5' stroke-dasharray='12 12'/><circle cx='445' cy='220' r='85' fill='%23fde047' stroke='%23d97706' stroke-width='6'/><circle cx='415' cy='205' r='10' fill='%2378350f'/><circle cx='475' cy='205' r='10' fill='%2378350f'/><path d='M410,240 Q445,275 480,240' stroke='%23b45309' stroke-width='5' fill='none' stroke-linecap='round'/><path d='M330,130 L360,165 M560,130 L530,165 M290,220 L335,220 M600,220 L555,220' stroke='%23f59e0b' stroke-width='5' stroke-linecap='round'/><text x='445' y='375' font-family='sans-serif' font-weight='bold' font-size='38' fill='%2378350f' text-anchor='middle'>👑 " + groupNum + "조 위인 프레젠테이션</text><text x='445' y='430' font-family='sans-serif' font-weight='600' font-size='22' fill='%23b45309' text-anchor='middle'>슬라이드 1: 우리가 선정한 위인과 선택 이유</text><text x='445' y='490' font-family='sans-serif' font-size='16' fill='%2392400e' text-anchor='middle'>직접 그린 위인 손그림을 촬영하여 언제든 이 슬라이드를 바꿀 수 있습니다.</text></svg>"
+        },
+        {
+          id: `slide_${groupNum}_2`,
+          title: `2. 위인의 생애와 시대적 배경`,
+          notes: `두 번째 슬라이드입니다. 이번 장에서는 위인이 태어난 시대와 어떤 어려운 상황과 시련을 마주했는지 설명하겠습니다.`,
+          rotation: 0,
+          imageData: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='891' height='630' viewBox='0 0 891 630' style='background:%23fef2f2;'><rect width='100%25' height='100%25' fill='%23fee2e2'/><rect x='25' y='25' width='841' height='580' rx='24' fill='none' stroke='%23ef4444' stroke-width='5' stroke-dasharray='10 10'/><polygon points='445,110 330,300 560,300' fill='%23fca5a5' stroke='%23dc2626' stroke-width='6'/><text x='445' y='265' font-family='sans-serif' font-weight='bold' font-size='60' fill='%23991b1b' text-anchor='middle'>📜</text><rect x='230' y='340' width='431' height='80' rx='16' fill='%23ffffff' stroke='%23f87171' stroke-width='4'/><text x='445' y='392' font-family='sans-serif' font-weight='bold' font-size='26' fill='%23991b1b' text-anchor='middle'>⏳ 위인의 생애와 마주한 역경</text><circle cx='200' cy='490' r='35' fill='%23fecaca' stroke='%23ef4444' stroke-width='4'/><text x='200' y='498' font-family='sans-serif' font-weight='bold' font-size='18' fill='%23b91c1c' text-anchor='middle'>시대배경</text><line x1='245' y1='490' x2='385' y2='490' stroke='%23ef4444' stroke-width='4' stroke-dasharray='6 6'/><circle cx='445' cy='490' r='35' fill='%23fecaca' stroke='%23ef4444' stroke-width='4'/><text x='445' y='498' font-family='sans-serif' font-weight='bold' font-size='18' fill='%23b91c1c' text-anchor='middle'>극복과정</text><line x1='490' y1='490' x2='630' y2='490' stroke='%23ef4444' stroke-width='4' stroke-dasharray='6 6'/><circle cx='690' cy='490' r='35' fill='%23fecaca' stroke='%23ef4444' stroke-width='4'/><text x='690' y='498' font-family='sans-serif' font-weight='bold' font-size='18' fill='%23b91c1c' text-anchor='middle'>신념</text></svg>"
+        },
+        {
+          id: `slide_${groupNum}_3`,
+          title: `3. 위인의 빛나는 업적과 도전`,
+          notes: `세 번째 슬라이드는 위인이 남긴 대표적인 위대한 업적과 이를 이루기 위한 끝없는 도전 과정에 대해 설명하겠습니다.`,
+          rotation: 0,
+          imageData: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='891' height='630' viewBox='0 0 891 630' style='background:%23eff6ff;'><rect width='100%25' height='100%25' fill='%23dbeafe'/><rect x='25' y='25' width='841' height='580' rx='24' fill='none' stroke='%233b82f6' stroke-width='5' stroke-dasharray='14 8'/><path d='M445,120 C395,120 365,160 365,210 C365,245 390,270 405,290 L405,320 L485,320 L485,290 C500,270 525,245 525,210 C525,160 495,120 445,120 Z' fill='%2393c5fd' stroke='%231d4ed8' stroke-width='6'/><rect x='415' y='325' width='60' height='20' rx='6' fill='%2360a5fa' stroke='%231d4ed8' stroke-width='3'/><text x='445' y='410' font-family='sans-serif' font-weight='bold' font-size='34' fill='%231e3a8a' text-anchor='middle'>🏆 위인의 대표 업적과 발자취</text><rect x='150' y='450' width='260' height='90' rx='18' fill='%23ffffff' stroke='%2360a5fa' stroke-width='3'/><text x='280' y='490' font-family='sans-serif' font-weight='bold' font-size='18' fill='%231d4ed8' text-anchor='middle'>주요 업적 1</text><text x='280' y='518' font-family='sans-serif' font-size='14' fill='%2364748b' text-anchor='middle'>사회와 인류를 위한 기여</text><rect x='480' y='450' width='260' height='90' rx='18' fill='%23ffffff' stroke='%2360a5fa' stroke-width='3'/><text x='610' y='490' font-family='sans-serif' font-weight='bold' font-size='18' fill='%231d4ed8' text-anchor='middle'>주요 업적 2</text><text x='610' y='518' font-family='sans-serif' font-size='14' fill='%2364748b' text-anchor='middle'>새로운 길을 연 도전</text></svg>"
+        },
+        {
+          id: `slide_${groupNum}_4`,
+          title: `4. 위인이 세상에 남긴 영향과 교훈`,
+          notes: `네 번째 슬라이드는 위인의 활동이 당대와 오늘날 우리 사회에 끼친 긍정적인 영향과 중요한 교훈을 살펴보겠습니다.`,
+          rotation: 0,
+          imageData: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='891' height='630' viewBox='0 0 891 630' style='background:%23f0fdf4;'><rect width='100%25' height='100%25' fill='%23dcfce7'/><rect x='25' y='25' width='841' height='580' rx='24' fill='none' stroke='%2322c55e' stroke-width='5' stroke-dasharray='10 10'/><path d='M200,380 L340,310 L480,240 L620,150 L680,110' fill='none' stroke='%2316a34a' stroke-width='8' stroke-linecap='round'/><circle cx='200' cy='380' r='14' fill='%234ade80' stroke='%2315803d' stroke-width='4'/><circle cx='340' cy='310' r='14' fill='%234ade80' stroke='%2315803d' stroke-width='4'/><circle cx='480' cy='240' r='14' fill='%234ade80' stroke='%2315803d' stroke-width='4'/><circle cx='620' cy='150' r='14' fill='%234ade80' stroke='%2315803d' stroke-width='4'/><polygon points='680,95 695,125 660,120' fill='%2315803d'/><text x='445' y='460' font-family='sans-serif' font-weight='bold' font-size='34' fill='%2314532d' text-anchor='middle'>🌱 세상에 남긴 뜻과 영향력</text><text x='445' y='510' font-family='sans-serif' font-size='18' fill='%23166534' text-anchor='middle'>위인의 정신은 오늘날 우리에게도 큰 울림을 주고 있습니다.</text></svg>"
+        },
+        {
+          id: `slide_${groupNum}_5`,
+          title: `5. 우리가 본받을 점 & 질의응답 (Q&A)`,
+          notes: `마지막 슬라이드입니다. 이번 탐구를 통해 우리 조원들이 본받고 싶은 점을 나누고, 친구들의 궁금한 질문을 받겠습니다. 경청해 주셔서 감사합니다!`,
+          rotation: 0,
+          imageData: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='891' height='630' viewBox='0 0 891 630' style='background:%23faf5ff;'><rect width='100%25' height='100%25' fill='%23f3e8ff'/><rect x='25' y='25' width='841' height='580' rx='24' fill='none' stroke='%23a855f7' stroke-width='5' stroke-dasharray='12 8'/><path d='M445,190 C420,130 320,130 320,210 C320,270 445,340 445,340 C445,340 570,270 570,210 C570,130 470,130 445,190 Z' fill='%23e9d5ff' stroke='%237e22ce' stroke-width='6'/><text x='445' y='420' font-family='sans-serif' font-weight='bold' font-size='36' fill='%23581c87' text-anchor='middle'>🤝 본받을 점 나누기 &amp; Q&amp;A</text><rect x='270' y='460' width='351' height='60' rx='16' fill='%23ffffff' stroke='%23c084fc' stroke-width='3'/><text x='445' y='498' font-family='sans-serif' font-weight='bold' font-size='22' fill='%237e22ce' text-anchor='middle'>경청해 주셔서 감사합니다!</text></svg>"
+        }
+      ];
+    }
+
+    /* Firebase Realtime Database */
+    const firebaseConfig = {
+      apiKey: "AIzaSyDaDelKV63IuuPBcv6knKUh4xPqbyATgH4",
+      authDomain: "great-person-presentation.firebaseapp.com",
+      databaseURL: "https://great-person-presentation-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "great-person-presentation",
+      storageBucket: "great-person-presentation.firebasestorage.app",
+      messagingSenderId: "254558496507",
+      appId: "1:254558496507:web:60a7ce683f9f65d8f9f25e"
+    };
+
+    let firebaseDb = null;
+    let firebaseReady = false;
+    let applyingFirebaseUpdate = false;
+    let slidesSaveTimer = null;
+
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      firebaseDb = firebase.database();
+      firebaseReady = true;
+      console.log('[Firebase] Realtime Database 연결 준비 완료');
+    } catch (e) {
+      console.error('[Firebase] 초기화 오류:', e);
+    }
+
+    /* Core Application State */
+    let currentScreen = 'home';
+    let currentActiveGroupId = 1;
+    let groupCount = 4;
+    let studentGroups = {}; // studentName -> groupId
+    let allGroupSlides = {}; // groupId -> Array of slides
+
+    let activeIndex = 0;
+    let cameraStream = null;
+    let cameraFacingMode = 'environment';
+    let isReplacingPhoto = false;
+    let draggedIndex = null;
+    let remoteActiveSlideIndex = 0;
+
+    // Cross-Tab BroadcastChannel for Instant Sync between Monitor Tab & Remote Tablets
+    let remoteChannel = null;
+    try {
+      remoteChannel = new BroadcastChannel('sketch_slide_remote_bus');
+    } catch(e) {}
+
+    function loadSavedData() {
+      try {
+        const savedCount = localStorage.getItem('sketch_group_count_v5');
+        const savedGroups = localStorage.getItem('sketch_student_groups_v5');
+        const savedSlides = localStorage.getItem('sketch_all_slides_v5');
+
+        if (savedCount) groupCount = parseInt(savedCount, 10);
+        if (savedGroups) {
+          studentGroups = JSON.parse(savedGroups);
+        } else {
+          randomAssignStudents(groupCount);
+        }
+
+        if (savedSlides) {
+          allGroupSlides = JSON.parse(savedSlides);
+        } else {
+          allGroupSlides = {};
+          for (let g = 1; g <= 10; g++) {
+            allGroupSlides[g] = createInitialGroupSlides(g);
+          }
+          saveAllSlides();
+        }
+      } catch (err) {
+        randomAssignStudents(groupCount);
+      }
+    }
+
+    function saveGroupAssignment() {
+      try {
+        localStorage.setItem('sketch_group_count_v5', groupCount.toString());
+        localStorage.setItem('sketch_student_groups_v5', JSON.stringify(studentGroups));
+      } catch(e) {}
+
+      if (firebaseReady && !applyingFirebaseUpdate) {
+        firebaseDb.ref('classSettings').set({
+          groupCount,
+          studentGroups,
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        }).catch(err => console.error('[Firebase] 조 편성 저장 오류:', err));
+      }
+    }
+
+    function saveAllSlides() {
+      try {
+        localStorage.setItem('sketch_all_slides_v5', JSON.stringify(allGroupSlides));
+      } catch(e) {}
+
+      if (firebaseReady && !applyingFirebaseUpdate) {
+        clearTimeout(slidesSaveTimer);
+        slidesSaveTimer = setTimeout(() => {
+          const groupId = String(currentActiveGroupId);
+          const slides = allGroupSlides[currentActiveGroupId] || [];
+          firebaseDb.ref('groups/' + groupId + '/slides').set(slides)
+            .catch(err => {
+              console.error('[Firebase] 슬라이드 저장 오류:', err);
+              showToast('Firebase 저장에 실패했습니다. 인터넷 연결을 확인해주세요.', 'alert-triangle');
+            });
+        }, 250);
+      }
+    }
+
+    async function loadFirebaseData() {
+      if (!firebaseReady) return;
+
+      try {
+        const snap = await firebaseDb.ref().once('value');
+        const data = snap.val() || {};
+
+        applyingFirebaseUpdate = true;
+
+        if (data.classSettings) {
+          if (data.classSettings.groupCount) groupCount = Number(data.classSettings.groupCount);
+          if (data.classSettings.studentGroups) studentGroups = data.classSettings.studentGroups;
+        }
+
+        if (data.groups) {
+          Object.keys(data.groups).forEach(g => {
+            if (data.groups[g] && Array.isArray(data.groups[g].slides)) {
+              allGroupSlides[Number(g)] = data.groups[g].slides;
+            }
+          });
+        }
+
+        try {
+          localStorage.setItem('sketch_group_count_v5', groupCount.toString());
+          localStorage.setItem('sketch_student_groups_v5', JSON.stringify(studentGroups));
+          localStorage.setItem('sketch_all_slides_v5', JSON.stringify(allGroupSlides));
+        } catch(e) {}
+
+        applyingFirebaseUpdate = false;
+        console.log('[Firebase] 초기 데이터 불러오기 완료');
+      } catch (err) {
+        applyingFirebaseUpdate = false;
+        console.error('[Firebase] 초기 데이터 읽기 오류:', err);
+      }
+
+      // Other devices -> this device
+      firebaseDb.ref('classSettings').on('value', snap => {
+        const v = snap.val();
+        if (!v) return;
+        applyingFirebaseUpdate = true;
+        if (v.groupCount) groupCount = Number(v.groupCount);
+        if (v.studentGroups) studentGroups = v.studentGroups;
+        applyingFirebaseUpdate = false;
+
+        if (currentScreen === 'teacher') renderTeacherPanel();
+        if (currentScreen === 'student-groups') renderStudentGroupHub();
+        if (currentScreen === 'group-studio') setupGroupStudio(currentActiveGroupId);
+      });
+
+      firebaseDb.ref('groups').on('value', snap => {
+        const groups = snap.val();
+        if (!groups) return;
+        applyingFirebaseUpdate = true;
+        Object.keys(groups).forEach(g => {
+          if (groups[g] && Array.isArray(groups[g].slides)) {
+            allGroupSlides[Number(g)] = groups[g].slides;
+          }
+        });
+        applyingFirebaseUpdate = false;
+
+        if (currentScreen === 'group-studio') {
+          renderSlideThumbnails();
+          loadActiveSlide();
+        }
+        if (currentScreen === 'remote-controller') updateRemoteSlideView();
+      });
+    }
+
+    async function seedFirebaseIfEmpty() {
+      if (!firebaseReady) return;
+      try {
+        const snap = await firebaseDb.ref('classSettings').once('value');
+        if (!snap.exists()) {
+          await firebaseDb.ref('classSettings').set({
+            groupCount,
+            studentGroups,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+          });
+        }
+
+        for (let g = 1; g <= groupCount; g++) {
+          const gs = await firebaseDb.ref('groups/' + g + '/slides').once('value');
+          if (!gs.exists()) {
+            await firebaseDb.ref('groups/' + g + '/slides').set(getGroupSlides(g));
+          }
+        }
+      } catch (err) {
+        console.error('[Firebase] 최초 데이터 생성 오류:', err);
+      }
+    }
+
+    function getGroupSlides(groupId) {
+      if (!allGroupSlides[groupId] || allGroupSlides[groupId].length === 0) {
+        allGroupSlides[groupId] = createInitialGroupSlides(groupId);
+        saveAllSlides();
+      }
+      return allGroupSlides[groupId];
+    }
+
+    function randomAssignStudents(totalGroups) {
+      studentGroups = {};
+      const shuffled = [...CLASS_STUDENTS].sort(() => 0.5 - Math.random());
+      shuffled.forEach((name, index) => {
+        studentGroups[name] = (index % totalGroups) + 1;
+      });
+      saveGroupAssignment();
+    }
+
+    function alphabeticalAssignStudents(totalGroups) {
+      studentGroups = {};
+      CLASS_STUDENTS.forEach((name, index) => {
+        studentGroups[name] = (index % totalGroups) + 1;
+      });
+      saveGroupAssignment();
+    }
+
+    /* Toast Notification Helper */
+    let toastTimeout = null;
+    function showToast(message, iconName = 'info') {
+      const toastBox = document.getElementById('toast-box');
+      const toastMsg = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
+
+      if (!toastBox) return;
+      toastMsg.textContent = message;
+      toastIcon.setAttribute('data-lucide', iconName);
+      lucide.createIcons();
+
+      toastBox.classList.remove('translate-y-20', 'opacity-0');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastBox.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    function navigateTo(screen, params = {}) {
+      currentScreen = screen;
+      const screens = {
+        'home': document.getElementById('screen-home'),
+        'student-groups': document.getElementById('screen-student-groups'),
+        'teacher': document.getElementById('screen-teacher'),
+        'group-studio': document.getElementById('screen-group-studio'),
+        'remote-controller': document.getElementById('screen-remote-controller')
+      };
+
+      Object.values(screens).forEach(el => el && el.classList.add('hidden'));
+
+      const headerHomeBtn = document.getElementById('btn-header-home');
+      const studioActionBtns = document.getElementById('studio-action-buttons');
+      const viewBadge = document.getElementById('current-view-badge');
+
+      headerHomeBtn.classList.add('hidden');
+      studioActionBtns.classList.add('hidden');
+
+      const headerHomeIcon = document.getElementById('btn-header-home-icon');
+      const headerHomeText = document.getElementById('btn-header-home-text');
+
+      if (screens[screen]) {
+        screens[screen].classList.remove('hidden');
+      }
+
+      if (screen === 'home') {
+        viewBadge.textContent = '홈 로비';
+        viewBadge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700';
+      } else if (screen === 'student-groups') {
+        headerHomeBtn.classList.remove('hidden');
+        if (headerHomeIcon) headerHomeIcon.setAttribute('data-lucide', 'home');
+        if (headerHomeText) headerHomeText.textContent = '홈으로';
+        viewBadge.textContent = '학생 조 선택';
+        viewBadge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800';
+        renderStudentGroupHub();
+      } else if (screen === 'teacher') {
+        headerHomeBtn.classList.remove('hidden');
+        if (headerHomeIcon) headerHomeIcon.setAttribute('data-lucide', 'home');
+        if (headerHomeText) headerHomeText.textContent = '홈으로';
+        viewBadge.textContent = '교사 관리 뷰';
+        viewBadge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-white';
+        renderTeacherPanel();
+      } else if (screen === 'group-studio') {
+        currentActiveGroupId = params.groupId || currentActiveGroupId;
+        headerHomeBtn.classList.remove('hidden');
+        if (headerHomeIcon) headerHomeIcon.setAttribute('data-lucide', 'home');
+        if (headerHomeText) headerHomeText.textContent = '홈으로';
+        studioActionBtns.classList.remove('hidden');
+        viewBadge.textContent = `${currentActiveGroupId}조 작업실`;
+        viewBadge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800';
+        setupGroupStudio(currentActiveGroupId);
+      } else if (screen === 'remote-controller') {
+        currentActiveGroupId = params.groupId || currentActiveGroupId;
+        headerHomeBtn.classList.remove('hidden');
+        if (headerHomeIcon) headerHomeIcon.setAttribute('data-lucide', 'arrow-left');
+        if (headerHomeText) headerHomeText.textContent = '조별 작업실';
+        viewBadge.textContent = `${currentActiveGroupId}조 리모콘`;
+        viewBadge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950';
+        setupRemoteScreen(currentActiveGroupId);
+      }
+
+      window.scrollTo(0, 0);
+      lucide.createIcons();
+    }
+
+    function renderStudentGroupHub() {
+      const container = document.getElementById('student-group-cards-grid');
+      container.innerHTML = '';
+
+      for (let g = 1; g <= groupCount; g++) {
+        const members = CLASS_STUDENTS.filter(name => studentGroups[name] === g);
+        const slides = getGroupSlides(g);
+
+        const card = document.createElement('div');
+        card.className = 'bg-white hover:bg-gradient-to-br hover:from-white hover:to-indigo-50/50 border-2 border-slate-200 hover:border-indigo-500 rounded-3xl p-5 shadow-sm hover:shadow-lg transition-all flex flex-col justify-between cursor-pointer group';
+        
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-jua text-base flex items-center justify-center font-bold shadow-sm">
+                ${g}조
+              </span>
+              <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-xl">
+                A4 슬라이드 ${slides.length}장
+              </span>
+            </div>
+            <h3 class="font-jua text-xl text-slate-900 group-hover:text-indigo-600 transition-colors">${g}조 슬라이드 작업실</h3>
+            
+            <div class="mt-3">
+              <span class="text-[11px] font-bold text-slate-400 block mb-1">참여 조원 (${members.length}명)</span>
+              <div class="flex flex-wrap gap-1.5">
+                ${members.length > 0 ? members.map(m => `<span class="text-xs bg-slate-50 border border-slate-200 text-slate-700 px-2 py-0.5 rounded-lg font-medium">${m}</span>`).join('') : '<span class="text-xs text-slate-400 italic">조원이 아직 배정되지 않았습니다</span>'}
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-indigo-600">
+            <span>작업실 입장하기</span>
+            <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+          </div>
+        `;
+
+        card.addEventListener('click', () => {
+          navigateTo('group-studio', { groupId: g });
+          showToast(`${g}조 작업실로 입장했습니다.`, 'sparkles');
+        });
+
+        container.appendChild(card);
+      }
+      lucide.createIcons();
+    }
+
+    function renderTeacherPanel() {
+      const groupCountElem = document.getElementById('teacher-group-count-display');
+      if (groupCountElem) groupCountElem.textContent = `${groupCount}조`;
+
+      // 1. Render 22 Student Direct Group Select Roster (Alphabetical / Clean)
+      const rosterContainer = document.getElementById('teacher-student-roster-grid');
+      if (rosterContainer) {
+        rosterContainer.innerHTML = '';
+
+        CLASS_STUDENTS.forEach((studentName, idx) => {
+          const assignedGroup = studentGroups[studentName] || 1;
+          const item = document.createElement('div');
+          item.className = 'flex items-center justify-between p-2.5 bg-slate-50 hover:bg-indigo-50/50 border border-slate-200 rounded-2xl transition';
+
+          let selectOptionsHtml = '';
+          for (let g = 1; g <= groupCount; g++) {
+            selectOptionsHtml += `<option value="${g}" ${assignedGroup === g ? 'selected' : ''}>${g}조</option>`;
+          }
+
+          item.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-mono font-bold text-slate-400 w-5 text-center">${idx + 1}</span>
+              <span class="text-xs font-bold text-slate-800">${studentName}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <select class="select-student-group bg-white font-jua text-xs text-indigo-700 font-bold border-2 border-slate-200 rounded-xl px-2.5 py-1 focus:border-indigo-600 focus:outline-none shadow-2xs transition" data-name="${studentName}">
+                ${selectOptionsHtml}
+              </select>
+            </div>
+          `;
+
+          rosterContainer.appendChild(item);
+        });
+
+        // Bind change event to student group dropdowns
+        rosterContainer.querySelectorAll('.select-student-group').forEach(sel => {
+          sel.addEventListener('change', (e) => {
+            const name = sel.getAttribute('data-name');
+            const targetGroup = parseInt(e.target.value, 10);
+            studentGroups[name] = targetGroup;
+            saveGroupAssignment();
+            renderTeacherPanel();
+            showToast(`[${name}] 학생을 ${targetGroup}조로 배정했습니다.`, 'check');
+          });
+        });
+      }
+
+      // 2. Render Group Summary Overview Cards
+      const container = document.getElementById('teacher-groups-container');
+      if (container) {
+        container.innerHTML = '';
+
+        for (let g = 1; g <= groupCount; g++) {
+          const members = CLASS_STUDENTS.filter(name => studentGroups[name] === g);
+
+          const card = document.createElement('div');
+          card.className = 'bg-white border-2 border-slate-200 rounded-3xl p-4 shadow-sm flex flex-col justify-between';
+          
+          card.innerHTML = `
+            <div>
+              <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                  <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white font-jua text-sm flex items-center justify-center font-bold">
+                    ${g}조
+                  </span>
+                  <span class="text-xs font-bold text-slate-700">${members.length}명 배정</span>
+                </div>
+                <button class="btn-teacher-visit-studio text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1 rounded-xl flex items-center gap-1 transition" data-group="${g}" title="해당 조의 슬라이드 작업실 확인">
+                  <span>작업실</span>
+                  <i data-lucide="external-link" class="w-3 h-3"></i>
+                </button>
+              </div>
+
+              <div class="flex flex-wrap gap-1.5 min-h-[70px]">
+                ${members.map(name => `
+                  <div class="inline-flex items-center gap-1 bg-slate-50 border border-slate-200 text-slate-800 text-xs px-2.5 py-1 rounded-xl">
+                    <span class="font-semibold">${name}</span>
+                  </div>
+                `).join('')}
+                ${members.length === 0 ? '<p class="text-xs text-slate-400 py-3 italic w-full text-center">배정된 학생이 없습니다.</p>' : ''}
+              </div>
+            </div>
+          `;
+
+          container.appendChild(card);
+        }
+
+        container.querySelectorAll('.btn-teacher-visit-studio').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const g = parseInt(btn.getAttribute('data-group'), 10);
+            navigateTo('group-studio', { groupId: g });
+          });
+        });
+      }
+
+      lucide.createIcons();
+    }
+
+    // Teacher Panel Controls
+    const btnDecrease = document.getElementById('btn-decrease-groups');
+    if (btnDecrease) {
+      btnDecrease.addEventListener('click', () => {
+        if (groupCount > 2) {
+          groupCount--;
+          Object.keys(studentGroups).forEach(name => {
+            if (studentGroups[name] > groupCount) {
+              studentGroups[name] = groupCount;
+            }
+          });
+          saveGroupAssignment();
+          renderTeacherPanel();
+          showToast(`조 개수를 ${groupCount}조로 줄였습니다.`, 'minus');
+        } else {
+          showToast('최소 2개 조 이상이어야 합니다.', 'alert-circle');
+        }
+      });
+    }
+
+    const btnIncrease = document.getElementById('btn-increase-groups');
+    if (btnIncrease) {
+      btnIncrease.addEventListener('click', () => {
+        if (groupCount < 8) {
+          groupCount++;
+          saveGroupAssignment();
+          renderTeacherPanel();
+          showToast(`조 개수를 ${groupCount}조로 늘렸습니다.`, 'plus');
+        } else {
+          showToast('최대 8개 조까지 설정할 수 있습니다.', 'alert-circle');
+        }
+      });
+    }
+
+    const btnRandom = document.getElementById('btn-random-assign-groups');
+    if (btnRandom) {
+      btnRandom.addEventListener('click', () => {
+        randomAssignStudents(groupCount);
+        renderTeacherPanel();
+        showToast('22명 학생을 모든 조에 균등하게 랜덤 배정했습니다!', 'shuffle');
+      });
+    }
+
+    const btnAlpha = document.getElementById('btn-alpha-assign-groups');
+    if (btnAlpha) {
+      btnAlpha.addEventListener('click', () => {
+        alphabeticalAssignStudents(groupCount);
+        renderTeacherPanel();
+        showToast('22명 학생을 가나다순으로 1조부터 균등 배정했습니다!', 'list-ordered');
+      });
+    }
+
+    function setupGroupStudio(groupId) {
+      currentActiveGroupId = groupId;
+      const slides = getGroupSlides(groupId);
+      if (activeIndex >= slides.length) activeIndex = 0;
+
+      const badge = document.getElementById('studio-group-badge');
+      const title = document.getElementById('studio-group-title');
+      const membersList = document.getElementById('studio-members-list');
+
+      badge.textContent = `${groupId}조`;
+      title.textContent = `${groupId}조 손그림 슬라이드 작업실`;
+
+      const members = CLASS_STUDENTS.filter(name => studentGroups[name] === groupId);
+      membersList.textContent = members.length > 0 ? `조원: ${members.join(', ')}` : '배정된 조원 없음';
+
+      renderSlideThumbnails();
+      loadActiveSlide();
+    }
+
+    function renderSlideThumbnails() {
+      const slides = getGroupSlides(currentActiveGroupId);
+      const container = document.getElementById('slide-thumbnails-container');
+      const countBadge = document.getElementById('studio-slide-count-badge');
+      countBadge.textContent = `${slides.length}장`;
+      container.innerHTML = '';
+
+      slides.forEach((slide, idx) => {
+        const isActive = idx === activeIndex;
+        const item = document.createElement('div');
+        item.className = `flex items-center gap-2 p-2 rounded-2xl border-2 transition cursor-pointer ${
+          isActive ? 'border-indigo-600 bg-indigo-50/70 shadow-xs' : 'border-slate-200 hover:border-slate-300 bg-white'
+        }`;
+        item.setAttribute('draggable', 'true');
+        item.setAttribute('data-index', idx);
+
+        item.innerHTML = `
+          <div class="cursor-grab text-slate-400 hover:text-slate-600 px-1 py-2" title="드래그하여 순서 변경">
+            <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+          </div>
+          <span class="font-jua text-xs w-5 text-center text-slate-500">${idx + 1}</span>
+          <div class="w-16 aspect-a4-landscape rounded-lg bg-slate-900 overflow-hidden shrink-0 flex items-center justify-center border border-slate-700">
+            <img src="${slide.imageData}" class="w-full h-full object-contain" style="transform: rotate(${slide.rotation || 0}deg);">
+          </div>
+          <div class="flex-1 min-w-0 pr-1">
+            <h4 class="font-bold text-xs text-slate-800 truncate">${slide.title || '슬라이드 ' + (idx + 1)}</h4>
+            <p class="text-[10px] text-slate-400 truncate mt-0.5">${slide.notes ? '대본 작성됨' : '대본 없음'}</p>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <button class="btn-thumb-up p-1 hover:bg-slate-200 rounded text-slate-500 disabled:opacity-20" ${idx === 0 ? 'disabled' : ''} title="위로">
+              <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+            </button>
+            <button class="btn-thumb-down p-1 hover:bg-slate-200 rounded text-slate-500 disabled:opacity-20" ${idx === slides.length - 1 ? 'disabled' : ''} title="아래로">
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        `;
+
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-thumb-up') || e.target.closest('.btn-thumb-down') || e.target.closest('[data-lucide="grip-vertical"]')) return;
+          activeIndex = idx;
+          renderSlideThumbnails();
+          loadActiveSlide();
+        });
+
+        item.querySelector('.btn-thumb-up').addEventListener('click', (e) => {
+          e.stopPropagation();
+          reorderSlide(idx, idx - 1);
+        });
+        item.querySelector('.btn-thumb-down').addEventListener('click', (e) => {
+          e.stopPropagation();
+          reorderSlide(idx, idx + 1);
+        });
+
+        // Drag & Drop Handlers
+        item.addEventListener('dragstart', (e) => {
+          draggedIndex = idx;
+          item.classList.add('dragging-card');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+
+        item.addEventListener('dragend', () => {
+          draggedIndex = null;
+          item.classList.remove('dragging-card');
+          document.querySelectorAll('#slide-thumbnails-container > div').forEach(el => el.classList.remove('drag-over-indicator'));
+        });
+
+        item.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          item.classList.add('drag-over-indicator');
+        });
+
+        item.addEventListener('dragleave', () => {
+          item.classList.remove('drag-over-indicator');
+        });
+
+        item.addEventListener('drop', (e) => {
+          e.preventDefault();
+          item.classList.remove('drag-over-indicator');
+          if (draggedIndex !== null && draggedIndex !== idx) {
+            reorderSlide(draggedIndex, idx);
+          }
+        });
+
+        container.appendChild(item);
+      });
+      lucide.createIcons();
+    }
+
+    function reorderSlide(fromIdx, toIdx) {
+      const slides = getGroupSlides(currentActiveGroupId);
+      if (fromIdx < 0 || fromIdx >= slides.length || toIdx < 0 || toIdx >= slides.length) return;
+
+      const [moved] = slides.splice(fromIdx, 1);
+      slides.splice(toIdx, 0, moved);
+      activeIndex = toIdx;
+
+      saveAllSlides();
+      renderSlideThumbnails();
+      loadActiveSlide();
+      showToast(`슬라이드 순서를 ${toIdx + 1}번으로 변경했습니다.`, 'check');
+    }
+
+    function loadActiveSlide() {
+      const slides = getGroupSlides(currentActiveGroupId);
+      if (slides.length === 0) return;
+
+      if (activeIndex >= slides.length) activeIndex = slides.length - 1;
+      const slide = slides[activeIndex];
+
+      document.getElementById('active-slide-num-pill').textContent = `${activeIndex + 1}번`;
+      document.getElementById('slide-title-input').value = slide.title || '';
+      document.getElementById('slide-notes-input').value = slide.notes || '';
+
+      const previewImg = document.getElementById('active-slide-preview-img');
+      const emptyState = document.getElementById('slide-preview-empty-state');
+
+      if (slide.imageData) {
+        previewImg.src = slide.imageData;
+        previewImg.style.transform = `rotate(${slide.rotation || 0}deg)`;
+        previewImg.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+      } else {
+        previewImg.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+      }
+    }
+
+    // Slide Editor Events
+    document.getElementById('slide-title-input').addEventListener('input', (e) => {
+      const slides = getGroupSlides(currentActiveGroupId);
+      if (slides[activeIndex]) {
+        slides[activeIndex].title = e.target.value;
+        saveAllSlides();
+        renderSlideThumbnails();
+      }
+    });
+
+    document.getElementById('slide-notes-input').addEventListener('input', (e) => {
+      const slides = getGroupSlides(currentActiveGroupId);
+      if (slides[activeIndex]) {
+        slides[activeIndex].notes = e.target.value;
+        saveAllSlides();
+      }
+    });
+
+    document.getElementById('btn-rotate-slide').addEventListener('click', () => {
+      const slides = getGroupSlides(currentActiveGroupId);
+      if (!slides[activeIndex]) return;
+      slides[activeIndex].rotation = ((slides[activeIndex].rotation || 0) + 90) % 360;
+      saveAllSlides();
+      loadActiveSlide();
+      renderSlideThumbnails();
+      showToast('사진을 90도 회전했습니다.', 'rotate-cw');
+    });
+
+    document.getElementById('btn-move-slide-up').addEventListener('click', () => {
+      if (activeIndex > 0) reorderSlide(activeIndex, activeIndex - 1);
+    });
+    document.getElementById('btn-move-slide-down').addEventListener('click', () => {
+      const slides = getGroupSlides(currentActiveGroupId);
+      if (activeIndex < slides.length - 1) reorderSlide(activeIndex, activeIndex + 1);
+    });
+
+    document.getElementById('btn-delete-slide').addEventListener('click', () => {
+      const slides = getGroupSlides(currentActiveGroupId);
+      if (slides.length <= 1) {
+        showToast('슬라이드는 최소 1장 이상 있어야 합니다.', 'alert-circle');
+        return;
+      }
+      slides.splice(activeIndex, 1);
+      if (activeIndex >= slides.length) activeIndex = slides.length - 1;
+      saveAllSlides();
+      renderSlideThumbnails();
+      loadActiveSlide();
+      showToast('슬라이드를 삭제했습니다.', 'trash-2');
+    });
+
+    const cameraModal = document.getElementById('camera-modal');
+    const videoPreview = document.getElementById('camera-video-preview');
+    const captureCanvas = document.getElementById('camera-capture-canvas');
+    const cameraErrorOverlay = document.getElementById('camera-error-overlay');
+    const nativeCamInput = document.getElementById('native-camera-input');
+
+    async function openCamera(replaceMode = false) {
+      isReplacingPhoto = replaceMode;
+      cameraModal.classList.remove('hidden');
+      cameraErrorOverlay.classList.add('hidden');
+      await startVideoStream();
+    }
+
+    async function startVideoStream() {
+      stopVideoStream();
+      try {
+        const constraints = {
+          audio: false,
+          video: {
+            facingMode: cameraFacingMode
+          }
+        };
+        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        videoPreview.srcObject = cameraStream;
+        await videoPreview.play();
+      } catch (err) {
+        console.warn('Camera stream error, showing fallback:', err);
+        cameraErrorOverlay.classList.remove('hidden');
+      }
+    }
+
+    function stopVideoStream() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      videoPreview.srcObject = null;
+    }
+
+    function closeCameraModal() {
+      stopVideoStream();
+      cameraModal.classList.add('hidden');
+    }
+
+    document.getElementById('btn-switch-cam-direction').addEventListener('click', async () => {
+      cameraFacingMode = (cameraFacingMode === 'environment') ? 'user' : 'environment';
+      await startVideoStream();
+    });
+
+    document.getElementById('btn-close-camera-modal').addEventListener('click', closeCameraModal);
+
+    // Snapshot take with A4 Landscape aspect ratio cropping
+    document.getElementById('btn-take-snapshot').addEventListener('click', () => {
+      if (!cameraStream || videoPreview.videoWidth === 0) {
+        nativeCamInput.click();
+        return;
+      }
+
+      const vw = videoPreview.videoWidth;
+      const vh = videoPreview.videoHeight;
+      const targetRatio = 297 / 210; // A4 Landscape ~1.414
+
+      // Calculate crop box centered on video to match A4 landscape
+      let cropW, cropH, startX, startY;
+      if (vw / vh > targetRatio) {
+        cropH = vh;
+        cropW = vh * targetRatio;
+        startX = (vw - cropW) / 2;
+        startY = 0;
+      } else {
+        cropW = vw;
+        cropH = vw / targetRatio;
+        startX = 0;
+        startY = (vh - cropH) / 2;
+      }
+
+      // Max width 1485px (A4 high-res)
+      const outW = Math.min(1485, Math.round(cropW));
+      const outH = Math.round(outW / targetRatio);
+
+      captureCanvas.width = outW;
+      captureCanvas.height = outH;
+      const ctx = captureCanvas.getContext('2d');
+      ctx.drawImage(videoPreview, startX, startY, cropW, cropH, 0, 0, outW, outH);
+      const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.88);
+
+      applyNewSlideImage(dataUrl);
+      closeCameraModal();
+    });
+
+    // Native Camera App Fallback (Guaranteed to work on Android/Galaxy Tab)
+    document.getElementById('btn-trigger-native-cam').addEventListener('click', () => nativeCamInput.click());
+    document.getElementById('btn-trigger-native-cam-from-error').addEventListener('click', () => nativeCamInput.click());
+
+    nativeCamInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const targetRatio = 297 / 210;
+          let iw = img.width;
+          let ih = img.height;
+
+          let cropW, cropH, startX, startY;
+          if (iw / ih > targetRatio) {
+            cropH = ih;
+            cropW = ih * targetRatio;
+            startX = (iw - cropW) / 2;
+            startY = 0;
+          } else {
+            cropW = iw;
+            cropH = iw / targetRatio;
+            startX = 0;
+            startY = (ih - cropH) / 2;
+          }
+
+          const outW = Math.min(1485, Math.round(cropW));
+          const outH = Math.round(outW / targetRatio);
+
+          captureCanvas.width = outW;
+          captureCanvas.height = outH;
+          const ctx = captureCanvas.getContext('2d');
+          ctx.drawImage(img, startX, startY, cropW, cropH, 0, 0, outW, outH);
+          const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.88);
+
+          applyNewSlideImage(dataUrl);
+          closeCameraModal();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+      nativeCamInput.value = '';
+    });
+
+    function applyNewSlideImage(imageData) {
+      const slides = getGroupSlides(currentActiveGroupId);
+      if (isReplacingPhoto && slides[activeIndex]) {
+        slides[activeIndex].imageData = imageData;
+        slides[activeIndex].rotation = 0;
+        showToast('A4 손그림을 새로 교체했습니다!', 'check');
+      } else {
+        const newSlide = {
+          id: `slide_${currentActiveGroupId}_${Date.now()}`,
+          title: `슬라이드 ${slides.length + 1}`,
+          notes: '',
+          rotation: 0,
+          imageData
+        };
+        slides.push(newSlide);
+        activeIndex = slides.length - 1;
+        showToast('새 A4 손그림 슬라이드가 추가되었습니다!', 'camera');
+      }
+      saveAllSlides();
+      renderSlideThumbnails();
+      loadActiveSlide();
+    }
+
+    document.getElementById('btn-open-camera-modal').addEventListener('click', () => openCamera(false));
+    document.getElementById('btn-add-slide-camera').addEventListener('click', () => openCamera(false));
+    document.getElementById('btn-replace-photo').addEventListener('click', () => openCamera(true));
+
+    function generatePresentationTabHTML(groupId, slides, initialIndex) {
+      const members = CLASS_STUDENTS.filter(name => studentGroups[name] === groupId);
+      const membersText = members.length > 0 ? members.join(', ') : '전체 조원';
+      const safeSlidesJson = JSON.stringify(slides).replace(/<\/script>/gi, '<\\/script>');
+      const currentUrl = window.location.href.split('?')[0];
+
+      return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>[${groupId}조] 손그림 프레젠테이션 (모니터)</title>
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"><\/script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-database-compat.js"><\/script>
+  <script src="https://unpkg.com/lucide@latest"><\/script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans KR', sans-serif; -webkit-tap-highlight-color: transparent; }
+    .font-jua { font-family: 'Jua', sans-serif; }
+    .aspect-a4-landscape { aspect-ratio: 297 / 210; }
+    .laser-pointer { box-shadow: 0 0 18px 6px rgba(239, 68, 68, 0.95), 0 0 5px 2px #fff; }
+  </style>
+</head>
+<body class="bg-black text-white h-screen w-screen overflow-hidden flex flex-col select-none relative">
+  <!-- Top HUD Bar -->
+  <header id="pres-hud-top" class="absolute top-0 inset-x-0 p-3 md:p-4 bg-gradient-to-b from-black/90 via-black/50 to-transparent flex items-center justify-between z-30 transition-opacity duration-300">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white font-jua text-sm flex items-center justify-center font-bold shadow">${groupId}조</div>
+      <span id="pres-slide-indicator" class="bg-white/20 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-bold tracking-wide">
+        ${initialIndex + 1} / ${slides.length}
+      </span>
+      <h2 id="pres-slide-title" class="text-white font-bold text-xs md:text-sm drop-shadow truncate max-w-[140px] sm:max-w-xs md:max-w-md">슬라이드 제목</h2>
+      <div class="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-950/80 border border-emerald-500/50 rounded-full text-[11px] text-emerald-400 font-semibold">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span class="hidden sm:inline">조원 태블릿 리모콘 수신 대기 중</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Timer -->
+      <div id="pres-timer" class="flex items-center gap-1.5 bg-black/60 border border-white/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-mono font-bold">
+        <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+        <span id="pres-timer-text">00:00</span>
+      </div>
+      <!-- Remote QR Trigger in Monitor Header -->
+      <button id="btn-show-remote-qr" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+        <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+        <span>조원 리모콘 QR</span>
+      </button>
+      <!-- Notes Toggle -->
+      <button id="btn-toggle-notes" class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-semibold backdrop-blur transition flex items-center gap-1.5">
+        <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">대본 프롬프터</span>
+        <span class="sm:hidden">대본</span>
+      </button>
+      <!-- Fullscreen Toggle -->
+      <button id="btn-toggle-fullscreen" class="p-2 bg-white/20 hover:bg-white/30 text-white rounded-xl transition" title="전체화면 전환">
+        <i data-lucide="maximize" class="w-4 h-4"></i>
+      </button>
+      <!-- Close Tab -->
+      <button id="btn-close-tab" class="px-3 py-1.5 bg-rose-600/80 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1" title="발표 창 닫기">
+        <i data-lucide="x" class="w-4 h-4"></i>
+        <span>닫기</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Remote QR Modal for Member Tablets -->
+  <div id="pres-qr-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 text-white rounded-3xl p-6 w-full max-w-sm text-center flex flex-col items-center shadow-2xl">
+      <div class="w-12 h-12 bg-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center mb-3">
+        <i data-lucide="smartphone" class="w-6 h-6"></i>
+      </div>
+      <h3 class="font-jua text-xl text-amber-400 mb-1">${groupId}조 태블릿 리모콘 연결</h3>
+      <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+        다른 조원들의 태블릿 카메라로 이 QR을 비추면 바로 스마트 리모콘 & 대본 프롬프터가 실행됩니다.
+      </p>
+      <div class="p-3 bg-white rounded-2xl mb-4 shadow-lg">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(currentUrl + '?mode=remote&group=' + groupId)}" alt="리모콘 QR" class="w-48 h-48 rounded-lg">
+      </div>
+      <button id="btn-close-pres-qr" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs transition">닫기</button>
+    </div>
+  </div>
+
+  <!-- Main Presentation Stage: Exact A4 Landscape Box Centered -->
+  <main id="pres-stage" class="relative flex-1 flex items-center justify-center overflow-hidden cursor-crosshair p-2 md:p-6">
+    <div id="pres-screen-container" class="relative max-w-full max-h-full aspect-a4-landscape bg-slate-950 flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+      <img id="pres-image" src="" alt="발표 슬라이드" class="w-full h-full object-contain pointer-events-none transition-all duration-150">
+      <canvas id="pres-draw-canvas" class="absolute inset-0 w-full h-full pointer-events-auto"></canvas>
+      <div id="laser-dot" class="laser-pointer absolute w-4 h-4 bg-red-500 rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2 hidden z-30"></div>
+    </div>
+  </main>
+
+  <!-- Presentation Floating Notes Popover -->
+  <aside id="pres-notes-box" class="absolute bottom-24 right-4 md:right-8 w-80 md:w-96 bg-slate-900/90 text-white backdrop-blur-md border border-white/20 rounded-2xl p-4 hidden z-30 shadow-2xl">
+    <div class="flex items-center justify-between pb-2 border-b border-white/10 mb-2">
+      <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+        <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+        <span>${groupId}조 발표 대본 (${membersText})</span>
+      </span>
+      <button id="btn-close-notes-box" class="text-slate-400 hover:text-white p-1 rounded transition">
+        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      </button>
+    </div>
+    <p id="pres-notes-text" class="text-xs md:text-sm text-slate-200 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap">작성된 대본이 없습니다.</p>
+  </aside>
+
+  <!-- Bottom HUD Controls -->
+  <footer id="pres-hud-bottom" class="absolute bottom-3 inset-x-0 p-2 flex items-center justify-center gap-4 z-30">
+    <div class="flex items-center gap-2 bg-black/70 backdrop-blur-md border border-white/15 px-3 py-2 rounded-2xl shadow-2xl">
+      <button id="btn-pres-prev" class="p-2 text-white hover:bg-white/20 disabled:opacity-25 disabled:hover:bg-transparent rounded-xl transition" title="이전 슬라이드 (← 키)">
+        <i data-lucide="chevron-left" class="w-5 h-5"></i>
+      </button>
+      <div class="h-5 w-px bg-white/20 mx-1"></div>
+      <button id="tool-laser" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition hover:bg-white/20 ring-2 ring-red-500 bg-white/20" title="레이저 포인터 (L 키)">
+        <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+        <span>포인터</span>
+      </button>
+      <button id="tool-pen" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition hover:bg-white/20" title="그리기 형광펜 (P 키)">
+        <i data-lucide="pen-tool" class="w-3.5 h-3.5 text-yellow-400"></i>
+        <span>형광펜</span>
+      </button>
+      <button id="tool-clear-canvas" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/20 transition" title="낙서 지우기 (C 키)">
+        <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+        <span>지우기</span>
+      </button>
+      <div class="h-5 w-px bg-white/20 mx-1"></div>
+      <button id="btn-pres-next" class="p-2 text-white hover:bg-white/20 disabled:opacity-25 disabled:hover:bg-transparent rounded-xl transition" title="다음 슬라이드 (→ 키, Space)">
+        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </footer>
+
+  <script>
+    const SLIDES = ${safeSlidesJson};
+    const FIREBASE_CONFIG = ${JSON.stringify(firebaseConfig)};
+    let presDb = null;
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      presDb = firebase.database();
+    } catch(e) { console.error('[Firebase presentation]', e); }
+
+    let currentIndex = ${initialIndex};
+    let activeTool = 'laser';
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let timerSeconds = 0;
+    let timerInterval = null;
+
+    const presContainer = document.getElementById('pres-screen-container');
+    const presImage = document.getElementById('pres-image');
+    const presCanvas = document.getElementById('pres-draw-canvas');
+    const ctx = presCanvas.getContext('2d');
+    const laserDot = document.getElementById('laser-dot');
+    const notesBox = document.getElementById('pres-notes-box');
+    const notesText = document.getElementById('pres-notes-text');
+    const presTitle = document.getElementById('pres-slide-title');
+    const presIndicator = document.getElementById('pres-slide-indicator');
+    const presTimerText = document.getElementById('pres-timer-text');
+    const btnPrev = document.getElementById('btn-pres-prev');
+    const btnNext = document.getElementById('btn-pres-next');
+    const toolLaser = document.getElementById('tool-laser');
+    const toolPen = document.getElementById('tool-pen');
+
+    // BroadcastChannel sync for tablet remote control
+    let remoteChannel = null;
+    try {
+      remoteChannel = new BroadcastChannel('sketch_slide_remote_bus');
+      remoteChannel.onmessage = (e) => {
+        if (e.data && e.data.groupId == ${groupId}) {
+          handleRemoteAction(e.data);
+        }
+      };
+    } catch(e) {}
+
+    let lastFirebaseCommandNonce = null;
+    if (presDb) {
+      presDb.ref('remoteCommands/${groupId}').on('value', snap => {
+        const data = snap.val();
+        if (!data || !data.nonce || data.nonce === lastFirebaseCommandNonce) return;
+        lastFirebaseCommandNonce = data.nonce;
+        handleRemoteAction(data);
+      });
+    }
+
+    function handleRemoteAction(data) {
+      if (data.action === 'NEXT') {
+        if (currentIndex < SLIDES.length - 1) showSlide(currentIndex + 1);
+      } else if (data.action === 'PREV') {
+        if (currentIndex > 0) showSlide(currentIndex - 1);
+      } else if (data.action === 'GOTO') {
+        if (data.slideIndex >= 0 && data.slideIndex < SLIDES.length) {
+          showSlide(data.slideIndex);
+        }
+      } else if (data.action === 'TOOL') {
+        setActiveTool(data.tool);
+      } else if (data.action === 'CLEAR') {
+        clearCanvas();
+      }
+    }
+
+    function resizeCanvas() {
+      presCanvas.width = presContainer.clientWidth;
+      presCanvas.height = presContainer.clientHeight;
+    }
+
+    function showSlide(idx) {
+      if (idx < 0 || idx >= SLIDES.length) return;
+      currentIndex = idx;
+      const slide = SLIDES[currentIndex];
+      presImage.src = slide.imageData;
+      presImage.style.transform = "rotate(" + (slide.rotation || 0) + "deg)";
+      presTitle.textContent = "[" + ${groupId} + "조] " + (slide.title || ("슬라이드 " + (idx + 1)));
+      presIndicator.textContent = (idx + 1) + " / " + SLIDES.length;
+      notesText.textContent = slide.notes || "작성된 발표 대본이 없습니다.";
+      clearCanvas();
+      btnPrev.disabled = (currentIndex === 0);
+      btnNext.disabled = (currentIndex === SLIDES.length - 1);
+
+      // Notify member tablet remotes of current slide index
+      if (presDb) {
+        presDb.ref('presentationState/${groupId}').update({
+          slideIndex: currentIndex,
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        }).catch(() => {});
+      }
+
+      if (remoteChannel) {
+        remoteChannel.postMessage({
+          type: 'REMOTE_COMMAND',
+          groupId: ${groupId},
+          action: 'SYNC_INDEX',
+          slideIndex: currentIndex
+        });
+      }
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, presCanvas.width, presCanvas.height);
+    }
+
+    function setActiveTool(tool) {
+      activeTool = tool;
+      if (tool === 'laser') {
+        toolLaser.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition hover:bg-white/20 ring-2 ring-red-500 bg-white/20';
+        toolPen.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition hover:bg-white/20';
+        laserDot.classList.remove('hidden');
+      } else {
+        toolPen.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition hover:bg-white/20 ring-2 ring-yellow-400 bg-white/20';
+        toolLaser.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition hover:bg-white/20';
+        laserDot.classList.add('hidden');
+      }
+    }
+
+    function getCoords(e) {
+      const rect = presCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    presContainer.addEventListener('mousemove', (e) => {
+      const p = getCoords(e);
+      if (activeTool === 'laser') {
+        laserDot.classList.remove('hidden');
+        laserDot.style.left = p.x + 'px';
+        laserDot.style.top = p.y + 'px';
+      }
+      if (isDrawing && activeTool === 'pen') {
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.75)';
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        lastX = p.x;
+        lastY = p.y;
+      }
+    });
+
+    presContainer.addEventListener('mousedown', (e) => {
+      if (activeTool === 'pen') {
+        isDrawing = true;
+        const p = getCoords(e);
+        lastX = p.x;
+        lastY = p.y;
+      }
+    });
+
+    window.addEventListener('mouseup', () => { isDrawing = false; });
+
+    presContainer.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const p = getCoords(e);
+      if (activeTool === 'laser') {
+        laserDot.classList.remove('hidden');
+        laserDot.style.left = p.x + 'px';
+        laserDot.style.top = p.y + 'px';
+      } else if (isDrawing && activeTool === 'pen') {
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.75)';
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        lastX = p.x;
+        lastY = p.y;
+      }
+    }, { passive: false });
+
+    presContainer.addEventListener('touchstart', (e) => {
+      const p = getCoords(e);
+      if (activeTool === 'laser') {
+        laserDot.classList.remove('hidden');
+        laserDot.style.left = p.x + 'px';
+        laserDot.style.top = p.y + 'px';
+      } else if (activeTool === 'pen') {
+        isDrawing = true;
+        lastX = p.x;
+        lastY = p.y;
+      }
+    });
+
+    presContainer.addEventListener('touchend', () => { isDrawing = false; });
+
+    btnPrev.addEventListener('click', () => { if (currentIndex > 0) showSlide(currentIndex - 1); });
+    btnNext.addEventListener('click', () => { if (currentIndex < SLIDES.length - 1) showSlide(currentIndex + 1); });
+    toolLaser.addEventListener('click', () => setActiveTool('laser'));
+    toolPen.addEventListener('click', () => setActiveTool('pen'));
+    document.getElementById('tool-clear-canvas').addEventListener('click', clearCanvas);
+
+    document.getElementById('btn-toggle-notes').addEventListener('click', () => notesBox.classList.toggle('hidden'));
+    document.getElementById('btn-close-notes-box').addEventListener('click', () => notesBox.classList.add('hidden'));
+
+    const presQrModal = document.getElementById('pres-qr-modal');
+    document.getElementById('btn-show-remote-qr').addEventListener('click', () => presQrModal.classList.remove('hidden'));
+    document.getElementById('btn-close-pres-qr').addEventListener('click', () => presQrModal.classList.add('hidden'));
+
+    document.getElementById('btn-toggle-fullscreen').addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    document.getElementById('btn-close-tab').addEventListener('click', () => {
+      window.close();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        if (currentIndex < SLIDES.length - 1) showSlide(currentIndex + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        if (currentIndex > 0) showSlide(currentIndex - 1);
+      } else if (e.key.toLowerCase() === 'l') {
+        setActiveTool('laser');
+      } else if (e.key.toLowerCase() === 'p') {
+        setActiveTool('pen');
+      } else if (e.key.toLowerCase() === 'c') {
+        clearCanvas();
+      } else if (e.key.toLowerCase() === 'n') {
+        notesBox.classList.toggle('hidden');
+      } else if (e.key.toLowerCase() === 'f') {
+        document.getElementById('btn-toggle-fullscreen').click();
+      }
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      resizeCanvas();
+      showSlide(currentIndex);
+      setActiveTool('laser');
+      lucide.createIcons();
+
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        const mins = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+        const secs = String(timerSeconds % 60).padStart(2, '0');
+        presTimerText.textContent = mins + ":" + secs;
+      }, 1000);
+    });
+  <\/script>
+</body>
+</html>`;
+    }
+
+    // Launch Presentation in New Tab (Screen Tablet)
+    document.getElementById('btn-start-presentation-main').addEventListener('click', () => {
+      const slides = getGroupSlides(currentActiveGroupId);
+      if (slides.length === 0) {
+        showToast('발표할 슬라이드가 없습니다.', 'alert-circle');
+        return;
+      }
+
+      const presentationHtml = generatePresentationTabHTML(currentActiveGroupId, slides, activeIndex);
+      const newWin = window.open('', '_blank');
+      if (newWin) {
+        newWin.document.open();
+        newWin.document.write(presentationHtml);
+        newWin.document.close();
+        showToast(`${currentActiveGroupId}조 모니터 발표 창을 새 탭에서 열었습니다!`, 'external-link');
+      } else {
+        showToast('브라우저 팝업을 허용해주세요.', 'alert-triangle');
+      }
+    });
+
+    const remoteQrModal = document.getElementById('remote-qr-modal');
+    const qrCodeImg = document.getElementById('qr-code-img');
+    const qrModalGroupText = document.getElementById('qr-modal-group-text');
+
+    function openRemoteQRModal(groupId) {
+      qrModalGroupText.textContent = `${groupId}조`;
+      const baseUrl = window.location.href.split('?')[0];
+      const remoteLink = `${baseUrl}?mode=remote&group=${groupId}`;
+      qrCodeImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(remoteLink)}`;
+      remoteQrModal.classList.remove('hidden');
+    }
+
+    document.getElementById('btn-studio-remote-qr').addEventListener('click', () => {
+      openRemoteQRModal(currentActiveGroupId);
+    });
+
+    document.getElementById('btn-close-qr-modal').addEventListener('click', () => {
+      remoteQrModal.classList.add('hidden');
+    });
+
+    document.getElementById('btn-open-remote-direct').addEventListener('click', () => {
+      remoteQrModal.classList.add('hidden');
+      navigateTo('remote-controller', { groupId: currentActiveGroupId });
+    });
+
+    document.getElementById('btn-copy-remote-url').addEventListener('click', () => {
+      const baseUrl = window.location.href.split('?')[0];
+      const remoteLink = `${baseUrl}?mode=remote&group=${currentActiveGroupId}`;
+      const tempInput = document.createElement('input');
+      tempInput.value = remoteLink;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      showToast('리모콘 연결 주소가 복사되었습니다!', 'check');
+    });
+
+    function setupRemoteScreen(groupId) {
+      currentActiveGroupId = groupId;
+      remoteActiveSlideIndex = 0;
+      
+      const badge = document.getElementById('remote-group-badge');
+      const select = document.getElementById('remote-group-select');
+      const membersTag = document.getElementById('remote-members-tag');
+
+      badge.textContent = `${groupId}조`;
+
+      // Fill Select Options
+      select.innerHTML = '';
+      for (let g = 1; g <= groupCount; g++) {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = `${g}조`;
+        if (g === groupId) opt.selected = true;
+        select.appendChild(opt);
+      }
+
+      select.onchange = (e) => {
+        setupRemoteScreen(parseInt(e.target.value, 10));
+      };
+
+      const members = CLASS_STUDENTS.filter(name => studentGroups[name] === groupId);
+      membersTag.textContent = members.length > 0 ? `조원: ${members.join(', ')}` : '배정된 조원 없음';
+
+      updateRemoteSlideView();
+
+      if (firebaseReady) {
+        firebaseDb.ref('presentationState/' + groupId + '/slideIndex').off();
+        firebaseDb.ref('presentationState/' + groupId + '/slideIndex').on('value', snap => {
+          const idx = snap.val();
+          if (Number.isInteger(idx)) {
+            remoteActiveSlideIndex = idx;
+            updateRemoteSlideView();
+          }
+        });
+      }
+
+      // Listen for presentation events
+      if (remoteChannel) {
+        remoteChannel.onmessage = (event) => {
+          if (event.data && event.data.type === 'REMOTE_COMMAND' && event.data.groupId == groupId) {
+            if (event.data.action === 'SYNC_INDEX') {
+              remoteActiveSlideIndex = event.data.slideIndex;
+              updateRemoteSlideView();
+            }
+          }
+        };
+      }
+    }
+
+    function triggerHaptic() {
+      if (navigator.vibrate) {
+        try { navigator.vibrate(30); } catch(e) {}
+      }
+    }
+
+    function sendRemoteCommand(actionData) {
+      triggerHaptic();
+      const command = {
+        type: 'REMOTE_COMMAND',
+        groupId: currentActiveGroupId,
+        ...actionData,
+        sentAt: Date.now(),
+        nonce: Math.random().toString(36).slice(2)
+      };
+
+      // Same browser/tab environment
+      if (remoteChannel) remoteChannel.postMessage(command);
+
+      // Different tablets / PCs
+      if (firebaseReady) {
+        firebaseDb.ref('remoteCommands/' + currentActiveGroupId).set(command)
+          .catch(err => console.error('[Firebase] 리모콘 명령 전송 오류:', err));
+      }
+    }
+
+    function updateRemoteSlideView() {
+      const slides = getGroupSlides(currentActiveGroupId);
+      const titleElem = document.getElementById('remote-slide-title');
+      const counterElem = document.getElementById('remote-slide-counter');
+      const notesElem = document.getElementById('remote-slide-notes');
+      const stripContainer = document.getElementById('remote-thumbnails-strip');
+
+      if (slides.length === 0) {
+        titleElem.textContent = '슬라이드 없음';
+        counterElem.textContent = '0 / 0';
+        notesElem.textContent = '작성된 슬라이드가 없습니다.';
+        stripContainer.innerHTML = '';
+        return;
+      }
+
+      if (remoteActiveSlideIndex >= slides.length) remoteActiveSlideIndex = slides.length - 1;
+      const curSlide = slides[remoteActiveSlideIndex];
+
+      titleElem.textContent = curSlide.title || `슬라이드 ${remoteActiveSlideIndex + 1}`;
+      counterElem.textContent = `${remoteActiveSlideIndex + 1} / ${slides.length}`;
+      notesElem.textContent = curSlide.notes || '(작성된 발표 대본이 없습니다. 자유롭게 발표해 보세요!)';
+
+      // Thumbnail strip with A4 ratio
+      stripContainer.innerHTML = '';
+      slides.forEach((s, idx) => {
+        const btnThumb = document.createElement('button');
+        const isActive = idx === remoteActiveSlideIndex;
+        btnThumb.className = `w-14 aspect-a4-landscape rounded-lg overflow-hidden shrink-0 border-2 transition ${
+          isActive ? 'border-amber-500 ring-2 ring-amber-200' : 'border-slate-200 opacity-60'
+        }`;
+        btnThumb.innerHTML = `<img src="${s.imageData}" class="w-full h-full object-cover">`;
+        btnThumb.onclick = () => {
+          remoteActiveSlideIndex = idx;
+          updateRemoteSlideView();
+          sendRemoteCommand({ action: 'GOTO', slideIndex: idx });
+        };
+        stripContainer.appendChild(btnThumb);
+      });
+
+      document.getElementById('btn-remote-prev').disabled = (remoteActiveSlideIndex === 0);
+      document.getElementById('btn-remote-next').disabled = (remoteActiveSlideIndex === slides.length - 1);
+    }
+
+    // Remote Big Prev / Next Buttons
+    document.getElementById('btn-remote-prev').addEventListener('click', () => {
+      if (remoteActiveSlideIndex > 0) {
+        remoteActiveSlideIndex--;
+        updateRemoteSlideView();
+        sendRemoteCommand({ action: 'PREV' });
+      }
+    });
+
+    document.getElementById('btn-remote-next').addEventListener('click', () => {
+      const slides = getGroupSlides(currentActiveGroupId);
+      if (remoteActiveSlideIndex < slides.length - 1) {
+        remoteActiveSlideIndex++;
+        updateRemoteSlideView();
+        sendRemoteCommand({ action: 'NEXT' });
+      }
+    });
+
+    // Remote Tool Buttons
+    document.getElementById('btn-remote-tool-laser').addEventListener('click', () => {
+      sendRemoteCommand({ action: 'TOOL', tool: 'laser' });
+      showToast('포인터 도구 활성화 명령 전송', 'check');
+    });
+
+    document.getElementById('btn-remote-tool-pen').addEventListener('click', () => {
+      sendRemoteCommand({ action: 'TOOL', tool: 'pen' });
+      showToast('형광펜 도구 활성화 명령 전송', 'pen-tool');
+    });
+
+    document.getElementById('btn-remote-tool-clear').addEventListener('click', () => {
+      sendRemoteCommand({ action: 'CLEAR' });
+      showToast('낙서 지우기 명령 전송', 'eraser');
+    });
+
+    // Home & Navigation Handlers
+    document.getElementById('btn-brand-home').addEventListener('click', () => navigateTo('home'));
+    document.getElementById('btn-header-home').addEventListener('click', () => {
+      if (currentScreen === 'remote-controller') {
+        navigateTo('group-studio', { groupId: currentActiveGroupId });
+      } else {
+        navigateTo('home');
+      }
+    });
+    document.getElementById('btn-back-to-home-from-groups').addEventListener('click', () => navigateTo('home'));
+    document.getElementById('btn-back-to-home-from-teacher').addEventListener('click', () => navigateTo('home'));
+    document.getElementById('btn-back-from-remote').addEventListener('click', () => {
+      navigateTo('group-studio', { groupId: currentActiveGroupId });
+    });
+    document.getElementById('btn-switch-group-studio').addEventListener('click', () => navigateTo('student-groups'));
+
+    document.getElementById('card-student-mode').addEventListener('click', () => {
+      navigateTo('student-groups');
+      showToast('참여할 모둠을 선택해주세요.', 'sparkles');
+    });
+
+    // Teacher Password Modal Handling (Password: 5658)
+    const teacherPwdModal = document.getElementById('teacher-pwd-modal');
+    const teacherPwdInput = document.getElementById('teacher-pwd-input');
+    const teacherPwdError = document.getElementById('teacher-pwd-error');
+
+    document.getElementById('card-teacher-mode').addEventListener('click', () => {
+      teacherPwdInput.value = '';
+      teacherPwdError.classList.add('hidden');
+      teacherPwdModal.classList.remove('hidden');
+      teacherPwdInput.focus();
+    });
+
+    document.getElementById('btn-cancel-teacher-pwd').addEventListener('click', () => {
+      teacherPwdModal.classList.add('hidden');
+    });
+
+    document.getElementById('btn-confirm-teacher-pwd').addEventListener('click', verifyTeacherPassword);
+    teacherPwdInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') verifyTeacherPassword();
+    });
+
+    function verifyTeacherPassword() {
+      if (teacherPwdInput.value === '5658') {
+        teacherPwdModal.classList.add('hidden');
+        navigateTo('teacher');
+        showToast('교사 관리소에 접속했습니다.', 'lock');
+      } else {
+        teacherPwdError.classList.remove('hidden');
+      }
+    }
+
+    // App Initialization on DOM Load
+    window.addEventListener('DOMContentLoaded', async () => {
+      loadSavedData();
+      await loadFirebaseData();
+      await seedFirebaseIfEmpty();
+
+      // Check if launched directly via QR link
+      const urlParams = new URLSearchParams(window.location.search);
+      const modeParam = urlParams.get('mode');
+      const groupParam = urlParams.get('group');
+
+      if (modeParam === 'remote') {
+        const targetGroup = parseInt(groupParam, 10) || 1;
+        navigateTo('remote-controller', { groupId: targetGroup });
+      } else {
+        navigateTo('home');
+      }
+
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
