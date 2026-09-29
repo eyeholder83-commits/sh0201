@@ -1,0 +1,2639 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>모둠 활동 실시간 협업 칠판</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+    }
+    .allow-select {
+      user-select: text;
+    }
+
+    /* THEMES FOR CHALKBOARD / WHITEBOARD */
+    .theme-whiteboard {
+      background-color: #f8fafc;
+      background-image: 
+        radial-gradient(#cbd5e1 1.2px, transparent 1.2px),
+        linear-gradient(to right, rgba(226, 232, 240, 0.4) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(226, 232, 240, 0.4) 1px, transparent 1px);
+      background-size: 24px 24px, 120px 120px, 120px 120px;
+      border: 14px solid #64748b;
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.06), 0 15px 35px -5px rgba(0,0,0,0.25);
+    }
+    .theme-chalkboard {
+      background-color: #1e3a2f;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 0);
+      background-size: 28px 28px;
+      border: 14px solid #78350f;
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.6), 0 15px 35px -5px rgba(0,0,0,0.3);
+    }
+    .theme-cork {
+      background-color: #d97706;
+      background-image: radial-gradient(#b45309 15%, transparent 16%), radial-gradient(#92400e 15%, transparent 16%);
+      background-size: 16px 16px;
+      background-position: 0 0, 8px 8px;
+      border: 14px solid #92400e;
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.3), 0 15px 35px -5px rgba(0,0,0,0.25);
+    }
+    .theme-pastel {
+      background-color: #eff6ff;
+      background-image: linear-gradient(135deg, #e0e7ff 25%, transparent 25%), linear-gradient(225deg, #e0e7ff 25%, transparent 25%), linear-gradient(45deg, #e0e7ff 25%, transparent 25%), linear-gradient(315deg, #e0e7ff 25%, #eff6ff 25%);
+      background-position: 12px 0, 12px 0, 0 0, 0 0;
+      background-size: 24px 24px;
+      border: 14px solid #6366f1;
+      box-shadow: inset 0 0 30px rgba(99, 102, 241, 0.1), 0 15px 35px -5px rgba(0,0,0,0.2);
+    }
+
+    /* VIRTUAL FULLSCREEN FALLBACK */
+    .virtual-fullscreen {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999 !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+      padding: 12px !important;
+      background: #0f172a !important;
+    }
+
+    /* POST-IT PIN & SHADOW */
+    .post-it {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      touch-action: none;
+    }
+    .post-it:hover {
+      transform: translateY(-3px) scale(1.03);
+      z-index: 30;
+      box-shadow: 0 16px 30px -6px rgba(0, 0, 0, 0.25);
+    }
+    .post-it.dragging {
+      opacity: 0.85;
+      transform: scale(1.06) rotate(2deg);
+      z-index: 50;
+      box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.35);
+    }
+
+    /* CUSTOM SCROLLBAR */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.04);
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0,0,0,0.35);
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake-error {
+      animation: shake 0.4s ease-in-out;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between overflow-x-hidden antialiased">
+
+  <!-- GLOBAL NAV BAR -->
+  <header class="bg-white/95 backdrop-blur border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2">
+      <!-- Title & Home Link -->
+      <div class="flex items-center gap-2.5 cursor-pointer" onclick="switchView('home')">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+          <i class="fa-solid fa-chalkboard text-base"></i>
+        </div>
+        <div class="leading-tight">
+          <h1 class="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-1.5">
+            <span>모둠 활동 스마트 칠판</span>
+            <span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-bold uppercase hidden sm:inline">Live</span>
+          </h1>
+          <p class="text-[11px] text-slate-400 font-medium">실시간 학생·교사·칠판 공유 플랫폼</p>
+        </div>
+      </div>
+
+      <!-- Center Active View Badges & Quick Switches -->
+      <div class="flex items-center gap-1 sm:gap-2">
+        <button onclick="switchView('home')" id="navHomeBtn" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200">
+          <i class="fa-solid fa-house"></i>
+          <span class="hidden md:inline">홈</span>
+        </button>
+        <button onclick="startStudentFlow()" id="navStudentBtn" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-amber-50 text-amber-700 hover:bg-amber-100">
+          <i class="fa-solid fa-graduation-cap"></i>
+          <span>학생 뷰</span>
+        </button>
+        <button onclick="switchView('blackboard')" id="navBlackboardBtn" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+          <i class="fa-solid fa-chalkboard-user"></i>
+          <span>칠판 뷰</span>
+        </button>
+        <button onclick="promptTeacherPassword()" id="navTeacherBtn" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
+          <i class="fa-solid fa-user-tie"></i>
+          <span>교사 뷰</span>
+          <i class="fa-solid fa-lock text-[10px] text-indigo-400"></i>
+        </button>
+      </div>
+
+      <!-- Right Controls: Theme Selector -->
+      <div class="flex items-center gap-2">
+        <div class="relative inline-block text-left">
+          <select id="boardThemeSelect" onchange="changeBoardTheme(this.value)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-1.5 px-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            <option value="theme-whiteboard">🤍 화이트보드</option>
+            <option value="theme-pastel">💜 파스텔보드</option>
+            <option value="theme-cork">🪵 코르크판</option>
+            <option value="theme-chalkboard">🌲 초록칠판</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 flex flex-col justify-start">
+
+    <!-- VIEW 1: HOME SCREEN -->
+    <div id="viewHome" class="flex-1 flex flex-col items-center justify-center py-6 sm:py-12">
+      <div class="text-center max-w-2xl mx-auto mb-10 px-4">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-indigo-50 text-indigo-600 border border-indigo-100 mb-3 shadow-xs">
+          <i class="fa-solid fa-sparkles text-amber-500"></i> 누구나 쉽게 참여하는 스마트 교실
+        </span>
+        <h2 class="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-snug">
+          어떤 화면으로 접속하시겠습니까?
+        </h2>
+        <p class="text-sm sm:text-base text-slate-500 mt-2">
+          학생은 자신의 조와 이름을 눌러 의견을 포스트잇으로 보내고,<br class="hidden sm:inline">
+          선생님과 칠판 화면에서 모둠원들의 생각을 실시간으로 모아봅니다.
+        </p>
+      </div>
+
+      <!-- 3 Main Choice Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 w-full max-w-4xl px-2">
+        <!-- 1. Student View Card -->
+        <div onclick="startStudentFlow()" class="group bg-white rounded-3xl p-6 sm:p-7 border-2 border-slate-200/80 hover:border-amber-400 shadow-md hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between transform hover:-translate-y-1 active:scale-95">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition shadow-inner">
+              <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-black text-slate-800">학생 뷰</h3>
+              <span class="text-xs bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">참여용</span>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-500 leading-relaxed mb-4">
+              1~5조(최대 11조) 중 내 모둠을 고르고 이름을 선택한 뒤, 컬러 포스트잇으로 의견을 보냅니다.
+            </p>
+          </div>
+          <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-amber-600 font-extrabold text-xs">
+            <span>내 조 선택하고 입장하기</span>
+            <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+          </div>
+        </div>
+
+        <!-- 2. Blackboard View Card -->
+        <div onclick="switchView('blackboard')" class="group bg-white rounded-3xl p-6 sm:p-7 border-2 border-slate-200/80 hover:border-emerald-400 shadow-md hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between transform hover:-translate-y-1 active:scale-95">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition shadow-inner">
+              <i class="fa-solid fa-chalkboard-user"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-black text-slate-800">칠판 뷰</h3>
+              <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">스크린용</span>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-500 leading-relaxed mb-4">
+              빔프로젝터나 대형 전자칠판에 띄우는 뷰입니다. 특정 조를 누르면 1초 만에 해당 조 토의판으로 즉각 전환됩니다.
+            </p>
+          </div>
+          <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-emerald-600 font-extrabold text-xs">
+            <span>대형 칠판 열기</span>
+            <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+          </div>
+        </div>
+
+        <!-- 3. Teacher View Card -->
+        <div onclick="promptTeacherPassword()" class="group bg-white rounded-3xl p-6 sm:p-7 border-2 border-slate-200/80 hover:border-indigo-400 shadow-md hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between transform hover:-translate-y-1 active:scale-95">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition shadow-inner">
+              <i class="fa-solid fa-user-tie"></i>
+            </div>
+            <div class="flex items-center gap-2 mb-2">
+              <h3 class="text-xl font-black text-slate-800">교사 뷰</h3>
+              <span class="text-xs bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                <i class="fa-solid fa-lock text-[10px]"></i>보안
+              </span>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-500 leading-relaxed mb-4">
+              모둠 개수(1~11개) 조절, 22명 학생 원클릭 자동 배정/일괄 붙여넣기, 타이머, 주제 공지를 총괄 관리합니다.
+            </p>
+          </div>
+          <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-indigo-600 font-extrabold text-xs">
+            <span>비밀번호 입력 후 입장</span>
+            <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Feature Highlights -->
+      <div class="mt-12 flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-500">
+        <span class="flex items-center gap-1.5 bg-white/70 px-3 py-1.5 rounded-full border border-slate-200 shadow-xs">
+          <i class="fa-solid fa-shuffle text-emerald-500"></i> 드래그 앤 드롭 조 편성
+        </span>
+        <span class="flex items-center gap-1.5 bg-white/70 px-3 py-1.5 rounded-full border border-slate-200 shadow-xs">
+          <i class="fa-solid fa-arrows-maximize text-indigo-500"></i> 포스트잇 클릭 확대 (나만 보기)
+        </span>
+        <span class="flex items-center gap-1.5 bg-white/70 px-3 py-1.5 rounded-full border border-slate-200 shadow-xs">
+          <i class="fa-solid fa-plus-minus text-amber-500"></i> 실시간 점수 (+ / -) 투표
+        </span>
+        <span class="flex items-center gap-1.5 bg-white/70 px-3 py-1.5 rounded-full border border-slate-200 shadow-xs">
+          <i class="fa-solid fa-key text-indigo-500"></i> 교사 비밀번호 5658
+        </span>
+      </div>
+    </div>
+
+    <!-- VIEW 2: STUDENT VIEW -->
+    <div id="viewStudent" class="hidden flex-1 flex flex-col">
+      <!-- Step 2A: Group Selection Screen -->
+      <div id="studentStepGroup" class="max-w-3xl mx-auto w-full py-6 text-center">
+        <div class="mb-6">
+          <span class="text-xs font-black text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full uppercase tracking-wider">
+            STEP 1. 조 선택
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">자신이 속한 조를 선택하세요</h2>
+          <p class="text-xs sm:text-sm text-slate-500 mt-1">우리 모둠 버튼을 누르면 조원 명단이 나타납니다.</p>
+        </div>
+
+        <!-- Dynamic Group Buttons (1 ~ N Groups) -->
+        <div id="studentGroupGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 px-2">
+          <!-- Injected dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- Step 2B: Member Name Selection Screen -->
+      <div id="studentStepMember" class="hidden max-w-2xl mx-auto w-full py-6 text-center">
+        <div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-200">
+          <button onclick="backToGroupSelection()" class="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 transition">
+            <i class="fa-solid fa-chevron-left"></i> 조 다시 선택하기
+          </button>
+          <span id="selectedGroupTitleBadge" class="text-sm font-black bg-amber-100 text-amber-900 px-3.5 py-1 rounded-full border border-amber-200">
+            1조
+          </span>
+        </div>
+
+        <div class="mb-6">
+          <span class="text-xs font-black text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full uppercase tracking-wider">
+            STEP 2. 이름 선택
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">본인의 이름을 눌러주세요</h2>
+          <p class="text-xs sm:text-sm text-slate-500 mt-1">이름을 누르면 우리 조의 전용 직사각형 칠판으로 입장합니다.</p>
+        </div>
+
+        <!-- Student Name Badges Grid -->
+        <div id="studentMembersGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+          <!-- Injected dynamically via JS -->
+        </div>
+
+        <!-- Manual Name Input Fallback -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs max-w-md mx-auto text-left">
+          <label class="block text-xs font-bold text-slate-600 mb-1.5">
+            <i class="fa-solid fa-user-pen mr-1 text-amber-500"></i>명단에 이름이 없나요? 직접 입력해서 입장
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="manualStudentNameInput" placeholder="이름 입력 (예: 홍길동)" class="flex-1 px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold" onkeydown="if(event.key==='Enter') enterStudentWithManualName()">
+            <button onclick="enterStudentWithManualName()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-xs transition">
+              입장
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2C: Rectangular Board & Sticky Note Dispatch Pad -->
+      <div id="studentStepBoard" class="hidden flex-1 flex flex-col">
+        <!-- Top Board Status Bar -->
+        <div class="bg-white rounded-2xl p-3 mb-3 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <span id="studentCurrentGroupBadge" class="px-3 py-1 rounded-xl bg-amber-500 text-white font-black text-xs shadow-xs">
+              1조 칠판
+            </span>
+            <div class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-user text-indigo-500 text-sm"></i>
+              <span id="studentCurrentNameLabel" class="text-slate-900 font-black">김서아</span> 학생
+            </div>
+            <!-- Mission / Topic Banner from Teacher -->
+            <div id="studentTopicNotice" class="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 bg-indigo-50 text-indigo-800 rounded-lg text-xs font-bold border border-indigo-100">
+              <i class="fa-solid fa-bullhorn text-indigo-500"></i>
+              <span id="studentTopicText">자유롭게 생각을 적어보세요!</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="backToGroupSelection()" class="text-xs font-bold px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition flex items-center gap-1">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+              <span>조/이름 변경</span>
+            </button>
+            <button onclick="clearStudentNotes()" class="text-xs font-bold px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl transition flex items-center gap-1" title="우리 조의 메모만 비우기">
+              <i class="fa-solid fa-trash-can"></i>
+              <span class="hidden sm:inline">우리 조 비우기</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- RECTANGULAR BOARD (직사각형 판) -->
+        <div class="relative w-full rounded-3xl overflow-hidden shadow-xl mb-4 transition-all" style="min-height: 480px; height: 58vh;">
+          <div id="studentBoardCanvas" class="w-full h-full relative theme-whiteboard rounded-2xl p-4 overflow-hidden select-none">
+            <!-- Background Watermark -->
+            <div class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center opacity-10">
+              <i class="fa-solid fa-chalkboard text-9xl text-slate-600"></i>
+              <span id="studentBoardWatermark" class="text-4xl font-black text-slate-700 mt-2">1조 협업 보드</span>
+            </div>
+
+            <!-- Notes Container -->
+            <div id="studentNotesContainer" class="absolute inset-0 w-full h-full p-3 pointer-events-auto">
+              <!-- Sticky notes rendered here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- POST-IT INPUT PANEL (칠판 앞 포스트잇 작성기) -->
+        <div class="bg-white rounded-3xl p-4 sm:p-5 border-2 border-slate-200 shadow-lg">
+          <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-3">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-sm shadow-xs font-black">
+                <i class="fa-solid fa-note-sticky"></i>
+              </div>
+              <div>
+                <h4 class="text-sm font-black text-slate-800">새 포스트잇 작성</h4>
+                <p class="text-[11px] text-slate-400">내용을 적고 발송하면 위 직사각형 칠판에 즉시 붙습니다.</p>
+              </div>
+            </div>
+
+            <!-- 5 Color Palette Selector -->
+            <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
+              <span class="text-[11px] font-bold text-slate-500 mr-1 pl-1">색상:</span>
+              <button type="button" onclick="selectPostItColor('yellow')" class="color-btn w-7 h-7 rounded-xl bg-amber-200 border-2 border-amber-400 shadow-xs ring-2 ring-amber-500 transform scale-110 transition active:scale-95" data-color="yellow" title="노란색"></button>
+              <button type="button" onclick="selectPostItColor('pink')" class="color-btn w-7 h-7 rounded-xl bg-rose-200 border-2 border-rose-300 shadow-xs transition hover:scale-105 active:scale-95" data-color="pink" title="분홍색"></button>
+              <button type="button" onclick="selectPostItColor('blue')" class="color-btn w-7 h-7 rounded-xl bg-sky-200 border-2 border-sky-300 shadow-xs transition hover:scale-105 active:scale-95" data-color="blue" title="하늘색"></button>
+              <button type="button" onclick="selectPostItColor('green')" class="color-btn w-7 h-7 rounded-xl bg-emerald-200 border-2 border-emerald-300 shadow-xs transition hover:scale-105 active:scale-95" data-color="green" title="연두색"></button>
+              <button type="button" onclick="selectPostItColor('purple')" class="color-btn w-7 h-7 rounded-xl bg-purple-200 border-2 border-purple-300 shadow-xs transition hover:scale-105 active:scale-95" data-color="purple" title="보라색"></button>
+            </div>
+          </div>
+
+          <!-- Textarea & Submit Row -->
+          <div class="flex flex-col sm:flex-row gap-2.5">
+            <div class="relative flex-1">
+              <textarea 
+                id="postItTextInput" 
+                rows="2" 
+                placeholder="칠판에 붙일 생각을 자유롭게 입력하세요... (Enter 또는 발송 버튼)" 
+                class="w-full px-4 py-2.5 text-sm sm:text-base border-2 border-slate-200 rounded-2xl focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-100 transition resize-none font-sans font-bold"></textarea>
+            </div>
+            <button 
+              type="button"
+              onclick="submitPostIt()" 
+              class="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-sm rounded-2xl shadow-md shadow-amber-200 hover:shadow-lg transition flex items-center justify-center gap-2 active:scale-95 sm:min-w-[150px]">
+              <i class="fa-solid fa-paper-plane"></i>
+              <span>칠판에 발송하기</span>
+            </button>
+          </div>
+          <div class="flex items-center justify-between mt-2 px-1 text-[11px] text-slate-400 font-medium">
+            <span>💡 칠판 위 포스트잇을 클릭하면 나에게만 크게 확대되어 보입니다.</span>
+            <span>🖐️ 포스트잇을 마우스나 터치로 끌어서 자유롭게 위치를 옮길 수 있어요</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: BLACKBOARD VIEW (대형 스크린/칠판 뷰) -->
+    <div id="viewBlackboard" class="hidden flex-1 flex flex-col">
+      <!-- Top Blackboard Control Bar -->
+      <div class="bg-white rounded-2xl p-3 mb-3 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <!-- All Groups View Button -->
+          <button type="button" onclick="setBlackboardFocus('all')" id="bbTabAll" class="px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 bg-emerald-600 text-white shadow-xs">
+            <i class="fa-solid fa-table-cells"></i>
+            <span>전체 모아보기</span>
+          </button>
+          <!-- Dynamic Individual Group Quick-Tabs -->
+          <div id="blackboardGroupTabs" class="flex flex-wrap items-center gap-1">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Right Tools: Fullscreen, Stats -->
+        <div class="flex items-center gap-2">
+          <span id="bbActiveNotesCountBadge" class="bg-emerald-50 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-lg border border-emerald-100">
+            총 0개 메모
+          </span>
+          <button type="button" onclick="toggleBlackboardFullscreen()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1" title="전체화면 전환">
+            <i class="fa-solid fa-expand" id="bbFsIcon"></i>
+            <span class="hidden sm:inline">전체화면</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Focused Group Notice -->
+      <div id="bbSingleGroupBanner" class="hidden mb-2 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-2 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-xs font-extrabold text-emerald-900" id="bbSingleGroupTitle">현재 1조 단독 회의 칠판을 보고 있습니다.</span>
+        </div>
+        <button type="button" onclick="setBlackboardFocus('all')" class="text-xs font-bold text-emerald-700 hover:text-emerald-900 underline">
+          전체 칠판으로 돌아가기 &times;
+        </button>
+      </div>
+
+      <!-- THE MAIN BLACKBOARD CONTAINER -->
+      <div id="blackboardFrame" class="relative flex-1 w-full rounded-3xl overflow-hidden shadow-2xl transition-all" style="min-height: 600px; height: 75vh;">
+        <div id="blackboardCanvas" class="w-full h-full relative theme-whiteboard rounded-2xl p-4 overflow-hidden select-none">
+          <!-- Dynamic Grid Divider Lines for 'all' mode -->
+          <div id="blackboardDividers" class="absolute inset-0 pointer-events-none"></div>
+
+          <!-- Notes Container for Blackboard -->
+          <div id="blackboardNotesContainer" class="absolute inset-0 w-full h-full p-2 pointer-events-auto">
+            <!-- Sticky notes rendered here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 4: TEACHER VIEW -->
+    <div id="viewTeacher" class="hidden flex-1 flex flex-col space-y-5">
+      <!-- Teacher Header -->
+      <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-200">
+            <i class="fa-solid fa-chalkboard-user"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-xl font-black text-slate-900">선생님 활동 관제실</h2>
+              <span class="text-xs bg-emerald-100 text-emerald-700 font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>인증됨 (5658)
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">모둠 개수 설정(1~11조), 명단 편성, 활동 미션 공지 및 통계를 관리합니다.</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Celebration Confetti Button -->
+          <button type="button" onclick="triggerConfetti()" class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-extrabold text-xs rounded-xl shadow transition flex items-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-gift"></i>
+            <span>칭찬 폭죽 팡파레</span>
+          </button>
+          <!-- Clear All Data Button -->
+          <button type="button" onclick="confirmResetAllData()" class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+            <span>칠판 메모 전체 초기화</span>
+          </button>
+          <!-- Teacher Lock Button -->
+          <button type="button" onclick="lockTeacherView()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5">
+            <i class="fa-solid fa-lock"></i>
+            <span>교사뷰 잠금</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Control Row: 1) Group Count (1~11), 2) Topic Broadcast, 3) Timer -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- 1. GROUP COUNT MANAGER (1 to 11) -->
+        <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-black text-indigo-600 uppercase tracking-wider">모둠 개수 설정</span>
+              <span class="text-[11px] font-bold text-slate-400">1개 ~ 최대 11개</span>
+            </div>
+            <h3 class="text-base font-black text-slate-800 mb-1">우리 반 활동 모둠 개수</h3>
+            <p class="text-xs text-slate-500 mb-4">현재 <span id="teacherGroupCountDisplay" class="font-extrabold text-indigo-600 text-sm">5개</span> 조로 운영 중입니다.</p>
+          </div>
+
+          <div class="flex items-center justify-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <button type="button" onclick="adjustGroupCount(-1)" class="w-10 h-10 rounded-xl bg-white hover:bg-slate-200 border border-slate-200 text-slate-700 font-black text-lg flex items-center justify-center shadow-xs transition active:scale-95">
+              <i class="fa-solid fa-minus"></i>
+            </button>
+            <div class="text-center px-4">
+              <span id="teacherGroupCountBig" class="text-3xl font-black text-indigo-700">5</span>
+              <span class="text-xs font-bold text-slate-500 block">개 조</span>
+            </div>
+            <button type="button" onclick="adjustGroupCount(1)" class="w-10 h-10 rounded-xl bg-white hover:bg-slate-200 border border-slate-200 text-slate-700 font-black text-lg flex items-center justify-center shadow-xs transition active:scale-95">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. TOPIC BROADCAST -->
+        <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div>
+            <span class="text-xs font-black text-indigo-600 uppercase tracking-wider block mb-1">실시간 활동 주제 공지</span>
+            <h3 class="text-base font-black text-slate-800 mb-1">학생 화면 공지 배너</h3>
+            <p class="text-xs text-slate-500 mb-3">작성한 질문이나 주제가 모든 학생 보드 상단에 표시됩니다.</p>
+          </div>
+          <div class="space-y-2">
+            <input type="text" id="teacherTopicInput" placeholder="예: 오늘 배운 개념 중 가장 인상 깊은 것은?" class="w-full px-3.5 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold" onkeydown="if(event.key==='Enter') broadcastTopic()">
+            <button type="button" onclick="broadcastTopic()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition shadow-xs">
+              학생 화면에 주제 공지하기
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. CLASSROOM ACTIVITY TIMER -->
+        <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-black text-indigo-600 uppercase tracking-wider">토의 타이머</span>
+              <span id="timerStatusLabel" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">대기 중</span>
+            </div>
+            <h3 class="text-base font-black text-slate-800 mb-2">활동 제한 시간</h3>
+          </div>
+
+          <div class="text-center my-1">
+            <span id="timerDisplay" class="text-3xl font-black text-slate-800 tracking-wider">05:00</span>
+          </div>
+
+          <div class="flex items-center justify-center gap-1.5 pt-2">
+            <button type="button" onclick="setTimerMinutes(3)" class="px-2.5 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 rounded-lg">3분</button>
+            <button type="button" onclick="setTimerMinutes(5)" class="px-2.5 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 rounded-lg">5분</button>
+            <button type="button" onclick="setTimerMinutes(10)" class="px-2.5 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 rounded-lg">10분</button>
+            <button type="button" onclick="toggleTimer()" id="timerToggleBtn" class="px-3.5 py-1 text-[11px] font-black bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition ml-1">
+              시작
+            </button>
+            <button type="button" onclick="resetTimer()" class="px-2.5 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg">
+              리셋
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROSTER & GROUP ASSIGNMENT MANAGER -->
+      <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-100">
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-users-gear text-indigo-600"></i>
+                <span>학생 조별 편성 및 명단 관리</span>
+              </h3>
+              <span id="rosterCountBadge" class="bg-indigo-50 text-indigo-700 text-xs px-2.5 py-0.5 rounded-full font-bold">총 22명</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              엑셀이나 명단을 일괄 붙여넣어 자동 배정하거나, 학생 이름을 마우스로 다른 조에 끌어다 놓으세요.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- 1. Batch Paste Wizard -->
+            <button type="button" onclick="openBatchRosterModal()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-xs transition shadow-sm flex items-center gap-1.5">
+              <i class="fa-solid fa-paste"></i>
+              <span>명단 일괄 붙여넣기 마법사</span>
+            </button>
+            <!-- 2. Sequential distribution -->
+            <button type="button" onclick="autoDistributeStudents(false)" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs transition flex items-center gap-1.5" title="명단 순서대로 1조, 2조, 3조... 순환 배정">
+              <i class="fa-solid fa-arrow-down-1-9"></i>
+              <span>순서대로 균등 배정</span>
+            </button>
+            <!-- 3. Random distribution -->
+            <button type="button" onclick="autoDistributeStudents(true)" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl text-xs transition flex items-center gap-1.5" title="학생들을 무작위로 섞어서 고르게 배정">
+              <i class="fa-solid fa-shuffle"></i>
+              <span>랜덤 섞기 배정</span>
+            </button>
+            <button type="button" onclick="resetToDefaultRosterModal()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition flex items-center gap-1.5">
+              <i class="fa-solid fa-rotate-left"></i>
+              <span>기본 22명 복원</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Single Student Bar -->
+        <div class="flex flex-wrap items-center gap-2 mb-4 bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80">
+          <span class="text-xs font-bold text-slate-600 pl-1">개별 학생 등록:</span>
+          <input type="text" id="newStudentNameInput" placeholder="새 학생 이름 (예: 박지민)" class="px-3 py-1.5 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold flex-1 min-w-[120px]" onkeydown="if(event.key==='Enter') addNewStudent()">
+          <select id="newStudentGroupSelect" class="px-3 py-1.5 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold bg-white text-slate-700">
+            <!-- Dynamic Options for groups -->
+          </select>
+          <button type="button" onclick="addNewStudent()" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition">
+            + 학생 추가
+          </button>
+        </div>
+
+        <!-- Interactive Drag-and-Drop Group Buckets -->
+        <div id="rosterGroupBuckets" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+          <!-- Injected dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- Live Monitoring of All Groups -->
+      <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-black text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-chart-pie text-emerald-600"></i>
+              <span>실시간 모둠별 메모 현황 요약</span>
+            </h3>
+            <p class="text-xs text-slate-500">학생들이 작성한 포스트잇 개수와 내용을 조별로 모니터링합니다.</p>
+          </div>
+          <span id="teacherTotalNotesSummary" class="text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-xl">총 0개 등록됨</span>
+        </div>
+
+        <div id="teacherLiveGroupsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 1. TEACHER PIN CODE MODAL (5658) -->
+  <div id="teacherPasswordModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+    <div id="pwdModalCard" class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center transform transition-all">
+      <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mx-auto mb-4 shadow-inner">
+        <i class="fa-solid fa-key"></i>
+      </div>
+      <h3 class="text-lg font-black text-slate-800 mb-1">교사 전용 인증</h3>
+      <p class="text-xs text-slate-500 mb-4">비밀번호 4자리를 입력해주세요.</p>
+
+      <div class="mb-4">
+        <input 
+          type="password" 
+          id="teacherPasswordInput" 
+          maxlength="8" 
+          placeholder="••••" 
+          class="w-full text-center text-2xl tracking-widest font-black py-2.5 px-4 border-2 border-slate-300 rounded-2xl focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 transition"
+          onkeydown="if(event.key==='Enter') submitTeacherPassword()">
+        <p id="passwordErrorMsg" class="text-xs font-bold text-rose-500 mt-2 hidden">
+          <i class="fa-solid fa-circle-exclamation mr-1"></i>비밀번호가 일치하지 않습니다.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" onclick="closeTeacherPasswordModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+          취소
+        </button>
+        <button type="button" onclick="submitTeacherPassword()" class="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-xs shadow-md shadow-indigo-200 transition">
+          확인
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. PERSONAL POST-IT ZOOM MODAL (나에게만 커지는 포스트잇) -->
+  <div id="personalZoomModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+    <div id="zoomCard" class="relative max-w-lg w-full p-7 rounded-3xl shadow-2xl border-4 border-white/60 transform transition-all text-left">
+      <!-- Tape Effect -->
+      <div class="absolute -top-3.5 left-1/2 transform -translate-x-1/2 w-28 h-7 bg-white/70 backdrop-blur-xs rounded shadow-xs rotate-1"></div>
+
+      <!-- Close Button -->
+      <button type="button" onclick="closePersonalZoomModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 text-slate-800 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+
+      <!-- Meta Info -->
+      <div class="flex items-center gap-2 mb-4 pb-2 border-b border-black/10">
+        <span id="zoomGroupBadge" class="px-2.5 py-0.5 rounded-lg text-xs font-black bg-black/15 text-slate-900">
+          1조
+        </span>
+        <span id="zoomAuthor" class="text-sm font-black text-slate-900 flex items-center gap-1">
+          <i class="fa-solid fa-circle-user"></i>
+          <span>김서아</span>
+        </span>
+        <span id="zoomTime" class="text-xs text-slate-700/80 font-medium ml-auto">
+          방금 전
+        </span>
+      </div>
+
+      <!-- Full Message Text -->
+      <div class="mb-6 max-h-60 overflow-y-auto pr-1">
+        <p id="zoomContent" class="text-base sm:text-lg font-bold text-slate-900 leading-relaxed whitespace-pre-wrap allow-select">
+          포스트잇 내용이 표시됩니다.
+        </p>
+      </div>
+
+      <!-- Bottom Interactive Score Buttons (+ / -) -->
+      <div class="pt-4 border-t border-black/10 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-extrabold text-slate-800">이 의견 평가:</span>
+          <div class="flex items-center bg-black/10 rounded-xl p-1 gap-1">
+            <button type="button" id="zoomMinusBtn" class="w-8 h-8 rounded-lg bg-white/80 hover:bg-white text-slate-800 font-black text-sm flex items-center justify-center shadow-xs transition active:scale-95" title="점수 -1">
+              <i class="fa-solid fa-minus"></i>
+            </button>
+            <span id="zoomScoreVal" class="text-base font-black px-2 text-slate-900 min-w-[28px] text-center">0</span>
+            <button type="button" id="zoomPlusBtn" class="w-8 h-8 rounded-lg bg-white/80 hover:bg-white text-indigo-700 font-black text-sm flex items-center justify-center shadow-xs transition active:scale-95" title="점수 +1">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="button" onclick="closePersonalZoomModal()" class="px-4 py-2 bg-slate-900 text-white font-extrabold text-xs rounded-xl hover:bg-black transition shadow-xs">
+          닫기 (ESC)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. BATCH ROSTER IMPORT MODAL -->
+  <div id="batchRosterModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-slate-100 text-left transform transition-all">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg shadow-xs">
+            <i class="fa-solid fa-file-import"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-black text-slate-800">명단 일괄 등록 & 자동 편성 마법사</h3>
+            <p class="text-xs text-slate-400">엑셀이나 한글, 메신저 명단을 복사해 아래에 그대로 붙여넣으세요.</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeBatchRosterModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+          📋 학생 명단 붙여넣기 (줄바꿈, 쉼표, 띄어쓰기 모두 자동 인식)
+        </label>
+        <textarea 
+          id="batchRosterTextarea" 
+          rows="7" 
+          placeholder="예시 1) 단순 이름 목록:&#10;김서아&#10;김수현&#10;김윤아, 김태영, 김하랑...&#10;&#10;예시 2) 조가 적힌 형식:&#10;1조: 김서아, 김수현&#10;2조: 김윤아, 김태영..."
+          class="w-full p-3.5 border-2 border-slate-200 rounded-2xl text-xs sm:text-sm font-sans focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 transition resize-none"></textarea>
+      </div>
+
+      <div class="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-3.5 mb-5 text-xs text-indigo-900 flex flex-col gap-1.5">
+        <span class="font-extrabold flex items-center gap-1.5">
+          <i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i>원하는 편성 방식을 선택하세요:
+        </span>
+        <p class="text-[11px] text-slate-600 leading-relaxed">
+          버튼을 누르면 현재 설정된 모둠 개수에 학생들이 자동으로 즉시 분배 편성됩니다.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <button type="button" onclick="applyBatchRoster('sequential')" class="py-3 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow transition flex flex-col items-center justify-center gap-1 active:scale-95">
+          <i class="fa-solid fa-arrow-down-1-9 text-base"></i>
+          <span>순서대로 균등 배정</span>
+          <span class="text-[10px] font-normal text-indigo-200">1조→2조→3조 순환</span>
+        </button>
+
+        <button type="button" onclick="applyBatchRoster('random')" class="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow transition flex flex-col items-center justify-center gap-1 active:scale-95">
+          <i class="fa-solid fa-shuffle text-base"></i>
+          <span>랜덤 무작위 배정</span>
+          <span class="text-[10px] font-normal text-emerald-200">골고루 섞어 균등 분배</span>
+        </button>
+
+        <button type="button" onclick="applyBatchRoster('detect')" class="py-3 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-black shadow transition flex flex-col items-center justify-center gap-1 active:scale-95">
+          <i class="fa-solid fa-list-check text-base"></i>
+          <span>조 번호 인식 배정</span>
+          <span class="text-[10px] font-normal text-slate-300">'1조:', '2조:' 인식</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. STUDENT NAME EDIT MODAL -->
+  <div id="studentEditModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-5 shadow-2xl border border-slate-100 text-left">
+      <h3 class="text-base font-black text-slate-800 mb-1">학생 정보 수정</h3>
+      <p class="text-xs text-slate-400 mb-3">학생 이름과 소속 조를 변경합니다.</p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">학생 이름</label>
+          <input type="text" id="editStudentNameInput" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">소속 조</label>
+          <select id="editStudentGroupSelect" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold bg-white"></select>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-4 pt-3 border-t border-slate-100">
+        <button type="button" onclick="closeStudentEditModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">취소</button>
+        <button type="button" onclick="saveStudentEdit()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFETTI CANVAS -->
+  <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    /* =========================================================
+       1. GLOBAL STATE & CONSTANTS
+       ========================================================= */
+    const TEACHER_PIN = "5658";
+
+    // 22 Default Students as requested
+    const DEFAULT_22_STUDENTS = [
+      "김서아", "김수현", "김윤아", "김태영", "김하랑", 
+      "나예린", "박민제", "박선우", "양수빈", "유소영", 
+      "이대운", "이새봄", "이서율", "이진서", "이채원", 
+      "이초은", "이태환", "이하린", "한규빈", "한유은", 
+      "현지우", "황지우"
+    ];
+
+    const COLOR_THEMES = {
+      yellow: {
+        bg: 'bg-amber-200',
+        border: 'border-amber-300',
+        text: 'text-amber-950',
+        badge: 'bg-amber-400/40 text-amber-950'
+      },
+      pink: {
+        bg: 'bg-rose-200',
+        border: 'border-rose-300',
+        text: 'text-rose-950',
+        badge: 'bg-rose-400/40 text-rose-950'
+      },
+      blue: {
+        bg: 'bg-sky-200',
+        border: 'border-sky-300',
+        text: 'text-sky-950',
+        badge: 'bg-sky-400/40 text-sky-950'
+      },
+      green: {
+        bg: 'bg-emerald-200',
+        border: 'border-emerald-300',
+        text: 'text-emerald-950',
+        badge: 'bg-emerald-400/40 text-emerald-950'
+      },
+      purple: {
+        bg: 'bg-purple-200',
+        border: 'border-purple-300',
+        text: 'text-purple-950',
+        badge: 'bg-purple-400/40 text-purple-950'
+      }
+    };
+
+    const APP_STATE = {
+      currentView: 'home',
+      groupCount: 5,
+      boardTheme: 'theme-whiteboard',
+      isTeacherAuthenticated: false,
+      blackboardFocus: 'all',
+      studentGroup: 1,
+      studentName: '',
+      selectedColor: 'yellow',
+      timerSeconds: 300,
+      timerRunning: false,
+      timerInterval: null
+    };
+
+    /* =========================================================
+       2. FAIL-SAFE STORAGE SYSTEM (In-Memory + Safe LocalStorage)
+       ========================================================= */
+    let isLocalStorageUsable = false;
+    try {
+      const testKey = '__test_storage__';
+      window.localStorage.setItem(testKey, '1');
+      window.localStorage.removeItem(testKey);
+      isLocalStorageUsable = true;
+    } catch (e) {
+      isLocalStorageUsable = false;
+    }
+
+    // In-Memory fallback store ensures zero crashes in sandboxed iframes
+    const inMemoryDB = {
+      notes: [],
+      roster: null,
+      topic: '자유롭게 생각을 적어보세요!',
+      groupCount: 5
+    };
+
+    // Cross-tab sync if supported and allowed
+    let syncChannel = null;
+    try {
+      if (typeof window.BroadcastChannel !== 'undefined') {
+        syncChannel = new window.BroadcastChannel('classroom_blackboard_channel');
+        syncChannel.onmessage = (event) => {
+          if (!event || !event.data) return;
+          const { type, payload } = event.data;
+          if (type === 'notes_updated') {
+            inMemoryDB.notes = payload.notes;
+            renderStudentBoardNotes();
+            renderBlackboardNotes();
+            renderTeacherLiveGrid();
+          } else if (type === 'roster_updated') {
+            inMemoryDB.roster = payload.roster;
+            if (isLocalStorageUsable) {
+              try {
+                window.localStorage.setItem('class_blackboard_roster', JSON.stringify(payload.roster));
+              } catch (e) {}
+            }
+            refreshRosterEverywhere();
+          } else if (type === 'topic_updated') {
+            inMemoryDB.topic = payload.topic;
+            updateTopicDisplay(payload.topic);
+          } else if (type === 'group_count_updated') {
+            APP_STATE.groupCount = payload.groupCount;
+            inMemoryDB.groupCount = payload.groupCount;
+            updateGroupCountDisplays();
+            renderStudentGroupGrid();
+            renderBlackboardGroupTabs();
+            renderRosterManager();
+            renderTeacherLiveGrid();
+          } else if (type === 'confetti') {
+            launchConfetti();
+          }
+        };
+      }
+    } catch (e) {
+      syncChannel = null;
+    }
+
+    function broadcastChange(type, payload) {
+      if (syncChannel) {
+        try {
+          syncChannel.postMessage({ type, payload });
+        } catch (e) {}
+      }
+    }
+
+    function getStoredNotes() {
+      if (isLocalStorageUsable) {
+        try {
+          const raw = window.localStorage.getItem('class_blackboard_notes');
+          if (raw) inMemoryDB.notes = JSON.parse(raw);
+        } catch (e) {}
+      }
+      return inMemoryDB.notes || [];
+    }
+
+    function saveNotes(notes) {
+      inMemoryDB.notes = notes;
+      if (isLocalStorageUsable) {
+        try {
+          window.localStorage.setItem('class_blackboard_notes', JSON.stringify(notes));
+        } catch (e) {}
+      }
+      broadcastChange('notes_updated', { notes });
+      if (firebaseReady && !applyingFirebase) {
+        fbRef('notes').set(notes).catch(e => console.error('[Firebase] 포스트잇 저장 오류:', e));
+      }
+    }
+
+    function getRoster() {
+      if (!inMemoryDB.roster) {
+        if (isLocalStorageUsable) {
+          try {
+            const raw = window.localStorage.getItem('class_blackboard_roster');
+            if (raw) inMemoryDB.roster = JSON.parse(raw);
+          } catch (e) {}
+        }
+      }
+      if (!inMemoryDB.roster || inMemoryDB.roster.length === 0) {
+        inMemoryDB.roster = DEFAULT_22_STUDENTS.map((name, idx) => ({
+          id: 'stu_' + (idx + 1),
+          name: name,
+          groupId: (idx % APP_STATE.groupCount) + 1
+        }));
+        saveRoster(inMemoryDB.roster);
+      }
+      return inMemoryDB.roster;
+    }
+
+    function saveRoster(roster) {
+      inMemoryDB.roster = roster;
+      if (isLocalStorageUsable) {
+        try {
+          window.localStorage.setItem('class_blackboard_roster', JSON.stringify(roster));
+        } catch (e) {}
+      }
+      broadcastChange('roster_updated', { roster });
+      if (firebaseReady && !applyingFirebase) {
+        fbRef('roster').set(roster).catch(e => console.error('[Firebase] 명단 저장 오류:', e));
+      }
+    }
+
+    // 학생 조 편성이 바뀌면 모든 관련 화면을 즉시 다시 그림
+    function refreshRosterEverywhere() {
+      renderStudentGroupGrid();
+      renderStudentMembersSelection();
+      renderRosterManager();
+      renderTeacherLiveGrid();
+      renderBlackboardGroupTabs();
+      if (APP_STATE.currentView === 'blackboard') renderBlackboardNotes();
+      if (APP_STATE.currentView === 'student' || APP_STATE.currentView === 'studentBoard') renderStudentBoardNotes();
+    }
+
+    // 다른 탭/창에서 명단이 변경된 경우에도 최신 조 편성을 반영
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'class_blackboard_roster' && event.newValue) {
+        try {
+          inMemoryDB.roster = JSON.parse(event.newValue);
+          refreshRosterEverywhere();
+        } catch (e) {
+          console.error('Roster sync failed', e);
+        }
+      }
+    });
+
+    function getTopic() {
+      if (isLocalStorageUsable) {
+        try {
+          const stored = window.localStorage.getItem('class_blackboard_topic');
+          if (stored) inMemoryDB.topic = stored;
+        } catch (e) {}
+      }
+      return inMemoryDB.topic || '자유롭게 생각을 적어보세요!';
+    }
+
+    function saveTopic(topic) {
+      inMemoryDB.topic = topic;
+      if (isLocalStorageUsable) {
+        try {
+          window.localStorage.setItem('class_blackboard_topic', topic);
+        } catch (e) {}
+      }
+      broadcastChange('topic_updated', { topic });
+      if (firebaseReady && !applyingFirebase) {
+        fbRef('topic').set(topic).catch(e => console.error('[Firebase] 주제 저장 오류:', e));
+      }
+    }
+
+    function getGroupCount() {
+      if (isLocalStorageUsable) {
+        try {
+          const val = parseInt(window.localStorage.getItem('class_blackboard_group_count'), 10);
+          if (val >= 1 && val <= 11) inMemoryDB.groupCount = val;
+        } catch (e) {}
+      }
+      return inMemoryDB.groupCount || 5;
+    }
+
+    function saveGroupCount(num) {
+      APP_STATE.groupCount = Math.max(1, Math.min(11, num));
+      inMemoryDB.groupCount = APP_STATE.groupCount;
+      if (isLocalStorageUsable) {
+        try {
+          window.localStorage.setItem('class_blackboard_group_count', APP_STATE.groupCount.toString());
+        } catch (e) {}
+      }
+      broadcastChange('group_count_updated', { groupCount: APP_STATE.groupCount });      if (firebaseReady && !applyingFirebase) {
+        fbRef('groupCount').set(APP_STATE.groupCount).catch(e => console.error('[Firebase] 모둠 수 저장 오류:', e));
+      }
+    }
+
+    /* =========================================================
+       3. SYNTHESIZED SOUND EFFECTS (Non-blocking Web Audio)
+       ========================================================= */
+    let audioCtx = null;
+    function playToneSound(type) {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+          }
+        }
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'pop') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'score_up') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(660, now + 0.12);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'score_down') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(280, now + 0.12);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'cheer') {
+          [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            o.type = 'sine';
+            o.frequency.setValueAtTime(freq, now + i * 0.08);
+            g.gain.setValueAtTime(0.18, now + i * 0.08);
+            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.25);
+            o.start(now + i * 0.08);
+            o.stop(now + i * 0.08 + 0.25);
+          });
+        }
+      } catch (e) {}
+    }
+
+    /* CONFETTI ANIMATION */
+    let confettiParticles = [];
+    let confettiAnimId = null;
+
+    function triggerConfetti() {
+      playToneSound('cheer');
+      launchConfetti();
+      broadcastChange('confetti', {});
+      showToast('축하 팡파레가 교실 전체에 울려 퍼집니다! 🎉', 'success');
+    }
+
+    function launchConfetti() {
+      const canvas = document.getElementById('confettiCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      confettiParticles = [];
+      const colors = ['#f59e0b', '#ec4899', '#3b82f6', '#10b981', '#8b5cf6', '#ef4444'];
+      for (let i = 0; i < 110; i++) {
+        confettiParticles.push({
+          x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 16,
+          vy: (Math.random() - 1.2) * 15,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          vRot: (Math.random() - 0.5) * 10,
+          life: 1
+        });
+      }
+
+      if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+
+      function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+        confettiParticles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.35;
+          p.rotation += p.vRot;
+          p.life -= 0.012;
+
+          if (p.life > 0) {
+            alive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.life);
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.4);
+            ctx.restore();
+          }
+        });
+
+        if (alive) {
+          confettiAnimId = requestAnimationFrame(loop);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      loop();
+    }
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      const colors = {
+        info: 'bg-slate-900 text-white border-slate-700',
+        success: 'bg-emerald-600 text-white border-emerald-500',
+        error: 'bg-rose-600 text-white border-rose-500'
+      };
+
+      toast.className = `px-4 py-2.5 rounded-2xl text-xs font-bold shadow-xl border flex items-center gap-2 pointer-events-auto transform transition-all duration-300 translate-y-4 opacity-0 ${colors[type] || colors.info}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${type === 'success' ? 'fa-check' : (type === 'error' ? 'fa-circle-exclamation' : 'fa-info-circle')}"></i>
+        <span>${msg}</span>
+      `;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      }, 20);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    /* =========================================================
+       4. VIEW NAVIGATION & PASSWORD PROTECTION
+       ========================================================= */
+    function switchView(viewName) {
+      APP_STATE.currentView = viewName;
+      document.getElementById('viewHome').classList.add('hidden');
+      document.getElementById('viewStudent').classList.add('hidden');
+      document.getElementById('viewBlackboard').classList.add('hidden');
+      document.getElementById('viewTeacher').classList.add('hidden');
+
+      if (viewName === 'home') {
+        document.getElementById('viewHome').classList.remove('hidden');
+      } else if (viewName === 'student') {
+        document.getElementById('viewStudent').classList.remove('hidden');
+      } else if (viewName === 'blackboard') {
+        document.getElementById('viewBlackboard').classList.remove('hidden');
+        renderBlackboardGroupTabs();
+        renderBlackboardDividers();
+        renderBlackboardNotes();
+      } else if (viewName === 'teacher') {
+        document.getElementById('viewTeacher').classList.remove('hidden');
+        updateGroupCountDisplays();
+        renderRosterManager();
+        renderTeacherLiveGrid();
+      }
+      try {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (e) {}
+    }
+
+    /* Teacher Password Protection (PIN 5658) */
+    function promptTeacherPassword() {
+      if (APP_STATE.isTeacherAuthenticated) {
+        switchView('teacher');
+        return;
+      }
+      const modal = document.getElementById('teacherPasswordModal');
+      const input = document.getElementById('teacherPasswordInput');
+      const err = document.getElementById('passwordErrorMsg');
+      err.classList.add('hidden');
+      input.value = '';
+      modal.classList.remove('hidden');
+      setTimeout(() => input.focus(), 100);
+    }
+
+    function closeTeacherPasswordModal() {
+      document.getElementById('teacherPasswordModal').classList.add('hidden');
+    }
+
+    function submitTeacherPassword() {
+      const input = document.getElementById('teacherPasswordInput');
+      const err = document.getElementById('passwordErrorMsg');
+      const card = document.getElementById('pwdModalCard');
+
+      if (input.value === TEACHER_PIN) {
+        APP_STATE.isTeacherAuthenticated = true;
+        closeTeacherPasswordModal();
+        playToneSound('pop');
+        showToast('선생님 인증이 완료되었습니다!', 'success');
+        switchView('teacher');
+      } else {
+        err.classList.remove('hidden');
+        card.classList.add('shake-error');
+        setTimeout(() => card.classList.remove('shake-error'), 450);
+        input.value = '';
+        input.focus();
+      }
+    }
+
+    function lockTeacherView() {
+      APP_STATE.isTeacherAuthenticated = false;
+      showToast('교사 관제실이 잠겼습니다.', 'info');
+      switchView('home');
+    }
+
+    function changeBoardTheme(themeName) {
+      APP_STATE.boardTheme = themeName;
+      const studentBoard = document.getElementById('studentBoardCanvas');
+      const bbBoard = document.getElementById('blackboardCanvas');
+      const allThemes = ['theme-whiteboard', 'theme-chalkboard', 'theme-cork', 'theme-pastel'];
+
+      allThemes.forEach(t => {
+        studentBoard.classList.remove(t);
+        bbBoard.classList.remove(t);
+      });
+      studentBoard.classList.add(themeName);
+      bbBoard.classList.add(themeName);
+      showToast('보드 테마가 변경되었습니다.', 'info');
+    }
+
+    /* =========================================================
+       5. STUDENT FLOW (Groups -> Members -> Rectangular Board)
+       ========================================================= */
+    function startStudentFlow() {
+      switchView('student');
+      document.getElementById('studentStepGroup').classList.remove('hidden');
+      document.getElementById('studentStepMember').classList.add('hidden');
+      document.getElementById('studentStepBoard').classList.add('hidden');
+      renderStudentGroupGrid();
+    }
+
+    function renderStudentGroupGrid() {
+      const grid = document.getElementById('studentGroupGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const roster = getRoster();
+
+      for (let i = 1; i <= APP_STATE.groupCount; i++) {
+        const count = roster.filter(s => s.groupId === i).length;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.onclick = () => selectStudentGroup(i);
+        btn.className = `p-4 sm:p-5 rounded-3xl bg-white border-2 border-slate-200/90 hover:border-amber-400 hover:shadow-lg transition-all text-left flex flex-col justify-between transform hover:-translate-y-1 active:scale-95 group shadow-xs`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between mb-3">
+            <span class="w-10 h-10 rounded-2xl bg-amber-100 group-hover:bg-amber-200 text-amber-700 flex items-center justify-center font-black text-base shadow-xs transition">
+              ${i}
+            </span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+              ${count}명
+            </span>
+          </div>
+          <div>
+            <h4 class="text-lg font-black text-slate-800">${i}조</h4>
+            <p class="text-xs text-slate-400 mt-0.5">입장해서 조원 확인</p>
+          </div>
+        `;
+        grid.appendChild(btn);
+      }
+    }
+
+    function selectStudentGroup(groupId) {
+      APP_STATE.studentGroup = groupId;
+      document.getElementById('studentStepGroup').classList.add('hidden');
+      document.getElementById('studentStepMember').classList.remove('hidden');
+      document.getElementById('selectedGroupTitleBadge').textContent = `${groupId}조`;
+      playToneSound('pop');
+      renderStudentMembersSelection();
+    }
+
+    function backToGroupSelection() {
+      document.getElementById('studentStepMember').classList.add('hidden');
+      document.getElementById('studentStepBoard').classList.add('hidden');
+      document.getElementById('studentStepGroup').classList.remove('hidden');
+      renderStudentGroupGrid();
+    }
+
+    function renderStudentMembersSelection() {
+      const grid = document.getElementById('studentMembersGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const roster = getRoster();
+      const groupMembers = roster.filter(s => s.groupId === APP_STATE.studentGroup);
+
+      if (groupMembers.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-6 text-center text-slate-400 text-xs font-bold bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl">
+            현재 ${APP_STATE.studentGroup}조에 배정된 학생이 없습니다.<br>
+            아래 입력창에 직접 이름을 넣고 입장하세요!
+          </div>
+        `;
+        return;
+      }
+
+      groupMembers.forEach(member => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.onclick = () => enterStudentBoard(member.name);
+        btn.className = 'p-3.5 rounded-2xl bg-white border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50/60 shadow-xs hover:shadow transition font-black text-slate-800 text-sm flex items-center justify-between group active:scale-95';
+        btn.innerHTML = `
+          <span class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-user text-amber-500 text-base"></i>
+            <span>${member.name}</span>
+          </span>
+          <i class="fa-solid fa-arrow-right text-xs text-slate-300 group-hover:text-amber-600 transition"></i>
+        `;
+        grid.appendChild(btn);
+      });
+    }
+
+    function enterStudentWithManualName() {
+      const input = document.getElementById('manualStudentNameInput');
+      const name = input.value.trim();
+      if (!name) {
+        showToast('이름을 입력해주세요.', 'error');
+        input.focus();
+        return;
+      }
+      enterStudentBoard(name);
+    }
+
+    function enterStudentBoard(studentName) {
+      APP_STATE.studentName = studentName;
+      document.getElementById('studentStepMember').classList.add('hidden');
+      document.getElementById('studentStepBoard').classList.remove('hidden');
+
+      document.getElementById('studentCurrentGroupBadge').textContent = `${APP_STATE.studentGroup}조 칠판`;
+      document.getElementById('studentCurrentNameLabel').textContent = studentName;
+      document.getElementById('studentBoardWatermark').textContent = `${APP_STATE.studentGroup}조 협업 보드`;
+
+      updateTopicDisplay(getTopic());
+      playToneSound('cheer');
+      showToast(`${studentName} 학생, ${APP_STATE.studentGroup}조 칠판에 입장했습니다!`, 'success');
+
+      renderStudentBoardNotes();
+    }
+
+    function selectPostItColor(colorKey) {
+      APP_STATE.selectedColor = colorKey;
+      document.querySelectorAll('.color-btn').forEach(btn => {
+        if (btn.dataset.color === colorKey) {
+          btn.classList.add('ring-2', 'ring-amber-500', 'scale-110');
+        } else {
+          btn.classList.remove('ring-2', 'ring-amber-500', 'scale-110');
+        }
+      });
+    }
+
+    function submitPostIt() {
+      const textarea = document.getElementById('postItTextInput');
+      const text = textarea.value.trim();
+      if (!text) {
+        showToast('포스트잇 내용을 입력해주세요.', 'error');
+        textarea.focus();
+        return;
+      }
+
+      const posX = Math.floor(Math.random() * 50) + 15;
+      const posY = Math.floor(Math.random() * 45) + 15;
+      const rotation = (Math.random() * 8 - 4).toFixed(1);
+
+      const newNote = {
+        id: 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        groupId: APP_STATE.studentGroup,
+        author: APP_STATE.studentName || '익명 학생',
+        text: text,
+        color: APP_STATE.selectedColor || 'yellow',
+        score: 0,
+        x: posX,
+        y: posY,
+        rotation: parseFloat(rotation),
+        createdAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      const notes = getStoredNotes();
+      notes.push(newNote);
+      saveNotes(notes);
+
+      playToneSound('pop');
+      textarea.value = '';
+      textarea.focus();
+      renderStudentBoardNotes();
+      showToast('생각이 칠판에 발송되었습니다! ✨', 'success');
+    }
+
+    function clearStudentNotes() {
+      const notes = getStoredNotes();
+      const remaining = notes.filter(n => n.groupId !== APP_STATE.studentGroup);
+      saveNotes(remaining);
+      playToneSound('pop');
+      renderStudentBoardNotes();
+      showToast(`${APP_STATE.studentGroup}조의 포스트잇을 비웠습니다.`, 'info');
+    }
+
+    /* =========================================================
+       6. NOTE RENDERING, SCORE CONTROLS & ZOOM MODAL
+       ========================================================= */
+    function renderStudentBoardNotes() {
+      const container = document.getElementById('studentNotesContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const notes = getStoredNotes().filter(n => n.groupId === APP_STATE.studentGroup);
+
+      notes.forEach(note => {
+        const theme = COLOR_THEMES[note.color] || COLOR_THEMES.yellow;
+        const noteEl = document.createElement('div');
+        noteEl.id = `note_el_${note.id}`;
+        noteEl.className = `post-it absolute w-36 sm:w-44 p-3 rounded-2xl shadow-md border cursor-grab select-none ${theme.bg} ${theme.border} ${theme.text}`;
+        noteEl.style.left = `${note.x}%`;
+        noteEl.style.top = `${note.y}%`;
+        noteEl.style.transform = `rotate(${note.rotation}deg)`;
+
+        noteEl.innerHTML = `
+          <!-- Tape Deco -->
+          <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 w-12 h-3.5 bg-white/70 backdrop-blur-xs rounded shadow-2xs"></div>
+
+          <!-- Top Meta -->
+          <div class="flex items-center justify-between pb-1 mb-1.5 border-b border-black/10 text-[11px] font-black">
+            <span class="truncate flex items-center gap-1">
+              <i class="fa-solid fa-circle-user text-[10px]"></i>
+              <span>${note.author}</span>
+            </span>
+            <span class="text-[9px] opacity-60">${note.createdAt}</span>
+          </div>
+
+          <!-- Content (Clickable for Zoom) -->
+          <p class="text-xs sm:text-sm font-bold leading-snug line-clamp-3 mb-2 cursor-pointer" onclick="openPersonalZoomModal('${note.id}')" title="클릭하면 크게 확대됩니다">
+            ${escapeHtml(note.text)}
+          </p>
+
+          <!-- Bottom: Score Controls (- / +) -->
+          <div class="flex items-center justify-between pt-1 border-t border-black/10">
+            <div class="flex items-center bg-black/10 rounded-lg p-0.5 gap-1">
+              <button type="button" onclick="changeNoteScore(event, '${note.id}', -1)" class="w-5 h-5 rounded bg-white/80 hover:bg-white text-slate-800 text-[10px] font-black flex items-center justify-center transition active:scale-90" title="점수 -1">
+                <i class="fa-solid fa-minus"></i>
+              </button>
+              <span class="text-xs font-black px-1 min-w-[16px] text-center">${note.score || 0}</span>
+              <button type="button" onclick="changeNoteScore(event, '${note.id}', 1)" class="w-5 h-5 rounded bg-white/80 hover:bg-white text-indigo-700 text-[10px] font-black flex items-center justify-center transition active:scale-90" title="점수 +1">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+
+            <button type="button" onclick="openPersonalZoomModal('${note.id}')" class="text-[10px] font-black text-slate-700/80 hover:text-black transition">
+              <i class="fa-solid fa-magnifying-glass-plus"></i> 확대
+            </button>
+          </div>
+        `;
+
+        enableNoteDragging(noteEl, note.id, 'studentNotesContainer');
+        container.appendChild(noteEl);
+      });
+    }
+
+    /* Score Increment / Decrement */
+    function changeNoteScore(e, noteId, delta) {
+      if (e) e.stopPropagation();
+      const notes = getStoredNotes();
+      const note = notes.find(n => n.id === noteId);
+      if (!note) return;
+
+      note.score = (note.score || 0) + delta;
+      saveNotes(notes);
+      playToneSound(delta > 0 ? 'score_up' : 'score_down');
+
+      renderStudentBoardNotes();
+      renderBlackboardNotes();
+      renderTeacherLiveGrid();
+
+      const zoomVal = document.getElementById('zoomScoreVal');
+      if (zoomVal && !document.getElementById('personalZoomModal').classList.contains('hidden')) {
+        zoomVal.textContent = note.score;
+      }
+    }
+
+    function openPersonalZoomModal(noteId) {
+      const note = getStoredNotes().find(n => n.id === noteId);
+      if (!note) return;
+
+      const modal = document.getElementById('personalZoomModal');
+      const card = document.getElementById('zoomCard');
+      const theme = COLOR_THEMES[note.color] || COLOR_THEMES.yellow;
+
+      card.className = `relative max-w-lg w-full p-7 rounded-3xl shadow-2xl border-4 border-white/60 transform transition-all text-left ${theme.bg} ${theme.text}`;
+      document.getElementById('zoomGroupBadge').textContent = `${note.groupId}조`;
+      document.getElementById('zoomAuthor').innerHTML = `<i class="fa-solid fa-circle-user mr-1"></i>${note.author}`;
+      document.getElementById('zoomTime').textContent = note.createdAt;
+      document.getElementById('zoomContent').textContent = note.text;
+      document.getElementById('zoomScoreVal').textContent = note.score || 0;
+
+      document.getElementById('zoomPlusBtn').onclick = () => changeNoteScore(null, note.id, 1);
+      document.getElementById('zoomMinusBtn').onclick = () => changeNoteScore(null, note.id, -1);
+
+      modal.classList.remove('hidden');
+      playToneSound('pop');
+    }
+
+    function closePersonalZoomModal() {
+      document.getElementById('personalZoomModal').classList.add('hidden');
+    }
+
+    function enableNoteDragging(el, noteId, containerId) {
+      let isDragging = false;
+      let startX = 0, startY = 0;
+      let initialLeft = 0, initialTop = 0;
+      let hasMoved = false;
+
+      const onPointerDown = (e) => {
+        if (e.target.closest('button') || e.target.closest('input')) return;
+
+        isDragging = true;
+        hasMoved = false;
+        el.classList.add('dragging');
+
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        startX = clientX;
+        startY = clientY;
+
+        const container = document.getElementById(containerId);
+        const rect = container.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+
+        initialLeft = ((elRect.left - rect.left) / rect.width) * 100;
+        initialTop = ((elRect.top - rect.top) / rect.height) * 100;
+
+        window.addEventListener('pointermove', onPointerMove, { passive: false });
+        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('touchmove', onPointerMove, { passive: false });
+        window.addEventListener('touchend', onPointerUp);
+      };
+
+      const onPointerMove = (e) => {
+        if (!isDragging) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+
+        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+          hasMoved = true;
+        }
+
+        const container = document.getElementById(containerId);
+        const rect = container.getBoundingClientRect();
+
+        const pctX = (dx / rect.width) * 100;
+        const pctY = (dy / rect.height) * 100;
+
+        const newX = Math.max(2, Math.min(85, initialLeft + pctX));
+        const newY = Math.max(2, Math.min(85, initialTop + pctY));
+
+        el.style.left = `${newX}%`;
+        el.style.top = `${newY}%`;
+      };
+
+      const onPointerUp = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        el.classList.remove('dragging');
+
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('touchmove', onPointerMove);
+        window.removeEventListener('touchend', onPointerUp);
+
+        if (hasMoved) {
+          const leftPct = parseFloat(el.style.left);
+          const topPct = parseFloat(el.style.top);
+          const notes = getStoredNotes();
+          const note = notes.find(n => n.id === noteId);
+          if (note) {
+            note.x = leftPct;
+            note.y = topPct;
+            saveNotes(notes);
+          }
+        }
+      };
+
+      el.addEventListener('pointerdown', onPointerDown);
+      el.addEventListener('touchstart', onPointerDown, { passive: true });
+    }
+
+    /* =========================================================
+       7. BLACKBOARD VIEW (Big Screen & Group Quick-Tabs)
+       ========================================================= */
+    function renderBlackboardGroupTabs() {
+      const container = document.getElementById('blackboardGroupTabs');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const notes = getStoredNotes();
+
+      for (let g = 1; g <= APP_STATE.groupCount; g++) {
+        const groupNotesCount = notes.filter(n => n.groupId === g).length;
+        const isFocused = APP_STATE.blackboardFocus === g;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.onclick = () => setBlackboardFocus(g);
+        btn.className = `px-2.5 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 ${
+          isFocused 
+            ? 'bg-emerald-600 text-white shadow-xs' 
+            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+        }`;
+
+        btn.innerHTML = `
+          <span>${g}조</span>
+          <span class="text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+            isFocused ? 'bg-white/30 text-white' : 'bg-emerald-100 text-emerald-800'
+          }">
+            ${groupNotesCount}
+          </span>
+        `;
+        container.appendChild(btn);
+      }
+
+      const allBtn = document.getElementById('bbTabAll');
+      if (allBtn) {
+        if (APP_STATE.blackboardFocus === 'all') {
+          allBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 bg-emerald-600 text-white shadow-xs';
+        } else {
+          allBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700';
+        }
+      }
+    }
+
+    function setBlackboardFocus(mode) {
+      APP_STATE.blackboardFocus = mode;
+      const banner = document.getElementById('bbSingleGroupBanner');
+      const bannerTitle = document.getElementById('bbSingleGroupTitle');
+
+      if (mode === 'all') {
+        banner.classList.add('hidden');
+      } else {
+        banner.classList.remove('hidden');
+        bannerTitle.textContent = `현재 ${mode}조 단독 회의 칠판을 보고 있습니다.`;
+      }
+
+      renderBlackboardGroupTabs();
+      renderBlackboardDividers();
+      renderBlackboardNotes();
+      playToneSound('pop');
+    }
+
+    function renderBlackboardDividers() {
+      const container = document.getElementById('blackboardDividers');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (APP_STATE.blackboardFocus !== 'all') {
+        container.innerHTML = `
+          <div class="absolute inset-0 flex flex-col items-center justify-center opacity-10 pointer-events-none select-none">
+            <span class="text-7xl font-black text-slate-700">${APP_STATE.blackboardFocus}조</span>
+            <span class="text-xl font-bold text-slate-600">집중 토의 보드</span>
+          </div>
+        `;
+        return;
+      }
+
+      const total = APP_STATE.groupCount;
+      let cols = 3;
+      if (total <= 2) cols = 2;
+      else if (total <= 4) cols = 2;
+      else if (total <= 6) cols = 3;
+      else if (total <= 8) cols = 4;
+      else cols = 4;
+
+      const rows = Math.ceil(total / cols);
+
+      for (let i = 0; i < total; i++) {
+        const groupNum = i + 1;
+        const colIdx = i % cols;
+        const rowIdx = Math.floor(i / cols);
+
+        const wPct = 100 / cols;
+        const hPct = 100 / rows;
+        const left = colIdx * wPct;
+        const top = rowIdx * hPct;
+
+        const cell = document.createElement('div');
+        cell.className = 'absolute border border-slate-300/40 rounded-xl p-2.5 flex flex-col justify-between pointer-events-none';
+        cell.style.left = `${left}%`;
+        cell.style.top = `${top}%`;
+        cell.style.width = `${wPct}%`;
+        cell.style.height = `${hPct}%`;
+
+        cell.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 rounded-lg bg-slate-900/10 text-slate-800 font-black text-xs">
+              ${groupNum}조
+            </span>
+          </div>
+        `;
+        container.appendChild(cell);
+      }
+    }
+
+    function renderBlackboardNotes() {
+      const container = document.getElementById('blackboardNotesContainer');
+      const countBadge = document.getElementById('bbActiveNotesCountBadge');
+      if (!container) return;
+      container.innerHTML = '';
+
+      let notes = getStoredNotes();
+      if (APP_STATE.blackboardFocus !== 'all') {
+        notes = notes.filter(n => n.groupId === APP_STATE.blackboardFocus);
+      }
+
+      if (countBadge) {
+        countBadge.textContent = `총 ${notes.length}개 메모`;
+      }
+
+      const isSingleGroup = APP_STATE.blackboardFocus !== 'all';
+
+      notes.forEach(note => {
+        const theme = COLOR_THEMES[note.color] || COLOR_THEMES.yellow;
+        const noteEl = document.createElement('div');
+        noteEl.id = `bb_note_${note.id}`;
+        
+        let left = note.x;
+        let top = note.y;
+
+        if (!isSingleGroup) {
+          const total = APP_STATE.groupCount;
+          let cols = 3;
+          if (total <= 2) cols = 2;
+          else if (total <= 4) cols = 2;
+          else if (total <= 6) cols = 3;
+          else if (total <= 8) cols = 4;
+          else cols = 4;
+
+          const rows = Math.ceil(total / cols);
+          const idx = note.groupId - 1;
+          const colIdx = idx % cols;
+          const rowIdx = Math.floor(idx / cols);
+
+          const wPct = 100 / cols;
+          const hPct = 100 / rows;
+
+          left = (colIdx * wPct) + (note.x * wPct / 100 * 0.7) + 2;
+          top = (rowIdx * hPct) + (note.y * hPct / 100 * 0.7) + 2;
+        }
+
+        noteEl.className = `post-it absolute ${isSingleGroup ? 'w-40 sm:w-48' : 'w-28 sm:w-36'} p-2.5 rounded-2xl shadow-md border cursor-pointer select-none ${theme.bg} ${theme.border} ${theme.text}`;
+        noteEl.style.left = `${left}%`;
+        noteEl.style.top = `${top}%`;
+        noteEl.style.transform = `rotate(${note.rotation}deg)`;
+
+        noteEl.onclick = () => openPersonalZoomModal(note.id);
+
+        noteEl.innerHTML = `
+          <!-- Tape -->
+          <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 w-10 h-3 bg-white/70 backdrop-blur-xs rounded shadow-2xs"></div>
+
+          <div class="flex items-center justify-between pb-1 mb-1 border-b border-black/10 text-[10px] font-black">
+            <span class="truncate">${note.author} (${note.groupId}조)</span>
+            <span class="text-[9px] opacity-60">${note.createdAt}</span>
+          </div>
+
+          <p class="text-xs font-bold leading-tight line-clamp-3 mb-1.5">
+            ${escapeHtml(note.text)}
+          </p>
+
+          <div class="flex items-center justify-between pt-1 border-t border-black/10 text-[10px]">
+            <div class="flex items-center bg-black/10 rounded-md p-0.5 gap-1">
+              <button type="button" onclick="changeNoteScore(event, '${note.id}', -1)" class="w-4 h-4 rounded bg-white text-slate-800 text-[9px] font-black flex items-center justify-center">
+                -
+              </button>
+              <span class="font-black px-0.5">${note.score || 0}</span>
+              <button type="button" onclick="changeNoteScore(event, '${note.id}', 1)" class="w-4 h-4 rounded bg-white text-indigo-700 text-[9px] font-black flex items-center justify-center">
+                +
+              </button>
+            </div>
+            <span class="text-[9px] opacity-75"><i class="fa-solid fa-expand text-[8px]"></i> 확대</span>
+          </div>
+        `;
+
+        if (isSingleGroup) {
+          enableNoteDragging(noteEl, note.id, 'blackboardNotesContainer');
+        }
+
+        container.appendChild(noteEl);
+      });
+    }
+
+    let isVirtualFullscreen = false;
+    function toggleBlackboardFullscreen() {
+      const frame = document.getElementById('blackboardFrame');
+      const icon = document.getElementById('bbFsIcon');
+
+      try {
+        if (document.fullscreenEnabled && !isVirtualFullscreen) {
+          if (!document.fullscreenElement) {
+            frame.requestFullscreen().then(() => {
+              if (icon) icon.className = 'fa-solid fa-compress';
+            }).catch(() => {
+              toggleVirtualFullscreen();
+            });
+            return;
+          } else {
+            document.exitFullscreen().then(() => {
+              if (icon) icon.className = 'fa-solid fa-expand';
+            }).catch(() => {});
+            return;
+          }
+        }
+      } catch (e) {}
+
+      toggleVirtualFullscreen();
+    }
+
+    function toggleVirtualFullscreen() {
+      const frame = document.getElementById('blackboardFrame');
+      const icon = document.getElementById('bbFsIcon');
+      isVirtualFullscreen = !isVirtualFullscreen;
+
+      if (isVirtualFullscreen) {
+        frame.classList.add('virtual-fullscreen');
+        if (icon) icon.className = 'fa-solid fa-compress';
+        showToast('가상 전체화면 모드 (ESC 키로 복귀)', 'info');
+      } else {
+        frame.classList.remove('virtual-fullscreen');
+        if (icon) icon.className = 'fa-solid fa-expand';
+      }
+    }
+
+    /* =========================================================
+       8. TEACHER DASHBOARD & ADVANCED ROSTER MANAGEMENT
+       ========================================================= */
+    function adjustGroupCount(delta) {
+      const newCount = Math.max(1, Math.min(11, APP_STATE.groupCount + delta));
+      if (newCount === APP_STATE.groupCount) return;
+
+      saveGroupCount(newCount);
+      updateGroupCountDisplays();
+      playToneSound('pop');
+      renderStudentGroupGrid();
+      renderBlackboardGroupTabs();
+      renderRosterManager();
+      renderTeacherLiveGrid();
+      showToast(`모둠 개수가 ${newCount}개로 변경되었습니다.`, 'success');
+    }
+
+    function updateGroupCountDisplays() {
+      const big = document.getElementById('teacherGroupCountBig');
+      const display = document.getElementById('teacherGroupCountDisplay');
+      if (big) big.textContent = APP_STATE.groupCount;
+      if (display) display.textContent = `${APP_STATE.groupCount}개`;
+    }
+
+    function broadcastTopic() {
+      const input = document.getElementById('teacherTopicInput');
+      const topic = input.value.trim();
+      if (!topic) {
+        showToast('공지할 주제를 입력하세요.', 'error');
+        return;
+      }
+      saveTopic(topic);
+      updateTopicDisplay(topic);
+      playToneSound('pop');
+      showToast('새 활동 주제가 학생들에게 공지되었습니다!', 'success');
+    }
+
+    function updateTopicDisplay(topic) {
+      const textEl = document.getElementById('studentTopicText');
+      if (textEl) textEl.textContent = topic;
+    }
+
+    /* Classroom Timer */
+    function setTimerMinutes(min) {
+      APP_STATE.timerSeconds = min * 60;
+      updateTimerDisplay();
+    }
+
+    function toggleTimer() {
+      const btn = document.getElementById('timerToggleBtn');
+      const status = document.getElementById('timerStatusLabel');
+
+      if (APP_STATE.timerRunning) {
+        clearInterval(APP_STATE.timerInterval);
+        APP_STATE.timerRunning = false;
+        btn.textContent = '계속';
+        status.textContent = '일시 정지';
+        status.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700';
+      } else {
+        APP_STATE.timerRunning = true;
+        btn.textContent = '정지';
+        status.textContent = '진행 중';
+        status.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 animate-pulse';
+
+        APP_STATE.timerInterval = setInterval(() => {
+          if (APP_STATE.timerSeconds > 0) {
+            APP_STATE.timerSeconds--;
+            updateTimerDisplay();
+          } else {
+            clearInterval(APP_STATE.timerInterval);
+            APP_STATE.timerRunning = false;
+            btn.textContent = '시작';
+            status.textContent = '종료';
+            playToneSound('cheer');
+            showToast('⏰ 모둠 활동 제한 시간이 종료되었습니다!', 'info');
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(APP_STATE.timerInterval);
+      APP_STATE.timerRunning = false;
+      APP_STATE.timerSeconds = 300;
+      updateTimerDisplay();
+      document.getElementById('timerToggleBtn').textContent = '시작';
+      const status = document.getElementById('timerStatusLabel');
+      status.textContent = '대기 중';
+      status.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600';
+    }
+
+    function updateTimerDisplay() {
+      const min = Math.floor(APP_STATE.timerSeconds / 60);
+      const sec = APP_STATE.timerSeconds % 60;
+      const str = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      const el = document.getElementById('timerDisplay');
+      if (el) el.textContent = str;
+    }
+
+    /* Roster Management (Drag & Drop, Auto-Distribute, Edit) */
+    let draggedStudentId = null;
+
+    function renderRosterManager() {
+      const container = document.getElementById('rosterGroupBuckets');
+      const countBadge = document.getElementById('rosterCountBadge');
+      const newSelect = document.getElementById('newStudentGroupSelect');
+      if (!container) return;
+
+      const roster = getRoster();
+      if (countBadge) countBadge.textContent = `총 ${roster.length}명 등록`;
+
+      if (newSelect) {
+        newSelect.innerHTML = '';
+        for (let g = 1; g <= APP_STATE.groupCount; g++) {
+          const opt = document.createElement('option');
+          opt.value = g;
+          opt.textContent = `${g}조 배정`;
+          newSelect.appendChild(opt);
+        }
+      }
+
+      container.innerHTML = '';
+
+      for (let g = 1; g <= APP_STATE.groupCount; g++) {
+        const groupMembers = roster.filter(s => s.groupId === g);
+        const card = document.createElement('div');
+        card.className = 'bg-slate-50 border-2 border-slate-200 rounded-2xl p-3.5 flex flex-col justify-between transition shadow-2xs hover:border-indigo-300';
+
+        card.ondragover = (e) => {
+          e.preventDefault();
+          card.classList.add('border-indigo-500', 'bg-indigo-50/50');
+        };
+        card.ondragleave = () => {
+          card.classList.remove('border-indigo-500', 'bg-indigo-50/50');
+        };
+        card.ondrop = (e) => {
+          e.preventDefault();
+          card.classList.remove('border-indigo-500', 'bg-indigo-50/50');
+          const studentId = e.dataTransfer.getData('text/plain') || draggedStudentId;
+          if (!studentId) return;
+
+          const currentRoster = getRoster();
+          const target = currentRoster.find(s => s.id === studentId);
+          if (target && target.groupId !== g) {
+            target.groupId = g;
+            saveRoster(currentRoster);
+            playToneSound('pop');
+            renderRosterManager();
+            renderStudentMembersSelection();
+            showToast(`'${target.name}' 학생이 ${g}조로 이동되었습니다.`, 'info');
+          }
+        };
+
+        let listHtml = '';
+        if (groupMembers.length === 0) {
+          listHtml = '<p class="text-xs text-slate-400 italic py-5 text-center border-2 border-dashed border-slate-200 rounded-xl">학생을 여기로 드래그해 넣으세요</p>';
+        } else {
+          listHtml = groupMembers.map(stu => `
+            <div id="roster_badge_${stu.id}" 
+                 draggable="true" 
+                 ondragstart="handleStudentDragStart(event, '${stu.id}')"
+                 ondragend="handleStudentDragEnd(event, '${stu.id}')"
+                 class="flex items-center justify-between py-1.5 px-2.5 my-1 bg-white border border-slate-200/90 rounded-xl text-xs hover:shadow-md transition cursor-grab active:cursor-grabbing select-none"
+                 title="다른 조로 드래그하거나 이동할 수 있습니다">
+              <span class="font-extrabold text-slate-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-grip-vertical text-slate-300 mr-0.5 text-[10px]"></i>
+                <i class="fa-solid fa-circle-user text-indigo-400"></i>
+                <span>${stu.name}</span>
+              </span>
+              <div class="flex items-center gap-1">
+                <select onchange="updateStudentGroup('${stu.id}', this.value)" class="text-[11px] font-bold py-0.5 px-1 bg-slate-100 hover:bg-slate-200 rounded border border-slate-200 text-slate-700 cursor-pointer focus:outline-none">
+                  ${Array.from({ length: APP_STATE.groupCount }, (_, i) => i + 1).map(num => `
+                    <option value="${num}" ${num === g ? 'selected' : ''}>${num}조</option>
+                  `).join('')}
+                </select>
+                <button type="button" onclick="openStudentEditModal('${stu.id}')" class="p-1 text-slate-400 hover:text-indigo-600 transition" title="수정">
+                  <i class="fa-solid fa-pen-to-square text-[11px]"></i>
+                </button>
+                <button type="button" onclick="deleteStudent('${stu.id}')" class="p-1 text-slate-400 hover:text-rose-600 transition" title="삭제">
+                  <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-200/60">
+              <span class="font-black text-sm text-indigo-900 flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                <span>${g}조</span>
+              </span>
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${groupMembers.length > 0 ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-500'}">
+                ${groupMembers.length}명
+              </span>
+            </div>
+            <div class="max-h-52 overflow-y-auto pr-1">
+              ${listHtml}
+            </div>
+          </div>
+          <div class="mt-2 pt-1.5 text-center border-t border-slate-200/50">
+            <span class="text-[10px] text-slate-400 font-medium">💡 학생을 드래그해서 이 조로 옮길 수 있어요</span>
+          </div>
+        `;
+        container.appendChild(card);
+      }
+    }
+
+    function handleStudentDragStart(e, studentId) {
+      draggedStudentId = studentId;
+      try {
+        e.dataTransfer.setData('text/plain', studentId);
+        e.dataTransfer.effectAllowed = 'move';
+      } catch (err) {}
+      setTimeout(() => {
+        const el = document.getElementById(`roster_badge_${studentId}`);
+        if (el) el.classList.add('opacity-40');
+      }, 0);
+    }
+
+    function handleStudentDragEnd(e, studentId) {
+      draggedStudentId = null;
+      const el = document.getElementById(`roster_badge_${studentId}`);
+      if (el) el.classList.remove('opacity-40');
+    }
+
+    function updateStudentGroup(studentId, newGroup) {
+      const roster = getRoster();
+      const target = roster.find(s => s.id === studentId);
+      if (target) {
+        target.groupId = parseInt(newGroup, 10);
+        saveRoster(roster);
+        playToneSound('pop');
+        refreshRosterEverywhere();
+      }
+    }
+
+    function addNewStudent() {
+      const input = document.getElementById('newStudentNameInput');
+      const select = document.getElementById('newStudentGroupSelect');
+      const name = input.value.trim();
+
+      if (!name) {
+        showToast('학생 이름을 입력해주세요.', 'error');
+        input.focus();
+        return;
+      }
+
+      const roster = getRoster();
+      roster.push({
+        id: 'stu_' + Date.now() + '_' + Math.random().toString(36).substr(2, 3),
+        name: name,
+        groupId: parseInt(select.value, 10) || 1
+      });
+
+      saveRoster(roster);
+      input.value = '';
+      playToneSound('pop');
+      refreshRosterEverywhere();
+      showToast(`'${name}' 학생이 등록되었습니다.`, 'success');
+    }
+
+    function deleteStudent(studentId) {
+      const roster = getRoster();
+      const target = roster.find(s => s.id === studentId);
+      if (!target) return;
+
+      const remaining = roster.filter(s => s.id !== studentId);
+      saveRoster(remaining);
+      playToneSound('pop');
+      refreshRosterEverywhere();
+      showToast(`'${target.name}' 학생이 삭제되었습니다.`, 'info');
+    }
+
+    function autoDistributeStudents(isRandom = true) {
+      const roster = getRoster();
+      if (roster.length === 0) {
+        showToast('편성할 학생 명단이 없습니다.', 'error');
+        return;
+      }
+
+      const totalGroups = APP_STATE.groupCount;
+      const list = isRandom ? [...roster].sort(() => Math.random() - 0.5) : [...roster];
+
+      list.forEach((student, index) => {
+        student.groupId = (index % totalGroups) + 1;
+      });
+
+      saveRoster(list);
+      playToneSound('cheer');
+      refreshRosterEverywhere();
+      const modeText = isRandom ? '랜덤 무작위' : '순서대로';
+      showToast(`${roster.length}명의 학생을 ${totalGroups}개 모둠으로 ${modeText} 균등 편성했습니다! 🎲`, 'success');
+    }
+
+    /* Batch Roster Modal & Parser */
+    function openBatchRosterModal() {
+      const modal = document.getElementById('batchRosterModal');
+      const textarea = document.getElementById('batchRosterTextarea');
+      const existing = getRoster();
+      if (existing.length > 0) {
+        textarea.value = existing.map(s => `${s.groupId}조: ${s.name}`).join('\n');
+      } else {
+        textarea.value = '';
+      }
+      modal.classList.remove('hidden');
+      setTimeout(() => textarea.focus(), 100);
+    }
+
+    function closeBatchRosterModal() {
+      document.getElementById('batchRosterModal').classList.add('hidden');
+    }
+
+    function applyBatchRoster(mode) {
+      const text = document.getElementById('batchRosterTextarea').value.trim();
+      if (!text) {
+        showToast('학생 명단 내용을 입력해주세요.', 'error');
+        return;
+      }
+
+      const lines = text.split('\n');
+      const totalGroups = APP_STATE.groupCount;
+      const newRoster = [];
+
+      if (mode === 'detect') {
+        let currentGroup = 1;
+        lines.forEach(line => {
+          const trimmed = line.trim();
+          if (!trimmed) return;
+
+          const groupMatch = trimmed.match(/^(\d{1,2})\s*조\s*[:\-\s]\s*(.*)$/);
+          if (groupMatch) {
+            currentGroup = Math.min(totalGroups, Math.max(1, parseInt(groupMatch[1], 10)));
+            const namesPart = groupMatch[2];
+            const parsedNames = namesPart.split(/[,/\s]+/).map(n => n.trim()).filter(Boolean);
+            parsedNames.forEach(n => {
+              newRoster.push({
+                id: 'stu_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                name: n,
+                groupId: currentGroup
+              });
+            });
+          } else {
+            const parsedNames = trimmed.split(/[,/\s]+/).map(n => n.trim()).filter(Boolean);
+            parsedNames.forEach(n => {
+              newRoster.push({
+                id: 'stu_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                name: n,
+                groupId: currentGroup
+              });
+            });
+          }
+        });
+      } else {
+        const rawTokens = text.replace(/(\d{1,2}조\s*[:\-])/g, ' ')
+                              .split(/[\n,/\t]+/)
+                              .flatMap(chunk => chunk.split(/\s+/))
+                              .map(s => s.trim())
+                              .filter(s => s.length > 0 && !s.match(/^\d+조$/));
+
+        if (rawTokens.length === 0) {
+          showToast('유효한 학생 이름을 찾을 수 없습니다.', 'error');
+          return;
+        }
+
+        const studentList = (mode === 'random') 
+          ? [...rawTokens].sort(() => Math.random() - 0.5) 
+          : rawTokens;
+
+        studentList.forEach((name, index) => {
+          newRoster.push({
+            id: 'stu_' + (index + 1) + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 3),
+            name: name,
+            groupId: (index % totalGroups) + 1
+          });
+        });
+      }
+
+      if (newRoster.length === 0) {
+        showToast('등록할 학생이 없습니다.', 'error');
+        return;
+      }
+
+      saveRoster(newRoster);
+      playToneSound('cheer');
+      closeBatchRosterModal();
+      refreshRosterEverywhere();
+      showToast(`총 ${newRoster.length}명의 학생이 ${totalGroups}개 조로 즉시 편성되었습니다! 🎉`, 'success');
+    }
+
+    function resetToDefaultRosterModal() {
+      const initialRoster = DEFAULT_22_STUDENTS.map((name, idx) => ({
+        id: 'stu_' + (idx + 1),
+        name: name,
+        groupId: (idx % APP_STATE.groupCount) + 1
+      }));
+      saveRoster(initialRoster);
+      playToneSound('pop');
+      refreshRosterEverywhere();
+      showToast('기본 22명 학생 명단으로 복원되었습니다.', 'success');
+    }
+
+    /* Student Edit Modal */
+    let currentEditStudentId = null;
+
+    function openStudentEditModal(studentId) {
+      const student = getRoster().find(s => s.id === studentId);
+      if (!student) return;
+
+      currentEditStudentId = studentId;
+      const modal = document.getElementById('studentEditModal');
+      const nameInput = document.getElementById('editStudentNameInput');
+      const groupSelect = document.getElementById('editStudentGroupSelect');
+
+      nameInput.value = student.name;
+      groupSelect.innerHTML = '';
+      for (let g = 1; g <= APP_STATE.groupCount; g++) {
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = `${g}조`;
+        if (g === student.groupId) opt.selected = true;
+        groupSelect.appendChild(opt);
+      }
+
+      modal.classList.remove('hidden');
+      nameInput.focus();
+    }
+
+    function closeStudentEditModal() {
+      document.getElementById('studentEditModal').classList.add('hidden');
+      currentEditStudentId = null;
+    }
+
+    function saveStudentEdit() {
+      if (!currentEditStudentId) return;
+      const name = document.getElementById('editStudentNameInput').value.trim();
+      const groupId = parseInt(document.getElementById('editStudentGroupSelect').value, 10);
+
+      if (!name) {
+        showToast('이름을 입력하세요.', 'error');
+        return;
+      }
+
+      const roster = getRoster();
+      const target = roster.find(s => s.id === currentEditStudentId);
+      if (target) {
+        target.name = name;
+        target.groupId = groupId;
+        saveRoster(roster);
+        playToneSound('pop');
+        closeStudentEditModal();
+        refreshRosterEverywhere();
+        showToast('학생 정보가 수정되었습니다.', 'success');
+      }
+    }
+
+    /* Teacher Live Monitoring Grid */
+    function renderTeacherLiveGrid() {
+      const container = document.getElementById('teacherLiveGroupsGrid');
+      const summaryBadge = document.getElementById('teacherTotalNotesSummary');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const allNotes = getStoredNotes();
+      if (summaryBadge) summaryBadge.textContent = `총 ${allNotes.length}개 등록됨`;
+
+      for (let g = 1; g <= APP_STATE.groupCount; g++) {
+        const groupNotes = allNotes.filter(n => n.groupId === g);
+        const card = document.createElement('div');
+        card.className = 'bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between shadow-2xs';
+
+        let notesList = '';
+        if (groupNotes.length === 0) {
+          notesList = '<p class="text-xs text-slate-400 italic py-4 text-center">아직 등록된 메모가 없습니다.</p>';
+        } else {
+          notesList = groupNotes.map(n => `
+            <div class="bg-white p-2.5 rounded-xl border border-slate-200 my-1 text-xs shadow-2xs">
+              <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-1">
+                <span>${n.author}</span>
+                <span class="text-indigo-600 font-black">점수: ${n.score || 0}</span>
+              </div>
+              <p class="text-slate-800 font-bold line-clamp-2">${escapeHtml(n.text)}</p>
+            </div>
+          `).join('');
+        }
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-200">
+              <span class="font-black text-sm text-slate-800">${g}조</span>
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full ${groupNotes.length > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}">
+                ${groupNotes.length}개
+              </span>
+            </div>
+            <div class="max-h-48 overflow-y-auto pr-1">
+              ${notesList}
+            </div>
+          </div>
+          <button type="button" onclick="setBlackboardFocus(${g}); switchView('blackboard');" class="mt-3 w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1">
+            <i class="fa-solid fa-eye text-emerald-600"></i>
+            <span>${g}조 칠판 바로보기</span>
+          </button>
+        `;
+        container.appendChild(card);
+      }
+    }
+
+    function confirmResetAllData() {
+      saveNotes([]);
+      playToneSound('pop');
+      renderStudentBoardNotes();
+      renderBlackboardNotes();
+      renderTeacherLiveGrid();
+      showToast('전체 칠판의 모든 포스트잇이 초기화되었습니다.', 'info');
+    }
+
+    function escapeHtml(string) {
+      if (!string) return '';
+      const entityMap = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+        '/': '&#x2F;'
+      };
+      return String(string).replace(/[&<>"'\/]/g, s => entityMap[s]);
+    }
+
+    // Global keyboard listener
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        const textarea = document.getElementById('postItTextInput');
+        if (document.activeElement === textarea) {
+          e.preventDefault();
+          submitPostIt();
+        }
+      }
+      if (e.key === 'Escape') {
+        closePersonalZoomModal();
+        closeTeacherPasswordModal();
+        closeBatchRosterModal();
+        closeStudentEditModal();
+        if (isVirtualFullscreen) toggleVirtualFullscreen();
+      }
+    });
+
+    async function initializeFirebaseSync() {
+      if (!firebaseReady) return;
+      try {
+        const snap = await fbRef().once('value');
+        const data = snap.val();
+
+        // 최초 1회: Firebase가 비어 있으면 현재 데이터를 업로드
+        if (!data) {
+          await fbRef().set({
+            notes: getStoredNotes(),
+            roster: getRoster(),
+            topic: getTopic(),
+            groupCount: getGroupCount(),
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
+          });
+        } else {
+          applyingFirebase = true;
+          if (Array.isArray(data.notes)) {
+            inMemoryDB.notes = data.notes;
+            if (isLocalStorageUsable) localStorage.setItem('class_blackboard_notes', JSON.stringify(data.notes));
+          }
+          if (Array.isArray(data.roster)) {
+            inMemoryDB.roster = data.roster;
+            if (isLocalStorageUsable) localStorage.setItem('class_blackboard_roster', JSON.stringify(data.roster));
+          }
+          if (typeof data.topic === 'string') {
+            inMemoryDB.topic = data.topic;
+            if (isLocalStorageUsable) localStorage.setItem('class_blackboard_topic', data.topic);
+          }
+          if (data.groupCount) {
+            APP_STATE.groupCount = Number(data.groupCount);
+            inMemoryDB.groupCount = Number(data.groupCount);
+            if (isLocalStorageUsable) localStorage.setItem('class_blackboard_group_count', String(data.groupCount));
+          }
+          applyingFirebase = false;
+        }
+
+        fbRef('roster').on('value', snap => {
+          const roster=snap.val();
+          if (!Array.isArray(roster)) return;
+          applyingFirebase=true;
+          inMemoryDB.roster=roster;
+          if (isLocalStorageUsable) localStorage.setItem('class_blackboard_roster', JSON.stringify(roster));
+          applyingFirebase=false;
+          refreshRosterEverywhere();
+        });
+
+        fbRef('notes').on('value', snap => {
+          const notes=snap.val();
+          if (!Array.isArray(notes)) return;
+          applyingFirebase=true;
+          inMemoryDB.notes=notes;
+          if (isLocalStorageUsable) localStorage.setItem('class_blackboard_notes', JSON.stringify(notes));
+          applyingFirebase=false;
+          renderStudentBoardNotes();
+          renderBlackboardNotes();
+          renderTeacherLiveGrid();
+        });
+
+        fbRef('topic').on('value', snap => {
+          const topic=snap.val();
+          if (typeof topic !== 'string') return;
+          applyingFirebase=true;
+          inMemoryDB.topic=topic;
+          if (isLocalStorageUsable) localStorage.setItem('class_blackboard_topic', topic);
+          applyingFirebase=false;
+          updateTopicDisplay(topic);
+          const ti=document.getElementById('teacherTopicInput');
+          if(ti && document.activeElement!==ti) ti.value=topic;
+        });
+
+        fbRef('groupCount').on('value', snap => {
+          const n=Number(snap.val());
+          if (!n) return;
+          applyingFirebase=true;
+          APP_STATE.groupCount=n;
+          inMemoryDB.groupCount=n;
+          if (isLocalStorageUsable) localStorage.setItem('class_blackboard_group_count', String(n));
+          applyingFirebase=false;
+          updateGroupCountDisplays();
+          renderStudentGroupGrid();
+          renderBlackboardGroupTabs();
+          refreshRosterEverywhere();
+        });
+
+        firebaseDb.ref('.info/connected').on('value', snap => {
+          console.log(snap.val() ? '[Firebase] 실시간 연결됨' : '[Firebase] 연결 대기/오프라인');
+        });
+      } catch(e) {
+        applyingFirebase=false;
+        console.error('[Firebase] 동기화 오류:',e);
+        showToast('Firebase 연결을 확인해주세요.', 'error');
+      }
+    }
+
+    /* =========================================================
+       9. ROBUST APP INITIALIZATION
+       ========================================================= */
+    let hasInitialized = false;
+    async function initClassroomApp() {
+      if (hasInitialized) return;
+      hasInitialized = true;
+
+      APP_STATE.groupCount = getGroupCount();
+      await initializeFirebaseSync();
+      APP_STATE.groupCount = getGroupCount();
+      updateGroupCountDisplays();
+      updateTopicDisplay(getTopic());
+
+      const topicInput = document.getElementById('teacherTopicInput');
+      if (topicInput) topicInput.value = getTopic();
+
+      switchView('home');
+      renderStudentGroupGrid();
+      renderBlackboardGroupTabs();
+      renderRosterManager();
+
+      window.addEventListener('resize', () => {
+        const confetti = document.getElementById('confettiCanvas');
+        if (confetti) {
+          confetti.width = window.innerWidth;
+          confetti.height = window.innerHeight;
+        }
+      });
+    }
+
+    // Fail-safe init: triggers regardless of iframe load event timing
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initClassroomApp);
+    } else {
+      initClassroomApp();
+    }
+    window.addEventListener('load', initClassroomApp);
+  </script>
+</body>
+</html>
