@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>위인을 찾아서 - 초등 위인 탐구 백과</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome 아이콘 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  
+  <!-- 웹폰트 (Jua & Noto Sans KR) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f0fdf4;
+      background-image: radial-gradient(#dcfce7 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+    }
+    .font-jua {
+      font-family: 'Jua', sans-serif;
+    }
+    
+    @media print {
+      body {
+        background: white !important;
+        padding: 0 !important;
+        color: #000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-area {
+        box-shadow: none !important;
+        border: 2px solid #333 !important;
+        padding: 24px !important;
+        margin: 0 !important;
+        width: 100% !important;
+        display: block !important;
+        background: white !important;
+      }
+      .print-header {
+        display: block !important;
+      }
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen pb-16">
+
+  <!-- 상단 네비게이션 헤더 -->
+  <header class="bg-amber-400 border-b-4 border-amber-500 shadow-md sticky top-0 z-30 no-print">
+    <div class="max-w-4xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3 cursor-pointer select-none" onclick="resetSearch()">
+        <span class="text-3xl sm:text-4xl">📚</span>
+        <div>
+          <h1 class="font-jua text-2xl sm:text-3xl text-amber-950 tracking-wide flex items-center gap-2">
+            위인을 찾아서
+          </h1>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button 
+          onclick="openSettingsModal()" 
+          class="bg-amber-100 hover:bg-white text-amber-900 border border-amber-300 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold shadow-sm transition flex items-center gap-1.5"
+          title="선생님 전용 API 설정"
+        >
+          <i class="fa-solid fa-gear text-amber-600"></i>
+          <span>선생님 설정</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 컨테이너 -->
+  <main class="max-w-4xl mx-auto px-4 mt-6">
+
+    <!-- 안내 배너 (어린이 꿀팁) -->
+    <div class="bg-white rounded-2xl p-4 sm:p-5 border-2 border-amber-200 shadow-sm mb-6 flex items-start gap-3.5 no-print">
+      <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl shrink-0">
+        <i class="fa-solid fa-user-check"></i>
+      </div>
+      <div>
+        <h2 class="font-bold text-slate-800 text-sm sm:text-base mb-1">선생님이 알려주는 위인 검색 규칙!</h2>
+        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+          이곳은 <strong class="text-amber-700 font-bold">초등학교 교과서와 위인전에 나오는 훌륭한 인물</strong>만 검색할 수 있는 안전한 배움터예요. 게임 캐릭터, 만화, 음식이나 엉뚱한 단어는 검색되지 않으니 꼭 존경받는 <strong>실제 위인의 이름</strong>을 적어주세요.
+        </p>
+      </div>
+    </div>
+
+    <!-- 검색 카드 -->
+    <div class="bg-white rounded-3xl p-5 sm:p-8 border-4 border-amber-300 shadow-md mb-8 no-print">
+      <h2 class="font-jua text-xl sm:text-2xl text-center text-slate-800 mb-4">
+        🔎 어떤 훌륭한 위인에 대해 알아볼까요?
+      </h2>
+
+      <div class="flex flex-col sm:flex-row gap-2.5 max-w-2xl mx-auto">
+        <div class="relative flex-1">
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="위인의 이름을 입력하세요 (예: 세종대왕, 이순신, 에디슨)" 
+            class="w-full pl-12 pr-10 py-3.5 sm:py-4 rounded-2xl border-2 border-slate-300 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 outline-none text-base sm:text-lg font-medium transition shadow-inner"
+            onkeydown="if(event.key === 'Enter') startSearch()"
+          />
+          <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+          <button 
+            type="button" 
+            id="clearInputBtn" 
+            onclick="clearSearchInput()" 
+            class="hidden absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 w-6 h-6 flex items-center justify-center rounded-full"
+          >
+            <i class="fa-solid fa-circle-xmark"></i>
+          </button>
+        </div>
+        <button 
+          id="searchBtn"
+          onclick="startSearch()" 
+          class="bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-amber-950 font-jua text-lg sm:text-xl px-7 py-3.5 sm:py-4 rounded-2xl border-2 border-amber-500 shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <span>탐구 시작!</span>
+          <i class="fa-solid fa-rocket"></i>
+        </button>
+      </div>
+
+      <!-- 추천 위인 태그 목록 -->
+      <div class="mt-6 pt-5 border-t border-slate-100">
+        <p class="text-xs font-bold text-amber-700 mb-2.5 flex items-center gap-1.5">
+          <i class="fa-solid fa-star"></i>
+          <span>초등 교과서 추천 위인 바로가기:</span>
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="quickSearch('세종대왕')" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+            <span>👑 세종대왕</span>
+          </button>
+          <button onclick="quickSearch('이순신')" class="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+            <span>⚔️ 이순신</span>
+          </button>
+          <button onclick="quickSearch('유관순')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+            <span>🇰🇷 유관순</span>
+          </button>
+          <button onclick="quickSearch('장영실')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+            <span>⏰ 장영실</span>
+          </button>
+          <button onclick="quickSearch('방정환')" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+            <span>🎈 방정환</span>
+          </button>
+          <button onclick="quickSearch('김구')" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+            <span>👓 김구</span>
+          </button>
+          <button onclick="quickSearch('안중근')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-900 border border-red-200 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+            <span>🇰🇷 안중근</span>
+          </button>
+          <button onclick="quickSearch('토머스 에디슨')" class="px-3 py-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-900 border border-yellow-200 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+            <span>💡 에디슨</span>
+          </button>
+          <button onclick="quickSearch('헬렌 켈러')" class="px-3 py-1.5 bg-lime-50 hover:bg-lime-100 text-lime-900 border border-lime-200 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+            <span>🌻 헬렌 켈러</span>
+          </button>
+          <button onclick="quickSearch('정약용')" class="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-200 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+            <span>🏗️ 정약용</span>
+          </button>
+          <button onclick="quickSearch('광개토대왕')" class="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+            <span>🐎 광개토대왕</span>
+          </button>
+          <button onclick="quickSearch('마리 퀴리')" class="px-3 py-1.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-900 border border-cyan-200 rounded-full text-xs sm:text-sm font-bold transition flex items-center gap-1.5">
+            <span>🧪 마리 퀴리</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 로딩 상태 창 -->
+    <div id="loadingBox" class="hidden bg-white rounded-3xl p-8 border-4 border-amber-200 shadow-md text-center mb-8 no-print">
+      <div class="inline-block animate-bounce mb-3 text-4xl">📚</div>
+      <p class="font-jua text-xl text-amber-900 mb-2">인공지능 탐구기가 위인에 대해 꼼꼼하게 정리하고 있어요!</p>
+      <p class="text-sm text-slate-500">초등학교 3학년 눈높이에 맞는 쉬운 글과 퀴즈를 준비 중입니다...</p>
+    </div>
+
+    <!-- 위인이 아닌 경우 (안전 필터 카드) -->
+    <div id="warningCard" class="hidden bg-amber-50 rounded-3xl p-6 sm:p-8 border-4 border-amber-300 shadow-md text-center mb-8 no-print">
+      <div class="text-5xl mb-3">🛑 👤</div>
+      <h3 class="font-jua text-2xl text-amber-900 mb-2">훌륭한 위인의 이름만 검색할 수 있어요!</h3>
+      <p id="warningMessage" class="text-slate-700 text-base leading-relaxed max-w-md mx-auto mb-5">
+        입력하신 내용은 초등학교 교과서나 위인전에 나오는 인물이 아니에요.
+      </p>
+      <div class="flex flex-wrap justify-center gap-2.5">
+        <button onclick="quickSearch('세종대왕')" class="px-4 py-2 bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold rounded-xl text-sm transition">
+          👑 세종대왕 탐구하기
+        </button>
+        <button onclick="quickSearch('이순신')" class="px-4 py-2 bg-sky-400 hover:bg-sky-500 text-slate-900 font-bold rounded-xl text-sm transition">
+          ⚔️ 이순신 탐구하기
+        </button>
+        <button onclick="quickSearch('안중근')" class="px-4 py-2 bg-rose-400 hover:bg-rose-500 text-slate-900 font-bold rounded-xl text-sm transition">
+          🇰🇷 안중근 탐구하기
+        </button>
+      </div>
+    </div>
+
+    <!-- 위인 탐구 결과 카드 -->
+    <article id="resultCard" class="hidden bg-white rounded-3xl sm:rounded-4xl p-6 sm:p-10 border-4 border-sky-300 shadow-lg print-area mb-8">
+      
+      <!-- 인쇄용 학습지 상단 헤더 -->
+      <div class="hidden print-header border-b-2 border-slate-800 pb-3 mb-6">
+        <div class="flex justify-between items-center text-sm font-bold text-slate-600">
+          <span>🏫 초등학교 위인 탐구 학습지</span>
+          <span>( &nbsp; &nbsp; )학년 ( &nbsp; &nbsp; )반 이름: ( &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; )</span>
+        </div>
+      </div>
+
+      <!-- 상단 액션 툴바 (음성 듣기, 이미지 검색, 인쇄) -->
+      <div class="flex flex-wrap items-center justify-between pb-4 mb-6 border-b-2 border-sky-100 gap-2 no-print">
+        <div class="flex items-center gap-2">
+          <!-- 음성 읽어주기 (TTS) 버튼 -->
+          <button 
+            id="ttsBtn" 
+            onclick="toggleSpeech()" 
+            class="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition shadow-sm"
+          >
+            <i class="fa-solid fa-volume-high"></i>
+            <span id="ttsBtnText">선생님 음성으로 듣기</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 학습지 인쇄 버튼 -->
+          <button 
+            onclick="window.print()" 
+            class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition"
+            title="학습지로 출력하기"
+          >
+            <i class="fa-solid fa-print"></i>
+            <span>활동지 인쇄</span>
+          </button>
+
+          <!-- 구글 이미지 검색 버튼 -->
+          <button 
+            id="googleImageBtn"
+            onclick="openGoogleImages()" 
+            class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-jua text-xs sm:text-sm rounded-xl shadow transition flex items-center gap-1.5"
+            title="구글 이미지에서 사진 찾아보기"
+          >
+            <i class="fa-solid fa-images"></i>
+            <span>사진 보기</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-75"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 위인 메인 프로필 영역 -->
+      <div class="mb-8">
+        <div>
+          <div class="flex flex-wrap items-center justify-start gap-2.5 mb-1.5">
+            <h2 id="figureName" class="font-jua text-3xl sm:text-4xl text-slate-900 tracking-wide">세종대왕</h2>
+          </div>
+          <p id="figureTagline" class="font-bold text-amber-600 text-base sm:text-lg">
+            백성을 사랑하여 훈민정음(한글)을 만드신 겨레의 큰 스승
+          </p>
+          <p id="figureIntro" class="text-slate-700 text-sm sm:text-base mt-2.5 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            백성들이 글을 몰라 억울한 일을 당하는 것을 마음 아파하시며 누구나 쉽게 배울 수 있는 글자인 한글을 선물해 주셨어요.
+          </p>
+        </div>
+      </div>
+
+      <!-- 3가지 핵심 업적 -->
+      <section class="mb-8">
+        <h3 class="font-jua text-xl text-sky-900 mb-3 flex items-center gap-2">
+          <span>🏆 꼭 기억해야 할 3가지 훌륭한 일</span>
+        </h3>
+        <div id="achievementsList" class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <!-- 동적 생성 -->
+        </div>
+      </section>
+
+      <!-- 재미있는 일화 & 본받을 점 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <div class="bg-amber-50 rounded-2xl p-5 border-2 border-amber-200">
+          <h4 class="font-jua text-lg text-amber-900 mb-2 flex items-center gap-2">
+            <span>💡 재미있는 이야기 (비하인드)</span>
+          </h4>
+          <p id="funFactText" class="text-slate-700 text-sm sm:text-base leading-relaxed">
+            세종대왕님은 고기를 아주 좋아하셨고 책을 너무 많이 읽어서 눈병이 날 정도의 독서광이셨어요!
+          </p>
+        </div>
+
+        <div class="bg-emerald-50 rounded-2xl p-5 border-2 border-emerald-200">
+          <h4 class="font-jua text-lg text-emerald-900 mb-2 flex items-center gap-2">
+            <span>🌱 우리가 본받을 점</span>
+          </h4>
+          <p id="lessonText" class="text-slate-700 text-sm sm:text-base leading-relaxed">
+            주변 이웃과 친구들의 어려움을 먼저 살피고 따뜻하게 배려하는 마음을 배울 수 있어요.
+          </p>
+        </div>
+      </div>
+
+      <!-- 위인에게 더 궁금한 점 질문하기 (Q&A 섹션) -->
+      <section id="qaSection" class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-5 sm:p-7 border-3 border-amber-300 shadow-sm mb-8 no-print">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-jua text-xl text-amber-950 flex items-center gap-2">
+            <span>💬</span>
+            <span id="qaTitleName">위인</span>에게 더 궁금한 점이 있나요?
+          </h3>
+          <span class="text-xs bg-amber-200 text-amber-900 font-bold px-2.5 py-1 rounded-full">
+            선생님 Q&amp;A
+          </span>
+        </div>
+        <p class="text-xs sm:text-sm text-amber-800/80 mb-4 leading-relaxed">
+          좋아했던 음식, 어릴 적 성격, 취미 등 무엇이든 물어보세요! 선생님이 다정하게 알려줄게요.
+        </p>
+
+        <!-- 추천 질문 태그 버튼들 -->
+        <div class="mb-4">
+          <p class="text-xs font-bold text-amber-900/70 mb-2 flex items-center gap-1">
+            <i class="fa-solid fa-lightbulb text-amber-500"></i>
+            <span>궁금한 질문을 바로 눌러보세요:</span>
+          </p>
+          <div id="recommendedQuestions" class="flex flex-wrap gap-2">
+            <!-- 동적으로 추천 질문 버튼 생성 -->
+          </div>
+        </div>
+
+        <!-- 질문 입력창 -->
+        <div class="flex flex-col sm:flex-row gap-2 mb-4">
+          <div class="relative flex-1">
+            <input 
+              type="text" 
+              id="qaInput" 
+              placeholder="예: 가장 좋아했던 음식은 무엇이었나요?" 
+              class="w-full pl-10 pr-4 py-3 bg-white rounded-2xl border-2 border-amber-200 focus:border-amber-400 focus:ring-3 focus:ring-amber-100 outline-none text-sm font-medium transition shadow-inner"
+              onkeydown="if(event.key === 'Enter') submitQuestion()"
+            />
+            <i class="fa-solid fa-comment-dots absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-400 text-base"></i>
+          </div>
+          <button 
+            id="qaSubmitBtn"
+            onclick="submitQuestion()" 
+            class="bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-amber-950 font-jua text-sm sm:text-base px-6 py-3 rounded-2xl border-2 border-amber-500 shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+          >
+            <span>물어보기</span>
+            <i class="fa-solid fa-paper-plane text-xs"></i>
+          </button>
+        </div>
+
+        <!-- 답변 로딩 안내 -->
+        <div id="qaLoading" class="hidden bg-white/80 rounded-2xl p-4 border border-amber-200 text-center my-3">
+          <div class="inline-block animate-spin text-amber-600 text-xl mb-1">
+            <i class="fa-solid fa-book-open-reader"></i>
+          </div>
+          <p class="font-jua text-sm text-amber-900">선생님이 역사 기록을 찾아보고 있어요...</p>
+        </div>
+
+        <!-- 질문과 답변 목록 -->
+        <div id="qaList" class="space-y-3">
+          <!-- 동적 생성 -->
+        </div>
+      </section>
+
+      <!-- 연관 위인 추천 태그 -->
+      <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-500 no-print">
+        <span class="font-bold text-slate-700">함께 탐구하면 좋은 인물:</span>
+        <div id="relatedFiguresList" class="flex flex-wrap gap-1.5">
+          <!-- 동적 생성 -->
+        </div>
+      </div>
+    </article>
+
+  </main>
+
+  <!-- 선생님 전용 설정 모달 -->
+  <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 no-print">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-4 border-amber-300">
+      <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+        <h3 class="font-jua text-xl text-slate-900 flex items-center gap-2">
+          <span>⚙️ 선생님 전용 Gemini API 설정</span>
+        </h3>
+        <button onclick="closeSettingsModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <p class="text-xs sm:text-sm text-slate-600 mb-4 leading-relaxed">
+        선생님의 Google Gemini API 키를 저장하면 위인 정보를 생성형 AI로 더욱 풍부하고 친절하게 받아올 수 있습니다. 키가 없더라도 <strong>위키백과 및 내장 백과</strong>를 통해 안전하게 자동 검색됩니다.
+      </p>
+
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-700 mb-1">Gemini API Key</label>
+        <input 
+          type="password" 
+          id="customApiKeyInput" 
+          placeholder="AIzaSy..." 
+          class="w-full px-3.5 py-2.5 border-2 border-slate-300 rounded-xl text-sm focus:border-amber-400 outline-none"
+        />
+      </div>
+
+      <div class="flex items-center justify-end gap-2">
+        <button onclick="closeSettingsModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold">
+          취소
+        </button>
+        <button onclick="saveApiKey()" class="px-5 py-2 bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold rounded-xl text-sm shadow">
+          저장하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Realtime Database 연결 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+    import { getDatabase, ref, set, push, get, child } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBCKTJfCAapZ6Q_CBLeBgfJWjhXtaDdAhQ",
+      authDomain: "reading-number.firebaseapp.com",
+      databaseURL: "https://reading-number-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "reading-number",
+      storageBucket: "reading-number.firebasestorage.app",
+      messagingSenderId: "563218475295",
+      appId: "1:563218475295:web:a3894c6aff9396b3a8282a"
+    };
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+      window.firebaseDB = database;
+      window.firebaseRef = ref;
+      window.firebaseSet = set;
+      window.firebasePush = push;
+      window.firebaseGet = get;
+      window.firebaseChild = child;
+      window.firebaseReady = true;
+      console.log("Firebase Realtime Database 연결 완료");
+      window.dispatchEvent(new CustomEvent('firebase-ready'));
+    } catch (error) {
+      window.firebaseReady = false;
+      console.error("Firebase 연결 오류:", error);
+    }
+  </script>
+
+  <script>
+    // 전역 상태
+    let currentFigureData = null;
+    let customApiKey = localStorage.getItem('gemini_custom_api_key') || "";
+    let isSpeaking = false;
+
+    // TTS 음성 제어 함수
+    function stopSpeech() {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      isSpeaking = false;
+      const ttsBtnText = document.getElementById('ttsBtnText');
+      if (ttsBtnText) {
+        ttsBtnText.textContent = "선생님 음성으로 듣기";
+      }
+      const ttsBtn = document.getElementById('ttsBtn');
+      if (ttsBtn) {
+        ttsBtn.classList.replace('bg-rose-500', 'bg-emerald-500');
+        ttsBtn.classList.replace('hover:bg-rose-600', 'hover:bg-emerald-600');
+      }
+    }
+
+    function toggleSpeech() {
+      if (!currentFigureData) return;
+      if (!('speechSynthesis' in window)) {
+        alert("이 브라우저는 음성 읽어주기 기능을 지원하지 않아요.");
+        return;
+      }
+
+      if (isSpeaking) {
+        stopSpeech();
+        return;
+      }
+
+      const textToRead = `${currentFigureData.name}. ${currentFigureData.tagline}. ${currentFigureData.intro}. 기억해야 할 업적으로는 첫째, ${currentFigureData.achievements?.[0]?.title || ''}. 둘째, ${currentFigureData.achievements?.[1]?.title || ''}. 셋째, ${currentFigureData.achievements?.[2]?.title || ''} 등이 있습니다.`;
+
+      const utterance = new SpeechSynthesisUtterance(textToRead);
+      utterance.lang = 'ko-KR';
+      utterance.rate = 0.95; // 어린이가 듣기 편한 차분한 속도
+      utterance.pitch = 1.05;
+
+      utterance.onend = () => {
+        stopSpeech();
+      };
+      utterance.onerror = () => {
+        stopSpeech();
+      };
+
+      window.speechSynthesis.speak(utterance);
+      isSpeaking = true;
+
+      const ttsBtnText = document.getElementById('ttsBtnText');
+      if (ttsBtnText) {
+        ttsBtnText.textContent = "음성 멈추기";
+      }
+      const ttsBtn = document.getElementById('ttsBtn');
+      if (ttsBtn) {
+        ttsBtn.classList.replace('bg-emerald-500', 'bg-rose-500');
+        ttsBtn.classList.replace('hover:bg-emerald-600', 'hover:bg-rose-600');
+      }
+    }
+
+    // 초등 3~6학년 교과서 및 대표 어린이 위인전 수록 인물 화이트리스트
+    const VERIFIED_FIGURES_LIST = [
+      // 고조선, 삼국, 남북국
+      "단군", "단군왕검", "주몽", "동명성왕", "온조", "박혁거세", "석탈해", "김알지", "유리명왕", "무휼", "대무신왕",
+      "광개토대왕", "장수왕", "문자명왕", "영양왕", "을지문덕", "연개소문", "양만춘", "고선지", "온달", "평강공주",
+      "근초고왕", "무령왕", "성왕", "의자왕", "계백", "흑치상지", "아직기", "왕인", "무왕",
+      "진흥왕", "법흥왕", "지증왕", "선덕여왕", "진덕여왕", "태종무열왕", "김춘추", "김유신", "문무왕", "신문왕",
+      "원효", "의상", "혜초", "원광", "자장", "설총", "최치원", "장보고", "궁예", "견훤", "대조영", "문왕", "선왕",
+
+      // 고려 시대
+      "왕건", "태조왕건", "광종", "성종", "현종", "문종", "공민왕", "서희", "강감찬", "양규", "윤관", "최무선",
+      "이의방", "정중부", "경대승", "이의민", "최충헌", "최우", "김윤후", "배중손", "김방경",
+      "의천", "지눌", "일연", "김부식", "이규보", "안향", "이제현", "이색", "정몽주", "길재",
+      "최영", "이성계", "문익점", "우탁", "박위", "노국대공주",
+
+      // 조선 시대
+      "태종", "이방원", "세종", "세종대왕", "소헌왕후", "문종", "단종", "세조", "성종", "연산군", "중종",
+      "정도전", "하륜", "황희", "맹사성", "박연", "김종서", "황보인", "성삼문", "박팽년", "하위지", "이개", "유성원", "유응부",
+      "신숙주", "한명회", "조광조", "조식", "이황", "퇴계이황", "이이", "율곡이이", "신사임당",
+      "장영실", "이천", "김담", "이순지", "정인지", "정철", "윤선도",
+      "허준", "사명대사", "유정", "서산대사", "휴정", "이순신", "권율", "곽재우", "고경명", "조헌", "김천일",
+      "류성룡", "이덕형", "이항복", "김시민", "논개", "임경업",
+      "숙종", "영조", "정조", "사도세자", "혜경궁홍씨", "순조", "철종",
+      "유형원", "이익", "정약용", "다산정약용", "박지원", "박제가", "홍대용", "유득공", "이덕무", "김정희", "추사김정희",
+      "김홍도", "신윤복", "장승업", "정선", "겸재정선", "강희안", "안견",
+      "김정호", "최한기", "이제마", "허균", "김만중", "김삿갓", "김병연",
+      "전봉준", "손화중", "최제우", "최시형", "손병희", "김대건", "최양업",
+
+      // 근현대 및 독립운동가
+      "고종", "순종", "명성황후", "흥선대원군", "김옥균", "박영효", "홍영식", "서재필", "이상재", "남궁억",
+      "민영환", "최익현", "신돌석", "홍범도", "김좌진", "이범석", "지청천",
+      "안중근", "우덕순", "조도선", "윤봉길", "이봉창", "백정기", "나석주", "강우규",
+      "김구", "백범김구", "안창호", "도산안창호", "이회영", "이시영", "이상설", "이준", "이위종",
+      "신채호", "박은식", "주시경", "헐버트", "베델", "스코필드",
+      "유관순", "남자현", "김마리아", "박차정", "권기옥", "정정화",
+      "방정환", "조만식", "여운형", "김원봉", "한용운", "이상화", "이육사", "윤동주", "정지용", "심훈", "현진건", "나운규",
+      "장준하", "함석헌", "전형필", "간송전형필",
+      "이태석", "이태석신부", "백남준", "조수미", "정명훈", "황순원", "박경리", "박완서",
+
+      // 세계 위인
+      "에디슨", "토머스에디슨", "아인슈타인", "알베르트아인슈타인", "아이작뉴턴", "뉴턴", "갈릴레이", "갈릴레오갈릴레이",
+      "퀴리부인", "마리퀴리", "찰스다윈", "다윈", "파스퇴르", "루이파스퇴르", "플레밍", "알렉산더플레밍",
+      "멘델", "코페르니쿠스", "케플러", "노벨", "알프레드노벨", "파브르", "장앙리파브르",
+      "라이트형제", "제임스와트", "스티븐슨", "벨", "마르코니", "테슬라", "스티븐호킹", "제너", "코흐",
+      "콜럼버스", "마젤란", "마르코폴로", "아문센", "스콧", "섀클턴", "닐암스트롱", "가가린",
+      "헬렌켈러", "앤설리번", "설리번", "나이팅게일", "플로렌스나이팅게일", "마더테레사", "테레사수녀",
+      "슈바이처", "마틴루터킹", "넬슨만델라", "간디", "마하트마간디", "에이브러햄링컨", "링컨", "조지워싱턴",
+      "워싱턴", "프랭클린루스벨트", "벤자민프랭클린", "앙리뒤낭", "안네프랑크", "말랄라",
+      "셰익스피어", "괴테", "톨스토이", "안데르센", "그림형제", "이솝", "생텍쥐페리", "마크트웨인", "헤밍웨이",
+      "소크라테스", "플라톤", "아리스토텔레스", "공자", "맹자", "석가모니", "페스탈로치", "몬테소리", "루소",
+      "레오나르도다빈치", "다빈치", "미켈란젤로", "라파엘로", "로댕", "빈센트반고흐", "반고흐", "파블로피카소", "피카소", "클로드모네",
+      "바흐", "헨델", "모차르트", "베토벤", "쇼팽", "차이콥스키", "가우디",
+      "알렉산더", "칭기즈칸", "나폴레옹", "잔다르크", "엘리자베스1세", "처칠"
+    ];
+
+    // 별칭 매핑 테이블
+    const ALIAS_TO_STANDARD = {
+      "세종": "세종대왕",
+      "충무공": "이순신",
+      "이순신장군": "이순신",
+      "퇴계": "이황",
+      "율곡": "이이",
+      "다산": "정약용",
+      "백범": "김구",
+      "도산": "안창호",
+      "에디슨": "토머스 에디슨",
+      "토머스에디슨": "토머스 에디슨",
+      "퀴리": "마리 퀴리",
+      "퀴리부인": "마리 퀴리",
+      "링컨": "에이브러햄 링컨",
+      "나이팅게일": "플로렌스 나이팅게일",
+      "아인슈타인": "알베르트 아인슈타인",
+      "뉴턴": "아이작 뉴턴",
+      "갈릴레이": "갈릴레오 갈릴레이",
+      "고흐": "빈센트 반 고흐",
+      "반고흐": "빈센트 반 고흐",
+      "다빈치": "레오나르도 다 빈치",
+      "간디": "마하트마 간디",
+      "만델라": "넬슨 만델라",
+      "슈바이처": "알베르트 슈바이처",
+      "모차르트": "볼프강 아마데우스 모차르트",
+      "베토벤": "루트비히 판 베토벤"
+    };
+
+    // 내장 기본 데이터베이스
+    const BUILTIN_FIGURES = {
+      "세종대왕": {
+        name: "세종대왕",
+        tagline: "백성을 사랑하여 우리 글자 '한글'을 만드신 겨레의 큰 스승",
+        intro: "조선의 네 번째 왕으로, 백성들이 글을 몰라 억울한 일을 겪지 않도록 누구나 쉽게 배울 수 있는 훈민정음(한글)을 선물해 주셨어요.",
+        achievements: [
+          { title: "훈민정음(한글) 창제", desc: "말과 글이 통하지 않던 백성을 위해 세계에서 가장 과학적인 우리 글자를 만드셨어요." },
+          { title: "과학 기술 발전", desc: "장영실 같은 훌륭한 인재를 뽑아 측우기, 해시계, 물시계를 만들도록 도와주셨어요." },
+          { title: "음악과 농사 연구", desc: "백성들이 농사를 잘 지을 수 있게 농사직설을 펴내고 우리 음악을 정리하셨어요." }
+        ],
+        funFact: "세종대왕님은 고기를 아주 좋아하셨고 책을 너무 많이 읽어서 눈병에 걸릴 정도의 대단한 독서광이셨어요!",
+        lesson: "어려운 이웃의 입장을 먼저 생각하고 배려하는 따뜻한 사랑의 마음을 배울 수 있어요.",
+        quiz: {
+          question: "세종대왕님이 백성을 위해 만드신 글자의 원래 이름은 무엇일까요?",
+          options: ["훈민정음", "측우기", "집현전"],
+          correctIndex: 0,
+          explanation: "세종대왕님은 '백성을 가르치는 바른 소리'라는 뜻의 '훈민정음'을 만드셨어요."
+        },
+        relatedFigures: ["장영실", "정약용", "이순신"]
+      },
+      "이순신": {
+        name: "이순신",
+        tagline: "거북선으로 위기에 빠진 나라를 지켜낸 위대한 바다의 영웅",
+        intro: "임진왜란 때 왜적의 침략으로부터 나라와 백성을 지키기 위해 거북선을 만들고 바다에서 단 한 번도 패하지 않은 명장군이에요.",
+        achievements: [
+          { title: "거북선 제작", desc: "철갑을 두르고 대포를 쏠 수 있는 세계 최초의 철갑선 거북선을 만들어 바다를 지켰어요." },
+          { title: "한산도 대첩 승리", desc: "학이 날개를 펼친 모양의 '학익진' 전법으로 왜군을 크게 물리치셨어요." },
+          { title: "난중일기 작성", desc: "전쟁 중에도 하루도 빠짐없이 꼼꼼하게 일기를 써서 역사에 귀한 기록을 남기셨어요." }
+        ],
+        funFact: "무과 시험을 보다가 말에서 떨어져 다리를 다쳤지만, 버드나무 껍질을 묶고 끝까지 시험을 치렀답니다!",
+        lesson: "어려운 상황에서도 포기하지 않고 용기와 책임감으로 끝까지 최선을 다하는 태도를 배울 수 있어요.",
+        quiz: {
+          question: "이순신 장군님이 전쟁 중에 적을 물리치기 위해 만든 특수 군함의 이름은 무엇일까요?",
+          options: ["판옥선", "거북선", "황포돛배"],
+          correctIndex: 1,
+          explanation: "용 머리에서 연기를 뿜고 등에는 쇠송곳이 달린 거북선으로 바다를 지켰어요!"
+        },
+        relatedFigures: ["권율", "류성룡", "세종대왕"]
+      },
+      "유관순": {
+        name: "유관순",
+        tagline: "나라의 독립을 위해 태극기를 높이 들고 만세를 외친 소녀 열사",
+        intro: "나라를 빼앗겼던 일제강점기 시절, 어린 나이에도 두려워하지 않고 아우내 장터에서 사람들과 함께 '대한 독립 만세'를 외친 용감한 열사예요.",
+        achievements: [
+          { title: "3·1 만세 운동 참여", desc: "서울에서 만세 운동에 앞장서고, 고향으로 내려와 사람들에게 태극기를 나누어 주었어요." },
+          { title: "아우내 장터 만세 운동", desc: "수천 명의 사람들과 함께 평화롭게 대한 독립 만세를 외치며 나라 사랑을 실천했어요." },
+          { title: "굴복하지 않는 용기", desc: "감옥에 갇혀서도 결코 나라를 사랑하는 마음을 굽히지 않았어요." }
+        ],
+        funFact: "유관순 열사는 친구들과 함께 밤새 손으로 직접 태극기를 그려 사람들에게 비밀리에 나누어 주었답니다!",
+        lesson: "옳지 못한 일에 당당히 맞서고, 내 나라와 이웃을 아끼고 사랑하는 당당한 용기를 배울 수 있어요.",
+        quiz: {
+          question: "유관순 열사가 아우내 장터에서 사람들과 함께 크게 외쳤던 말은 무엇일까요?",
+          options: ["대한 독립 만세", "훈민정음 만세", "평화 통일 만세"],
+          correctIndex: 0,
+          explanation: "자유와 평화를 되찾기 위해 온 힘을 다해 '대한 독립 만세'를 외쳤어요."
+        },
+        relatedFigures: ["김구", "안중근", "윤봉길"]
+      },
+      "안중근": {
+        name: "안중근",
+        tagline: "동양 평화를 바라고 조국의 독립을 위해 목숨을 바친 영웅",
+        intro: "우리나라의 주권을 빼앗으려 한 침략자 이토 히로부미를 하얼빈역에서 처단하고, 끝까지 당당하게 대한민국의 독립과 동양의 평화를 외치신 의사예요.",
+        achievements: [
+          { title: "하얼빈 의거", desc: "1909년 하얼빈역에서 침략의 주범을 처단하여 전 세계에 우리 민족의 독립 의지를 알렸어요." },
+          { title: "단지동맹 맹세", desc: "열한 명의 동지들과 함께 네 번째 손가락을 자르고 조국의 독립을 위해 일할 것을 맹세했어요." },
+          { title: "동양평화론 저술", desc: "감옥 안에서도 한국, 중국, 일본이 서로 침략하지 않고 평화롭게 지내야 한다는 책을 쓰셨어요." }
+        ],
+        funFact: "총을 쏘고 체포되는 순간에도 러시아어로 '코레아 우라(대한 만세)!'라고 세 번 힘차게 외쳤답니다!",
+        lesson: "나라를 위하는 굳센 정의감과 평화를 사랑하는 용기를 배울 수 있어요.",
+        quiz: {
+          question: "안중근 의사가 하얼빈역에서 대한 독립 만세를 외치며 처단한 침략자는 누구일까요?",
+          options: ["이토 히로부미", "도요토미 히데요시", "맥아더"],
+          correctIndex: 0,
+          explanation: "우리나라를 침략하려 했던 이토 히로부미를 하얼빈역에서 처단했어요."
+        },
+        relatedFigures: ["김구", "윤봉길", "유관순"]
+      },
+      "장영실": {
+        name: "장영실",
+        tagline: "신분의 한계를 뛰어넘어 훌륭한 과학 기구를 만들어낸 천재 과학자",
+        intro: "신분이 낮았지만 뛰어난 손재주와 끝없는 호기심으로 세종대왕의 인정을 받아 우리나라 최초의 자동 물시계와 해시계를 만든 과학자예요.",
+        achievements: [
+          { title: "자격루(물시계) 발명", desc: "시간이 되면 인형이 종과 북을 쳐서 저절로 시간을 알려주는 신기한 물시계를 만들었어요." },
+          { title: "앙부일구(해시계) 제작", desc: "글을 모르는 백성도 그림을 보고 시간을 알 수 있도록 친절한 해시계를 만들었어요." },
+          { title: "측우기 제작 참여", desc: "비의 양을 정확히 재어 농사에 도움을 주는 측우기 발명에 큰 역할을 했어요." }
+        ],
+        funFact: "장영실은 어릴 적 부서진 농기구나 고장 난 수레를 뚝딱뚝딱 고쳐내어 동네에서 유명했답니다!",
+        lesson: "주변 사물에 호기심을 갖고 깊이 관찰하며, 어려움을 끈기로 극복하는 탐구 정신을 배울 수 있어요.",
+        quiz: {
+          question: "장영실이 만든 저절로 인형이 종을 쳐서 시간을 알려주던 물시계의 이름은 무엇일까요?",
+          options: ["자격루", "앙부일구", "혼천의"],
+          correctIndex: 0,
+          explanation: "스스로 치는 시계라는 뜻의 '자격루'는 세계적인 과학 발명품이에요."
+        },
+        relatedFigures: ["세종대왕", "정약용", "토머스 에디슨"]
+      },
+      "방정환": {
+        name: "방정환",
+        tagline: "어린이를 사랑하고 '어린이날'을 만들어 꿈과 웃음을 선물해 주신 선생님",
+        intro: "옛날에는 존중받지 못하던 아이들에게 '어린이'라는 고운 이름을 지어주고, 신나게 뛰어놀 수 있는 어린이날을 만들어 주신 분이에요.",
+        achievements: [
+          { title: "'어린이' 단어 사용", desc: "어린 사람도 어른처럼 존중받아야 한다는 마음으로 '어린이'라는 말을 널리 알렸어요." },
+          { title: "어린이날 제정", desc: "5월 5일 어린이날을 만들어 아이들이 행복하게 꿈을 꿀 수 있는 세상을 꿈꾸었어요." },
+          { title: "재미있는 동화 구연", desc: "전국을 다니며 아이들에게 눈물과 웃음이 담긴 재미난 이야기를 들려주었어요." }
+        ],
+        funFact: "방정환 선생님은 맛있는 단팥빵을 좋아하셨고, 아이들에게 재미있는 이야기를 실감 나게 들려주는 이야기 대장이셨어요!",
+        lesson: "주변 친구와 어린 사람들을 소중히 존중하고 배려하는 따뜻한 마음을 배울 수 있어요.",
+        quiz: {
+          question: "방정환 선생님이 아이들을 위해 만든 특별한 기념일은 며칠일까요?",
+          options: ["5월 5일 어린이날", "10월 9일 한글날", "3월 1일 삼일절"],
+          correctIndex: 0,
+          explanation: "방정환 선생님은 어린이들이 씩씩하게 자라길 바라며 5월 5일 어린이날을 만드셨어요."
+        },
+        relatedFigures: ["김구", "유관순", "주시경"]
+      },
+      "김구": {
+        name: "김구",
+        tagline: "문화의 힘으로 아름다운 나라를 꿈꾸었던 백범 선생님",
+        intro: "대한민국 임시정부를 이끌며 나라의 독립을 위해 평생을 바치셨고, '나의 소원은 첫째도, 둘째도, 셋째도 대한의 독립'이라고 말씀하신 지도자예요.",
+        achievements: [
+          { title: "대한민국 임시정부 이끎", desc: "어려운 환경 속에서도 끝까지 임시정부를 지키며 독립운동가들을 이끄셨어요." },
+          { title: "한인애국단 조직", desc: "이봉창, 윤봉길 의사와 함께 세계에 우리 민족의 독립 의지를 당당히 알렸어요." },
+          { title: "문화 강국 소망", desc: "다른 나라를 침략하는 나라가 아니라, 따뜻하고 높은 문화를 가진 평화로운 나라를 꿈꾸셨어요." }
+        ],
+        funFact: "백범이라는 호는 '가장 평범한 백성'처럼 나라를 사랑하겠다는 겸손한 마음에서 스스로 지으셨답니다!",
+        lesson: "자기 자신보다 나라와 공동체를 먼저 생각하는 큰 사랑과 정직한 마음을 배울 수 있어요.",
+        quiz: {
+          question: "김구 선생님이 쓴 자서전이자 소중한 역사책의 이름은 무엇일까요?",
+          options: ["백범일지", "난중일기", "조선왕조실록"],
+          correctIndex: 0,
+          explanation: "김구 선생님의 호 '백범'을 딴 '백범일지'에는 나라를 향한 간절한 사랑이 담겨 있어요."
+        },
+        relatedFigures: ["윤봉길", "안중근", "유관순"]
+      },
+      "토머스 에디슨": {
+        name: "토머스 에디슨",
+        tagline: "99%의 땀과 끝없는 노력으로 세상을 밝힌 발명왕",
+        intro: "수천 번의 실패에도 포기하지 않고 전구, 축음기, 영사기 등 1,000개가 넘는 발명품을 만들어 세상 사람들의 삶을 편리하게 바꾸어 주었어요.",
+        achievements: [
+          { title: "오래 켜지는 백열전구 완성", desc: "밤에도 대낮처럼 밝게 생활할 수 있도록 실용적인 전구를 발명했어요." },
+          { title: "소리를 녹음하는 축음기", desc: "사람의 목소리와 음악을 기계에 담아 다시 들을 수 있는 신기한 축음기를 만들었어요." },
+          { title: "움직이는 그림 영사기", desc: "오늘날 우리가 영화를 즐길 수 있는 기틀이 된 영사기를 발명했어요." }
+        ],
+        funFact: "어릴 적 거위 알을 품에 안고 직접 부화시키려 할 정도로 엉뚱하고 호기심이 넘치는 아이였어요!",
+        lesson: "'실패는 성공의 어머니'라는 말처럼 실수를 두려워하지 않고 끈기 있게 도전하는 자세를 배울 수 있어요.",
+        quiz: {
+          question: "에디슨의 명언 중 '천재는 1%의 영감과 99%의 무엇으로 이루어진다'고 했을까요?",
+          options: ["노력(땀)", "돈", "운"],
+          correctIndex: 0,
+          explanation: "에디슨은 포기하지 않고 땀 흘려 노력하는 것이 가장 중요하다고 가르쳐 주었어요."
+        },
+        relatedFigures: ["장영실", "헬렌 켈러", "정약용"]
+      },
+      "헬렌 켈러": {
+        name: "헬렌 켈러",
+        tagline: "보이지도 들리지도 않는 어둠을 이겨내고 희망의 빛이 된 천사",
+        intro: "어릴 때 앓은 병으로 앞을 보지 못하고 귀로도 듣지 못하게 되었지만, 설리번 선생님과 함께 장애를 극복하고 어려운 이웃을 돕는 데 헌신했어요.",
+        achievements: [
+          { title: "장애 극복과 대학 졸업", desc: "보지도, 듣지도, 말하지도 못하는 힘든 상황을 이겨내고 대학까지 훌륭하게 졸업했어요." },
+          { title: "장애인 인권 운동", desc: "전 세계를 다니며 몸이 불편한 사람들을 돕기 위한 시설과 법을 만드는 데 앞장섰어요." },
+          { title: "희망의 책 집필", desc: "자신의 극복 이야기를 담은 책들을 써서 수많은 사람에게 용기를 주었어요." }
+        ],
+        funFact: "설리번 선생님이 손바닥에 펌프 물을 흘려보내며 글자 'W-A-T-E-R(물)'을 적어주었을 때 처음으로 세상과 소통하는 법을 깨달았답니다!",
+        lesson: "아무리 큰 어려움이 찾아와도 포기하지 않고 긍정적으로 이겨내는 용기를 배울 수 있어요.",
+        quiz: {
+          question: "헬렌 켈러가 손바닥으로 느끼며 처음으로 뜻을 깨달았던 단어는 무엇일까요?",
+          options: ["물(WATER)", "사랑(LOVE)", "사과(APPLE)"],
+          correctIndex: 0,
+          explanation: "차가운 샘물이 손바닥을 적실 때 '물'이라는 글자를 가슴 깊이 이해했답니다."
+        },
+        relatedFigures: ["토머스 에디슨", "세종대왕", "방정환"]
+      },
+      "정약용": {
+        name: "정약용",
+        tagline: "거중기를 발명하고 백성을 위한 실학을 꽃피운 지혜로운 학자",
+        intro: "백성들이 살기 좋은 세상을 만들기 위해 실생활에 필요한 실학을 연구하고, 무거운 돌을 쉽게 들어 올리는 거중기를 만들어 수원 화성을 튼튼하게 지었어요.",
+        achievements: [
+          { title: "거중기 발명", desc: "도르래 원리를 이용해 큰 돌을 적은 힘으로 들어 올리는 거중기로 수원 화성을 지었어요." },
+          { title: "목민심서 저술", desc: "고을을 다스리는 관리들이 백성을 괴롭히지 않고 청렴하게 돌보아야 한다는 가르침을 남겼어요." },
+          { title: "500권이 넘는 책 집필", desc: "오랜 유배 생활 중에도 쉬지 않고 농사, 의학, 법 등 백성에게 꼭 필요한 책들을 썼어요." }
+        ],
+        funFact: "유배지에서도 매일 새벽같이 일어나 '정성을 다해 책을 읽고 글을 쓰라'며 자식들에게 편지를 보냈답니다!",
+        lesson: "실제로 사람들에게 도움이 되는 지식을 배우고, 정직하고 청렴하게 살아가려는 마음을 배울 수 있어요.",
+        quiz: {
+          question: "정약용이 수원 화성을 쌓을 때 무거운 돌을 쉽게 들기 위해 만든 기구는 무엇일까요?",
+          options: ["거중기", "측우기", "앙부일구"],
+          correctIndex: 0,
+          explanation: "도르래의 원리를 이용한 '거중기' 덕분에 수원 화성을 훨씬 빠르고 튼튼하게 완성했어요."
+        },
+        relatedFigures: ["장영실", "세종대왕", "이순신"]
+      },
+      "광개토대왕": {
+        name: "광개토대왕",
+        tagline: "만주 벌판을 달리며 고구려의 기상을 세계에 떨친 정복 군주",
+        intro: "삼국 시대 고구려의 제19대 왕으로, 영토를 북쪽과 남쪽으로 크게 넓혀 고구려를 동아시아 최고의 강대국으로 우뚝 세운 위대한 왕이에요.",
+        achievements: [
+          { title: "광활한 영토 확장", desc: "만주 벌판과 요동 지역을 정복하여 우리 역사상 가장 넓은 영토를 차지했어요." },
+          { title: "독자적인 연호 '영락' 사용", desc: "중국과 대등한 당당한 나라임을 선포하며 우리나라 최초의 독자적 연호(영락)를 썼어요." },
+          { title: "광개토대왕릉비", desc: "그의 아들 장수왕이 아버지의 위대한 업적을 거대한 돌비석에 새겨 오늘날까지 전해져요." }
+        ],
+        funFact: "광개토대왕의 원래 정식 이름은 무려 20자가 넘는 '국강상광개토경평안호태왕'이었답니다!",
+        lesson: "두려움 없이 세상을 향해 뻗어나가는 담대한 기상과 자신감을 배울 수 있어요.",
+        quiz: {
+          question: "광개토대왕이 넓고 강하게 다스렸던 삼국 시대의 나라는 어디일까요?",
+          options: ["고구려", "백제", "신라"],
+          correctIndex: 0,
+          explanation: "광개토대왕은 만주 벌판을 호령했던 고구려의 19대 태왕이에요."
+        },
+        relatedFigures: ["장수왕", "을지문덕", "이순신"]
+      },
+      "마리 퀴리": {
+        name: "마리 퀴리 (퀴리 부인)",
+        tagline: "새로운 방사성 원소를 발견하여 두 번의 노벨상을 받은 위대한 과학자",
+        intro: "여성이라는 이유로 많은 차별을 받던 시대에 끝없는 연구로 라듐과 폴로늄을 발견하고, 세계 최초로 노벨상을 두 번이나 수상한 과학자예요.",
+        achievements: [
+          { title: "라듐과 폴로늄 발견", desc: "암 치료 등 오늘날 의학에 크게 쓰이는 새로운 물질을 찾아냈어요." },
+          { title: "두 번의 노벨상 수상", desc: "물리학상과 화학상을 모두 받아 세계적인 과학자로 우뚝 섰어요." },
+          { title: "전쟁터 엑스레이 지원", desc: "전쟁 중에 이동식 X선 차량을 만들어 다친 군인들을 치료하는 데 헌신했어요." }
+        ],
+        funFact: "자신이 발견한 소중한 라듐 제조법으로 큰 부자가 될 수 있었지만, 인류를 위해 특허를 내지 않고 세상에 선물했답니다!",
+        lesson: "자신의 이익보다 인류를 먼저 생각하는 따뜻한 마음과 끈기 있는 과학 탐구 정신을 배울 수 있어요.",
+        quiz: {
+          question: "마리 퀴리가 발견하여 오늘날 암 치료 등에 쓰이는 방사성 원소의 이름은 무엇일까요?",
+          options: ["라듐", "산소", "철"],
+          correctIndex: 0,
+          explanation: "마리 퀴리는 남편 피에르 퀴리와 함께 피나는 노력 끝에 라듐을 발견했어요."
+        },
+        relatedFigures: ["토머스 에디슨", "장영실", "알베르트 아인슈타인"]
+      }
+    };
+
+    // 검색창 제어
+    const searchInput = document.getElementById('searchInput');
+    const clearInputBtn = document.getElementById('clearInputBtn');
+
+    searchInput.addEventListener('input', () => {
+      if (searchInput.value.trim().length > 0) {
+        clearInputBtn.classList.remove('hidden');
+      } else {
+        clearInputBtn.classList.add('hidden');
+      }
+    });
+
+    function clearSearchInput() {
+      searchInput.value = '';
+      clearInputBtn.classList.add('hidden');
+      searchInput.focus();
+    }
+
+    function quickSearch(name) {
+      searchInput.value = name;
+      clearInputBtn.classList.remove('hidden');
+      startSearch();
+    }
+
+    function resetSearch() {
+      stopSpeech();
+      document.getElementById('loadingBox').classList.add('hidden');
+      document.getElementById('warningCard').classList.add('hidden');
+      document.getElementById('resultCard').classList.add('hidden');
+      searchInput.value = '';
+      clearInputBtn.classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 위인별 단골 추가 질문 & 답변 상식 지식베이스 (Gemini 미설정 시 초등 눈높이 폴백)
+    const FIGURE_QA_KNOWLEDGE = {
+      "세종대왕": {
+        "고향": "세종대왕님은 1397년 5월 15일 조선 한양(지금의 대한민국 서울특별시 종로구 통인동 일대인 '준수방')에서 태어나셨어요.",
+        "출생": "1397년 5월 15일 조선 한양 준수방(지금의 서울 종로구 세종마을 부근)에서 태어나셨으며, 태종(이방원) 임금과 원경왕후 민씨의 셋째 아들이에요.",
+        "가족": "아버지는 조선 제3대 왕 태종(이방원)이고, 어머니는 원경왕후 민씨예요. 왕비는 소헌왕후 심씨이며, 맏아들은 문종, 둘째 아들은 세조(수양대군)예요.",
+        "음식": "《조선왕조실록》 기록에 따르면 세종대왕님은 고기 요리를 아주 좋아하셔서 식사 때마다 고기반찬을 즐겨 드셨다고 해요. 하지만 백성들에게 큰 가뭄이 들었을 때는 미안한 마음에 스스로 고기를 드시지 않으며 고통을 나누셨다는 기록도 전해집니다.",
+        "어린시절": "어릴 때 이름은 '이도'였으며, 밥을 먹을 때나 걸어 다닐 때도 책을 놓지 않아 눈병이 날 정도로 엄청난 독서광이었다는 기록이 실록에 실려 있습니다.",
+        "취미": "독서와 악기 연주, 그리고 음악 작곡을 즐기셨습니다. 절대음감을 가지고 계셔서 편경이라는 돌 악기의 음이 아주 미세하게 틀린 것도 바로 짚어내셨다고 합니다."
+      },
+      "이순신": {
+        "고향": "이순신 장군님은 1545년 4월 28일 한양(현재 서울특별시 중구 인현동 일대인 '건천동')에서 태어나셨어요. 충청남도 아산은 장군님이 어린 시절과 청년기를 보내며 무예를 닦았던 외가이자 제2의 고향이에요.",
+        "출생": "1545년 4월 28일 한양 건천동에서 태어나셨으며, 본관은 덕수 이씨(德水 李氏)입니다.",
+        "가족": "아버지 이정(李貞)과 어머니 초계 변씨 사이의 넷째 아들로 태어났으며, 형제들의 이름은 고대 중국의 성군인 복희, 요, 순, 우 임금의 이름을 따서 희신, 요신, 순신, 우신으로 지어졌답니다.",
+        "음식": "《난중일기》에 따르면 전쟁 중에는 진중에서 부하 장수 및 병사들과 함께 밥과 된장, 그리고 바다에서 잡은 청어, 굴, 숭어 등의 해산물을 나누어 드셨다는 기록이 있습니다.",
+        "어린시절": "유성룡의 《징비록》 등에 따르면 어릴 적 서울 건천동에서 자라며 동네 아이들과 전쟁놀이를 할 때 항상 우두머리가 되어 씩씩하고 두려움이 없는 성품이었다고 합니다.",
+        "취미": "활쏘기를 평생의 일과로 연습하셨으며, 난중일기에도 활쏘기 연습을 하거나 부하들과 바둑을 두었다는 기록이 남아 있습니다."
+      },
+      "토머스 에디슨": {
+        "고향": "토머스 에디슨의 고향은 **미국 오하이오주 밀란(Milan)**이에요! 일곱 살 때 미시간주 포트휴런으로 이사하여 그곳에서 어린 시절을 보냈답니다.",
+        "출생": "1847년 2월 11일 미국 오하이오주 밀란에서 7남매 중 막내로 태어났어요.",
+        "가족": "아버지는 네덜란드계 캐나다인 새뮤얼 에디슨이었고, 어머니는 교사 출신인 낸시 엘리엇이었어요. 특히 어머니는 학교에서 문제아 취급을 받던 에디슨을 집에서 정성껏 가르쳐 훌륭한 발명가로 키워내셨어요.",
+        "음식": "에디슨은 연구에 몰두하느라 식사 시간을 자주 잊곤 했으나, 연구실에서 간편하게 먹을 수 있는 샌드위치, 파이, 따뜻한 우유를 즐겨 찾았다는 기록이 있습니다.",
+        "어린시절": "호기심이 워낙 유별나 거위 알을 품어 부화시키려 하거나, 열차 안에서 화학 실험을 하다가 불을 내 쫓겨나는 등 실패를 두려워하지 않는 엉뚱하고 열정적인 소년이었습니다.",
+        "취미": "새로운 기계나 시계를 분해하고 다시 조립하는 것이 평생의 놀이이자 가장 즐거운 취미였습니다."
+      },
+      "알베르트 아인슈타인": {
+        "고향": "아인슈타인의 고향은 **독일 바덴뷔르템베르크주 울름(Ulm)**이에요! 어릴 적에 가족과 함께 뮌헨으로 이사하여 학교를 다녔답니다.",
+        "출생": "1879년 3월 14일 독일 제국의 뷔르템베르크 왕국 울름에서 유대인 가정의 장남으로 태어났어요.",
+        "가족": "아버지는 전기 화학 공장을 운영하던 헤르만 아인슈타인, 어머니는 피아노 연주를 즐기던 파울리네 코흐였으며, 여동생 마야 아인슈타인이 있었어요.",
+        "음식": "전기 기록에 따르면 아인슈타인은 스위스 시절부터 토마토 소스를 곁들인 스파게티와 신선한 딸기를 무척 좋아했다고 해요. 말년에는 생명 존중과 건강을 위해 고기를 먹지 않는 채식을 실천했습니다.",
+        "어린시절": "어릴 적 말을 매우 늦게 뗀 편이었고, 다섯 살 때 아버지가 선물해 준 나침반의 바늘이 항상 북쪽을 가리키는 것을 보고 눈에 보이지 않는 신비한 물리적 힘에 깊은 감명을 받았다고 회고했습니다.",
+        "취미": "어머니에게 배운 바이올린 연주를 평생 동안 즐겼으며, 연구하다 생각이 막힐 때면 모차르트와 바흐의 곡을 바이올린으로 켜며 영감을 얻곤 했습니다."
+      },
+      "안중근": {
+        "고향": "안중근 의사님의 고향은 **황해도 해주부 광석동(현재 황해남도 해주시)**이에요.",
+        "출생": "1879년 9월 2일 황해도 해주에서 성균관 진사 안태훈과 조마리아 여사의 3남 1녀 중 장남으로 태어났어요.",
+        "가족": "어머니 조마리아 여사는 아들이 사형 선고를 받았을 때 '나라를 위해 당당하게 죽으라'며 수의를 지어 보낸 위대한 독립운동의 어머니로 유명해요. 동생 안정근, 안공근도 함께 독립운동을 펼쳤습니다.",
+        "음식": "황해도 해주 출신으로 메밀국수와 온반(따뜻한 장국밥)을 즐겨 드셨다는 일화가 전해집니다.",
+        "어린시절": "어릴 적 배에 북두칠성 모양의 검은 점 7개가 있어 아명을 '응칠'이라 불렀으며, 사냥과 말타기를 아주 잘하는 씩씩하고 용감한 소년이었습니다.",
+        "취미": "명사수라 사격 솜씨가 매우 뛰어났고, 옥중에서도 힘차고 곧은 붓글씨(서예)를 많이 남기셨습니다."
+      },
+      "정약용": {
+        "고향": "정약용 선생님의 고향은 **경기도 광주군 초부면 마현리(현재의 경기도 남양주시 조안면 능내리 마재마을)**예요. 한강 물길이 아름답게 흐르는 두물머리 부근이랍니다.",
+        "출생": "1762년 8월 5일 경기도 광주 마현에서 진주 목사를 지낸 정재원과 해남 윤씨의 넷째 아들로 태어났어요.",
+        "가족": "외가 쪽으로 공재 윤두서의 증손자이며, 형제인 정약전(자산어보 저자), 정약종과 함께 깊은 학문과 신앙을 함께 나누었습니다.",
+        "음식": "전라남도 강진으로 유배되었을 때 주막집 노파가 끓여준 소박한 된장국과 나물밥을 드셨으며, 머리를 맑게 해 주는 차(녹차)를 무척 즐겨 마셔 호도 '다산(茶山)'이라 지었습니다.",
+        "어린시절": "어릴 때부터 총명하여 일곱 살 때 이미 훌륭한 한시를 지어 어른들을 놀라게 했다는 기록이 전해집니다."
+      },
+      "방정환": {
+        "고향": "방정환 선생님의 고향은 **조선 한양(현재 서울특별시 종로구 당주동/야주개)**이에요.",
+        "출생": "1899년 11월 9일 서울 야주개(현재 서울 종로구 세종문화회관 뒤편 당주동)에서 어물전과 쌀가게를 하던 집안에서 태어났어요.",
+        "가족": "천도교 지도자였던 의암 손병희 선생의 셋째 사위로, 손병희 선생의 적극적인 지원 속에 소년 운동과 어린이 문화 운동을 펼칠 수 있었습니다.",
+        "음식": "당시 귀하고 달콤했던 단팥빵과 빙수를 매우 좋아하셨다는 동료 문인들의 회고가 남아 있습니다.",
+        "어린시절": "친구들 앞에서 실감 나고 재미있는 이야기를 지어내어 들려주는 것을 아주 좋아하는 골목대장이었습니다."
+      },
+      "유관순": {
+        "고향": "유관순 열사의 고향은 **충청남도 천안군 이동면 지령리(현재 충청남도 천안시 동남구 병천면 용두리)**예요. 유명한 아우내 장터가 바로 고향 마을 앞이었답니다.",
+        "출생": "1902년 12월 16일 충남 천안 지령리에서 선비 집안인 유중권과 이소제 여사의 3남 2녀 중 둘째 딸로 태어났어요.",
+        "가족": "아버지 유중권과 어머니 이소제는 1919년 아우내 장터 만세 운동 현장에서 순국하셨고, 오빠 유우석도 독립운동을 펼친 애국 집안이었습니다."
+      },
+      "김구": {
+        "고향": "백범 김구 선생님의 고향은 **황해도 해주부 백운방 텃골(현재 황해남도 해주시 백운리)**이에요.",
+        "출생": "1876년 8월 29일 황해도 해주 텃골에서 안동 김씨 김순영과 곽낙원 여사의 외아들로 태어났으며, 어릴 적 이름은 김창암이었어요.",
+        "가족": "어머니 곽낙원 여사는 독립운동가들을 위해 삯바느질을 하고 쓰레기통에서 배추 겉잎을 주워 국을 끓여 대접할 만큼 강직하고 훌륭한 어머니셨습니다."
+      },
+      "장영실": {
+        "고향": "장영실의 고향은 **경상도 동래현(현재 부산광역시 동래구 일대)**이에요. 동래현 관아의 관노(노비)로 일하다가 뛰어난 손재주로 세종대왕의 부름을 받았습니다.",
+        "출생": "고려 말 또는 조선 초 경상도 동래현에서 태어났으며, 아버지는 원나라 출신의 소주 사람 장형, 어머니는 동래현 관기(관아의 기녀)였어요."
+      }
+    };
+
+    // 추천 질문 목록 템플릿
+    const DEFAULT_RECOMMENDED_QUESTIONS = [
+      "고향이나 태어난 곳은 어디인가요?",
+      "가장 좋아했던 음식은 무엇인가요?",
+      "어린 시절의 모습이나 성격은 어땠나요?",
+      "가족이나 부모님은 어떤 분이셨나요?"
+    ];
+    function setupQASection(figureName) {
+      document.getElementById('qaTitleName').textContent = figureName;
+      document.getElementById('qaInput').value = '';
+      document.getElementById('qaLoading').classList.add('hidden');
+      
+      const qaList = document.getElementById('qaList');
+      qaList.innerHTML = '';
+
+      const recContainer = document.getElementById('recommendedQuestions');
+      recContainer.innerHTML = '';
+
+      DEFAULT_RECOMMENDED_QUESTIONS.forEach(q => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = "px-3 py-1.5 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-full text-xs font-bold transition shadow-xs flex items-center gap-1 cursor-pointer";
+        btn.innerHTML = `<span>❓</span><span>${q}</span>`;
+        btn.onclick = () => {
+          document.getElementById('qaInput').value = q;
+          submitQuestion();
+        };
+        recContainer.appendChild(btn);
+      });
+    }
+
+    async function submitQuestion() {
+      const input = document.getElementById('qaInput');
+      const question = input.value.trim();
+      if (!question) {
+        input.focus();
+        return;
+      }
+
+      if (!currentFigureData) return;
+      const figureName = currentFigureData.name;
+
+      input.value = '';
+      const qaLoading = document.getElementById('qaLoading');
+      qaLoading.classList.remove('hidden');
+
+      let answer = "";
+
+      // 1. Gemini API 키가 있는 경우 우선 생성형 AI 호출 (최고 품질)
+      if (customApiKey && customApiKey.trim().length > 10) {
+        try {
+          answer = await fetchGeminiQuestionAnswer(figureName, question);
+        } catch (err) {
+          console.warn("Gemini Q&A 호출 실패, 백과사전 지식 검색으로 자동 전환:", err);
+        }
+      }
+
+      // 2. 키가 없거나 실패한 경우: 구조화된 팩트 DB 및 실시간 위키백과 본문 분석
+      if (!answer) {
+        answer = await searchSmartEncyclopediaAnswer(figureName, question);
+      }
+
+      qaLoading.classList.add('hidden');
+      renderQAItem(question, answer);
+    }
+
+    // 💡 고품질 지식 검색 시스템: 내장 팩트 DB + 실시간 위키백과 본문 사실 추출
+    async function searchSmartEncyclopediaAnswer(figureName, question) {
+      const q = question.toLowerCase();
+      
+      // 1. 내장된 팩트 데이터베이스 우선 매칭
+      const matchedKey = Object.keys(FIGURE_QA_KNOWLEDGE).find(k => 
+        k === figureName || figureName.includes(k) || k.includes(figureName)
+      );
+
+      if (matchedKey) {
+        const figureKnowledge = FIGURE_QA_KNOWLEDGE[matchedKey];
+        if (q.includes("고향") || q.includes("태어난") || q.includes("출생") || q.includes("어디서 났")) {
+          if (figureKnowledge["고향"]) return figureKnowledge["고향"];
+          if (figureKnowledge["출생"]) return figureKnowledge["출생"];
+        }
+        if (q.includes("가족") || q.includes("부모") || q.includes("어머니") || q.includes("아버지") || q.includes("엄마") || q.includes("아빠")) {
+          if (figureKnowledge["가족"]) return figureKnowledge["가족"];
+        }
+        if (q.includes("음식") || q.includes("밥") || q.includes("먹") || q.includes("좋아하는")) {
+          if (figureKnowledge["음식"]) return figureKnowledge["음식"];
+        }
+        if (q.includes("어린") || q.includes("어릴") || q.includes("아이") || q.includes("성격")) {
+          if (figureKnowledge["어린시절"]) return figureKnowledge["어린시절"];
+        }
+        if (q.includes("취미") || q.includes("특기") || q.includes("놀이")) {
+          if (figureKnowledge["취미"]) return figureKnowledge["취미"];
+        }
+      }
+
+      // 2. 위키백과 실시간 백과 본문 API에서 질문 관련 사실 문장 추출
+      try {
+        const wikiAnswer = await fetchWikipediaFact(figureName, question);
+        if (wikiAnswer) return wikiAnswer;
+      } catch (err) {
+        console.warn("위키백과 실시간 사실 추출 실패:", err);
+      }
+
+      // 3. 기록 부재 시 친절한 안내
+      if (q.includes("음식") || q.includes("밥") || q.includes("먹")) {
+        return `역사 사료나 공식 기록에 ${figureName}님이 특별히 가장 좋아하셨던 구체적인 음식에 대한 정확한 기록은 전해지지 않아 확인할 수 없어요. 옛 역사학자들도 확실한 기록이 없는 일상 식습관은 함부로 추측하지 않는답니다.`;
+      }
+
+      if (q.includes("취미") || q.includes("특기")) {
+        return `공식 역사 기록이나 전기에는 ${figureName}님의 구체적인 취미나 여가 생활에 대한 명확한 사료가 남아 있지 않아 정확히 알 수 없어요.`;
+      }
+
+      return `역사책이나 공식 기록(사료)에 그 내용에 대한 명확한 문헌이 남아 있지 않아 정확히 알 수 없어요. 옛 위인들의 모든 사적인 일상생활이 역사책에 기록되지는 않았기 때문이랍니다.`;
+    }
+
+    // 위키백과 전문에서 질문 키워드와 관련된 실사구시 문장을 직접 추출
+    async function fetchWikipediaFact(figureName, question) {
+      const cleanQ = question.replace(/[\?\.!]/g, '').trim();
+      const tokens = cleanQ.split(/\s+/).filter(t => t.length >= 2 && !["무엇", "어디", "언제", "누구", "인가요", "인가", "있나요"].includes(t));
+
+      const queryUrl = `https://ko.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&titles=${encodeURIComponent(figureName)}&format=json&origin=*`;
+      const res = await fetch(queryUrl);
+      if (!res.ok) return null;
+      const data = await res.json();
+
+      const pages = data.query?.pages;
+      if (!pages) return null;
+      const pageId = Object.keys(pages)[0];
+      if (pageId === "-1") return null;
+
+      const extract = pages[pageId].extract;
+      if (!extract || extract.length < 50) return null;
+
+      // 문단 및 문장 분리
+      const sentences = extract.split(/[.\n]\s+/).map(s => s.trim()).filter(s => s.length >= 15);
+
+      // 질문 유형별 핵심 키워드 매칭
+      let candidateWords = [...tokens];
+      if (cleanQ.includes("고향") || cleanQ.includes("태어난") || cleanQ.includes("출생")) {
+        candidateWords.push("출생", "태어나", "고향", "출생지", "생애", "유년");
+      } else if (cleanQ.includes("가족") || cleanQ.includes("부모") || cleanQ.includes("어머니") || cleanQ.includes("아버지")) {
+        candidateWords.push("아버지", "어머니", "부모", "가족", "아들", "딸", "형제");
+      } else if (cleanQ.includes("발명") || cleanQ.includes("업적") || cleanQ.includes("만든")) {
+        candidateWords.push("발명", "업적", "제작", "창제", "개발", "저서");
+      }
+
+      // 점수 기반으로 가장 질문과 밀접한 문장 탐색
+      let bestSentence = "";
+      let highestScore = 0;
+
+      for (const sent of sentences) {
+        let score = 0;
+        for (const word of candidateWords) {
+          if (sent.includes(word)) score += 2;
+        }
+        // 인물 이름 포함 시 보너스 점수
+        if (sent.includes(figureName)) score += 1;
+
+        if (score > highestScore && score >= 3) {
+          highestScore = score;
+          bestSentence = sent;
+        }
+      }
+
+      if (bestSentence) {
+        return `위키백과 기록에 따르면, **${bestSentence}.** 라고 기록되어 있어요.`;
+      }
+
+      return null;
+    }
+
+    async function fetchGeminiQuestionAnswer(figureName, question) {
+      const apiKey = customApiKey || "";
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+      const systemPrompt = `당신은 대한민국 초등학교 3학년 담임선생님이자 엄격하고 꼼꼼한 역사 교육 전문가입니다.
+질문 인물: "${figureName}"
+학생 질문: "${question}"
+
+[핵심 지침 - 깊이 있고 성의 있는 답변]
+1. 고향, 출생지, 생몰년, 가족, 대표 저서/발명품/업적 등 사료나 백과사전에 명시된 역사적 사실 질문에는 구체적인 지명, 연도, 사실을 풍부하고 정확하게 알려주세요.
+2. 초등학교 3학년 어린이가 바로 이해할 수 있도록 친절하고 다정한 어투(~했어요, ~랍니다)로 설명하세요.
+3. [중요] 단, 음식 취향이나 개인적인 취미 등 공식 사료에 전혀 기록이 없는 사적인 내용일 때만 "역사 기록이나 사료에 명확하게 남아 있지 않아 정확히 알 수 없어요"라고 솔직하게 답변하세요. 기초 백과 사실(고향, 출생 등)은 절대 기록이 없다고 얼버무리지 말고 정확한 사실을 답변하세요.`;
+
+      const payload = {
+        contents: [{ parts: [{ text: `위인 [${figureName}]에 대한 학생 질문: "${question}". 사실에 근거하여 초등 3학년 눈높이로 성의 있고 친절하게 답변해 주세요.` }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] }
+      };
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error("Gemini API Error");
+      const result = await res.json();
+      return result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    }
+
+    function renderQAItem(question, answer) {
+      const qaList = document.getElementById('qaList');
+      const item = document.createElement('div');
+      item.className = "bg-white rounded-2xl p-4 border border-amber-200 shadow-xs space-y-2 animate-in fade-in";
+      item.innerHTML = `
+        <div class="flex items-start gap-2.5">
+          <span class="w-6 h-6 rounded-full bg-amber-400 text-amber-950 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">Q</span>
+          <p class="font-bold text-slate-800 text-sm sm:text-base">${escapeHtml(question)}</p>
+        </div>
+        <div class="flex items-start gap-2.5 pt-2 border-t border-amber-100">
+          <span class="w-6 h-6 rounded-full bg-emerald-500 text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">A</span>
+          <div class="flex-1">
+            <p class="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal">${answer}</p>
+          </div>
+        </div>
+      `;
+      qaList.prepend(item);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 🔒 1,000인 위인 화이트리스트 검증 함수
+    function verifyFigureWhitelist(query) {
+      const clean = query.replace(/\s+/g, '').toLowerCase();
+
+      // 1. 별칭 확인
+      if (ALIAS_TO_STANDARD[clean]) {
+        return ALIAS_TO_STANDARD[clean];
+      }
+
+      // 2. 화이트리스트 일치 확인
+      for (const fig of VERIFIED_FIGURES_LIST) {
+        const cleanFig = fig.replace(/\s+/g, '').toLowerCase();
+        if (clean === cleanFig || cleanFig.includes(clean) || clean.includes(cleanFig)) {
+          return fig;
+        }
+      }
+
+      return null;
+    }
+
+    async function startSearch() {
+      const rawQuery = searchInput.value.trim();
+      if (!rawQuery) {
+        searchInput.focus();
+        return;
+      }
+
+      stopSpeech();
+
+      document.getElementById('resultCard').classList.add('hidden');
+      document.getElementById('warningCard').classList.add('hidden');
+
+      // 🛡️ [철저한 화이트리스트 검사]
+      const verifiedName = verifyFigureWhitelist(rawQuery);
+
+      if (!verifiedName) {
+        showWarningCard(`"${rawQuery}"(은)는 초등학교 교과서와 위인전에 나오는 훌륭한 인물이 아니에요!<br><span class="text-xs text-amber-800 font-normal mt-1 block">우리 위인 백과에는 세종대왕, 이순신, 안중근, 에디슨처럼 <strong>검증된 훌륭한 위인</strong>만 검색할 수 있어요.</span>`);
+        return;
+      }
+
+      document.getElementById('loadingBox').classList.remove('hidden');
+
+      // 1. 내장 핵심 데이터에 있는지 확인
+      const matchedKey = Object.keys(BUILTIN_FIGURES).find(k => 
+        k.replace(/\s+/g, '') === verifiedName.replace(/\s+/g, '') ||
+        verifiedName.includes(k) || k.includes(verifiedName)
+      );
+
+      if (matchedKey) {
+        setTimeout(() => {
+          document.getElementById('loadingBox').classList.add('hidden');
+          renderFigure(BUILTIN_FIGURES[matchedKey]);
+        }, 150);
+        return;
+      }
+
+      // 2. 검증된 인물이지만 상세 내장이 없는 경우: Gemini 또는 위키백과를 통해 초등 3학년용 안전 재구성
+      try {
+        let figureData = null;
+        if (customApiKey && customApiKey.trim().length > 10) {
+          try {
+            figureData = await fetchGeminiFigure(verifiedName);
+          } catch (e) {
+            console.warn("Gemini API 호출 실패, 위키백과 폴백으로 자동 전환합니다:", e);
+          }
+        }
+
+        if (!figureData) {
+          figureData = await fetchWikipediaFigure(verifiedName);
+        }
+
+        document.getElementById('loadingBox').classList.add('hidden');
+
+        if (figureData) {
+          renderFigure(figureData);
+        } else {
+          showWarningCard(`"${verifiedName}"에 대한 탐구 자료를 정리하는 중 잠시 문제가 생겼어요. 다른 위인을 먼저 알아볼까요?`);
+        }
+      } catch (err) {
+        document.getElementById('loadingBox').classList.add('hidden');
+        showWarningCard(`"${verifiedName}"에 대한 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.`);
+      }
+    }
+
+    function showWarningCard(msg) {
+      document.getElementById('warningMessage').innerHTML = msg;
+      document.getElementById('warningCard').classList.remove('hidden');
+      document.getElementById('warningCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    async function fetchWikipediaFigure(figureName) {
+      try {
+        const summaryUrl = `https://ko.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(figureName)}`;
+        const summaryRes = await fetch(summaryUrl);
+        if (!summaryRes.ok) return null;
+        const summaryData = await summaryRes.json();
+
+        const extract = summaryData.extract || "";
+        const description = summaryData.description || "역사 속 훌륭한 인물";
+        const sentences = extract.split(/[.!?]\s+/).filter(s => s.trim().length > 10);
+
+        const achievements = [
+          {
+            title: "역사에 남긴 큰 발자취",
+            desc: sentences[0] ? sentences[0] + "을(를) 통해 사람들에게 큰 도움과 깨달음을 주었어요." : "나라와 사회를 위해 최선을 다해 헌신하셨어요."
+          },
+          {
+            title: "포기하지 않은 열정",
+            desc: sentences[1] ? sentences[1] + "을(를) 실천하며 어려운 상황을 슬기롭게 극복했어요." : "자신의 뜻을 굽히지 않고 끝까지 노력했어요."
+          },
+          {
+            title: "오늘날 우리가 기억할 점",
+            desc: sentences[2] ? sentences[2] + "에 관한 소중한 역사적 기록과 모범을 남겼어요." : "오늘날까지 많은 사람에게 깊은 감동을 주고 있어요."
+          }
+        ];
+
+        return {
+          name: figureName,
+          tagline: `${description}으로서 세상을 빛낸 훌륭한 위인`,
+          intro: `${figureName}은(는) 우리 역사와 세상에 큰 발자취를 남기신 ${description}이에요. ${sentences[0] || ''}에 힘쓰며 뜻깊은 일을 하셨어요.`,
+          achievements: achievements,
+          funFact: `${figureName}에 관한 이야기는 초등학교 교과서와 위인전에 소개되어 오늘날까지 많은 어린이에게 큰 용기를 주고 있답니다!`,
+          lesson: "어려운 문제 앞에서도 포기하지 않고 자신의 꿈과 이웃을 위해 정성을 다하는 마음을 배울 수 있어요.",
+          quiz: {
+            question: `${figureName}에 대해 올바르게 설명한 것은 무엇일까요?`,
+            options: [
+              `사회와 이웃을 위해 훌륭한 일을 하신 ${description}이에요.`,
+              "만화책이나 게임 속에 등장하는 가상의 캐릭터예요.",
+              "공장에서 만들어진 기계나 물건의 이름이에요."
+            ],
+            correctIndex: 0,
+            explanation: `${figureName}은(는) 역사 속에서 실제로 사람들을 위해 훌륭한 업적을 남기신 위인이랍니다!`
+          },
+          relatedFigures: ["세종대왕", "이순신", "안중근"]
+        };
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function fetchGeminiFigure(figureName) {
+      const apiKey = customApiKey || "";
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+      const systemPrompt = `당신은 대한민국 초등학교 3학년 담임선생님입니다.
+반드시 검증된 실존 위인 "${figureName}"에 대한 정보를 초등학교 3학년 눈높이(~했어요, ~했답니다)로 다정하게 작성하세요.`;
+
+      const userQuery = `위인 "${figureName}"에 대한 초등 3학년용 배움 자료를 만들어 주세요.`;
+
+      const payload = {
+        contents: [{ parts: [{ text: userQuery }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              "name": { "type": "STRING" },
+              "tagline": { "type": "STRING" },
+              "intro": { "type": "STRING" },
+              "achievements": {
+                "type": "ARRAY",
+                "items": {
+                  "type": "OBJECT",
+                  "properties": {
+                    "title": { "type": "STRING" },
+                    "desc": { "type": "STRING" }
+                  },
+                  "required": ["title", "desc"]
+                }
+              },
+              "funFact": { "type": "STRING" },
+              "lesson": { "type": "STRING" },
+              "quiz": {
+                "type": "OBJECT",
+                "properties": {
+                  "question": { "type": "STRING" },
+                  "options": {
+                    "type": "ARRAY",
+                    "items": { "type": "STRING" }
+                  },
+                  "correctIndex": { "type": "INTEGER" },
+                  "explanation": { "type": "STRING" }
+                },
+                "required": ["question", "options", "correctIndex", "explanation"]
+              },
+              "relatedFigures": {
+                "type": "ARRAY",
+                "items": { "type": "STRING" }
+              }
+            },
+            "required": ["name", "tagline", "intro", "achievements", "funFact", "lesson", "quiz"]
+          }
+        }
+      };
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error("Gemini API Error: " + res.statusText);
+      const result = await res.json();
+      return JSON.parse(result.candidates?.[0]?.content?.parts?.[0]?.text);
+    }
+
+    function renderFigure(data) {
+      currentFigureData = data;
+
+      document.getElementById('figureName').textContent = data.name;
+      document.getElementById('figureTagline').textContent = data.tagline;
+      document.getElementById('figureIntro').textContent = data.intro;
+
+      // 3가지 핵심 업적
+      const achievementsContainer = document.getElementById('achievementsList');
+      achievementsContainer.innerHTML = '';
+      (data.achievements || []).forEach((ach, idx) => {
+        const card = document.createElement('div');
+        card.className = "bg-sky-50/70 border border-sky-200 rounded-2xl p-4 flex flex-col justify-start";
+        card.innerHTML = `
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-6 h-6 rounded-full bg-sky-500 text-white font-bold text-xs flex items-center justify-center shrink-0">
+              ${idx + 1}
+            </span>
+            <h4 class="font-bold text-sky-950 text-sm sm:text-base">${ach.title}</h4>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">${ach.desc}</p>
+        `;
+        achievementsContainer.appendChild(card);
+      });
+
+      // 비하인드 일화 & 본받을 점
+      document.getElementById('funFactText').textContent = data.funFact;
+      document.getElementById('lessonText').textContent = data.lesson;
+
+      // Q&A 섹션 초기화
+      setupQASection(data.name);
+
+      // 연관 위인 태그
+      const relatedContainer = document.getElementById('relatedFiguresList');
+      relatedContainer.innerHTML = '';
+      (data.relatedFigures || []).forEach(name => {
+        const btn = document.createElement('button');
+        btn.className = "px-2.5 py-1 bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 rounded-lg text-xs font-bold transition";
+        btn.textContent = name;
+        btn.onclick = () => quickSearch(name);
+        relatedContainer.appendChild(btn);
+      });
+
+      const resultCard = document.getElementById('resultCard');
+      resultCard.classList.remove('hidden');
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // 구글 이미지 검색 (세이프서치 적용)
+    function openGoogleImages() {
+      const query = currentFigureData ? currentFigureData.name : searchInput.value.trim();
+      if (!query) return;
+      const targetUrl = `https://www.google.com/search?tbm=isch&safe=active&q=${encodeURIComponent(query + ' 위인')}`;
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    function openSettingsModal() {
+      document.getElementById('customApiKeyInput').value = customApiKey;
+      document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    function saveApiKey() {
+      const keyVal = document.getElementById('customApiKeyInput').value.trim();
+      customApiKey = keyVal;
+      localStorage.setItem('gemini_custom_api_key', keyVal);
+      closeSettingsModal();
+    }
+  </script>
+</body>
+</html>
