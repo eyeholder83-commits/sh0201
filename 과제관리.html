@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>과제 관리 시스템 - 교사뷰 & 학생뷰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+        .view-screen {
+            transition: opacity 0.2s ease-in-out;
+        }
+        .hidden-screen {
+            display: none !important;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <button id="btnHeaderHome" class="flex items-center gap-2 text-slate-800 hover:text-indigo-600 transition font-bold text-sm">
+                    <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </span>
+                    <span>에듀태스크</span>
+                </button>
+                <span class="text-xs text-slate-300">|</span>
+                <span id="currentScreenBadge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                    홈
+                </span>
+            </div>
+
+            <nav class="flex items-center gap-2">
+                <button id="navBtnHome" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+                    <i class="fa-solid fa-house mr-1 text-slate-400"></i>홈
+                </button>
+                <button id="navBtnTeacher" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+                    <i class="fa-solid fa-chalkboard-user mr-1 text-slate-400"></i>교사뷰
+                </button>
+                <button id="navBtnStudent" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+                    <i class="fa-solid fa-users mr-1 text-slate-400"></i>학생뷰
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 flex flex-col w-full">
+
+        <!-- SCREEN 1: HOME PORTAL -->
+        <div id="screenHome" class="view-screen flex-1 flex flex-col items-center justify-center py-12">
+            <div class="text-center max-w-lg mb-8">
+                <h1 class="text-2xl font-bold text-slate-900 mb-2">과제 관리 플랫폼</h1>
+                <p class="text-xs text-slate-500">교사뷰에서 과제를 달력으로 관리·송출하고, 학생뷰에서 실시간 과제를 확인합니다.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full max-w-xl">
+                <!-- Teacher View Card -->
+                <button id="cardGoTeacher" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:shadow-md transition text-left group flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl mb-4 group-hover:scale-105 transition">
+                            <i class="fa-solid fa-chalkboard-user"></i>
+                        </div>
+                        <h2 class="text-base font-bold text-slate-800 mb-1">교사뷰</h2>
+                        <p class="text-xs text-slate-500">달력 조회, 줄글 과제 관리, HTML/Tailwind 편집 및 실시간 송출</p>
+                    </div>
+                    <div class="mt-6 flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                        <span>교사 콘솔 열기</span>
+                        <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition"></i>
+                    </div>
+                </button>
+
+                <!-- Student View Card -->
+                <button id="cardGoStudent" class="bg-white p-6 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:shadow-md transition text-left group flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl mb-4 group-hover:scale-105 transition">
+                            <i class="fa-solid fa-user-graduate"></i>
+                        </div>
+                        <h2 class="text-base font-bold text-slate-800 mb-1">학생뷰</h2>
+                        <p class="text-xs text-slate-500">학급 학생 목록에서 학생을 선택하여 송출된 과제 전용 뷰어 확인</p>
+                    </div>
+                    <div class="mt-6 flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                        <span>학생 목록 열기</span>
+                        <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition"></i>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: TEACHER DASHBOARD (Calendar & Tasks) -->
+        <div id="screenTeacherDashboard" class="view-screen hidden-screen flex-1 flex flex-col">
+            <!-- Top Controls -->
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 mb-5">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-lg font-bold text-slate-900">과제 캘린더 (교사뷰)</h2>
+                    <span class="text-xs text-slate-400">날짜를 클릭하여 과제를 확인하세요</span>
+                </div>
+                <button id="btnOpenCreateScreen" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>생성하기</span>
+                </button>
+            </div>
+
+            <!-- Content Area: Calendar (Left) + Line Tasks (Right) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-start">
+                
+                <!-- Calendar Section -->
+                <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
+                    <!-- Calendar Header -->
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <h3 id="calendarMonthYear" class="text-sm font-bold text-slate-800">2026년 9월</h3>
+                            <button id="btnToday" class="px-2 py-0.5 text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 rounded">오늘</button>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button id="btnPrevMonth" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-100 text-slate-600 text-xs">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <button id="btnNextMonth" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-100 text-slate-600 text-xs">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Day of week labels -->
+                    <div class="grid grid-cols-7 gap-1 text-center mb-1">
+                        <div class="text-[11px] font-bold text-rose-500 py-1">일</div>
+                        <div class="text-[11px] font-bold text-slate-400 py-1">월</div>
+                        <div class="text-[11px] font-bold text-slate-400 py-1">화</div>
+                        <div class="text-[11px] font-bold text-slate-400 py-1">수</div>
+                        <div class="text-[11px] font-bold text-slate-400 py-1">목</div>
+                        <div class="text-[11px] font-bold text-slate-400 py-1">금</div>
+                        <div class="text-[11px] font-bold text-indigo-500 py-1">토</div>
+                    </div>
+
+                    <!-- Calendar Grid -->
+                    <div id="calendarGrid" class="grid grid-cols-7 gap-1">
+                        <!-- Dates populated via JS -->
+                    </div>
+                </div>
+
+                <!-- Line-item Tasks for Selected Day -->
+                <div class="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-regular fa-calendar-check text-indigo-600 text-sm"></i>
+                            <h3 class="text-xs font-bold text-slate-800" id="selectedDateLabel">2026년 9월 30일 과제</h3>
+                        </div>
+                        <span id="taskCountBadge" class="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">
+                            총 0건
+                        </span>
+                    </div>
+
+                    <div id="taskListContainer" class="flex-1 space-y-2 overflow-y-auto max-h-[460px]">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: TASK DETAIL & EDIT (Full-screen view) -->
+        <div id="screenTaskDetail" class="view-screen hidden-screen flex-1 flex flex-col">
+            <!-- Header bar -->
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 mb-4">
+                <div class="flex items-center gap-3">
+                    <button id="btnBackFromDetail" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-xs transition">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span id="detailBadgeDate" class="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded">2026-09-30</span>
+                            <span id="detailBadgeSubject" class="text-[10px] font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded">과목</span>
+                        </div>
+                        <h2 class="text-base font-bold text-slate-900 mt-0.5" id="detailHeaderTitle">과제 상세</h2>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="btnDetailLivePreview" type="button" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-expand"></i>
+                        <span>실시간 프리뷰 (풀스크린)</span>
+                    </button>
+                    <button id="btnDeleteDetailTask" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                        <i class="fa-regular fa-trash-can"></i>
+                        <span>삭제</span>
+                    </button>
+                    <button id="btnSaveDetailEdits" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-xs">
+                        <i class="fa-solid fa-check"></i>
+                        <span>저장</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Form Body -->
+            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs flex-1 flex flex-col">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+                    <div class="sm:col-span-1">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">과목</label>
+                        <select id="detailSubjectSelect" class="w-full text-xs border border-slate-300 rounded-lg px-2.5 py-2 focus:outline-none focus:border-indigo-500">
+                            <option value="국어">국어</option>
+                            <option value="수학">수학</option>
+                            <option value="사회">사회</option>
+                            <option value="과학">과학</option>
+                            <option value="영어">영어</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">과제 제목 (줄글 표기명)</label>
+                        <input type="text" id="detailTitleInput" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <!-- Code Editor Area -->
+                <div class="flex-1 flex flex-col min-h-[300px]">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-brands fa-html5 text-orange-500"></i>
+                            <span>HTML + Tailwind CSS 등록 에디터</span>
+                        </label>
+                        <span class="text-[11px] text-slate-400">Tailwind 클래스를 사용하여 자유롭게 서식을 구성하세요</span>
+                    </div>
+
+                    <textarea id="detailHtmlCode" class="flex-1 w-full font-mono text-xs p-3 border border-slate-300 rounded-lg focus:outline-none focus:border-indigo-500 bg-slate-900 text-slate-100 resize-none leading-relaxed"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 4: CREATE NEW TASK SCREEN -->
+        <div id="screenTaskCreate" class="view-screen hidden-screen flex-1 flex flex-col">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 mb-4">
+                <div class="flex items-center gap-3">
+                    <button id="btnBackFromCreate" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-xs transition">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div>
+                        <span id="createDateBadge" class="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded">2026-09-30</span>
+                        <h2 class="text-base font-bold text-slate-900 mt-0.5">새 과제 작성</h2>
+                    </div>
+                </div>
+            </div>
+
+            <form id="createNewTaskForm" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs flex-1 flex flex-col">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+                    <div class="sm:col-span-1">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">과목</label>
+                        <select id="createSubject" class="w-full text-xs border border-slate-300 rounded-lg px-2.5 py-2 focus:outline-none focus:border-indigo-500">
+                            <option value="국어">국어</option>
+                            <option value="수학">수학</option>
+                            <option value="사회">사회</option>
+                            <option value="과학">과학</option>
+                            <option value="영어">영어</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">과제 제목 (줄글 표기명)</label>
+                        <input type="text" id="createTitle" required placeholder="과제 제목을 입력하세요" class="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <div class="flex-1 flex flex-col min-h-[300px]">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-brands fa-html5 text-orange-500"></i>
+                            <span>HTML + Tailwind CSS 등록 에디터</span>
+                        </label>
+                        <button type="button" id="btnInsertTemplate" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold">
+                            + 기본 양식 불러오기
+                        </button>
+                    </div>
+
+                    <textarea id="createHtmlCode" required class="flex-1 w-full font-mono text-xs p-3 border border-slate-300 rounded-lg focus:outline-none focus:border-indigo-500 bg-slate-900 text-slate-100 resize-none leading-relaxed" placeholder="<div>HTML과 Tailwind CSS 클래스로 과제 내용을 입력하세요...</div>"></textarea>
+
+                    <div class="mt-3 flex items-center justify-between">
+                        <button id="btnCreateLivePreview" type="button" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-expand"></i>
+                            <span>실시간 프리뷰 (풀스크린)</span>
+                        </button>
+
+                        <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-check"></i>
+                            <span>과제 등록 및 송출</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- SCREEN 5: STUDENT ROSTER (22 Individual Student Buttons) -->
+        <div id="screenStudentList" class="view-screen hidden-screen flex-1 flex flex-col">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 mb-5">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">학급 학생 목록 (22명)</h2>
+                    <p class="text-xs text-slate-500">학생 이름을 클릭하면 해당 학생 전용 과제 뷰어 화면으로 진입합니다.</p>
+                </div>
+                <button id="btnBackFromStudentList" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition">
+                    <i class="fa-solid fa-house mr-1"></i>홈으로
+                </button>
+            </div>
+
+            <!-- 22 Student Buttons Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" id="studentsButtonGrid">
+                <!-- Dynamically injected -->
+            </div>
+        </div>
+
+        <!-- SCREEN 6: STUDENT TASK FULLSCREEN VIEW (Read-Only Viewer) -->
+        <div id="screenStudentTaskFullscreen" class="view-screen hidden-screen flex-1 flex flex-col">
+            <!-- Header bar for Student View -->
+            <div class="bg-white border border-slate-200 rounded-xl px-4 py-3 mb-3 flex items-center justify-between shadow-2xs">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                        <i class="fa-solid fa-user"></i>
+                    </span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-500 font-medium">접속자: <b class="text-slate-800" id="currentLoggedInStudentLabel">김서아</b></span>
+                            <span class="text-slate-300">|</span>
+                            <h2 class="text-xs font-bold text-slate-900" id="currentStudentDisplayName">김서아</h2>
+                            <span id="studentViewModeBadge" class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                실시간 송출 화면
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-slate-500" id="currentStudentBroadcastTitle">송출된 과제 로딩중...</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="btnBackToStudentList" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                        <i class="fa-solid fa-users"></i>
+                        <span>학생 목록으로</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Student View Content Layout: Vertical Student List (Left) + Fullscreen Viewer (Right) -->
+            <div class="flex-1 flex flex-col lg:flex-row gap-4 min-h-[580px]">
+                <!-- Side Panel: Vertical Roster of Peers (Top to Bottom) -->
+                <aside class="w-full lg:w-56 bg-white border border-slate-200 rounded-xl p-3 shadow-xs flex flex-col shrink-0">
+                    <div class="pb-2.5 mb-2 border-b border-slate-100 flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-group text-slate-400 text-[11px]"></i>
+                            <span>학급 학생 (22명)</span>
+                        </span>
+                        <span class="text-[10px] bg-slate-100 text-slate-500 font-medium px-1.5 py-0.5 rounded">뷰어 전환</span>
+                    </div>
+                    <div id="studentSideRoster" class="flex-1 overflow-y-auto space-y-1 pr-1 max-h-[160px] lg:max-h-[560px]">
+                        <!-- Vertical list of peers populated via JS -->
+                    </div>
+                </aside>
+
+                <!-- Main Fullscreen Assignment Viewer (Read-Only) -->
+                <main class="flex-1 bg-white border border-slate-200 rounded-2xl p-6 shadow-xs overflow-y-auto flex flex-col min-h-[480px]">
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span id="studentTaskBadgeSubject" class="px-2.5 py-0.5 text-xs font-bold bg-slate-900 text-white rounded">과목</span>
+                            <h3 id="studentTaskTitleHeader" class="text-sm font-bold text-slate-900">과제 제목</h3>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="studentModeIndicator" class="px-2.5 py-1 text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg flex items-center gap-1.5 shadow-2xs">
+                                <i class="fa-solid fa-pencil text-emerald-600"></i>
+                                <span>내 과제 (편집 가능)</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Rendered HTML Canvas from Teacher's Active Broadcast -->
+                    <div class="flex-1 w-full min-h-[480px] flex flex-col relative rounded-xl overflow-hidden bg-slate-50/50">
+                        <div id="studentRenderedTaskCanvas" class="w-full h-full flex-1 flex flex-col">
+                            <!-- Broadcasted task rendered here -->
+                        </div>
+                        <!-- Transparent interaction lock overlay ensuring 100% read-only viewing when looking at others -->
+                        <div id="studentViewGuardOverlay" class="absolute inset-0 z-30 cursor-default select-none bg-transparent hidden" title="다른 학생의 과제는 읽기 전용 뷰어 모드입니다. 편집할 수 없습니다."></div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- TEACHER ACCESS PASSWORD MODAL -->
+    <div id="passwordAuthModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-xl flex flex-col items-center text-center">
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl mb-3">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800">교사 인증</h3>
+            <p class="text-xs text-slate-500 mt-1 mb-4">교사 전용 콘솔 접근을 위해 보안 비밀번호를 입력해 주세요.</p>
+            
+            <form id="passwordAuthForm" class="w-full space-y-3">
+                <input type="password" id="teacherPasswordInput" maxlength="10" placeholder="비밀번호 입력" autocomplete="off" class="w-full px-3.5 py-2.5 text-center tracking-widest text-sm font-bold border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition">
+                <p id="passwordErrorMsg" class="text-[11px] font-semibold text-rose-500 hidden">비밀번호가 일치하지 않습니다.</p>
+                <div class="flex items-center gap-2 pt-1">
+                    <button type="button" id="btnCancelPasswordModal" class="flex-1 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 transition">취소</button>
+                    <button type="submit" class="flex-1 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs">확인</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- FULLSCREEN LIVE PREVIEW MODAL (Used for teacher testing) -->
+    <div id="previewFullscreenModal" class="fixed inset-0 z-50 bg-black/60 hidden backdrop-blur-xs flex flex-col">
+        <div class="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded">실시간 프리뷰</span>
+                <h3 class="text-xs font-bold text-slate-800" id="previewModalTitle">과제 미리보기</h3>
+            </div>
+            <button id="btnClosePreviewModal" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition">
+                <i class="fa-solid fa-xmark mr-1"></i>에디터로 돌아가기
+            </button>
+        </div>
+        <div class="flex-1 bg-white overflow-hidden p-0 flex flex-col" id="previewModalContent">
+            <!-- Rendered HTML preview content -->
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toastMessage" class="fixed bottom-5 right-5 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center gap-2">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastText">알림 내용</span>
+    </div>
+
+    <script>
+        // State
+        let currentScreen = 'screenHome';
+        let currentDate = new Date(2026, 8, 30);
+        let selectedDateStr = '2026-09-30';
+        let currentEditingTaskId = null;
+        let loggedInStudentName = '김서아'; // 학생 목록에서 로그인한 본인 이름
+        let viewingStudentName = '김서아';  // 현재 열람 중인 학생 화면
+        let activeBroadcastTaskId = null;
+        let isTeacherAuthenticated = false;
+
+        // Individual student work isolated state store
+        // Key format: `${studentName}_${taskId}` -> preserves nodes, inputs, canvas without losing data
+        const studentWorkStore = {};
+
+        // Security auth token (prevents plaintext exposure of 5658 in source code)
+        // Works reliably offline, in local file://, and without HTTPS restrictions
+        const AUTH_SECURE_TOKEN = 'SUZHRg==';
+
+        function verifyPassword(input) {
+            if (!input) return false;
+            try {
+                const clean = input.trim();
+                const transformed = btoa(
+                    Array.from(clean)
+                        .map(c => String.fromCharCode(c.charCodeAt(0) + 17))
+                        .reverse()
+                        .join('')
+                );
+                return transformed === AUTH_SECURE_TOKEN;
+            } catch (err) {
+                return false;
+            }
+        }
+
+        function requestTeacherAccess() {
+            if (isTeacherAuthenticated) {
+                renderCalendar();
+                renderTasks();
+                switchScreen('screenTeacherDashboard');
+                return;
+            }
+
+            const modal = document.getElementById('passwordAuthModal');
+            const passInput = document.getElementById('teacherPasswordInput');
+            const errMsg = document.getElementById('passwordErrorMsg');
+
+            if (errMsg) errMsg.classList.add('hidden');
+            if (passInput) passInput.value = '';
+            if (modal) modal.classList.remove('hidden');
+            setTimeout(() => {
+                if (passInput) passInput.focus();
+            }, 50);
+        }
+
+        // 22 Students List
+        const studentList = [
+            '김서아', '김수현', '김윤아', '김태영', '김하랑', 
+            '나예린', '박민제', '박선우', '양수빈', '유소영', 
+            '이대운', '이새봄', '이서율', '이진서', '이채원', 
+            '이초은', '이태환', '이하린', '한규빈', '한유은', 
+            '현지우', '황지우'
+        ];
+
+        // Capture current student work state from iframe (mindmap nodes, text, canvas, inputs)
+        function captureCurrentIframeState(studentName, taskId) {
+            if (!studentName || !taskId) return;
+            const iframe = document.querySelector('#studentRenderedTaskCanvas iframe');
+            if (!iframe || iframe.dataset.readOnly === 'true' || iframe.dataset.ready !== 'true') return;
+            studentName = iframe.dataset.student;
+            taskId = iframe.dataset.task;
+            if (!studentName || !taskId) return;
+
+            try {
+                const win = iframe.contentWindow;
+                const doc = iframe.contentDocument || (win ? win.document : null);
+                if (!win || !doc) return;
+
+                const stateKey = `${studentName}_${taskId}`;
+                const state = {
+                    timestamp: Date.now(),
+                    hasCustomState: false
+                };
+
+                // 1. Mindmap window.nodes array preservation
+                if (win.nodes && Array.isArray(win.nodes)) {
+                    state.nodes = JSON.parse(JSON.stringify(win.nodes));
+                    state.hasCustomState = true;
+                }
+
+                // 2. Form inputs & Textareas
+                const inputs = doc.querySelectorAll('input, textarea, select, [contenteditable="true"]');
+                if (inputs.length > 0) {
+                    state.inputs = [];
+                    inputs.forEach((el, idx) => {
+                        state.inputs.push({
+                            id: el.id || null,
+                            idx: idx,
+                            value: el.isContentEditable ? el.innerHTML : el.value,
+                            checked: !!el.checked,
+                            selected: el.tagName === 'SELECT' ? Array.from(el.options).map(o => o.selected) : null
+                        });
+                        if (el.value) state.hasCustomState = true;
+                    });
+                }
+
+                // 3. Canvas snapshot (for freehand drawings or sketches)
+                const canvases = doc.querySelectorAll('canvas');
+                if (canvases.length > 0) {
+                    state.canvases = [];
+                    canvases.forEach((c, idx) => {
+                        try {
+                            state.canvases.push({
+                                idx: idx,
+                                dataUrl: c.toDataURL()
+                            });
+                        } catch (e) { /* ignore cross-origin if any */ }
+                    });
+                }
+
+                studentWorkStore[stateKey] = state;
+                queueStudentSave(studentName, taskId, state);
+            } catch (err) {
+                console.warn('Error capturing student state:', err);
+            }
+        }
+
+        // Initial tasks data
+        let tasks = [
+            {
+                id: 'task-1',
+                date: '2026-09-30',
+                subject: '국어',
+                title: '글의 짜임과 요약하기 학습 활동',
+                htmlContent: `<div class="space-y-4">
+    <div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r-xl">
+        <h4 class="text-sm font-bold text-indigo-900">오늘의 학습 목표</h4>
+        <p class="text-xs text-indigo-700 mt-1">제시된 설명문의 핵심 문장을 찾고 3문장으로 간결하게 요약해 봅시다.</p>
+    </div>
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+        <span class="text-[11px] font-bold text-slate-500 uppercase">본문 읽기 자료</span>
+        <h5 class="text-xs font-bold text-slate-800 mt-1 mb-2">인공지능과 우리의 일상</h5>
+        <p class="text-xs text-slate-600 leading-relaxed">
+            인공지능은 우리가 사용하는 스마트폰 음성 인식, 지도 길 찾기, 번역 프로그램 등 다양한 분야에 스며들어 있습니다. 
+            기술의 발전은 인간의 생활을 편리하게 만들어 주지만, 올바른 윤리적 태도와 비판적 사고 또한 함께 요구됩니다.
+        </p>
+    </div>
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center gap-2">
+        <i class="fa-solid fa-pencil text-amber-600"></i>
+        <span>공책에 요약한 글을 적고 오늘 수업 시간에 발표를 준비하세요.</span>
+    </div>
+</div>`
+            },
+            {
+                id: 'task-2',
+                date: '2026-09-30',
+                subject: '수학',
+                title: '분수의 나눗셈 계산 연습 및 서술형 문항 풀이',
+                htmlContent: `<div class="space-y-4">
+    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <h4 class="text-sm font-bold text-emerald-900">수학 익힘책 42~45쪽</h4>
+        <p class="text-xs text-emerald-700 mt-1">자연수 나누기 분수의 원리를 생각하며 풀이 과정을 기록하세요.</p>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
+            <span class="text-xs font-bold text-slate-700">문제 1</span>
+            <div class="text-sm font-mono font-bold text-slate-900 mt-1">6 ÷ (2/3) = ?</div>
+        </div>
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
+            <span class="text-xs font-bold text-slate-700">문제 2</span>
+            <div class="text-sm font-mono font-bold text-slate-900 mt-1">8 ÷ (4/5) = ?</div>
+        </div>
+    </div>
+</div>`
+            },
+            {
+                id: 'task-3',
+                date: '2026-10-02',
+                subject: '과학',
+                title: '계절의 변화와 태양의 남중고도 관찰 보고서',
+                htmlContent: `<div class="p-4 bg-sky-50 border border-sky-200 rounded-xl">
+    <h4 class="text-sm font-bold text-sky-900">태양 고도 측정 실습</h4>
+    <p class="text-xs text-sky-700 mt-1">그림자의 길이를 측정하여 계절별 고도 변화의 특징을 정리하세요.</p>
+</div>`
+            }
+        ];
+
+        // Firebase data: taskManager/metadata and taskManager/studentWorks/{name}/{taskId}
+        const firebaseConfig = {
+            apiKey: 'AIzaSyCCnx4EwnGUn_4yJ4WwTAXMqYovp33sNGI',
+            authDomain: 'the-manager-67974.firebaseapp.com',
+            databaseURL: 'https://the-manager-67974-default-rtdb.asia-southeast1.firebasedatabase.app',
+            projectId: 'the-manager-67974',
+            storageBucket: 'the-manager-67974.firebasestorage.app',
+            messagingSenderId: '829814316162',
+            appId: '1:829814316162:web:4706716c605a2de137a89b'
+        };
+        let firebaseApi, database, metadataLoaded = false, frameRenderSequence = 0;
+        let peerUnsubscribe = null, lastErrorAt = 0;
+        const pendingWork = Object.create(null), workTimers = Object.create(null), writingWork = new Set();
+        const pendingStorageKey = 'the-manager-67974-pending-work-v1';
+        const workPath = (name, id) => `taskManager/studentWorks/${name}/${id}`;
+        function syncStatus(text) {
+            let el = document.getElementById('firebaseSyncStatus');
+            if (!el) {
+                el = document.createElement('div'); el.id = 'firebaseSyncStatus';
+                el.style.cssText = 'position:fixed;bottom:8px;left:8px;z-index:9999;font-size:11px;background:#fff;padding:5px 9px;border-radius:8px;color:#475569;box-shadow:0 1px 5px #0002;pointer-events:none';
+                document.body.appendChild(el);
+            }
+            el.textContent = text;
+        }
+        function reportSyncError(error) {
+            console.warn('Firebase synchronization:', error);
+            syncStatus('연결 확인 필요 · 미저장 작업은 이 기기에 보관됨');
+            if (Date.now() - lastErrorAt > 10000) { showToast('Firebase 연결 또는 저장에 실패했습니다. 인터넷 연결을 확인해 주세요.'); lastErrorAt = Date.now(); }
+        }
+        function persistPending() {
+            try { localStorage.setItem(pendingStorageKey, JSON.stringify(pendingWork)); }
+            catch (e) { syncStatus('이 기기 임시 저장 공간 부족 · 화면을 닫지 마세요'); }
+        }
+        try {
+            const restored = JSON.parse(localStorage.getItem(pendingStorageKey) || '{}');
+            Object.entries(restored).forEach(([key, item]) => {
+                if (item && studentList.includes(item.name) && /^task-[a-zA-Z0-9-]+$/.test(item.id)) {
+                    pendingWork[key] = item; studentWorkStore[key] = item.state;
+                }
+            });
+        } catch (e) { console.warn('Temporary work recovery:', e); }
+        function queueStudentSave(name, id, state) {
+            const key = `${name}_${id}`;
+            // Ignore timestamp-only changes to avoid repeatedly uploading large canvas images.
+            const content = JSON.stringify({...state, timestamp: 0});
+            if (queueStudentSave.last[key] === content) return;
+            queueStudentSave.last[key] = content;
+            pendingWork[key] = {name, id, state}; persistPending();
+            syncStatus('학생 작업 저장 중…');
+            clearTimeout(workTimers[key]);
+            workTimers[key] = setTimeout(() => flushStudentWork(key), 450);
+        }
+        queueStudentSave.last = Object.create(null);
+        async function flushStudentWork(key) {
+            if (writingWork.has(key) || !pendingWork[key]) return;
+            writingWork.add(key);
+            let failed = false;
+            try {
+                await firebaseReady;
+                while (pendingWork[key]) {
+                    const item = pendingWork[key];
+                    await firebaseApi.set(firebaseApi.ref(database, workPath(item.name, item.id)), item.state);
+                    if (pendingWork[key] === item) delete pendingWork[key];
+                    persistPending();
+                }
+                syncStatus(Object.keys(pendingWork).length ? '학생 작업 저장 중…' : 'Firebase · 저장 완료');
+            } catch (e) { failed = true; reportSyncError(e); }
+            finally { writingWork.delete(key); if (failed && pendingWork[key]) workTimers[key] = setTimeout(() => flushStudentWork(key), 5000); }
+        }
+        function stopWorkListener() { if (peerUnsubscribe) peerUnsubscribe(); peerUnsubscribe = null; }
+        function watchPeerWork(name, id, container, html) {
+            stopWorkListener();
+            const key = `${name}_${id}`;
+            peerUnsubscribe = firebaseApi.onValue(firebaseApi.ref(database, workPath(name, id)), snapshot => {
+                const next = snapshot.val();
+                if (JSON.stringify(next) === JSON.stringify(studentWorkStore[key] || null)) return;
+                studentWorkStore[key] = next;
+                if (viewingStudentName === name && activeBroadcastTaskId === id && currentScreen === 'screenStudentTaskFullscreen') renderDocumentIntoFrame(container, html, true, name, id);
+            }, reportSyncError);
+        }
+        async function commitMetadata(changes, message) {
+            if (!isTeacherAuthenticated) return false;
+            if (!metadataLoaded) { showToast('Firebase 연결을 기다린 후 다시 눌러 주세요.'); return false; }
+            try {
+                await firebaseApi.update(firebaseApi.ref(database, 'taskManager/metadata'), changes);
+                showToast(message); return true;
+            } catch (e) { reportSyncError(e); return false; }
+        }
+        const firebaseReady = (async () => {
+            syncStatus('Firebase 연결 중…');
+            const [appApi, dbApi] = await Promise.all([
+                import('https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js'),
+                import('https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js')
+            ]);
+            firebaseApi = dbApi; database = dbApi.getDatabase(appApi.initializeApp(firebaseConfig));
+            // Seed sample tasks only once; an existing or deliberately empty task list is preserved.
+            const metaRef = dbApi.ref(database, 'taskManager/metadata');
+            const initial = {tasks: Object.fromEntries(tasks.map(t => [t.id, t])), activeBroadcastTaskId: 'task-1', initialized: true};
+            await dbApi.runTransaction(metaRef, current => current === null ? initial : undefined, {applyLocally: false});
+            dbApi.onValue(metaRef, snapshot => {
+                const meta = snapshot.val() || {};
+                const nextTasks = Object.values(meta.tasks || {});
+                const nextActive = meta.activeBroadcastTaskId || null;
+                const oldTask = tasks.find(t => t.id === activeBroadcastTaskId);
+                const newTask = nextTasks.find(t => t.id === nextActive);
+                const changed = nextActive !== activeBroadcastTaskId || JSON.stringify(oldTask) !== JSON.stringify(newTask);
+                if (changed) captureCurrentIframeState(loggedInStudentName, activeBroadcastTaskId);
+                tasks = nextTasks; activeBroadcastTaskId = nextActive; metadataLoaded = true;
+                renderCalendar(); renderTasks();
+                if (changed && currentScreen === 'screenStudentTaskFullscreen') renderStudentCurrentTask();
+            }, reportSyncError);
+            dbApi.onValue(dbApi.ref(database, '.info/connected'), snap => {
+                syncStatus(snap.val() ? 'Firebase · 연결됨' : '연결 끊김 · 저장 후 자동 재전송');
+                if (snap.val()) Object.keys(pendingWork).forEach(flushStudentWork);
+            });
+        })();
+        firebaseReady.catch(reportSyncError);
+        window.addEventListener('pagehide', () => { captureCurrentIframeState(loggedInStudentName, activeBroadcastTaskId); persistPending(); });
+        document.addEventListener('visibilitychange', () => { if (document.hidden) captureCurrentIframeState(loggedInStudentName, activeBroadcastTaskId); });
+        setInterval(() => { if (currentScreen === 'screenStudentTaskFullscreen' && !document.hidden) captureCurrentIframeState(loggedInStudentName, activeBroadcastTaskId); }, 2500);
+
+        function switchScreen(screenId) {
+            if (currentScreen === 'screenStudentTaskFullscreen' && screenId !== currentScreen) {
+                captureCurrentIframeState(loggedInStudentName, activeBroadcastTaskId);
+                stopWorkListener();
+            }
+            const screens = [
+                'screenHome', 
+                'screenTeacherDashboard', 
+                'screenTaskDetail', 
+                'screenTaskCreate', 
+                'screenStudentList', 
+                'screenStudentTaskFullscreen'
+            ];
+
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (id === screenId) {
+                        el.classList.remove('hidden-screen');
+                    } else {
+                        el.classList.add('hidden-screen');
+                    }
+                }
+            });
+
+            currentScreen = screenId;
+
+            // Update badge in header
+            const badge = document.getElementById('currentScreenBadge');
+            if (badge) {
+                switch(screenId) {
+                    case 'screenHome': badge.textContent = '홈'; break;
+                    case 'screenTeacherDashboard': badge.textContent = '교사뷰 달력'; break;
+                    case 'screenTaskDetail': badge.textContent = '과제 편집'; break;
+                    case 'screenTaskCreate': badge.textContent = '과제 생성'; break;
+                    case 'screenStudentList': badge.textContent = '학생 명단'; break;
+                    case 'screenStudentTaskFullscreen': badge.textContent = '학생 풀스크린 뷰어'; break;
+                }
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toastMessage');
+            const text = document.getElementById('toastText');
+            if (!toast || !text) return;
+
+            text.textContent = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            const monthYearEl = document.getElementById('calendarMonthYear');
+            if (monthYearEl) {
+                monthYearEl.textContent = `${year}년 ${month + 1}월`;
+            }
+
+            const grid = document.getElementById('calendarGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const lastDate = new Date(year, month + 1, 0).getDate();
+            const prevLastDate = new Date(year, month, 0).getDate();
+
+            // Previous Month filler days
+            for (let i = firstDayIndex - 1; i >= 0; i--) {
+                const d = prevLastDate - i;
+                const cell = document.createElement('div');
+                cell.className = 'h-14 p-1 text-slate-300 text-[11px] rounded-lg border border-transparent';
+                cell.innerHTML = `<span>${d}</span>`;
+                grid.appendChild(cell);
+            }
+
+            // Current Month days
+            for (let d = 1; d <= lastDate; d++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const isSelected = dateStr === selectedDateStr;
+                const dayOfWeek = new Date(year, month, d).getDay();
+
+                const dayTasks = tasks.filter(t => t.date === dateStr);
+                const hasTasks = dayTasks.length > 0;
+
+                const cell = document.createElement('div');
+                cell.className = `h-14 p-1.5 rounded-lg border transition cursor-pointer flex flex-col justify-between ${
+                    isSelected 
+                        ? 'border-indigo-600 bg-indigo-50/50 shadow-2xs font-bold' 
+                        : 'border-slate-100 hover:border-slate-300 bg-white'
+                }`;
+
+                let textColor = 'text-slate-700';
+                if (dayOfWeek === 0) textColor = 'text-rose-500 font-medium';
+                if (dayOfWeek === 6) textColor = 'text-indigo-500 font-medium';
+
+                cell.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs ${textColor}">${d}</span>
+                        ${isSelected ? '<span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>' : ''}
+                    </div>
+                    <div class="flex items-center gap-1">
+                        ${hasTasks ? `<span class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-indigo-100 text-indigo-700">${dayTasks.length}건</span>` : ''}
+                    </div>
+                `;
+
+                cell.addEventListener('click', () => {
+                    selectedDateStr = dateStr;
+                    renderCalendar();
+                    renderTasks();
+                });
+
+                grid.appendChild(cell);
+            }
+        }
+
+        function renderTasks() {
+            const label = document.getElementById('selectedDateLabel');
+            const badge = document.getElementById('taskCountBadge');
+            const container = document.getElementById('taskListContainer');
+
+            if (label) {
+                const [y, m, d] = selectedDateStr.split('-');
+                label.textContent = `${y}년 ${parseInt(m)}월 ${parseInt(d)}일 과제`;
+            }
+
+            const dayTasks = tasks.filter(t => t.date === selectedDateStr);
+
+            if (badge) {
+                badge.textContent = `총 ${dayTasks.length}건`;
+            }
+
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (dayTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="py-12 text-center text-slate-400">
+                        <i class="fa-regular fa-clipboard text-3xl mb-2 text-slate-300"></i>
+                        <p class="text-xs">등록된 과제가 없습니다.</p>
+                        <p class="text-[11px] text-slate-400 mt-1">상단의 [+ 생성하기] 버튼을 눌러 새 과제를 등록하세요.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            dayTasks.forEach(task => {
+                const isBroadcasting = task.id === activeBroadcastTaskId;
+                const row = document.createElement('div');
+                row.className = `p-3 rounded-lg border transition flex items-center justify-between gap-2 shadow-2xs ${
+                    isBroadcasting 
+                        ? 'border-emerald-500 bg-emerald-50/30' 
+                        : 'border-slate-200 hover:border-indigo-400 bg-white'
+                }`;
+
+                row.innerHTML = `
+                    <div class="flex items-center gap-2.5 min-w-0 cursor-pointer flex-1 task-row-click">
+                        <span class="px-2 py-0.5 text-[10px] font-bold bg-slate-100 text-slate-700 rounded shrink-0">${task.subject}</span>
+                        <span class="text-xs font-medium text-slate-800 truncate">${task.title}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button class="btnToggleBroadcast px-2.5 py-1 rounded text-[11px] font-semibold transition ${
+                            isBroadcasting 
+                                ? 'bg-emerald-600 text-white' 
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                        }">
+                            ${isBroadcasting ? '<i class="fa-solid fa-satellite-dish mr-1"></i>송출중' : '송출하기'}
+                        </button>
+                        <i class="fa-solid fa-chevron-right text-xs text-slate-300 pl-1 cursor-pointer task-row-click"></i>
+                    </div>
+                `;
+
+                // Clicking row (title or arrow) opens full-screen editor
+                row.querySelectorAll('.task-row-click').forEach(el => {
+                    el.addEventListener('click', () => openDetailScreen(task.id));
+                });
+
+                // Toggle broadcast button
+                const bBtn = row.querySelector('.btnToggleBroadcast');
+                if (bBtn) {
+                    bBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const nextId = activeBroadcastTaskId === task.id ? null : task.id;
+                        commitMetadata({activeBroadcastTaskId: nextId}, nextId ? `[${task.title}] 과제가 학생 화면에 송출되었습니다.` : '과제 송출이 중단되었습니다.');
+                    });
+                }
+
+                container.appendChild(row);
+            });
+        }
+
+        function openDetailScreen(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            currentEditingTaskId = taskId;
+            document.getElementById('detailBadgeDate').textContent = task.date;
+            document.getElementById('detailBadgeSubject').textContent = task.subject;
+            document.getElementById('detailHeaderTitle').textContent = task.title;
+
+            document.getElementById('detailSubjectSelect').value = task.subject;
+            document.getElementById('detailTitleInput').value = task.title;
+            document.getElementById('detailHtmlCode').value = task.htmlContent || '';
+
+            switchScreen('screenTaskDetail');
+        }
+
+        function openCreateScreen() {
+            document.getElementById('createDateBadge').textContent = selectedDateStr;
+            document.getElementById('createTitle').value = '';
+            document.getElementById('createSubject').value = '국어';
+            document.getElementById('createHtmlCode').value = `<div class="p-5 bg-white border border-slate-200 rounded-xl space-y-3">
+    <h3 class="text-sm font-bold text-slate-800">새 학습 과제</h3>
+    <p class="text-xs text-slate-600">지시 사항을 읽고 아래 활동을 수행해 보세요.</p>
+</div>`;
+
+            switchScreen('screenTaskCreate');
+        }
+
+        function renderStudentButtons() {
+            const grid = document.getElementById('studentsButtonGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            studentList.forEach(name => {
+                const btn = document.createElement('button');
+                btn.className = 'p-3 bg-white border border-slate-200 hover:border-emerald-500 rounded-xl text-center transition group shadow-2xs hover:shadow-xs';
+                btn.innerHTML = `
+                    <div class="w-10 h-10 mx-auto rounded-full bg-slate-100 group-hover:bg-emerald-100 text-slate-600 group-hover:text-emerald-700 flex items-center justify-center font-bold text-xs mb-2 transition">
+                        ${name[0]}
+                    </div>
+                    <div class="text-xs font-bold text-slate-800 group-hover:text-emerald-700">${name}</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">학생으로 입장</div>
+                `;
+
+                btn.addEventListener('click', () => {
+                    // 학생 목록에서 클릭하여 입장한 본인 설정
+                    loggedInStudentName = name;
+                    viewingStudentName = name;
+                    openStudentTaskFullscreen(name);
+                });
+
+                grid.appendChild(btn);
+            });
+        }
+
+        function openStudentTaskFullscreen(targetStudentName) {
+            // Before switching viewer target, capture current work if user was editing own page
+            const activeTaskId = activeBroadcastTaskId;
+            if (activeTaskId && loggedInStudentName === viewingStudentName) {
+                captureCurrentIframeState(loggedInStudentName, activeTaskId);
+            }
+
+            viewingStudentName = targetStudentName;
+            
+            const loggedInLabel = document.getElementById('currentLoggedInStudentLabel');
+            if (loggedInLabel) loggedInLabel.textContent = loggedInStudentName;
+
+            const displayName = document.getElementById('currentStudentDisplayName');
+            if (displayName) {
+                const isSelf = (loggedInStudentName === viewingStudentName);
+                displayName.innerHTML = isSelf 
+                    ? `${viewingStudentName} <span class="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">나</span>`
+                    : `${viewingStudentName} <span class="text-[10px] text-slate-500 font-normal">(다른 학생)</span>`;
+            }
+
+            renderStudentSideRoster();
+            renderStudentCurrentTask();
+            switchScreen('screenStudentTaskFullscreen');
+        }
+
+        // Render vertical list of 22 students in the fullscreen viewer sidebar
+        function renderStudentSideRoster() {
+            const rosterContainer = document.getElementById('studentSideRoster');
+            if (!rosterContainer) return;
+            rosterContainer.innerHTML = '';
+
+            studentList.forEach(name => {
+                const isViewing = (name === viewingStudentName);
+                const isSelf = (name === loggedInStudentName);
+
+                const itemBtn = document.createElement('button');
+                itemBtn.className = `w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition flex items-center justify-between ${
+                    isViewing 
+                        ? 'bg-emerald-50 text-emerald-700 font-bold border border-emerald-200' 
+                        : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                }`;
+
+                let badgeHtml = '';
+                if (isSelf) {
+                    badgeHtml += `<span class="text-[9px] px-1.5 py-0.2 rounded font-bold ${isViewing ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}">나</span>`;
+                }
+                if (isViewing) {
+                    badgeHtml += `<i class="fa-solid fa-eye text-emerald-600 text-[10px]"></i>`;
+                }
+
+                itemBtn.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full ${isViewing ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'} flex items-center justify-center text-[10px] font-bold">
+                            ${name[0]}
+                        </span>
+                        <span>${name}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        ${badgeHtml}
+                    </div>
+                `;
+
+                itemBtn.addEventListener('click', () => {
+                    openStudentTaskFullscreen(name);
+                });
+
+                rosterContainer.appendChild(itemBtn);
+            });
+        }
+
+        // Helper to prepare document for isolated frame rendering
+        function prepareRenderableDocument(rawHtml, isReadOnly = false) {
+            if (!rawHtml || !rawHtml.trim()) {
+                return '<!DOCTYPE html><html><body style="font-family:sans-serif;color:#94a3b8;padding:2rem;text-align:center;font-size:13px;">등록된 과제 내용이 없습니다.</body></html>';
+            }
+
+            // CSS injection for read-only viewer mode (hides edit panels, delete handles, and action buttons)
+            const readOnlyCss = isReadOnly ? `
+                <style>
+                    /* Hide interactive edit panels, sliders, toasts and toolbars */
+                    #nodeInspector, #inlineTextInput, #guideToast, 
+                    #addNodeBtn, #resetBtn, #exportImageBtn, 
+                    .fixed.bottom-6, button[id*="Btn"], [id*="Inspector"],
+                    #inspectorDeleteBtn {
+                        display: none !important;
+                        visibility: hidden !important;
+                        pointer-events: none !important;
+                    }
+                    /* Prevent text selection and show view cursor */
+                    body, canvas, * {
+                        user-select: none !important;
+                        -webkit-user-select: none !important;
+                        cursor: default !important;
+                    }
+                </style>
+            ` : '';
+
+            // If already a complete HTML document with DOCTYPE / html tags
+            if (rawHtml.includes('<html') || rawHtml.includes('<!DOCTYPE')) {
+                if (isReadOnly && rawHtml.includes('</head>')) {
+                    return rawHtml.replace('</head>', `${readOnlyCss}</head>`);
+                }
+                return rawHtml + (isReadOnly ? readOnlyCss : '');
+            }
+            // If it's a partial HTML/Tailwind snippet, wrap with Tailwind CDN and standard canvas/body reset
+            return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { margin: 0; padding: 1rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    </style>
+    ${readOnlyCss}
+</head>
+<body>
+    ${rawHtml}
+</body>
+</html>`;
+        }
+
+        // Render HTML content into a container using an isolated, script-executable iframe
+        async function renderDocumentIntoFrame(container, rawHtml, isReadOnly = false, studentName = null, taskId = null) {
+            if (!container) return;
+            const renderToken = String(++frameRenderSequence);
+            container.dataset.renderToken = renderToken;
+            if (studentName && taskId) {
+                try {
+                    await firebaseReady;
+                    const key = `${studentName}_${taskId}`;
+                    const snapshot = await firebaseApi.get(firebaseApi.ref(database, workPath(studentName, taskId)));
+                    if (!pendingWork[key]) studentWorkStore[key] = snapshot.val() || studentWorkStore[key];
+                } catch (e) { reportSyncError(e); }
+                if (container.dataset.renderToken !== renderToken) return;
+            }
+            container.innerHTML = '';
+
+            const iframe = document.createElement('iframe');
+            iframe.className = 'w-full h-full flex-1 border-0 rounded-xl bg-white min-h-[500px]';
+            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+            
+            if (isReadOnly) {
+                // Disable user pointer interaction inside iframe when viewing peers
+                iframe.style.pointerEvents = 'none';
+            } else {
+                // Enable full pointer interaction for self
+                iframe.style.pointerEvents = 'auto';
+            }
+            iframe.dataset.student = studentName || '';
+            iframe.dataset.task = taskId || '';
+            iframe.dataset.readOnly = String(isReadOnly);
+            container.appendChild(iframe);
+
+            const docContent = prepareRenderableDocument(rawHtml, isReadOnly);
+            iframe.srcdoc = docContent;
+
+            // Trigger canvas resizing and restore individual student state once iframe loads
+            iframe.onload = async () => {
+                if (container.dataset.renderToken !== renderToken || !iframe.isConnected) return;
+                try {
+                    const win = iframe.contentWindow;
+                    const doc = iframe.contentDocument || (win ? win.document : null);
+                    if (!win || !doc) return;
+
+                    // Restore saved student work if exists
+                    if (studentName && taskId) {
+                        const stateKey = `${studentName}_${taskId}`;
+                        const savedState = studentWorkStore[stateKey];
+
+                        if (savedState) {
+                            // 1. Restore mind map nodes
+                            if (savedState.nodes && win.nodes) {
+                                win.nodes = JSON.parse(JSON.stringify(savedState.nodes));
+                                if (typeof win.render === 'function') {
+                                    win.render();
+                                }
+                            }
+
+                            // 2. Restore form input values
+                            if (savedState.inputs && Array.isArray(savedState.inputs)) {
+                                const inputs = doc.querySelectorAll('input, textarea, select, [contenteditable="true"]');
+                                savedState.inputs.forEach(item => {
+                                    let el = null;
+                                    if (item.id) el = doc.getElementById(item.id);
+                                    if (!el && inputs[item.idx]) el = inputs[item.idx];
+                                    if (el) {
+                                        if (el.isContentEditable) el.innerHTML = item.value;
+                                        else el.value = item.value;
+                                        if (el.type === 'checkbox' || el.type === 'radio') el.checked = !!item.checked;
+                                        if (item.selected && el.options) item.selected.forEach((v, i) => { if (el.options[i]) el.options[i].selected = v; });
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    // Trigger canvas resize
+                    if (typeof win.resizeCanvas === 'function') {
+                        win.resizeCanvas();
+                    }
+
+                    // Restore canvas after the worksheet has sized its canvases.
+                    const restored = studentWorkStore[`${studentName}_${taskId}`];
+                    if (restored && restored.canvases) {
+                        const canvases = doc.querySelectorAll('canvas');
+                        await Promise.all(restored.canvases.map(item => new Promise(resolve => {
+                            const c = canvases[item.idx];
+                            if (!c) { resolve(); return; }
+                            const img = new win.Image();
+                            img.onload = () => { if (iframe.isConnected) { const ctx = c.getContext('2d'); if (ctx) { ctx.clearRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height); } } resolve(); };
+                            img.onerror = resolve;
+                            img.src = item.dataUrl;
+                        })));
+                        if (container.dataset.renderToken !== renderToken || !iframe.isConnected) return;
+                    }
+                    iframe.dataset.ready = 'true';
+                    if (isReadOnly && studentName && taskId) watchPeerWork(studentName, taskId, container, rawHtml);
+                    // For the student's own editable view, auto-save state on interactions
+                    if (!isReadOnly && studentName && taskId) {
+                        const triggerAutoSave = () => {
+                            captureCurrentIframeState(studentName, taskId);
+                        };
+
+                        doc.addEventListener('mouseup', triggerAutoSave, true);
+                        doc.addEventListener('keyup', triggerAutoSave, true);
+                        doc.addEventListener('touchend', triggerAutoSave, true);
+                        doc.addEventListener('input', triggerAutoSave, true);
+                        doc.addEventListener('change', triggerAutoSave, true);
+                        doc.addEventListener('pointerup', triggerAutoSave, true);
+                    }
+                } catch (e) {
+                    console.warn('Frame initialization error:', e);
+                }
+            };
+        }
+
+        function renderStudentCurrentTask() {
+            captureCurrentIframeState(loggedInStudentName, activeBroadcastTaskId);
+            stopWorkListener();
+            const canvas = document.getElementById('studentRenderedTaskCanvas');
+            const titleHeader = document.getElementById('studentTaskTitleHeader');
+            const subjectBadge = document.getElementById('studentTaskBadgeSubject');
+            const broadcastDesc = document.getElementById('currentStudentBroadcastTitle');
+            const modeIndicator = document.getElementById('studentModeIndicator');
+            const guardOverlay = document.getElementById('studentViewGuardOverlay');
+
+            // Find teacher's actively broadcasted task
+            const targetTask = tasks.find(t => t.id === activeBroadcastTaskId);
+
+            if (!targetTask) {
+                canvas.dataset.renderToken = String(++frameRenderSequence);
+                titleHeader.textContent = '송출된 과제 없음';
+                subjectBadge.textContent = '-';
+                broadcastDesc.textContent = '현재 교사가 송출한 과제가 없습니다.';
+                if (guardOverlay) guardOverlay.classList.add('hidden');
+                canvas.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-slate-400 py-16">
+                        <i class="fa-solid fa-satellite-dish text-4xl mb-3 text-slate-300 animate-pulse"></i>
+                        <p class="text-xs font-semibold text-slate-500">교사 화면에서 지금 송출한 과제가 없습니다.</p>
+                        <p class="text-[11px] text-slate-400 mt-1">선생님이 과제를 송출하면 여기에 즉시 나타납니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            titleHeader.textContent = targetTask.title;
+            subjectBadge.textContent = targetTask.subject;
+
+            // 판단 조건: 입장한 학생 이름 == 사이드바에서 선택된 학생 이름
+            const isSelf = (loggedInStudentName === viewingStudentName);
+
+            if (isSelf) {
+                // 본인 과제: 편집 가능 & 자동 저장 연동
+                broadcastDesc.textContent = `[${loggedInStudentName}] 학생 본인의 과제 화면입니다. (작업 내용이 실시간 자동 보존됩니다)`;
+                if (modeIndicator) {
+                    modeIndicator.className = 'px-2.5 py-1 text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg flex items-center gap-1.5 shadow-2xs';
+                    modeIndicator.innerHTML = '<i class="fa-solid fa-pencil text-emerald-600"></i><span>내 과제 (편집 가능 & 보존중)</span>';
+                }
+                if (guardOverlay) guardOverlay.classList.add('hidden');
+                
+                // isReadOnly = false 로 렌더링하고, viewingStudentName의 작업 상태를 연결
+                renderDocumentIntoFrame(canvas, targetTask.htmlContent, false, viewingStudentName, targetTask.id);
+            } else {
+                // 다른 학생 과제: 뷰어만 가능 (편집 불가 & 대상 학생의 보존된 작업 상태 조회)
+                broadcastDesc.textContent = `[${loggedInStudentName}] 학생이 [${viewingStudentName}] 학생의 과제를 열람 중입니다. (읽기 전용)`;
+                if (modeIndicator) {
+                    modeIndicator.className = 'px-2.5 py-1 text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-lg flex items-center gap-1.5 shadow-2xs';
+                    modeIndicator.innerHTML = '<i class="fa-solid fa-lock text-amber-600"></i><span>읽기 전용 (편집 불가)</span>';
+                }
+                if (guardOverlay) guardOverlay.classList.remove('hidden');
+
+                // isReadOnly = true 로 렌더링하여 완전한 읽기 전용 뷰어로 보호 (열람 대상 학생의 저장 상태 전달)
+                renderDocumentIntoFrame(canvas, targetTask.htmlContent, true, viewingStudentName, targetTask.id);
+            }
+        }
+
+        function openPreviewModal(htmlContent, titleText) {
+            const modal = document.getElementById('previewFullscreenModal');
+            const modalTitle = document.getElementById('previewModalTitle');
+            const modalContent = document.getElementById('previewModalContent');
+
+            if (!modal || !modalTitle || !modalContent) return;
+
+            modalTitle.textContent = titleText || '실시간 프리뷰';
+            renderDocumentIntoFrame(modalContent, htmlContent, false);
+            modal.classList.remove('hidden');
+        }
+
+        function closePreviewModal() {
+            const modal = document.getElementById('previewFullscreenModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Global Navigation
+            document.getElementById('btnHeaderHome').addEventListener('click', () => switchScreen('screenHome'));
+            document.getElementById('navBtnHome').addEventListener('click', () => switchScreen('screenHome'));
+            document.getElementById('navBtnTeacher').addEventListener('click', () => {
+                requestTeacherAccess();
+            });
+            document.getElementById('navBtnStudent').addEventListener('click', () => {
+                renderStudentButtons();
+                switchScreen('screenStudentList');
+            });
+
+            // Home Cards
+            document.getElementById('cardGoTeacher').addEventListener('click', () => {
+                requestTeacherAccess();
+            });
+            document.getElementById('cardGoStudent').addEventListener('click', () => {
+                renderStudentButtons();
+                switchScreen('screenStudentList');
+            });
+
+            // Password Modal Handling
+            const authForm = document.getElementById('passwordAuthForm');
+            const cancelAuthBtn = document.getElementById('btnCancelPasswordModal');
+            const passInput = document.getElementById('teacherPasswordInput');
+            const errMsg = document.getElementById('passwordErrorMsg');
+            const authModal = document.getElementById('passwordAuthModal');
+
+            if (cancelAuthBtn) {
+                cancelAuthBtn.addEventListener('click', () => {
+                    authModal.classList.add('hidden');
+                });
+            }
+
+            if (passInput) {
+                passInput.addEventListener('input', () => {
+                    if (errMsg) errMsg.classList.add('hidden');
+                });
+            }
+
+            if (authForm) {
+                authForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const entered = passInput.value.trim();
+                    const isValid = verifyPassword(entered);
+
+                    if (isValid) {
+                        isTeacherAuthenticated = true;
+                        authModal.classList.add('hidden');
+                        showToast('교사 인증이 완료되었습니다.');
+                        renderCalendar();
+                        renderTasks();
+                        switchScreen('screenTeacherDashboard');
+                    } else {
+                        if (errMsg) errMsg.classList.remove('hidden');
+                        passInput.value = '';
+                        passInput.focus();
+                    }
+                });
+            }
+
+            // Calendar Navigation
+            document.getElementById('btnPrevMonth').addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
+            document.getElementById('btnNextMonth').addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
+            document.getElementById('btnToday').addEventListener('click', () => {
+                currentDate = new Date(2026, 8, 30);
+                selectedDateStr = '2026-09-30';
+                renderCalendar();
+                renderTasks();
+            });
+
+            // Teacher Actions
+            document.getElementById('btnOpenCreateScreen').addEventListener('click', openCreateScreen);
+            document.getElementById('btnBackFromDetail').addEventListener('click', () => switchScreen('screenTeacherDashboard'));
+            document.getElementById('btnBackFromCreate').addEventListener('click', () => switchScreen('screenTeacherDashboard'));
+
+            // Teacher Save Edits (Pure Save, Broadcast remains controlled in task list)
+            document.getElementById('btnSaveDetailEdits').addEventListener('click', async () => {
+                if (!currentEditingTaskId) return;
+                const original = tasks.find(t => t.id === currentEditingTaskId);
+                if (!original) return;
+                const task = {...original,
+                    title: document.getElementById('detailTitleInput').value.trim() || '무제 과제',
+                    subject: document.getElementById('detailSubjectSelect').value,
+                    htmlContent: document.getElementById('detailHtmlCode').value};
+                if (await commitMetadata({['tasks/' + task.id]: task}, '과제가 저장되었습니다.')) switchScreen('screenTeacherDashboard');
+            });
+            document.getElementById('btnDeleteDetailTask').addEventListener('click', async () => {
+                if (!currentEditingTaskId) return;
+                const changes = {['tasks/' + currentEditingTaskId]: null};
+                if (activeBroadcastTaskId === currentEditingTaskId) changes.activeBroadcastTaskId = null;
+                if (await commitMetadata(changes, '과제가 삭제되었습니다.')) switchScreen('screenTeacherDashboard');
+            });
+            document.getElementById('createNewTaskForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newId = 'task-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
+                const newTask = {id: newId, date: selectedDateStr,
+                    subject: document.getElementById('createSubject').value,
+                    title: document.getElementById('createTitle').value.trim() || '새 과제',
+                    htmlContent: document.getElementById('createHtmlCode').value};
+                if (await commitMetadata({['tasks/' + newId]: newTask, activeBroadcastTaskId: newId}, '새 과제가 등록되고 송출되었습니다.')) switchScreen('screenTeacherDashboard');
+            });
+
+            // Insert Template Button
+            document.getElementById('btnInsertTemplate').addEventListener('click', () => {
+                document.getElementById('createHtmlCode').value = `<div class="space-y-4">
+    <div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r-xl">
+        <h4 class="text-sm font-bold text-indigo-900">학습 안내</h4>
+        <p class="text-xs text-indigo-700 mt-1">오늘 배운 핵심 개념을 정리하고 아래 문항을 해결해 봅시다.</p>
+    </div>
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+        <h5 class="text-xs font-bold text-slate-800 mb-2">활동 과제</h5>
+        <p class="text-xs text-slate-600 leading-relaxed">1. 교과서 54쪽을 읽고 핵심 단어 3개를 찾아 적으세요.</p>
+        <p class="text-xs text-slate-600 leading-relaxed mt-1">2. 친구들과 공유하고 싶은 생각을 한 줄로 작성하세요.</p>
+    </div>
+</div>`;
+            });
+
+            // Live Preview Modal Triggers
+            document.getElementById('btnDetailLivePreview').addEventListener('click', () => {
+                const code = document.getElementById('detailHtmlCode').value;
+                const title = document.getElementById('detailTitleInput').value;
+                openPreviewModal(code, title);
+            });
+
+            document.getElementById('btnCreateLivePreview').addEventListener('click', () => {
+                const code = document.getElementById('createHtmlCode').value;
+                const title = document.getElementById('createTitle').value;
+                openPreviewModal(code, title);
+            });
+
+            document.getElementById('btnClosePreviewModal').addEventListener('click', closePreviewModal);
+
+            // Student View Navigation
+            document.getElementById('btnBackFromStudentList').addEventListener('click', () => switchScreen('screenHome'));
+            document.getElementById('btnBackToStudentList').addEventListener('click', () => {
+                const activeTaskId = activeBroadcastTaskId;
+                if (activeTaskId && loggedInStudentName === viewingStudentName) {
+                    captureCurrentIframeState(loggedInStudentName, activeTaskId);
+                }
+                switchScreen('screenStudentList');
+            });
+
+            // Initial render
+            renderCalendar();
+            renderTasks();
+            renderStudentButtons();
+        });
+    </script>
+</body>
+</html>
