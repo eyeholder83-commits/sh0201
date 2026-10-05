@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>교실의 물체 길이 재기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Pretendard', sans-serif;
+    }
+    /* 커스텀 스크롤바 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    /* 칠판 텍스처 느낌 */
+    .chalkboard-bg {
+      background: radial-gradient(circle at 50% 30%, #1e3a34 0%, #0f231f 100%);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen relative antialiased selection:bg-indigo-500 selection:text-white">
+
+  <main class="w-full min-h-screen pt-4 pb-20 px-3 sm:px-6 md:px-10 max-w-7xl mx-auto">
+
+    <!-- ========================================== -->
+    <!-- 1. 교사뷰 (Teacher View) -->
+    <!-- ========================================== -->
+    <section id="view-teacher" class="view-container hidden animate-fade-in space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-xs font-bold">교사용 대시보드</span>
+            <span class="text-xs text-slate-400">총 학생: <strong id="total-student-count" class="text-slate-700">0</strong>명</span>
+          </div>
+          <h1 class="text-2xl font-black text-slate-800 mt-1">조 편성 및 활동 설정</h1>
+          <p class="text-sm text-slate-500">조의 개수를 조절하고 학생을 다른 조로 이동하거나 추가할 수 있습니다.</p>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap justify-end">
+          <!-- 조 관리 버튼군 -->
+          <button onclick="addGroup()" class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-3.5 py-2 rounded-xl shadow-sm transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            조 추가
+          </button>
+          <button onclick="resetToInitialData()" class="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium px-3 py-2 rounded-xl transition" title="초기 명단 복원">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            초기화
+          </button>
+
+          <div class="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
+
+          <!-- 구석에 배치된 학생뷰 및 칠판뷰 이동 버튼 -->
+          <button onclick="switchView('student')" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-3.5 py-2 rounded-xl shadow-sm transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            <span>학생뷰 보기</span>
+          </button>
+          <button onclick="switchView('board')" class="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-3.5 py-2 rounded-xl shadow-sm transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <span>칠판뷰 보기</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 조별 관리 카드 그리드 -->
+      <div id="teacher-groups-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+        <!-- JS로 렌더링 -->
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 2. 학생뷰 (Student View) -->
+    <!-- ========================================== -->
+    <section id="view-student" class="view-container hidden animate-fade-in relative">
+      <!-- 학생뷰 왼쪽 교사뷰 버튼 -->
+      <div class="fixed top-4 left-4 z-[60]">
+        <button onclick="switchView('teacher')" class="text-xs text-slate-400 hover:text-slate-700 bg-white/80 border border-slate-200 px-3 py-1.5 rounded-lg transition shadow-xs flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          교사뷰
+        </button>
+      </div>
+
+      <!-- 2-1. 학생 로그인 카드 (더 크고 쾌적한 입력창) -->
+      <div id="student-login-box" role="dialog" aria-modal="true" aria-labelledby="student-login-title" class="fixed inset-0 z-40 bg-slate-900/30 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="w-full max-w-2xl my-auto bg-white rounded-3xl p-8 sm:p-12 shadow-2xl border border-slate-200 text-center transition-all">
+        <div class="w-20 h-20 mx-auto mb-6 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center shadow-inner">
+          <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </div>
+        <h2 id="student-login-title" class="text-3xl font-black text-slate-800">교실 물체 길이 재기</h2>
+        <p class="text-base text-slate-500 mt-2 mb-8">자신의 이름을 키보드로 직접 입력하고 우리 조 페이지로 입장하세요.</p>
+
+        <form onsubmit="handleStudentLogin(event)" class="space-y-6 text-left max-w-lg mx-auto">
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-2">학생 이름</label>
+            <input type="text" id="student-name-input" placeholder="이름을 입력하세요 (예: 김서아, 김하랑...)" autocomplete="off" autofocus
+                   class="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 font-bold text-lg text-slate-800 placeholder-slate-400 transition shadow-sm">
+          </div>
+          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-extrabold text-lg py-4 rounded-2xl shadow-lg shadow-emerald-600/20 transition flex items-center justify-center gap-2">
+            <span>내 조 입장하기</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </button>
+        </form>
+      </div>
+
+      </div>
+
+      <!-- 2-2. 학생 로그인 후 조 활동 페이지 -->
+      <div id="student-workspace" class="hidden space-y-6">
+        <!-- 상단 내 정보 바 -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div id="student-group-badge" class="px-4 py-2 bg-emerald-600 text-white font-black text-xl rounded-xl shadow-sm">
+              1조
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 id="current-student-display" class="text-xl font-bold text-slate-800">김서아 학생</h2>
+                <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">활동 중</span>
+              </div>
+              <p id="group-members-list-display" class="text-xs text-slate-500 mt-1">조원: 김서아, 박민제, 이대운...</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 self-end md:self-auto">
+            <button onclick="openAddRecordModal()" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl shadow-sm transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+              새 측정 기록 추가
+            </button>
+            <!-- 요구사항: '다른 이름으로 로그인' 버튼 대신 '로그아웃' 버튼 배치 -->
+            <button onclick="logoutStudent()" class="flex items-center gap-1.5 text-xs text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 font-bold px-3.5 py-2.5 rounded-xl border border-rose-200 transition shadow-xs">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+              로그아웃
+            </button>
+          </div>
+        </div>
+
+        <!-- 조 활동 표 -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="p-4 sm:p-5 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100 flex items-center justify-between">
+            <div>
+              <h3 class="font-extrabold text-slate-800 text-base sm:text-lg flex items-center gap-2">
+                <span>📏 우리 조의 물체 길이 재기 탐구표</span>
+              </h3>
+              <p class="text-xs text-slate-600 mt-0.5">자유롭게 입력해도 저장 시 자동으로 규격(소문자, 띄어쓰기)이 맞춰집니다.</p>
+            </div>
+            <span id="group-record-count-badge" class="text-xs font-bold bg-white text-emerald-700 px-3 py-1 rounded-full border border-emerald-200 shadow-sm">
+              기록 0건
+            </span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50/75 text-slate-600 text-xs uppercase tracking-wider font-bold border-b border-slate-200">
+                  <th class="py-3.5 px-4 w-32">학생</th>
+                  <th class="py-3.5 px-4 min-w-[140px]">물체</th>
+                  <th class="py-3.5 px-4 min-w-[120px]">길이예상</th>
+                  <th class="py-3.5 px-4 min-w-[120px]">길이재기</th>
+                  <th class="py-3.5 px-4 w-32 text-center">차이(오차)</th>
+                  <th class="py-3.5 px-4 w-24 text-center">관리</th>
+                </tr>
+              </thead>
+              <tbody id="student-table-body" class="divide-y divide-slate-100 text-sm">
+                <!-- JS 렌더링 -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 빈 상태 메시지 -->
+          <div id="student-table-empty" class="hidden p-12 text-center text-slate-400">
+            <svg class="w-12 h-12 mx-auto mb-3 text-slate-300 stroke-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <p class="font-medium text-slate-600">아직 등록된 측정 기록이 없습니다.</p>
+            <p class="text-xs text-slate-400 mt-1">상단의 [+ 새 측정 기록 추가] 버튼을 눌러 기록을 시작해보세요!</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 3. 칠판뷰 (Chalkboard View - 대형 모니터/빔용) -->
+    <!-- ========================================== -->
+    <section id="view-board" class="view-container hidden animate-fade-in space-y-6 relative">
+      <!-- 교사용 복귀 버튼 -->
+      <div class="flex justify-end">
+        <button onclick="switchView('teacher')" class="text-xs text-slate-300 hover:text-white bg-black/40 border border-white/20 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          교사뷰로 돌아가기
+        </button>
+      </div>
+
+      <!-- 칠판 테마 헤더 카드 (과목 정보) -->
+      <div class="chalkboard-bg text-white p-6 rounded-3xl shadow-2xl border-4 border-amber-900/60 relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-xs px-2.5 py-0.5 rounded-full font-bold">수학 3학년 1학기</span>
+              <span class="text-xs text-emerald-200">실시간 협동 칠판</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
+              <span>교실의 물체 길이 재기</span>
+              <span class="text-emerald-400 text-lg font-normal">| 각 조별 실시간 현황</span>
+            </h1>
+          </div>
+          <div class="flex items-center gap-3 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-2xl border border-white/10">
+            <div class="text-center">
+              <p class="text-[11px] text-slate-300">총 측정 횟수</p>
+              <p id="board-total-measurements" class="text-lg font-extrabold text-amber-300">0회</p>
+            </div>
+            <div class="w-px h-8 bg-white/20"></div>
+            <div class="text-center">
+              <p class="text-[11px] text-slate-300">가장 적극적인 조</p>
+              <p id="board-top-group" class="text-lg font-extrabold text-emerald-300">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 모든 조의 측정 표를 바둑판(그리드) 형식으로 칠판에 실시간 표시 -->
+      <div id="board-groups-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- JS 렌더링 -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 기록 추가/수정 모달 -->
+  <div id="record-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 id="record-modal-title" class="text-lg font-black text-slate-800">물체 길이 기록하기</h3>
+        <button onclick="closeRecordModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="record-form" onsubmit="handleSaveRecord(event)" class="space-y-4 mt-4">
+        <input type="hidden" id="record-id">
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">기록자 (본인)</label>
+          <div id="modal-student-display" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-200 font-bold text-slate-800 text-sm">
+            <!-- 현재 로그인된 학생 이름 고정 (타인 사칭 방지) -->
+          </div>
+          <input type="hidden" id="modal-student-name">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">잰 물체 이름</label>
+          <input type="text" id="modal-item-input" required placeholder="예: 수학책 가로, 필통, 지우개, 책상"
+                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          <div class="flex gap-1.5 mt-2 flex-wrap text-xs">
+            <span class="text-slate-400 self-center">추천:</span>
+            <button type="button" onclick="fillItem('수학책')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded-md text-slate-600">수학책</button>
+            <button type="button" onclick="fillItem('연필')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded-md text-slate-600">연필</button>
+            <button type="button" onclick="fillItem('필통')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded-md text-slate-600">필통</button>
+            <button type="button" onclick="fillItem('책상')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded-md text-slate-600">책상</button>
+            <button type="button" onclick="fillItem('사물함')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded-md text-slate-600">사물함</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">길이예상 (어림)</label>
+            <div class="relative">
+              <input type="text" id="modal-est-input" required placeholder="예: 1m30cm, 25cm"
+                     class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">예: 1m, 30cm, 1m20</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">길이재기 (실측)</label>
+            <div class="relative">
+              <input type="text" id="modal-meas-input" required placeholder="예: 1M 28CM, 26"
+                     class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">저장 시 소문자/띄어쓰기 자동 변환</p>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeRecordModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">취소</button>
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition shadow-md">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 삭제 확인용 보안 모달 (서로 간섭 방지: 작성자 본인의 이름을 직접 써야 삭제 허용) -->
+  <div id="delete-confirm-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-rose-100">
+      <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+      <h3 class="text-lg font-black text-slate-800 text-center">기록 삭제 확인</h3>
+      <p class="text-xs text-slate-500 text-center mt-1.5 leading-relaxed">
+        서로의 기록을 함부로 지우지 않도록 보호하고 있습니다.<br>
+        삭제하려면 작성자 본인 이름(<strong id="delete-target-author" class="text-rose-600"></strong>)을 직접 쓰세요.
+      </p>
+
+      <form onsubmit="handleConfirmDelete(event)" class="space-y-4 mt-4">
+        <input type="hidden" id="delete-record-id">
+        <input type="hidden" id="delete-group-id">
+        <input type="hidden" id="delete-expected-name">
+
+        <div>
+          <input type="text" id="delete-name-input" required placeholder="이름을 정확히 입력하세요" autocomplete="off"
+                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-center text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none">
+        </div>
+
+        <div class="flex gap-2">
+          <button type="button" onclick="closeDeleteModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">취소</button>
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md">삭제 승인</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 교사용 학생 추가/이동 모달 -->
+  <div id="teacher-student-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100">
+      <h3 class="text-lg font-black text-slate-800 pb-2 border-b border-slate-100">새 학생 추가</h3>
+      <form onsubmit="handleTeacherAddStudent(event)" class="space-y-4 mt-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">배정할 조</label>
+          <select id="teacher-target-group" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-semibold text-slate-800">
+            <!-- 조 목록 로드 -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">학생 이름</label>
+          <input type="text" id="teacher-student-name" required placeholder="예: 홍길동" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-semibold text-slate-800">
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeTeacherStudentModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold">취소</button>
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md">추가</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 토스트 알림창 -->
+  <div id="toast-box" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 opacity-0 translate-y-3">
+    <div id="toast-content" class="bg-slate-900 text-white px-5 py-2.5 rounded-full shadow-2xl text-sm font-semibold flex items-center gap-2">
+      <span id="toast-msg">알림 메시지</span>
+    </div>
+  </div>
+
+
+  <div id="teacher-password-modal" role="dialog" aria-modal="true" aria-labelledby="teacher-password-title" class="hidden fixed inset-0 z-[70] bg-slate-900/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+      <h2 id="teacher-password-title" class="font-bold text-xl text-slate-800 mb-2">교사뷰 입장</h2>
+      <p class="text-sm text-slate-500 mb-5">교사 비밀번호를 입력해주세요.</p>
+      <form onsubmit="checkTeacherPassword(event)">
+        <label for="teacher-password-input" class="block text-sm font-bold text-slate-700 mb-2">비밀번호</label>
+        <input id="teacher-password-input" type="password" inputmode="numeric" autocomplete="off" required class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none">
+        <p id="teacher-password-error" role="alert" class="text-sm text-rose-600 min-h-6 mt-2"></p>
+        <div class="flex gap-2 mt-3">
+          <button type="button" onclick="closeTeacherPasswordModal()" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold">취소</button>
+          <button id="teacher-password-submit" type="submit" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold">입장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    /* -------------------------------------------------------------
+     * 1. 초기 데이터 모델 (요청받은 4개조 명단 완벽 반영)
+     * ------------------------------------------------------------- */
+    const initialClassData = {
+      groups: [
+        {
+          id: 1,
+          name: "1조",
+          members: ["김서아", "박민제", "이대운", "이진서", "한규빈", "현지우"],
+          records: [
+            { id: 101, student: "김서아", item: "수학익힘책 가로", est: "20cm", meas: "21cm" },
+            { id: 102, student: "박민제", item: "연필깎이", est: "10cm", meas: "9.5cm" },
+            { id: 103, student: "한규빈", item: "30cm 플라스틱 자", est: "30cm", meas: "31cm" }
+          ]
+        },
+        {
+          id: 2,
+          name: "2조",
+          members: ["김하랑", "박선우", "김수현", "양수빈", "이서율", "황지우"],
+          records: [
+            { id: 201, student: "김하랑", item: "1인용 책상 가로", est: "60cm", meas: "65cm" },
+            { id: 202, student: "양수빈", item: "필통 높이", est: "5cm", meas: "4.5cm" }
+          ]
+        },
+        {
+          id: 3,
+          name: "3조",
+          members: ["김윤아", "나예린", "유소영", "이채원", "이하린"],
+          records: [
+            { id: 301, student: "김윤아", item: "네임펜 길이", est: "13cm", meas: "14cm" },
+            { id: 302, student: "이채원", item: "사물함 문 가로", est: "35cm", meas: "38cm" }
+          ]
+        },
+        {
+          id: 4,
+          name: "4조",
+          members: ["김태영", "이새봄", "이초은", "이태환", "한유은"],
+          records: [
+            { id: 401, student: "김태영", item: "텀블러 높이", est: "18cm", meas: "19.5cm" },
+            { id: 402, student: "이새봄", item: "미술 가위", est: "15cm", meas: "16cm" }
+          ]
+        }
+      ]
+    };
+
+    // 현재 앱 상태 (동일 탭 내에서 교사, 학생, 칠판 뷰가 즉각 동기화)
+    let appData = JSON.parse(JSON.stringify(initialClassData));
+    let currentView = 'student'; // 학생뷰로 시작
+    let loggedInStudent = null; // { name: '김서아', group: {...} }
+
+
+    let databaseReady = false;
+    let databaseConnected = false;
+    let firebaseApi, sharedRef;
+    const statusBox = document.createElement('div');
+    statusBox.style.cssText = 'position:fixed;bottom:8px;left:12px;z-index:60;background:white;padding:5px 10px;border-radius:8px;font-size:12px;color:#475569;box-shadow:0 1px 5px #0002';
+    statusBox.textContent = 'Firebase 연결 중…';
+    document.body.appendChild(statusBox);
+
+    function normalizeData(value) {
+      return { groups: Object.values(value?.groups || {}).filter(Boolean).map(group => ({
+        ...group, members: Object.values(group.members || {}).filter(Boolean),
+        records: Object.values(group.records || {}).filter(Boolean)
+      })) };
+    }
+
+    function applySharedData(value) {
+      appData = normalizeData(value);
+      if (loggedInStudent) {
+        const group = appData.groups.find(g => g.members.includes(loggedInStudent.name));
+        if (group) loggedInStudent.groupId = group.id;
+        else { loggedInStudent = null; closeRecordModal(); closeDeleteModal(); }
+      }
+      if (currentView === 'teacher') renderTeacherView();
+      if (currentView === 'board') renderBoardView();
+      if (currentView === 'student') {
+        // Keep the name being typed when a different tablet saves a record.
+        if (loggedInStudent) renderStudentView();
+        else if (!document.getElementById('student-workspace').classList.contains('hidden')) renderStudentView();
+      }
+    }
+
+    async function changeSharedData(mutate, message) {
+      if (!databaseReady || !databaseConnected) {
+        showToast('Firebase 연결을 확인한 뒤 다시 시도해주세요.');
+        return false;
+      }
+      try {
+        const result = await firebaseApi.runTransaction(sharedRef, value => {
+          if (value === null) return;
+          const data = normalizeData(value);
+          if (mutate(data) === false) return;
+          return data;
+        }, { applyLocally: false });
+        if (!result.committed) { showToast('명단이나 기록이 변경되었습니다. 확인 후 다시 시도해주세요.'); return false; }
+        applySharedData(result.snapshot.val());
+        showToast(message);
+        return true;
+      } catch (error) {
+        console.error('Firebase 저장 오류', error);
+        showToast('저장하지 못했습니다. 인터넷 연결과 Firebase 규칙을 확인해주세요.');
+        return false;
+      }
+    }
+
+    async function connectFirebase() {
+      try {
+        const [appSdk, dbSdk] = await Promise.all([
+          import('https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js'),
+          import('https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js')
+        ]);
+        firebaseApi = dbSdk;
+        const app = appSdk.initializeApp({
+          apiKey: 'AIzaSyBDEZZtyOs5dIc2woolx1UvSx2qCLgZI0o',
+          authDomain: 'meter-expect.firebaseapp.com',
+          databaseURL: 'https://meter-expect-default-rtdb.asia-southeast1.firebasedatabase.app',
+          projectId: 'meter-expect',
+          storageBucket: 'meter-expect.firebasestorage.app',
+          messagingSenderId: '551648266265',
+          appId: '1:551648266265:web:9bdd58549e34151e7a0288'
+        });
+        const database = dbSdk.getDatabase(app);
+        sharedRef = dbSdk.ref(database, 'meterClass/v1');
+        dbSdk.onValue(dbSdk.ref(database, '.info/connected'), snapshot => {
+          databaseConnected = snapshot.val() === true;
+          statusBox.textContent = databaseConnected ? (databaseReady ? 'Firebase 연결됨' : '기록 불러오는 중…') : '연결 끊김 · 저장 대기';
+        });
+        // Only initialize an empty database; never replace existing classroom data.
+        await dbSdk.runTransaction(sharedRef, value => value === null ? initialClassData : undefined, { applyLocally: false });
+        dbSdk.onValue(sharedRef, snapshot => {
+          databaseReady = true;
+          applySharedData(snapshot.val());
+          statusBox.textContent = databaseConnected ? 'Firebase 연결됨' : '연결 끊김 · 저장 대기';
+        }, error => {
+          databaseReady = false;
+          statusBox.textContent = 'Firebase 읽기 실패';
+          showToast('기록을 불러오지 못했습니다. Firebase 규칙을 확인해주세요.');
+          console.error(error);
+        });
+      } catch (error) {
+        databaseReady = false;
+        statusBox.textContent = 'Firebase 연결 실패';
+        showToast('Firebase에 연결하지 못했습니다. 인터넷 연결과 규칙을 확인해주세요.');
+        console.error(error);
+      }
+    }
+
+    let teacherEntryAllowed = false;
+    let teacherPasswordOpener = null;
+    function openTeacherPasswordModal() {
+      teacherPasswordOpener = document.activeElement;
+      document.getElementById('teacher-password-input').value = '';
+      document.getElementById('teacher-password-error').textContent = '';
+      document.getElementById('teacher-password-modal').classList.remove('hidden');
+      document.getElementById('teacher-password-input').focus();
+    }
+    function closeTeacherPasswordModal() {
+      document.getElementById('teacher-password-modal').classList.add('hidden');
+      document.getElementById('teacher-password-input').value = '';
+      teacherPasswordOpener?.focus();
+    }
+    async function checkTeacherPassword(e) {
+      e.preventDefault();
+      const button = document.getElementById('teacher-password-submit');
+      const input = document.getElementById('teacher-password-input');
+      button.disabled = true;
+      try {
+        const bytes = new TextEncoder().encode('meter-teacher-access-v1:' + input.value);
+        const hash = await crypto.subtle.digest('SHA-256', bytes);
+        const result = Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('');
+        input.value = '';
+        if (result !== 'b9cf311fe81200d1e3154663e8f780197be367dc4e0cc46db3e88ba4db88e1b7') {
+          document.getElementById('teacher-password-error').textContent = '비밀번호가 맞지 않습니다.';
+          input.focus();
+          return;
+        }
+        if (document.getElementById('teacher-password-modal').classList.contains('hidden')) return;
+        closeTeacherPasswordModal();
+        teacherEntryAllowed = true;
+        switchView('teacher');
+      } catch (error) {
+        input.value = '';
+        document.getElementById('teacher-password-error').textContent = '비밀번호 확인을 위해 HTTPS 주소로 접속해주세요.';
+      } finally { button.disabled = false; }
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !document.getElementById('teacher-password-modal').classList.contains('hidden')) closeTeacherPasswordModal();
+    });
+
+    function switchView(viewName) {
+      if (viewName === 'teacher' && currentView !== 'teacher') {
+        if (!teacherEntryAllowed) { openTeacherPasswordModal(); return; }
+        teacherEntryAllowed = false;
+      }
+      currentView = viewName;
+      document.querySelectorAll('.view-container').forEach(el => el.classList.add('hidden'));
+
+      const targetView = document.getElementById(`view-${viewName}`);
+      if (targetView) targetView.classList.remove('hidden');
+
+      // 각 뷰별 렌더링 호출
+      if (viewName === 'teacher') renderTeacherView();
+      if (viewName === 'student') renderStudentView();
+      if (viewName === 'board') renderBoardView();
+    }
+
+    function showToast(message) {
+      const box = document.getElementById('toast-box');
+      const msg = document.getElementById('toast-msg');
+      msg.textContent = message;
+      box.classList.remove('opacity-0', 'translate-y-3');
+      box.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        box.classList.remove('opacity-100', 'translate-y-0');
+        box.classList.add('opacity-0', 'translate-y-3');
+      }, 2300);
+    }
+
+    /* -------------------------------------------------------------
+     * 2. 교사뷰 로직
+     * ------------------------------------------------------------- */
+    function renderTeacherView() {
+      const grid = document.getElementById('teacher-groups-grid');
+      let totalStudents = 0;
+
+      grid.innerHTML = appData.groups.map(group => {
+        totalStudents += group.members.length;
+        const memberPills = group.members.map(member => `
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-900 text-xs font-semibold">
+            ${member}
+            <button onclick="removeStudentFromGroup(${group.id}, '${member}')" class="text-indigo-400 hover:text-rose-600 font-bold ml-0.5" title="삭제">&times;</button>
+          </span>
+        `).join('');
+
+        return `
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">${group.id}</span>
+                  <h3 class="font-bold text-slate-800 text-base">${group.name}</h3>
+                </div>
+                <span class="text-xs bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full">${group.members.length}명</span>
+              </div>
+
+              <div class="mb-4">
+                <div class="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wide">학생 명단</div>
+                <div class="flex flex-wrap gap-1.5 min-h-[50px]">
+                  ${memberPills || '<span class="text-xs text-slate-300 italic">배정된 학생이 없습니다.</span>'}
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 space-y-2">
+              <div class="text-xs text-slate-500 flex justify-between">
+                <span>등록된 측정 표</span>
+                <span class="font-bold text-slate-700">${group.records.length}건</span>
+              </div>
+              <div class="flex gap-1.5">
+                <button onclick="openTeacherStudentModal(${group.id})" class="flex-1 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-xl transition text-center">
+                  + 학생 추가
+                </button>
+                ${appData.groups.length > 2 ? `
+                  <button onclick="removeGroup(${group.id})" class="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold text-xs rounded-xl transition" title="조 삭제">
+                    삭제
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('total-student-count').textContent = totalStudents;
+    }
+
+    async function addGroup() {
+      await changeSharedData(data => {
+        const id = Math.max(0, ...data.groups.map(g => g.id)) + 1;
+        data.groups.push({ id, name: `${id}조`, members: [], records: [] });
+      }, '새 조가 추가되었습니다.');
+    }
+
+    async function removeGroup(groupId) {
+      const group = appData.groups.find(g => g.id === groupId);
+      if (!group) return;
+      if (group.members.length) { showToast('학생을 먼저 이동하거나 제외해주세요.'); return; }
+      await changeSharedData(data => {
+        const current = data.groups.find(g => g.id === groupId);
+        if (!current || current.members.length || data.groups.length <= 2) return false;
+        data.groups = data.groups.filter(g => g.id !== groupId);
+      }, `${group.name}가 삭제되었습니다.`);
+    }
+
+    async function removeStudentFromGroup(groupId, studentName) {
+      await changeSharedData(data => {
+        const group = data.groups.find(g => g.id === groupId);
+        if (!group) return false;
+        group.members = group.members.filter(name => name !== studentName);
+      }, `${studentName} 학생을 제외했습니다.`);
+    }
+
+    function openTeacherStudentModal(groupId = null) {
+      const select = document.getElementById('teacher-target-group');
+      select.innerHTML = appData.groups.map(g => `
+        <option value="${g.id}" ${g.id === groupId ? 'selected' : ''}>${g.name}</option>
+      `).join('');
+      document.getElementById('teacher-student-name').value = '';
+      document.getElementById('teacher-student-modal').classList.remove('hidden');
+    }
+
+    function closeTeacherStudentModal() {
+      document.getElementById('teacher-student-modal').classList.add('hidden');
+    }
+
+    async function handleTeacherAddStudent(e) {
+      e.preventDefault();
+      const targetGroupId = Number(document.getElementById('teacher-target-group').value);
+      const studentName = document.getElementById('teacher-student-name').value.trim();
+      if (!studentName) return;
+      if (appData.groups.some(g => g.members.includes(studentName))) { showToast('이미 등록된 학생입니다.'); return; }
+      const saved = await changeSharedData(data => {
+        if (data.groups.some(g => g.members.includes(studentName))) return false;
+        const group = data.groups.find(g => g.id === targetGroupId);
+        if (!group) return false;
+        group.members.push(studentName);
+      }, `${studentName} 학생을 추가했습니다.`);
+      if (saved) closeTeacherStudentModal();
+    }
+
+    async function resetToInitialData() {
+      if (!confirm('모든 기기의 명단과 측정 기록을 처음 상태로 초기화할까요?')) return;
+      await changeSharedData(data => {
+        data.groups = JSON.parse(JSON.stringify(initialClassData.groups));
+      }, '처음 명단과 기록으로 초기화되었습니다.');
+    }
+
+    /* -------------------------------------------------------------
+     * 3. 학생뷰 로직 (직접 이름 입력 로그인 & 테이블 관리)
+     * ------------------------------------------------------------- */
+    function renderStudentView() {
+      if (loggedInStudent) {
+        document.getElementById('student-login-box').classList.add('hidden');
+        document.getElementById('student-workspace').classList.remove('hidden');
+        renderStudentWorkspace();
+      } else {
+        document.getElementById('student-login-box').classList.remove('hidden');
+        document.getElementById('student-workspace').classList.add('hidden');
+        const input = document.getElementById('student-name-input');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+      }
+    }
+
+    function handleStudentLogin(e) {
+      e.preventDefault();
+      const input = document.getElementById('student-name-input');
+      const name = input.value.trim();
+      loginWithStudentName(name);
+    }
+
+    function loginWithStudentName(name) {
+      if (!databaseReady) { showToast('Firebase 기록을 불러온 후 로그인해주세요.'); return; }
+      if (!name) {
+        showToast('이름을 입력해주세요.');
+        return;
+      }
+
+      // 조 찾기
+      let foundGroup = null;
+      for (const group of appData.groups) {
+        if (group.members.includes(name)) {
+          foundGroup = group;
+          break;
+        }
+      }
+
+      if (!foundGroup) {
+        showToast(`'${name}' 학생을 명단에서 찾을 수 없습니다. 이름을 정확히 입력해주세요.`);
+        return;
+      }
+
+      loggedInStudent = {
+        name: name,
+        groupId: foundGroup.id
+      };
+
+      showToast(`환영합니다! ${foundGroup.name} ${name} 학생`);
+      renderStudentView();
+    }
+
+    function logoutStudent() {
+      loggedInStudent = null;
+      document.getElementById('student-name-input').value = '';
+      showToast('로그아웃 되었습니다.');
+      renderStudentView();
+    }
+
+    function renderStudentWorkspace() {
+      if (!loggedInStudent) return;
+      const group = appData.groups.find(g => g.id === loggedInStudent.groupId);
+      if (!group) {
+        logoutStudent();
+        return;
+      }
+
+      // 상단 배지 업데이트
+      document.getElementById('student-group-badge').textContent = group.name;
+      document.getElementById('current-student-display').textContent = `${loggedInStudent.name} 학생`;
+      document.getElementById('group-members-list-display').textContent = `조원: ${group.members.join(', ')}`;
+      document.getElementById('group-record-count-badge').textContent = `기록 ${group.records.length}건`;
+
+      // 표 렌더링
+      const tbody = document.getElementById('student-table-body');
+      const emptyBox = document.getElementById('student-table-empty');
+
+      if (group.records.length === 0) {
+        tbody.innerHTML = '';
+        emptyBox.classList.remove('hidden');
+      } else {
+        emptyBox.classList.add('hidden');
+        tbody.innerHTML = group.records.map((rec) => {
+          const diffResult = calculateDifference(rec.est, rec.meas);
+          const isMyRecord = rec.student === loggedInStudent.name;
+
+          return `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100 ${isMyRecord ? 'bg-emerald-50/40' : ''}">
+              <td class="py-3.5 px-4 font-bold text-slate-800 flex items-center gap-1.5">
+                ${rec.student}
+                ${isMyRecord ? '<span class="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded">나</span>' : ''}
+              </td>
+              <td class="py-3.5 px-4 font-semibold text-slate-700">
+                <span class="inline-block bg-slate-100 px-2 py-0.5 rounded text-xs text-slate-800 font-bold">${rec.item}</span>
+              </td>
+              <td class="py-3.5 px-4 font-medium text-amber-700 font-mono">${rec.est}</td>
+              <td class="py-3.5 px-4 font-bold text-emerald-700 font-mono">${rec.meas}</td>
+              <td class="py-3.5 px-4 text-center">
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${diffResult.badgeClass}">
+                  ${diffResult.text}
+                </span>
+              </td>
+              <td class="py-3.5 px-4 text-center">
+                <div class="flex items-center justify-center gap-1">
+                  <!-- 본인 기록만 수정 가능 (간섭 방지) -->
+                  <button onclick="editRecord(${group.id}, ${rec.id})" 
+                          class="p-1.5 rounded-lg transition ${isMyRecord ? 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50' : 'text-slate-300 hover:text-slate-400'}" 
+                          title="${isMyRecord ? '수정하기' : '본인 기록만 수정할 수 있습니다'}">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                  </button>
+                  <!-- 삭제 시 반드시 이름을 써야 삭제 가능 -->
+                  <button onclick="requestDeleteRecord(${group.id}, ${rec.id}, '${rec.student}')" 
+                          class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" 
+                          title="삭제 (이름 확인 필요)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    /* -------------------------------------------------------------
+     * 길이 문자열 자동 서식화 및 정규화
+     * 규칙: 1m, 1m30cm, 30cm, 1M 20 등 대소문자/공백 무관 입력 허용
+     * -> 단위는 소문자(m, cm), 띄어쓰기 규격화 ("1m 30cm", "30cm", "1m")
+     * ------------------------------------------------------------- */
+    function formatLengthString(input) {
+      if (!input) return '';
+      let raw = input.trim().toLowerCase().replace(/\s+/g, '');
+
+      // 1. m와 cm 동시 포함 (예: 1m30cm, 1m30)
+      const bothMatch = raw.match(/^(\d+(?:\.\d+)?)\s*m\s*(\d+(?:\.\d+)?)\s*(?:cm)?$/);
+      if (bothMatch) {
+        return `${bothMatch[1]}m ${bothMatch[2]}cm`;
+      }
+
+      // 2. m만 있는 경우 (예: 1m, 2.5m)
+      const mOnlyMatch = raw.match(/^(\d+(?:\.\d+)?)\s*m$/);
+      if (mOnlyMatch) {
+        return `${mOnlyMatch[1]}m`;
+      }
+
+      // 3. cm만 있는 경우 또는 순수 숫자 (예: 30cm, 30 -> 30cm)
+      const cmMatch = raw.match(/^(\d+(?:\.\d+)?)\s*(?:cm)?$/);
+      if (cmMatch) {
+        return `${cmMatch[1]}cm`;
+      }
+
+      // 4. 유연한 복합 파싱
+      let mPart = null;
+      let cmPart = null;
+      const mMatch = raw.match(/(\d+(?:\.\d+)?)\s*m/);
+      if (mMatch) {
+        mPart = mMatch[1];
+        raw = raw.replace(mMatch[0], '');
+      }
+      const numMatch = raw.match(/(\d+(?:\.\d+)?)/);
+      if (numMatch) {
+        cmPart = numMatch[1];
+      }
+
+      if (mPart && cmPart) return `${mPart}m ${cmPart}cm`;
+      if (mPart) return `${mPart}m`;
+      if (cmPart) return `${cmPart}cm`;
+
+      return input.trim().toLowerCase();
+    }
+
+    /* 문자열을 총 cm 단위로 변환하여 오차 계산에 활용 */
+    function parseToTotalCm(lengthStr) {
+      if (!lengthStr) return NaN;
+      let s = lengthStr.trim().toLowerCase().replace(/\s+/g, '');
+      let totalCm = 0;
+      let matched = false;
+
+      const mMatch = s.match(/(\d+(?:\.\d+)?)\s*m/);
+      if (mMatch) {
+        totalCm += parseFloat(mMatch[1]) * 100;
+        s = s.replace(mMatch[0], '');
+        matched = true;
+      }
+
+      const cmMatch = s.match(/(\d+(?:\.\d+)?)/);
+      if (cmMatch) {
+        totalCm += parseFloat(cmMatch[1]);
+        matched = true;
+      }
+
+      return matched ? totalCm : NaN;
+    }
+
+    /* 길이 오차 계산 도우미 (m와 cm 혼합 지원) */
+    function calculateDifference(estStr, measStr) {
+      const cm1 = parseToTotalCm(estStr);
+      const cm2 = parseToTotalCm(measStr);
+
+      if (isNaN(cm1) || isNaN(cm2)) {
+        return { text: '비교완료', badgeClass: 'bg-slate-100 text-slate-600' };
+      }
+
+      const diff = Math.abs(cm1 - cm2);
+      const rounded = Math.round(diff * 10) / 10;
+
+      if (rounded === 0) {
+        return { text: '🎯 완벽 일치!', badgeClass: 'bg-emerald-100 text-emerald-800 font-bold ring-1 ring-emerald-300' };
+      }
+
+      // 오차 표현 (100cm 이상일 경우 m cm로 변환)
+      let diffLabel = '';
+      if (rounded >= 100) {
+        const m = Math.floor(rounded / 100);
+        const cm = Math.round((rounded % 100) * 10) / 10;
+        diffLabel = cm > 0 ? `${m}m ${cm}cm 차이` : `${m}m 차이`;
+      } else {
+        diffLabel = `${rounded}cm 차이`;
+      }
+
+      if (rounded <= 2.0) {
+        return { text: `±${diffLabel}`, badgeClass: 'bg-amber-100 text-amber-800 font-semibold' };
+      } else {
+        return { text: diffLabel, badgeClass: 'bg-slate-100 text-slate-600' };
+      }
+    }
+
+    function openAddRecordModal() {
+      if (!loggedInStudent) return;
+      const group = appData.groups.find(g => g.id === loggedInStudent.groupId);
+      if (!group) return;
+
+      document.getElementById('record-modal-title').textContent = `${group.name} 물체 길이 기록 추가`;
+      document.getElementById('record-id').value = '';
+      document.getElementById('modal-student-name').value = loggedInStudent.name;
+      document.getElementById('modal-student-display').textContent = `${loggedInStudent.name} (본인)`;
+      document.getElementById('modal-item-input').value = '';
+      document.getElementById('modal-est-input').value = '';
+      document.getElementById('modal-meas-input').value = '';
+
+      document.getElementById('record-modal').classList.remove('hidden');
+    }
+
+    function fillItem(itemName) {
+      document.getElementById('modal-item-input').value = itemName;
+    }
+
+    function editRecord(groupId, recordId) {
+      const group = appData.groups.find(g => g.id === groupId);
+      if (!group) return;
+      const rec = group.records.find(r => r.id === recordId);
+      if (!rec) return;
+
+      // 간섭 방지: 본인이 작성한 기록인지 확인
+      if (rec.student !== loggedInStudent.name) {
+        showToast('다른 친구의 기록은 수정할 수 없습니다.');
+        return;
+      }
+
+      document.getElementById('record-modal-title').textContent = '내 측정 기록 수정';
+      document.getElementById('record-id').value = rec.id;
+      document.getElementById('modal-student-name').value = rec.student;
+      document.getElementById('modal-student-display').textContent = `${rec.student} (본인)`;
+      document.getElementById('modal-item-input').value = rec.item;
+      document.getElementById('modal-est-input').value = rec.est;
+      document.getElementById('modal-meas-input').value = rec.meas;
+
+      document.getElementById('record-modal').classList.remove('hidden');
+    }
+
+    function closeRecordModal() {
+      document.getElementById('record-modal').classList.add('hidden');
+    }
+
+    async function handleSaveRecord(e) {
+      e.preventDefault();
+      if (!loggedInStudent) return;
+      const group = appData.groups.find(g => g.id === loggedInStudent.groupId);
+      if (!group) return;
+
+      const recordId = document.getElementById('record-id').value;
+      const student = document.getElementById('modal-student-name').value;
+      const item = document.getElementById('modal-item-input').value.trim();
+      const rawEst = document.getElementById('modal-est-input').value;
+      const rawMeas = document.getElementById('modal-meas-input').value;
+
+      // 단위 자동 소문자화 및 표준 띄어쓰기 규격 적용
+      const formattedEst = formatLengthString(rawEst);
+      const formattedMeas = formatLengthString(rawMeas);
+
+      if (!formattedEst || !formattedMeas) {
+        showToast('길이 단위를 올바르게 입력해주세요 (예: 1m 30cm, 25cm).');
+        return;
+      }
+
+      const author = loggedInStudent.name;
+      const groupId = loggedInStudent.groupId;
+      const id = recordId ? Number(recordId) : Date.now() * 1000 + Math.floor(Math.random() * 1000);
+      const saved = await changeSharedData(data => {
+        const target = data.groups.find(g => g.id === groupId && g.members.includes(author));
+        if (!target) return false;
+        if (recordId) {
+          const rec = target.records.find(r => r.id === id && r.student === author);
+          if (!rec) return false;
+          Object.assign(rec, { item, est: formattedEst, meas: formattedMeas });
+        } else {
+          if (!target.records.some(r => r.id === id)) target.records.unshift({ id, student: author, item, est: formattedEst, meas: formattedMeas });
+        }
+      }, '측정 기록이 저장되었습니다.');
+      if (saved) closeRecordModal();
+    }
+
+    /* -------------------------------------------------------------
+     * 삭제 시 반드시 이름을 써야 삭제되는 검증 로직 (상호 간섭 방지)
+     * ------------------------------------------------------------- */
+    function requestDeleteRecord(groupId, recordId, authorName) {
+      document.getElementById('delete-group-id').value = groupId;
+      document.getElementById('delete-record-id').value = recordId;
+      document.getElementById('delete-expected-name').value = authorName;
+      document.getElementById('delete-target-author').textContent = authorName;
+      document.getElementById('delete-name-input').value = '';
+
+      document.getElementById('delete-confirm-modal').classList.remove('hidden');
+      setTimeout(() => {
+        document.getElementById('delete-name-input').focus();
+      }, 100);
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('delete-confirm-modal').classList.add('hidden');
+    }
+
+    async function handleConfirmDelete(e) {
+      e.preventDefault();
+      const groupId = Number(document.getElementById('delete-group-id').value);
+      const recordId = Number(document.getElementById('delete-record-id').value);
+      const expectedName = document.getElementById('delete-expected-name').value.trim();
+      const enteredName = document.getElementById('delete-name-input').value.trim();
+      if (!loggedInStudent || loggedInStudent.name !== expectedName || enteredName !== expectedName) {
+        showToast('본인이 작성한 기록만 삭제할 수 있습니다.'); return;
+      }
+      const author = loggedInStudent.name;
+      const saved = await changeSharedData(data => {
+        const group = data.groups.find(g => g.id === groupId);
+        if (!group || !group.records.some(r => r.id === recordId && r.student === author)) return false;
+        group.records = group.records.filter(r => r.id !== recordId);
+      }, '측정 기록이 삭제되었습니다.');
+      if (saved) closeDeleteModal();
+    }
+
+    /* -------------------------------------------------------------
+     * 4. 칠판뷰 로직 (Chalkboard Dashboard)
+     * ------------------------------------------------------------- */
+    function renderBoardView() {
+      const grid = document.getElementById('board-groups-grid');
+      let totalRecords = 0;
+      let topGroup = { name: '-', count: -1 };
+
+      grid.innerHTML = appData.groups.map(group => {
+        totalRecords += group.records.length;
+        if (group.records.length > topGroup.count && group.records.length > 0) {
+          topGroup = { name: group.name, count: group.records.length };
+        }
+
+        const rows = group.records.map(rec => {
+          const diff = calculateDifference(rec.est, rec.meas);
+          return `
+            <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+              <td class="py-2.5 px-3 font-bold text-slate-800">${rec.student}</td>
+              <td class="py-2.5 px-3 font-medium text-slate-700">${rec.item}</td>
+              <td class="py-2.5 px-3 font-semibold text-amber-600">${rec.est}</td>
+              <td class="py-2.5 px-3 font-bold text-emerald-600">${rec.meas}</td>
+              <td class="py-2.5 px-3 text-right">
+                <span class="text-xs px-2 py-0.5 rounded-full ${diff.badgeClass}">${diff.text}</span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        return `
+          <div class="bg-white rounded-3xl p-5 shadow-lg border border-slate-200/80 flex flex-col justify-between transition-all hover:shadow-xl">
+            <div>
+              <!-- 조 타이틀 -->
+              <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-2xl bg-amber-500 text-white font-black flex items-center justify-center text-sm shadow-md">
+                    ${group.id}조
+                  </div>
+                  <div>
+                    <h3 class="font-extrabold text-slate-800 text-lg leading-tight">${group.name} 현황</h3>
+                    <p class="text-[11px] text-slate-400 font-medium">조원: ${group.members.join(' · ')}</p>
+                  </div>
+                </div>
+                <div class="bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1 rounded-xl text-xs font-bold">
+                  기록 ${group.records.length}건
+                </div>
+              </div>
+
+              <!-- 표 -->
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-500 text-[11px] font-bold border-b border-slate-200">
+                      <th class="py-2 px-3">학생</th>
+                      <th class="py-2 px-3">물체</th>
+                      <th class="py-2 px-3">길이예상</th>
+                      <th class="py-2 px-3">길이재기</th>
+                      <th class="py-2 px-3 text-right">결과</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows || `<tr><td colspan="5" class="py-8 text-center text-slate-400 font-medium">아직 측정된 기록이 없습니다.</td></tr>`}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 하단 팁 배너 -->
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+              <span>수학 어림과 측정 학습활동</span>
+              <span class="text-emerald-600 font-semibold">실시간 갱신 중</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('board-total-measurements').textContent = `${totalRecords}회`;
+      document.getElementById('board-top-group').textContent = topGroup.count > 0 ? `${topGroup.name} (${topGroup.count}회)` : '진행 중';
+    }
+
+    window.onload = function() {
+      // 첫 화면은 학생 이름 입력 모달
+      switchView('student');
+      connectFirebase();
+    };
+  </script>
+</body>
+</html>
