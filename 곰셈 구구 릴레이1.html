@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>구구단 릴레이 이어달리기 - 교실 에듀테크</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;600;700;900&display=swap');
+    
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    
+    .font-jua {
+      font-family: 'Jua', sans-serif;
+    }
+
+    /* 오답 흔들림 애니메이션 */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .shake-effect {
+      animation: shake 0.3s ease-in-out;
+    }
+
+    /* 중앙 문제 진입 애니메이션 */
+    @keyframes slideUpIn {
+      0% { transform: translateY(24px) scale(0.92); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .problem-enter-up {
+      animation: slideUpIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* 대기열 4x2 둥근 직사각형 블록 */
+    .queue-rect-block {
+      border-radius: 1.1rem;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .queue-block-filled {
+      background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+      box-shadow: 0 4px 12px -2px rgba(225, 29, 72, 0.35);
+      border: 2px solid #fda4af;
+    }
+    .queue-block-first {
+      background: linear-gradient(135deg, #fb7185 0%, #e11d48 100%);
+      box-shadow: 0 6px 16px -2px rgba(225, 29, 72, 0.5);
+      border: 3px solid #ffe4e6;
+      animation: pulseAttention 1.5s infinite;
+    }
+    @keyframes pulseAttention {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    .queue-block-empty {
+      background-color: #f8fafc;
+      border: 2px dashed #cbd5e1;
+    }
+
+    /* 주자 바운스 및 아스팔트 */
+    @keyframes runnerBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .runner-active {
+      animation: runnerBounce 0.8s infinite ease-in-out;
+    }
+    .asphalt-road {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    }
+
+    /* 왕관 바운스 */
+    @keyframes crownHop {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .crown-bounce {
+      display: inline-block;
+      animation: crownHop 1s infinite ease-in-out;
+    }
+
+    /* 교사 뷰 드래그 앤 드롭 아이템 */
+    .drag-item {
+      cursor: grab;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .drag-item:active {
+      cursor: grabbing;
+    }
+    .drag-item.dragging {
+      opacity: 0.45;
+      transform: scale(0.97);
+    }
+    .drag-item.drag-over {
+      border: 2px dashed #6366f1 !important;
+      background-color: #eef2ff !important;
+      transform: translateY(-2px);
+    }
+
+    /* 가로 주자 카드 드래그 앤 드롭 전용 */
+    .mini-track-item {
+      cursor: grab;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .mini-track-item:active {
+      cursor: grabbing;
+    }
+    .mini-track-item.dragging {
+      opacity: 0.4;
+      transform: scale(0.94);
+    }
+    .mini-track-item.drop-target {
+      border: 2px dashed #10b981 !important;
+      background-color: #ecfdf5 !important;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 16px -4px rgba(16, 185, 129, 0.3) !important;
+    }
+
+    /* 카운트다운 대형 팝 애니메이션 */
+    @keyframes countdownPop {
+      0% { transform: scale(0.4); opacity: 0; }
+      50% { transform: scale(1.15); opacity: 1; }
+      75% { transform: scale(0.95); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .countdown-pop {
+      animation: countdownPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* 텐션 펄스 (문제 밀림 시 화면 테두리 펄스) */
+    @keyframes redPulse {
+      0%, 100% { box-shadow: inset 0 0 0 0 rgba(225, 29, 72, 0); }
+      50% { box-shadow: inset 0 0 20px 4px rgba(225, 29, 72, 0.25); }
+    }
+    .tension-active {
+      animation: redPulse 1.2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+  <!-- 상단 네비게이션 헤더 -->
+  <header class="bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-2.5 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('home')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center shadow-md shadow-amber-500/20">
+          <i class="fa-solid fa-person-running text-white text-xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl md:text-2xl font-jua text-slate-900 tracking-wide">구구단 릴레이</h1>
+            <span id="currentViewBadge" class="text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-2 py-0.5 rounded-full font-bold">홈</span>
+          </div>
+          <p class="text-[11px] text-slate-500 hidden sm:block">순서대로 배턴을 넘기며 푸는 협동 이어달리기 (최대 5조 / 인원 자율 배정)</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="switchView('home')" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5 border border-slate-200">
+          <i class="fa-solid fa-house"></i> <span class="hidden sm:inline">홈으로</span>
+        </button>
+        <button id="soundToggleBtn" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition border border-slate-200" title="소리 On/Off">
+          <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 flex-1 flex flex-col">
+    <!-- 1. [홈 뷰] -->
+    <section id="view-home" class="flex-1 flex flex-col justify-center items-center py-6">
+      <div class="text-center max-w-2xl mb-8">
+        <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-xs font-bold uppercase tracking-wider">
+          Classroom Math Relay
+        </span>
+        <h2 class="text-3xl sm:text-5xl font-jua text-slate-900 mt-3 mb-3">
+          다 함께 뛰는 <span class="text-rose-500">구구단 이어달리기</span>
+        </h2>
+        <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
+          1번 주자가 문제를 풀어야 다음 주자에게 배턴이 넘어갑니다!<br class="hidden sm:inline">
+          마지막 주자가 문제를 해결할 때마다 결승선을 향해 자동차가 질주합니다.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5 w-full max-w-4xl">
+        <!-- 교사 버튼 -->
+        <div onclick="switchView('teacher')" class="group bg-white hover:bg-indigo-50/40 border-2 border-indigo-100 hover:border-indigo-400 rounded-3xl p-6 shadow-md hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 cursor-pointer flex flex-col justify-between">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition duration-300 border border-indigo-200">
+              <i class="fa-solid fa-chalkboard-user"></i>
+            </div>
+            <h3 class="text-2xl font-jua text-slate-800 group-hover:text-indigo-600 transition">교사 모드</h3>
+            <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+              &bull; 1~5개 조 설정 및 인원수 자율 조절<br>
+              &bull; 기본 파우스 및 학생별 파우스 시간 지정<br>
+              &bull; 조원 무작위 배정 및 드래그 앤 드롭 이동
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-indigo-600 font-jua text-sm">
+            <span>조 및 조원 배치하기 &rarr;</span>
+            <i class="fa-solid fa-gear"></i>
+          </div>
+        </div>
+
+        <!-- 학생 버튼 -->
+        <div onclick="switchView('student')" class="group bg-white hover:bg-emerald-50/40 border-2 border-emerald-100 hover:border-emerald-400 rounded-3xl p-6 shadow-md hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 cursor-pointer flex flex-col justify-between">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition duration-300 border border-emerald-200">
+              <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <h3 class="text-2xl font-jua text-slate-800 group-hover:text-emerald-600 transition">학생 모드</h3>
+            <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+              &bull; 교사 뷰에서 배정된 방으로 바로 입장<br>
+              &bull; 가로 트랙으로 한눈에 배턴 확인<br>
+              &bull; 긴박한 텐션 사운드 및 파우스(정지) 페널티
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-emerald-600 font-jua text-sm">
+            <span>배정된 방 선택 및 입장 &rarr;</span>
+            <i class="fa-solid fa-door-open"></i>
+          </div>
+        </div>
+
+        <!-- 칠판 뷰 버튼 -->
+        <div onclick="switchView('board')" class="group bg-white hover:bg-amber-50/40 border-2 border-amber-100 hover:border-amber-400 rounded-3xl p-6 shadow-md hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300 cursor-pointer flex flex-col justify-between">
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition duration-300 border border-amber-200">
+              <i class="fa-solid fa-tv"></i>
+            </div>
+            <h3 class="text-2xl font-jua text-slate-800 group-hover:text-amber-600 transition">칠판 뷰</h3>
+            <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+              &bull; 교실 대형 스크린 전광판 레이싱<br>
+              &bull; 조별 누적 승리 점수판 및 +/- 수동 조절<br>
+              &bull; 5초 전 대형 카운트다운 & 종료 부저
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-amber-600 font-jua text-sm">
+            <span>전광판 띄우기 &rarr;</span>
+            <i class="fa-solid fa-flag-checkered"></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. [교사 뷰] -->
+    <section id="view-teacher" class="hidden flex-1 flex flex-col gap-4">
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-jua text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-chalkboard-user text-indigo-500"></i> 교사용 조별 및 주자 배치
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            최대 5개 조까지 생성할 수 있으며, 조원 이름을 입력하면 무작위로 배정됩니다. 학생마다 개별 파우스 시간도 지정할 수 있습니다.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="resetDefaultTeams()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition border border-slate-200">
+            <i class="fa-solid fa-rotate-left"></i> 22명 기본값 복원
+          </button>
+          <button onclick="saveTeacherSettings()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-jua text-white shadow-md shadow-indigo-600/20 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i> 설정 저장
+          </button>
+        </div>
+      </div>
+
+      <!-- 경기 설정 패널 (경기시간, 기본파우스, 출제범위, 참여조수) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">경기 시간</label>
+          <select id="settingGameTime" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500 font-bold">
+            <option value="60">60초 (1분 빠른 릴레이)</option>
+            <option value="90" selected>90초 (1분 30초 추천)</option>
+            <option value="120">120초 (2분 릴레이)</option>
+            <option value="180">180초 (3분 마라톤)</option>
+            <option value="240">240초 (4분 마라톤)</option>
+            <option value="300">300초 (5분 마라톤)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1 flex items-center justify-between">
+            <span>기본 파우스 (패스 대기)</span>
+            <span class="text-[10px] text-rose-500 font-normal">패스 시 멈춤</span>
+          </label>
+          <select id="settingDefaultPause" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-rose-600 focus:outline-none focus:border-rose-500 font-bold">
+            <option value="30" selected>30초 멈춤</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">구구단 출제 범위</label>
+          <select id="settingDanRange" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500 font-bold">
+            <option value="all" selected>2단 ~ 9단 전체</option>
+            <option value="easy">2단 ~ 5단 (기초/저학년)</option>
+            <option value="hard">6단 ~ 9단 (심화)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">참여 조 수 (최대 5조)</label>
+          <select id="settingActiveTeams" onchange="changeActiveTeamsCount(this.value)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-500 font-bold text-indigo-600">
+            <option value="1">1개 조</option>
+            <option value="2">2개 조</option>
+            <option value="3">3개 조</option>
+            <option value="4">4개 조</option>
+            <option value="5" selected>5개 조 (전체)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 교사 조별 편집 카드 그리드 -->
+      <div id="teacherTeamsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1"></div>
+    </section>
+
+    <!-- 3. [학생 뷰] -->
+    <section id="view-student" class="hidden flex-1 flex flex-col gap-3">
+      
+      <!-- 상단 컨트롤 & 조/주자 선택 바 -->
+      <div class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+        <div class="flex items-center gap-2 sm:gap-3 text-xs ml-auto">
+          <!-- 테스트용 배턴 전달 버튼 -->
+          <button onclick="simulateAddBaton()" class="px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-300 transition flex items-center gap-1" title="앞 주자가 문제를 풀어 나에게 배턴을 보낸 상황 테스트">
+            <i class="fa-solid fa-plus text-amber-600"></i> 앞 주자 배턴 보내기(테스트)
+          </button>
+          <div class="bg-slate-50 px-3 py-1 rounded-xl border border-slate-200">
+            우리 조 득점: <strong id="studentTeamScore" class="text-amber-500 text-sm font-bold">0</strong>점
+          </div>
+          <div class="bg-slate-50 px-3 py-1 rounded-xl border border-slate-200">
+            남은 시간: <strong id="studentTeamTimer" class="text-sky-600 text-sm font-bold">90</strong>초
+          </div>
+        </div>
+      </div>
+
+      <!-- 주자 릴레이 현황: 가로(수평) 트랙 컨테이너 -->
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="text-[11px] text-slate-500 mb-2.5 flex flex-wrap items-center justify-between gap-1">
+          <span class="flex items-center gap-1.5 font-bold text-slate-700">
+            <i class="fa-solid fa-arrows-turn-right text-emerald-500"></i> 배턴 전달 순서 (가로 릴레이 트랙)
+            <span class="text-[10px] font-normal text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+              <i class="fa-solid fa-hand-pointer"></i> 카드를 좌우로 드래그하여 순서 변경 가능
+            </span>
+          </span>
+          <span id="studentRelayStatusNotice" class="text-emerald-600 font-bold text-[11px]">배턴 대기</span>
+        </div>
+        
+        <div class="flex flex-row items-stretch gap-2 overflow-x-auto pb-1" id="studentMiniTrack"></div>
+      </div>
+
+      <!-- 메인 컨테이너: 상단 중앙 문제 풀이 + 하단 4열 2행(8칸) 밀린 문제 블록들 -->
+      <div class="flex-1 flex flex-col w-full max-w-4xl mx-auto gap-4">
+        
+        <!-- [A] 중앙 문제 풀이 작업대 -->
+        <div id="studentWorkCard" class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm relative min-h-[220px] flex flex-col justify-between transition-all duration-300">
+          
+          <div class="flex items-center justify-between mb-2">
+            <span id="myRunnerNameBadge" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-jua bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-running"></i> 1번 주자
+            </span>
+            
+            <div class="flex items-center gap-2">
+              <span id="studentQueueBadge" class="text-xs bg-rose-100 text-rose-700 border border-rose-300 px-2.5 py-1 rounded-full font-bold">
+                밀린 문제: <strong id="studentQueueNum">0</strong>개
+              </span>
+              <button onclick="studentPassProblem()" class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-xs font-bold text-slate-600 hover:text-rose-600 transition flex items-center gap-1.5 border border-slate-200">
+                <i class="fa-solid fa-forward-step"></i> 패스
+              </button>
+            </div>
+          </div>
+
+          <!-- 중앙 수식 영역 -->
+          <div id="centralProblemArea" class="py-4 px-4 bg-slate-50/90 rounded-2xl border-2 border-slate-200 text-center shadow-inner my-2">
+            
+            <!-- (1) 문제가 활성화되어 있을 때 -->
+            <div id="activeProblemBox" class="flex flex-col items-center justify-center">
+              <div class="text-xs uppercase tracking-widest text-slate-500 font-bold mb-2 flex items-center gap-1.5" id="studentProbTitle">
+                <span>현재 풀고 있는 배턴 문제</span>
+                <span id="tensionSoundBadge" class="text-[10px] text-rose-500 font-bold hidden animate-pulse">
+                  <i class="fa-solid fa-heart-pulse"></i> 긴박!
+                </span>
+              </div>
+              <div id="stMathRow" class="text-5xl sm:text-6xl md:text-7xl font-jua text-slate-900 flex flex-wrap items-center justify-center gap-3 sm:gap-4 my-1">
+                <span id="stQ1" class="text-amber-500">?</span>
+                <span class="text-slate-400 text-3xl sm:text-4xl">&times;</span>
+                <span id="stQ2" class="text-sky-600">?</span>
+                <span class="text-slate-400 text-3xl sm:text-4xl">=</span>
+                <input type="number" id="stAnsInput" inputmode="numeric" placeholder="정답" autocomplete="off"
+                  class="w-32 sm:w-44 text-center bg-white border-2 border-emerald-400 rounded-2xl text-emerald-600 text-4xl sm:text-5xl font-jua py-1.5 px-2 focus:outline-none focus:ring-4 focus:ring-emerald-200 transition shadow-sm"
+                  onkeydown="if(event.key === 'Enter') submitStudentAnswer();">
+                <button onclick="submitStudentAnswer()" class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-jua text-base sm:text-lg shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5">
+                  확인 <i class="fa-solid fa-check"></i>
+                </button>
+              </div>
+              <div id="stFeedback" class="mt-2 text-xs font-bold text-slate-500 h-5">
+                정답을 맞히면 다음 주자에게 배턴이 가고, 아래 대기열 맨 왼쪽 위의 문제가 중앙으로 올라옵니다!
+              </div>
+            </div>
+
+            <!-- (2) 앞사람이 아직 안 풀어서 문제가 비어있을 때 -->
+            <div id="waitingProblemBox" class="hidden py-6 flex flex-col items-center justify-center text-center">
+              <div class="w-12 h-12 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-xl mb-2 animate-pulse">
+                <i class="fa-solid fa-hourglass-half"></i>
+              </div>
+              <h4 class="text-lg font-jua text-amber-600 mb-1">앞 주자의 배턴을 기다리는 중입니다!</h4>
+              <p class="text-xs text-slate-500 max-w-md" id="waitingReasonText">
+                앞 주자가 문제를 풀면 문제가 도착하여 아래 블록에 쌓이고, 즉시 중앙으로 올라옵니다.
+              </p>
+            </div>
+
+          </div>
+
+          <div class="text-[11px] text-slate-400 flex items-center justify-between pt-1">
+            <span><i class="fa-regular fa-keyboard"></i> 숫자 입력 후 [Enter] 또는 [확인]</span>
+            <span>[Space] 패스</span>
+          </div>
+        </div>
+
+        <!-- [B] 4열 2행(8칸) 밀린 문제 둥근 직사각형 블록 대기열 -->
+        <div class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col gap-2.5">
+          <div class="flex items-center justify-between px-1">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+              <h4 class="text-sm font-jua text-slate-800">
+                <i class="fa-solid fa-layer-group text-rose-500"></i> 밀린 문제 대기열 (4열 &times; 2행)
+              </h4>
+              <span class="text-[11px] text-slate-500 font-bold" id="queueStatusSubtext">
+                (앞 주자가 푼 문제들이 차곡차곡 쌓입니다)
+              </span>
+            </div>
+            <div class="text-[11px] text-slate-400">
+              <span class="text-rose-600 font-bold">맨 왼쪽 위(#1)</span>가 다음 순서
+            </div>
+          </div>
+
+          <!-- 4열 2행 고정 블록 그리드 -->
+          <div id="studentQueue8Grid" class="grid grid-cols-4 gap-2.5 sm:gap-3"></div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- 4. [칠판 뷰: 카레이스] -->
+    <section id="view-board" class="hidden flex-1 flex flex-col justify-center gap-3">
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 border border-amber-200 flex items-center justify-center text-2xl">
+            <i class="fa-solid fa-tv"></i>
+          </div>
+          <div>
+            <h2 class="text-xl sm:text-2xl font-jua text-slate-800 flex items-center gap-2">
+              교실 대형 전광판 릴레이 카레이스
+            </h2>
+            <p class="text-xs text-slate-500">
+              각 조의 마지막 주자가 문제를 완주한 횟수만큼 결승선을 향해 자동차가 질주합니다!
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 bg-sky-50 px-4 py-2 rounded-xl border border-sky-200">
+            <i class="fa-solid fa-stopwatch text-sky-600 text-lg"></i>
+            <div>
+              <div class="text-[9px] text-slate-500 uppercase font-bold">경기 시간</div>
+              <div id="boardTimerText" class="text-2xl font-jua text-sky-700 leading-none">90 초</div>
+            </div>
+          </div>
+
+          <button id="boardPlayBtn" onclick="toggleRelayGame()" class="px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-jua text-base shadow-md shadow-emerald-500/25 active:scale-95 transition flex items-center gap-2">
+            <i class="fa-solid fa-play" id="boardPlayIcon"></i>
+            <span id="boardPlayBtnText">경기 시작</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 트랙 컨테이너 (정중앙 수직 배치) -->
+      <div id="boardTracksContainer" class="flex-1 flex flex-col justify-center gap-3 sm:gap-4 my-auto"></div>
+
+      <div class="bg-white rounded-xl px-4 py-2 border border-slate-200 flex items-center justify-between text-xs text-slate-500 shadow-sm">
+        <span><i class="fa-solid fa-flag-checkered text-rose-500"></i> 출발선: 1번 주자</span>
+        <span>&rarr; 배턴 터치 (순서대로 인수인계) &rarr;</span>
+        <span class="text-amber-600 font-bold">결승선: 마지막 주자 골인 시 자동차 전진 (+1점) <i class="fa-solid fa-trophy"></i></span>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 대형 카운트다운 오버레이 (5, 4, 3, 2, 1 -> FINISH!) -->
+  <div id="countdownOverlay" class="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex flex-col items-center justify-center hidden pointer-events-none">
+    <div class="text-center flex flex-col items-center">
+      <div id="countdownNumber" class="text-9xl sm:text-[14rem] font-black font-jua text-amber-400 drop-shadow-[0_15px_35px_rgba(245,158,11,0.8)] leading-none countdown-pop">
+        5
+      </div>
+      <div id="countdownSub" class="text-xl sm:text-3xl font-jua text-white mt-4 tracking-wider drop-shadow-md">
+        경기 종료 5초 전!
+      </div>
+    </div>
+  </div>
+
+  <!-- 학생 배정 방 입장 모달 -->
+  <div id="studentEntryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-5 hidden">
+    <div class="bg-white border-2 border-emerald-400 rounded-3xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl flex flex-col max-h-[90vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 mb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-door-open"></i>
+          </div>
+          <div>
+            <h3 class="text-xl sm:text-2xl font-jua text-slate-800">내 배정 방(조) 입장하기</h3>
+            <p class="text-xs text-slate-500">교사 뷰에서 배정된 조에서 <strong>본인의 이름</strong>을 누르면 해당 방으로 즉시 입장합니다.</p>
+          </div>
+        </div>
+        <button onclick="closeStudentEntryModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- 조별 학생 선택 카드 리스트 -->
+      <div id="studentEntryList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 overflow-y-auto pr-1 flex-1 py-1"></div>
+
+      <div class="pt-3 mt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+        <span>💡 교사가 배정한 주자 순서대로 배턴이 전달됩니다.</span>
+        <button onclick="closeStudentEntryModal()" class="px-4 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold transition">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 결과 모달 (닫기 버튼) -->
+  <div id="resultModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white border-2 border-amber-400 rounded-3xl max-w-lg w-full p-6 text-center shadow-2xl relative">
+      <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-3 text-3xl border border-amber-300">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <h3 class="text-2xl sm:text-3xl font-jua text-slate-800 mb-1">경기 종료! 최종 순위</h3>
+      <p class="text-slate-500 text-xs mb-4">모든 주자들이 힘을 합쳐 결승선까지 달렸습니다!</p>
+      <div id="resultLeaderboard" class="space-y-2 mb-5"></div>
+      <button onclick="closeResultModal()" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-jua text-base shadow-lg active:scale-95 transition flex items-center justify-center gap-1.5">
+        닫기 <i class="fa-solid fa-check"></i>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       1. 사운드 신시사이저 (Web Audio API: 텐션 틱 & 카운트다운 사운드 완벽 내장)
+       ========================================================================= */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // 문제 풀 때 촉박한 긴장감 사운드 (째깍/심장박동)
+      tensionTick(isUrgent = false) {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          if (isUrgent) {
+            // 문제가 밀렸을 때 고조되는 날카로운 펄스 틱
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(880, now);
+            osc.frequency.exponentialRampToValueAtTime(440, now + 0.08);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.08);
+          } else {
+            // 평상시 긴박한 시계 째깍 소리
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(520, now);
+            osc.frequency.exponentialRampToValueAtTime(320, now + 0.05);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.05);
+          }
+        } catch (e) {}
+      }
+
+      // 경기 종료 전 5초 카운트다운 비프음 & 최종 종료 부저음
+      countdownBeep(isFinal = false) {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const now = this.ctx.currentTime;
+          if (isFinal) {
+            // 경기 종료 호루라기/휘슬 부저 화음
+            [587.33, 880, 1174.66].forEach(freq => {
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              osc.type = 'sawtooth';
+              osc.frequency.setValueAtTime(freq, now);
+              gain.gain.setValueAtTime(0.22, now);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+              osc.connect(gain);
+              gain.connect(this.ctx.destination);
+              osc.start(now);
+              osc.stop(now + 0.7);
+            });
+          } else {
+            // 5, 4, 3, 2, 1 경고음 (맑고 또렷한 톤)
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, now);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.005, now + 0.18);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.18);
+          }
+        } catch (e) {}
+      }
+
+      passBaton() {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          const now = this.ctx.currentTime;
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.12);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        } catch (e) {}
+      }
+
+      goal() {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            const now = this.ctx.currentTime + (idx * 0.08);
+            osc.frequency.setValueAtTime(freq, now);
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.005, now + 0.35);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.35);
+          });
+        } catch (e) {}
+      }
+
+      wrong() {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          const now = this.ctx.currentTime;
+          osc.frequency.setValueAtTime(160, now);
+          osc.frequency.linearRampToValueAtTime(100, now + 0.25);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } catch (e) {}
+      }
+
+      skip() {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          const now = this.ctx.currentTime;
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.linearRampToValueAtTime(220, now + 0.18);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        } catch (e) {}
+      }
+    }
+    const sound = new SoundEngine();
+
+    /* =========================================================================
+       2. 전역 상태 및 데이터 모델 (22명 학생 전원 배치 및 5개 조 지원)
+       ========================================================================= */
+    const RUNNER_COLORS = [
+      { bg: 'bg-rose-500', text: 'text-rose-500', border: 'border-rose-400' },
+      { bg: 'bg-amber-500', text: 'text-amber-500', border: 'border-amber-400' },
+      { bg: 'bg-emerald-500', text: 'text-emerald-500', border: 'border-emerald-400' },
+      { bg: 'bg-sky-500', text: 'text-sky-500', border: 'border-sky-400' },
+      { bg: 'bg-purple-500', text: 'text-purple-500', border: 'border-purple-400' },
+      { bg: 'bg-indigo-500', text: 'text-indigo-500', border: 'border-indigo-400' },
+      { bg: 'bg-teal-500', text: 'text-teal-500', border: 'border-teal-400' },
+      { bg: 'bg-pink-500', text: 'text-pink-500', border: 'border-pink-400' }
+    ];
+
+    function createDefaultTeams() {
+      return [
+        {
+          id: 0,
+          name: '1조',
+          score: 0,
+          wins: 0,
+          solvedHistory: [],
+          runners: [
+            { order: 1, studentName: '김서아', queue: [], pauseTime: 10 },
+            { order: 2, studentName: '김수현', queue: [], pauseTime: 10 },
+            { order: 3, studentName: '김윤아', queue: [], pauseTime: 10 },
+            { order: 4, studentName: '김태영', queue: [], pauseTime: 10 },
+            { order: 5, studentName: '김하랑', queue: [], pauseTime: 10 }
+          ]
+        },
+        {
+          id: 1,
+          name: '2조',
+          score: 0,
+          wins: 0,
+          solvedHistory: [],
+          runners: [
+            { order: 1, studentName: '나예린', queue: [], pauseTime: 10 },
+            { order: 2, studentName: '박민제', queue: [], pauseTime: 10 },
+            { order: 3, studentName: '박선우', queue: [], pauseTime: 10 },
+            { order: 4, studentName: '양수빈', queue: [], pauseTime: 10 },
+            { order: 5, studentName: '유소영', queue: [], pauseTime: 10 }
+          ]
+        },
+        {
+          id: 2,
+          name: '3조',
+          score: 0,
+          wins: 0,
+          solvedHistory: [],
+          runners: [
+            { order: 1, studentName: '이대운', queue: [], pauseTime: 10 },
+            { order: 2, studentName: '이새봄', queue: [], pauseTime: 10 },
+            { order: 3, studentName: '이서율', queue: [], pauseTime: 10 },
+            { order: 4, studentName: '이진서', queue: [], pauseTime: 10 }
+          ]
+        },
+        {
+          id: 3,
+          name: '4조',
+          score: 0,
+          wins: 0,
+          solvedHistory: [],
+          runners: [
+            { order: 1, studentName: '이채원', queue: [], pauseTime: 10 },
+            { order: 2, studentName: '이초은', queue: [], pauseTime: 10 },
+            { order: 3, studentName: '이태환', queue: [], pauseTime: 10 },
+            { order: 4, studentName: '이하린', queue: [], pauseTime: 10 }
+          ]
+        },
+        {
+          id: 4,
+          name: '5조',
+          score: 0,
+          wins: 0,
+          solvedHistory: [],
+          runners: [
+            { order: 1, studentName: '한규빈', queue: [], pauseTime: 10 },
+            { order: 2, studentName: '한유은', queue: [], pauseTime: 10 },
+            { order: 3, studentName: '현지우', queue: [], pauseTime: 10 },
+            { order: 4, studentName: '황지우', queue: [], pauseTime: 10 }
+          ]
+        }
+      ];
+    }
+
+    let relayGame = {
+      isRunning: false,
+      gameTime: 90,
+      timeLeft: 90,
+      defaultPause: 30,
+      danRange: 'all',
+      activeTeamsCount: 5,
+      timerInterval: null,
+      pauseInterval: null,
+      teams: createDefaultTeams(),
+      currentStudentTeamId: 0,
+      currentStudentRunnerIdx: 0
+    };
+
+    function makeMultiplicationProblem() {
+      let minDan = 2, maxDan = 9;
+      if (relayGame.danRange === 'easy') {
+        minDan = 2; maxDan = 5;
+      } else if (relayGame.danRange === 'hard') {
+        minDan = 6; maxDan = 9;
+      }
+      const a = Math.floor(Math.random() * (maxDan - minDan + 1)) + minDan;
+      const b = Math.floor(Math.random() * 8) + 2;
+      return { a, b, answer: a * b, id: Math.random().toString(36).substring(2, 8) };
+    }
+
+    /* =========================================================================
+       3. 뷰 전환 및 화면 관리
+       ========================================================================= */
+    function switchView(viewName) {
+      ['home', 'teacher', 'student', 'board'].forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) el.classList.add('hidden');
+      });
+
+      const target = document.getElementById(`view-${viewName}`);
+      if (target) target.classList.remove('hidden');
+
+      const badge = document.getElementById('currentViewBadge');
+      if (viewName === 'home') {
+        badge.innerText = '홈';
+        badge.className = 'text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-2 py-0.5 rounded-full font-bold';
+      } else if (viewName === 'teacher') {
+        badge.innerText = '교사 모드';
+        badge.className = 'text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-2 py-0.5 rounded-full font-bold';
+        renderTeacherView();
+      } else if (viewName === 'student') {
+        badge.innerText = '학생 모드';
+        badge.className = 'text-xs bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full font-bold';
+        updateStudentSelectors();
+        renderStudentView();
+        openStudentEntryModal();
+      } else if (viewName === 'board') {
+        badge.innerText = '칠판 뷰';
+        badge.className = 'text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full font-bold';
+        renderBoardTracks();
+      }
+    }
+
+    function openStudentEntryModal() {
+      const container = document.getElementById('studentEntryList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      for (let t = 0; t < relayGame.activeTeamsCount; t++) {
+        const team = relayGame.teams[t];
+        const teamBox = document.createElement('div');
+        teamBox.className = 'bg-slate-50 p-3 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between';
+
+        let runnerButtons = '';
+        team.runners.forEach((r, idx) => {
+          const color = RUNNER_COLORS[idx % RUNNER_COLORS.length];
+          const isCurrentSelected = (t === relayGame.currentStudentTeamId && idx === relayGame.currentStudentRunnerIdx);
+
+          runnerButtons += `
+            <button onclick="selectAssignedStudent(${t}, ${idx})" 
+              class="w-full flex items-center justify-between p-2 rounded-xl border text-left transition active:scale-95 ${
+                isCurrentSelected 
+                  ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm font-bold' 
+                  : 'bg-white hover:bg-emerald-50 hover:border-emerald-300 text-slate-800 border-slate-200'
+              }">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg ${isCurrentSelected ? 'bg-white/20 text-white' : color.bg + ' text-white'} text-[11px] font-jua flex items-center justify-center shrink-0">
+                  ${r.order}번
+                </span>
+                <span class="text-xs font-bold truncate">${r.studentName}</span>
+              </div>
+              <span class="text-[10px] ${isCurrentSelected ? 'text-emerald-100' : 'text-slate-400'}">
+                입장 &rarr;
+              </span>
+            </button>
+          `;
+        });
+
+        teamBox.innerHTML = `
+          <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-200">
+            <span class="font-jua text-sm text-slate-800">${team.name}</span>
+            <span class="text-[10px] bg-white px-2 py-0.5 rounded-full border border-slate-200 text-slate-500 font-bold">${team.runners.length}명 배정</span>
+          </div>
+          <div class="space-y-1.5">
+            ${runnerButtons}
+          </div>
+        `;
+        container.appendChild(teamBox);
+      }
+
+      document.getElementById('studentEntryModal').classList.remove('hidden');
+    }
+
+    function selectAssignedStudent(teamIdx, runnerIdx) {
+      relayGame.currentStudentTeamId = teamIdx;
+      relayGame.currentStudentRunnerIdx = runnerIdx;
+
+      updateStudentSelectors();
+      renderStudentView();
+      closeStudentEntryModal();
+
+      const team = relayGame.teams[teamIdx];
+      const runner = team.runners[runnerIdx];
+      sound.passBaton();
+      showToast(`🚪 [${team.name}] ${runner.order}번 주자 (${runner.studentName}) 방으로 입장했습니다!`);
+    }
+
+    function closeStudentEntryModal() {
+      const modal = document.getElementById('studentEntryModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function closeResultModal() {
+      const modal = document.getElementById('resultModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function updateStudentSelectors() {
+      const teamSelect = document.getElementById('studentTeamSelect');
+      const runnerSelect = document.getElementById('studentRunnerSelect');
+      if (!teamSelect || !runnerSelect) return;
+
+      if (relayGame.currentStudentTeamId >= relayGame.activeTeamsCount) {
+        relayGame.currentStudentTeamId = 0;
+      }
+      teamSelect.innerHTML = '';
+      for (let t = 0; t < relayGame.activeTeamsCount; t++) {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.innerText = relayGame.teams[t].name;
+        if (t === relayGame.currentStudentTeamId) opt.selected = true;
+        teamSelect.appendChild(opt);
+      }
+
+      const currentTeam = relayGame.teams[relayGame.currentStudentTeamId] || relayGame.teams[0];
+      if (relayGame.currentStudentRunnerIdx >= currentTeam.runners.length) {
+        relayGame.currentStudentRunnerIdx = 0;
+      }
+
+      runnerSelect.innerHTML = '';
+      currentTeam.runners.forEach((r, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.innerText = `${r.order}번 주자 (${r.studentName})`;
+        if (idx === relayGame.currentStudentRunnerIdx) opt.selected = true;
+        runnerSelect.appendChild(opt);
+      });
+    }
+
+    function onStudentRoleChanged() {
+      const teamSelect = document.getElementById('studentTeamSelect');
+      const runnerSelect = document.getElementById('studentRunnerSelect');
+
+      const newTeamId = parseInt(teamSelect.value, 10);
+      const teamChanged = newTeamId !== relayGame.currentStudentTeamId;
+
+      relayGame.currentStudentTeamId = newTeamId;
+
+      if (teamChanged) {
+        updateStudentSelectors();
+      } else {
+        relayGame.currentStudentRunnerIdx = parseInt(runnerSelect.value, 10);
+      }
+
+      const ansInput = document.getElementById('stAnsInput');
+      if (ansInput) ansInput.value = '';
+
+      renderStudentView();
+    }
+
+    /* =========================================================================
+       4. 교사 모드: 조별 관리, 인원수 조절, 개별 파우스 시간 지정, 무작위 배정
+       ========================================================================= */
+    function renderTeacherView() {
+      const container = document.getElementById('teacherTeamsList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      for (let t = 0; t < relayGame.activeTeamsCount; t++) {
+        const team = relayGame.teams[t];
+        const teamCard = document.createElement('div');
+        teamCard.className = 'bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between';
+
+        let runnersHtml = '';
+        team.runners.forEach((r, idx) => {
+          const color = RUNNER_COLORS[idx % RUNNER_COLORS.length];
+          const isFirst = (idx === 0);
+          const isLast = (idx === team.runners.length - 1);
+          const pauseSec = r.pauseTime !== undefined ? r.pauseTime : relayGame.defaultPause;
+
+          runnersHtml += `
+            <div class="drag-item flex items-center gap-1.5 p-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200"
+              draggable="true"
+              ondragstart="onRunnerDragStart(event, ${t}, ${idx})"
+              ondragover="onRunnerDragOver(event)"
+              ondragleave="onRunnerDragLeave(event)"
+              ondrop="onRunnerDrop(event, ${t}, ${idx})"
+              ondragend="onRunnerDragEnd(event)">
+              <div class="cursor-grab text-slate-400 hover:text-slate-600 px-1 py-1" title="드래그하여 다른 조나 다른 순서로 이동">
+                <i class="fa-solid fa-grip-vertical"></i>
+              </div>
+              <span class="w-7 h-7 rounded-lg ${color.bg} text-white font-jua text-xs flex items-center justify-center shrink-0 shadow">
+                ${r.order}번
+              </span>
+              <span class="text-xs font-bold text-slate-500 w-12 shrink-0">${r.order}번</span>
+              <input type="text" value="${r.studentName}" 
+                onchange="updateRunnerName(${t}, ${idx}, this.value)"
+                placeholder="학생 이름"
+                class="w-24 sm:w-28 bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none focus:border-indigo-500">
+              
+              <!-- 학생별 개별 파우스 시간 지정 -->
+              <div class="flex items-center gap-1 bg-white px-1.5 py-0.5 rounded-lg border border-slate-200 text-[11px] text-slate-500 shrink-0" title="이 학생이 패스했을 때 멈추는 파우스 시간(초)">
+                <span class="text-rose-500 font-bold">⏸️</span>
+                <input type="number" min="1" max="60" value="30" disabled
+                  class="w-8 text-center text-xs font-bold text-rose-600 border-b border-rose-300 focus:outline-none focus:border-rose-500 py-0.5">
+                <span class="text-[10px]">초</span>
+              </div>
+
+              <div class="flex items-center gap-0.5 shrink-0 ml-auto">
+                <button onclick="moveRunnerOrder(${t}, ${idx}, -1)" ${isFirst ? 'disabled class="opacity-20 p-1 text-slate-300"' : 'class="p-1 text-slate-600 hover:text-indigo-600"'} title="앞 순서로">
+                  <i class="fa-solid fa-arrow-up text-xs"></i>
+                </button>
+                <button onclick="moveRunnerOrder(${t}, ${idx}, 1)" ${isLast ? 'disabled class="opacity-20 p-1 text-slate-300"' : 'class="p-1 text-slate-600 hover:text-indigo-600"'} title="뒤 순서로">
+                  <i class="fa-solid fa-arrow-down text-xs"></i>
+                </button>
+                <button onclick="deleteRunnerFromTeam(${t}, ${idx})" class="p-1 text-slate-400 hover:text-rose-600" title="이 주자 삭제">
+                  <i class="fa-solid fa-trash-can text-xs"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        });
+
+        teamCard.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-200">
+              <div class="flex items-center gap-1.5">
+                <input type="text" value="${team.name}" onchange="updateTeamName(${t}, this.value)" 
+                  class="font-jua text-base sm:text-lg text-slate-800 bg-transparent border-b border-dashed border-slate-300 focus:outline-none focus:border-indigo-500 w-16">
+                <!-- 교사용 승리 횟수 조절기 -->
+                <div class="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200 text-xs" title="누적 승리 횟수 수동 조절">
+                  <span class="text-amber-600 font-bold">🏆</span>
+                  <button onclick="changeTeamWins(${t}, -1)" class="w-4 h-4 rounded bg-white hover:bg-amber-200 text-slate-600 font-bold flex items-center justify-center border border-amber-200 shadow-xs">-</button>
+                  <span class="font-jua text-amber-700 min-w-[14px] text-center">${team.wins || 0}승</span>
+                  <button onclick="changeTeamWins(${t}, 1)" class="w-4 h-4 rounded bg-white hover:bg-amber-200 text-slate-600 font-bold flex items-center justify-center border border-amber-200 shadow-xs">+</button>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+                  총 ${team.runners.length}명
+                </span>
+                <button onclick="addRunnerToTeam(${t})" class="px-2 py-0.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold border border-indigo-200 transition" title="새 주자 칸 추가">
+                  <i class="fa-solid fa-user-plus"></i> +추가
+                </button>
+              </div>
+            </div>
+
+            <!-- 조원 일괄 입력 및 무작위 번호 배정 영역 -->
+            <div class="mb-3 p-2 bg-indigo-50/70 rounded-xl border border-indigo-100 flex flex-col gap-1.5">
+              <div class="text-[11px] text-indigo-700 font-bold flex items-center justify-between">
+                <span><i class="fa-solid fa-users"></i> 조원 입력 (쉼표 또는 띄어쓰기)</span>
+                <span class="text-[10px] text-slate-400 font-normal">입력한 수만큼 조원 자동 조정</span>
+              </div>
+              <div class="flex gap-1.5">
+                <input type="text" id="teamMemberInput_${t}" 
+                  placeholder="예: 김서아 김수현 김윤아 김태영 김하랑"
+                  onkeydown="if(event.key === 'Enter') assignRandomRunnersFromText(${t});"
+                  class="flex-1 bg-white border border-indigo-200 rounded-lg px-2.5 py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 shadow-xs">
+                <button onclick="assignRandomRunnersFromText(${t})" 
+                  class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-jua text-xs shrink-0 shadow-sm flex items-center gap-1 transition"
+                  title="이름을 무작위 순서로 자동 배치합니다">
+                  <i class="fa-solid fa-shuffle"></i> 무작위 배정
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              ${runnersHtml}
+            </div>
+          </div>
+          <div class="mt-3 pt-2 text-[10px] text-slate-400 flex items-center justify-between border-t border-slate-100">
+            <span><i class="fa-solid fa-arrows-up-down-left-right text-indigo-500"></i> 드래그하여 조/순서 교환</span>
+            <span>마지막 주자: ${team.runners.length}번 주자</span>
+          </div>
+        `;
+        container.appendChild(teamCard);
+      }
+    }
+
+    function updateTeamName(teamIdx, newName) {
+      if (relayGame.teams[teamIdx]) {
+        relayGame.teams[teamIdx].name = newName;
+        window.firebaseTeacherRosterPush?.();
+      }
+    }
+
+    function updateRunnerName(teamIdx, runnerIdx, newName) {
+      if (relayGame.teams[teamIdx] && relayGame.teams[teamIdx].runners[runnerIdx]) {
+        relayGame.teams[teamIdx].runners[runnerIdx].studentName = newName;
+        window.firebaseTeacherRosterPush?.();
+      }
+    }
+
+    function updateRunnerPause(teamIdx, runnerIdx, pauseStr) {
+      if (relayGame.teams[teamIdx] && relayGame.teams[teamIdx].runners[runnerIdx]) {
+        relayGame.teams[teamIdx].runners[runnerIdx].pauseTime = 30;
+        window.firebaseTeacherRosterPush?.();
+      }
+    }
+
+    function addRunnerToTeam(teamIdx) {
+      const team = relayGame.teams[teamIdx];
+      const nextOrder = team.runners.length + 1;
+      team.runners.push({
+        order: nextOrder,
+        studentName: `학생${nextOrder}`,
+        queue: [],
+        pauseTime: relayGame.defaultPause
+      });
+      renderTeacherView();
+      updateStudentSelectors();
+      showToast(`${team.name}에 ${nextOrder}번 주자가 추가되었습니다.`);
+    }
+
+    function deleteRunnerFromTeam(teamIdx, runnerIdx) {
+      const team = relayGame.teams[teamIdx];
+      if (team.runners.length <= 1) {
+        showToast("조에는 최소 1명 이상의 주자가 있어야 합니다.");
+        return;
+      }
+      team.runners.splice(runnerIdx, 1);
+      team.runners.forEach((r, idx) => {
+        r.order = idx + 1;
+      });
+      renderTeacherView();
+      updateStudentSelectors();
+      renderStudentView();
+    }
+
+    function assignRandomRunnersFromText(teamIdx) {
+      const inputEl = document.getElementById(`teamMemberInput_${teamIdx}`);
+      if (!inputEl) return;
+      const rawText = inputEl.value.trim();
+      if (!rawText) {
+        showToast("조원 이름을 먼저 입력해주세요! (예: 김서아 김수현 김윤아)");
+        inputEl.focus();
+        return;
+      }
+
+      const names = rawText.split(/[\s,]+/).map(n => n.trim()).filter(Boolean);
+      if (names.length === 0) return;
+
+      for (let i = names.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [names[i], names[j]] = [names[j], names[i]];
+      }
+
+      const team = relayGame.teams[teamIdx];
+      team.runners = names.map((name, i) => ({
+        order: i + 1,
+        studentName: name,
+        queue: [],
+        pauseTime: relayGame.defaultPause
+      }));
+
+      sound.passBaton();
+      showToast(`${team.name} 조원이 ${names.length}명으로 무작위 배정되었습니다!`);
+
+      renderTeacherView();
+      updateStudentSelectors();
+      renderStudentView();
+      renderBoardTracks();
+    }
+
+    function moveRunnerOrder(teamIdx, runnerIdx, direction) {
+      const team = relayGame.teams[teamIdx];
+      const targetIdx = runnerIdx + direction;
+      if (targetIdx < 0 || targetIdx >= team.runners.length) return;
+
+      const temp = team.runners[runnerIdx];
+      team.runners[runnerIdx] = team.runners[targetIdx];
+      team.runners[targetIdx] = temp;
+
+      team.runners.forEach((r, i) => {
+        r.order = i + 1;
+      });
+
+      renderTeacherView();
+      if (relayGame.currentStudentTeamId === teamIdx) {
+        updateStudentSelectors();
+        renderStudentView();
+      }
+    }
+
+    let draggedRunner = null;
+
+    function onRunnerDragStart(e, teamIdx, runnerIdx) {
+      draggedRunner = { teamIdx, runnerIdx };
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', `${teamIdx},${runnerIdx}`);
+      const target = e.currentTarget;
+      setTimeout(() => {
+        if (target) target.classList.add('dragging');
+      }, 0);
+    }
+
+    function onRunnerDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const item = e.currentTarget;
+      if (item && !item.classList.contains('drag-over')) {
+        item.classList.add('drag-over');
+      }
+    }
+
+    function onRunnerDragLeave(e) {
+      const item = e.currentTarget;
+      if (item) {
+        item.classList.remove('drag-over');
+      }
+    }
+
+    function onRunnerDrop(e, targetTeamIdx, targetRunnerIdx) {
+      e.preventDefault();
+      const item = e.currentTarget;
+      if (item) item.classList.remove('drag-over');
+
+      if (!draggedRunner) return;
+      const sourceTeamIdx = draggedRunner.teamIdx;
+      const sourceRunnerIdx = draggedRunner.runnerIdx;
+
+      if (sourceTeamIdx === targetTeamIdx && sourceRunnerIdx === targetRunnerIdx) {
+        return;
+      }
+
+      const sourceRunner = relayGame.teams[sourceTeamIdx].runners[sourceRunnerIdx];
+      const targetRunner = relayGame.teams[targetTeamIdx].runners[targetRunnerIdx];
+
+      const tempName = sourceRunner.studentName;
+      const tempPause = sourceRunner.pauseTime;
+      sourceRunner.studentName = targetRunner.studentName;
+      sourceRunner.pauseTime = targetRunner.pauseTime;
+      targetRunner.studentName = tempName;
+      targetRunner.pauseTime = tempPause;
+
+      sound.passBaton();
+      showToast(`${targetRunner.studentName} 학생과 ${sourceRunner.studentName} 학생의 자리가 바뀌었습니다.`);
+
+      renderTeacherView();
+      updateStudentSelectors();
+      renderStudentView();
+    }
+
+    function onRunnerDragEnd(e) {
+      draggedRunner = null;
+      document.querySelectorAll('.drag-item').forEach(el => {
+        el.classList.remove('dragging', 'drag-over');
+      });
+    }
+
+    let draggedMiniRunnerIdx = null;
+
+    function onMiniTrackDragStart(e, idx) {
+      draggedMiniRunnerIdx = idx;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(idx));
+      e.currentTarget.classList.add('dragging');
+    }
+
+    function onMiniTrackDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const item = e.currentTarget;
+      if (item && !item.classList.contains('drop-target')) {
+        item.classList.add('drop-target');
+      }
+    }
+
+    function onMiniTrackDragLeave(e) {
+      const item = e.currentTarget;
+      if (item) {
+        item.classList.remove('drop-target');
+      }
+    }
+
+    function onMiniTrackDrop(e, targetIdx) {
+      e.preventDefault();
+      const item = e.currentTarget;
+      if (item) item.classList.remove('drop-target');
+
+      if (draggedMiniRunnerIdx === null || draggedMiniRunnerIdx === targetIdx) return;
+
+      const team = relayGame.teams[relayGame.currentStudentTeamId];
+      if (!team || !team.runners[draggedMiniRunnerIdx] || !team.runners[targetIdx]) return;
+
+      const temp = team.runners[draggedMiniRunnerIdx];
+      team.runners[draggedMiniRunnerIdx] = team.runners[targetIdx];
+      team.runners[targetIdx] = temp;
+
+      team.runners.forEach((r, i) => {
+        r.order = i + 1;
+      });
+
+      if (relayGame.currentStudentRunnerIdx === draggedMiniRunnerIdx) {
+        relayGame.currentStudentRunnerIdx = targetIdx;
+      } else if (relayGame.currentStudentRunnerIdx === targetIdx) {
+        relayGame.currentStudentRunnerIdx = draggedMiniRunnerIdx;
+      }
+
+      sound.passBaton();
+      showToast(`${team.name}의 주자 순서가 변경되었습니다!`);
+
+      updateStudentSelectors();
+      renderStudentView();
+      renderTeacherView();
+      renderBoardTracks();
+    }
+
+    function onMiniTrackDragEnd(e) {
+      draggedMiniRunnerIdx = null;
+      document.querySelectorAll('.mini-track-item').forEach(el => {
+        el.classList.remove('dragging', 'drop-target');
+      });
+    }
+
+    function changeActiveTeamsCount(countStr) {
+      relayGame.activeTeamsCount = parseInt(countStr, 10);
+      renderTeacherView();
+      updateStudentSelectors();
+      renderStudentView();
+      renderBoardTracks();
+      window.firebaseRelayPush?.();
+    }
+
+    function resetDefaultTeams() {
+      relayGame.teams = createDefaultTeams();
+      relayGame.activeTeamsCount = 5;
+      const selectEl = document.getElementById('settingActiveTeams');
+      if (selectEl) selectEl.value = '5';
+      renderTeacherView();
+      updateStudentSelectors();
+      renderStudentView();
+      renderBoardTracks();
+      showToast("우리 반 22명 기본 데이터로 복원되었습니다.");
+      window.firebaseRelayPush?.();
+    }
+
+    function saveTeacherSettings() {
+      const timeVal = parseInt(document.getElementById('settingGameTime').value, 10);
+      relayGame.gameTime = timeVal;
+      if (!relayGame.isRunning) {
+        relayGame.timeLeft = timeVal;
+      }
+      relayGame.defaultPause = 30;
+      relayGame.danRange = document.getElementById('settingDanRange').value;
+      relayGame.activeTeamsCount = parseInt(document.getElementById('settingActiveTeams').value, 10);
+      showToast("교사 설정이 저장되었습니다!");
+      window.firebaseRelayPush?.();
+    }
+
+    /* =========================================================================
+       5. 학생 모드: 가로 트랙 & 중앙 작업대 & 8칸 블록 큐 & 파우스 로직
+       ========================================================================= */
+    function renderStudentView() {
+      const team = relayGame.teams[relayGame.currentStudentTeamId] || relayGame.teams[0];
+      const rIdx = relayGame.currentStudentRunnerIdx;
+      const myRunner = team.runners[rIdx] || team.runners[0];
+
+      document.getElementById('studentTeamScore').innerText = team.score;
+      document.getElementById('studentTeamTimer').innerText = relayGame.timeLeft;
+
+      const now = Date.now();
+      const isPaused = myRunner.pauseUntil && myRunner.pauseUntil > now;
+      const pauseRemainingSec = isPaused ? Math.ceil((myRunner.pauseUntil - now) / 1000) : 0;
+
+      const miniTrack = document.getElementById('studentMiniTrack');
+      miniTrack.innerHTML = '';
+
+      team.runners.forEach((r, idx) => {
+        const color = RUNNER_COLORS[idx % RUNNER_COLORS.length];
+        const isMe = idx === rIdx;
+        const qCount = r.queue.length;
+        const rIsPaused = r.pauseUntil && r.pauseUntil > now;
+        const rPauseSec = rIsPaused ? Math.ceil((r.pauseUntil - now) / 1000) : 0;
+
+        const cell = document.createElement('div');
+        cell.className = `mini-track-item flex-1 min-w-[100px] p-2.5 rounded-2xl border-2 flex flex-col items-center justify-between text-center relative select-none transition-all shadow-sm ${
+          isMe ? 'border-emerald-500 bg-emerald-50/90 ring-4 ring-emerald-300/40 shadow-emerald-200' : 'border-slate-200 bg-white hover:bg-slate-50'
+        }`;
+        
+        cell.draggable = true;
+        cell.ondragstart = (e) => onMiniTrackDragStart(e, idx);
+        cell.ondragover = (e) => onMiniTrackDragOver(e);
+        cell.ondragleave = (e) => onMiniTrackDragLeave(e);
+        cell.ondrop = (e) => onMiniTrackDrop(e, idx);
+        cell.ondragend = (e) => onMiniTrackDragEnd(e);
+
+        cell.onclick = (e) => {
+          if (draggedMiniRunnerIdx !== null) return;
+          relayGame.currentStudentRunnerIdx = idx;
+          updateStudentSelectors();
+          renderStudentView();
+        };
+
+        const isLastRunner = (idx === team.runners.length - 1);
+
+        cell.innerHTML = `
+          <div class="w-full flex items-center justify-between text-[10px] text-slate-400">
+            <span class="cursor-grab text-slate-300 hover:text-slate-600" title="좌우로 끌어서 순서 변경"><i class="fa-solid fa-grip-lines"></i></span>
+            <span class="font-bold ${isMe ? 'text-emerald-700' : 'text-slate-500'}">
+              ${r.order}번 주자 ${isLastRunner ? '🏁' : ''}
+            </span>
+            <span class="w-3"></span>
+          </div>
+
+          <div class="w-10 h-10 rounded-full ${color.bg} text-white font-jua text-sm flex items-center justify-center my-1.5 shadow-md ${qCount > 0 ? 'runner-active' : 'opacity-80'}">
+            ${r.order}번
+          </div>
+
+          <div class="text-xs text-slate-800 font-bold truncate w-full px-1">${r.studentName}</div>
+
+          <div class="mt-1 w-full">
+            ${rIsPaused 
+              ? `<span class="inline-block text-[10px] bg-rose-600 text-white font-bold px-2 py-0.5 rounded-full shadow-xs animate-pulse">⏸️ 파우스 ${rPauseSec}s</span>`
+              : (qCount > 0 
+                  ? `<span class="inline-block text-[10px] bg-rose-500 text-white font-bold px-2 py-0.5 rounded-full shadow-xs animate-pulse">${qCount}개 보유</span>`
+                  : `<span class="inline-block text-[10px] bg-slate-100 text-slate-400 font-bold px-2 py-0.5 rounded-full">대기</span>`
+                )
+            }
+          </div>
+        `;
+        miniTrack.appendChild(cell);
+      });
+
+      const queueLen = myRunner.queue.length;
+      const queueBadge = document.getElementById('studentQueueBadge');
+      const queueNum = document.getElementById('studentQueueNum');
+      queueNum.innerText = queueLen;
+
+      const activeBox = document.getElementById('activeProblemBox');
+      const waitingBox = document.getElementById('waitingProblemBox');
+      const statusNotice = document.getElementById('studentRelayStatusNotice');
+      const ansInput = document.getElementById('stAnsInput');
+      const tensionBadge = document.getElementById('tensionSoundBadge');
+      const workCard = document.getElementById('studentWorkCard');
+
+      if (isPaused) {
+        activeBox.classList.remove('hidden');
+        waitingBox.classList.add('hidden');
+        if (tensionBadge) tensionBadge.classList.add('hidden');
+        if (workCard) workCard.classList.remove('tension-active');
+
+        const currentProb = myRunner.queue[0] || { a: '?', b: '?' };
+        document.getElementById('stQ1').innerText = currentProb.a;
+        document.getElementById('stQ2').innerText = currentProb.b;
+
+        const myBadge = document.getElementById('myRunnerNameBadge');
+        myBadge.innerHTML = `<i class="fa-solid fa-hourglass-half text-rose-500"></i> ${myRunner.order}번 주자 (${myRunner.studentName}) - ⏸️ 파우스 중 (${pauseRemainingSec}초)`;
+        myBadge.className = 'px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-jua bg-rose-100 text-rose-700 border border-rose-300 flex items-center gap-1.5 animate-pulse';
+
+        document.getElementById('studentProbTitle').innerHTML = `<span>⚠️ 패스로 인한 파우스(정지) 상태입니다.</span>`;
+        if (ansInput) {
+          ansInput.disabled = true;
+          ansInput.placeholder = `파우스 ${pauseRemainingSec}s`;
+          ansInput.classList.add('bg-slate-100', 'cursor-not-allowed', 'border-rose-400');
+        }
+
+        statusNotice.innerText = `파우스 중 (${pauseRemainingSec}초 후 해제)`;
+        statusNotice.className = 'text-rose-600 font-bold text-[11px] animate-pulse';
+        showStFeedback(`⏸️ 패스로 인해 <strong>${pauseRemainingSec}초</strong> 동안 멈춤(파우스) 상태입니다. 잠시 기다려주세요!`, "text-rose-600");
+
+      } else if (queueLen > 0) {
+        activeBox.classList.remove('hidden');
+        waitingBox.classList.add('hidden');
+
+        const currentProb = myRunner.queue[0];
+        document.getElementById('stQ1').innerText = currentProb.a;
+        document.getElementById('stQ2').innerText = currentProb.b;
+
+        const myBadge = document.getElementById('myRunnerNameBadge');
+        myBadge.innerHTML = `<i class="fa-solid fa-running"></i> ${myRunner.order}번 주자 (${myRunner.studentName})`;
+        myBadge.className = 'px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-jua bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center gap-1.5';
+        
+        if (queueLen > 1) {
+          document.getElementById('studentProbTitle').innerHTML = `
+            <span>${team.name} - ${myRunner.order}번 주자의 배턴 문제</span>
+            <span class="text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">
+              <i class="fa-solid fa-heart-pulse"></i> ${queueLen}문제 밀림 (초긴박!)
+            </span>
+          `;
+          if (workCard) workCard.classList.add('tension-active');
+        } else {
+          document.getElementById('studentProbTitle').innerHTML = `
+            <span>${team.name} - ${myRunner.order}번 주자의 배턴 문제</span>
+            <span class="text-[10px] text-amber-600 font-bold">
+              <i class="fa-solid fa-stopwatch"></i> 풀이 진행 중
+            </span>
+          `;
+          if (workCard) workCard.classList.remove('tension-active');
+        }
+
+        if (ansInput) {
+          ansInput.disabled = false;
+          ansInput.placeholder = '정답';
+          ansInput.classList.remove('bg-slate-100', 'cursor-not-allowed', 'border-rose-400');
+        }
+
+        if (queueLen > 1) {
+          queueBadge.className = 'text-xs bg-rose-500 text-white px-2.5 py-1 rounded-full font-bold animate-pulse';
+          statusNotice.innerText = `문제 ${queueLen}개 밀림!`;
+          statusNotice.className = 'text-rose-600 font-bold text-[11px] animate-pulse';
+        } else {
+          queueBadge.className = 'text-xs bg-emerald-100 text-emerald-700 border border-emerald-300 px-2.5 py-1 rounded-full font-bold';
+          statusNotice.innerText = '현재 문제 1개 진행 중';
+          statusNotice.className = 'text-emerald-600 font-bold text-[11px]';
+        }
+
+      } else {
+        activeBox.classList.add('hidden');
+        waitingBox.classList.remove('hidden');
+        if (workCard) workCard.classList.remove('tension-active');
+
+        const activeRunner = team.runners.find(r => r.queue.length > 0);
+        if (activeRunner) {
+          document.getElementById('waitingReasonText').innerText = 
+            `앞선 ${activeRunner.order}번 주자 (${activeRunner.studentName}) 학생이 문제를 풀면 이쪽으로 배턴이 전달됩니다!`;
+        } else {
+          document.getElementById('waitingReasonText').innerText = 
+            `1번 주자 (${team.runners[0].studentName}) 학생이 문제를 풀어야 릴레이가 시작됩니다!`;
+        }
+
+        queueBadge.className = 'text-xs bg-slate-100 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-full font-bold';
+        statusNotice.innerText = '앞 주자 배턴 대기 중';
+        statusNotice.className = 'text-slate-400 font-bold text-[11px]';
+      }
+
+      render8SlotQueueGrid(myRunner.queue);
+    }
+
+    function render8SlotQueueGrid(queueList) {
+      const grid = document.getElementById('studentQueue8Grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const TOTAL_SLOTS = 8;
+      const subtext = document.getElementById('queueStatusSubtext');
+      
+      if (queueList.length > 1) {
+        subtext.innerHTML = `<span class="text-rose-600 font-bold">⚠️ 문제 ${queueList.length}개가 밀렸습니다!</span>`;
+      } else if (queueList.length === 1) {
+        subtext.innerHTML = `<span class="text-emerald-600 font-bold">현재 1개 문제 진행 중 (맨 왼쪽 위)</span>`;
+      } else {
+        subtext.innerHTML = `(앞 주자가 문제를 풀면 맨 왼쪽 위부터 차곡차곡 쌓입니다)`;
+      }
+
+      for (let i = 0; i < TOTAL_SLOTS; i++) {
+        const slot = document.createElement('div');
+        const prob = queueList[i];
+
+        if (prob) {
+          const isFirst = (i === 0);
+          slot.className = `queue-rect-block h-16 sm:h-20 p-2 sm:p-2.5 flex flex-col justify-between text-white ${
+            isFirst ? 'queue-block-first' : 'queue-block-filled'
+          }`;
+
+          slot.innerHTML = `
+            <div class="flex items-center justify-between w-full">
+              <span class="text-[9px] sm:text-[10px] font-bold ${isFirst ? 'bg-white text-rose-600 px-1.5 py-0.5 rounded-full shadow-xs' : 'text-rose-100'}">
+                ${isFirst ? '⭐ 중앙 풀이 중' : `#${i + 1} 밀린 문제`}
+              </span>
+              <span class="text-[10px] text-white/80"><i class="fa-solid fa-layer-group"></i></span>
+            </div>
+            <div class="text-center font-jua text-xl sm:text-2xl tracking-wide my-auto text-white drop-shadow">
+              ${prob.a} &times; ${prob.b}
+            </div>
+            <div class="text-[9px] text-right font-bold text-white/90">
+              ${isFirst ? '중앙에 위치 &uarr;' : '풀면 순서 이동 &larr;'}
+            </div>
+          `;
+        } else {
+          slot.className = 'queue-rect-block h-16 sm:h-20 queue-block-empty flex flex-col items-center justify-center text-slate-300';
+          slot.innerHTML = `
+            <span class="text-[11px] font-bold text-slate-400">#${i + 1}</span>
+            <span class="text-[9px] text-slate-400/70">대기 슬롯</span>
+          `;
+        }
+
+        grid.appendChild(slot);
+      }
+    }
+
+    function simulateAddBaton() {
+      const team = relayGame.teams[relayGame.currentStudentTeamId];
+      const rIdx = relayGame.currentStudentRunnerIdx;
+      const myRunner = team.runners[rIdx];
+
+      const newProb = makeMultiplicationProblem();
+      if (rIdx === 0) {
+        if (myRunner.queue.length === 0) myRunner.queue.push(newProb);
+        else myRunner.queue = myRunner.queue.slice(0, 1);
+      } else {
+        myRunner.queue.push(newProb);
+      }
+      sound.passBaton();
+      showToast(`앞 주자가 배턴(${newProb.a} × ${newProb.b})을 보냈습니다!`);
+      
+      renderStudentView();
+      renderBoardTracks();
+    }
+
+    async function submitStudentAnswer() {
+      if (!relayGame.isRunning) { showStFeedback("아직 경기가 시작되지 않았습니다.", "text-rose-500"); return; }
+      const teamIdx=relayGame.currentStudentTeamId, rIdx=relayGame.currentStudentRunnerIdx;
+      const team=relayGame.teams[teamIdx], myRunner=team?.runners?.[rIdx];
+      if (!myRunner) return;
+      const now=Date.now();
+      if (myRunner.pauseUntil && myRunner.pauseUntil>now) {
+        showStFeedback(`⏸️ 파우스 중입니다. ${Math.ceil((myRunner.pauseUntil-now)/1000)}초 후에 입력할 수 있습니다.`, "text-rose-600"); return;
+      }
+      if (!myRunner.queue.length) return;
+      const ansInput=document.getElementById('stAnsInput');
+      const val=ansInput?ansInput.value.trim():'';
+      if(!val){ showStFeedback("정답 숫자를 입력해주세요!","text-rose-500"); ansInput?.focus(); return; }
+      const currentProb=myRunner.queue[0], userAns=parseInt(val,10);
+      if(userAns!==Number(currentProb.answer)){
+        sound.wrong(); triggerStudentShake(); showStFeedback("틀렸습니다! 다시 계산해보세요.","text-rose-500");
+        if(ansInput){ansInput.value='';ansInput.focus();} return;
+      }
+      const expectedId=currentProb.id||`${currentProb.a}x${currentProb.b}`;
+      const committed=await window.firebaseStudentTransaction?.(data=>{
+        const t=data.teams?.[teamIdx], r=t?.runners?.[rIdx]; if(!t||!r)return data;
+        const q=Array.isArray(r.queue)?r.queue:Object.values(r.queue||{}); if(!q.length)return data;
+        const p=q[0], remoteId=p.id||`${p.a}x${p.b}`;
+        if(remoteId!==expectedId || Number(p.answer??Number(p.a)*Number(p.b))!==userAns)return data;
+        q.shift(); r.queue=q; const last=rIdx>=t.runners.length-1;
+        if(!last){
+          const nr=t.runners[rIdx+1], nq=Array.isArray(nr.queue)?nr.queue:Object.values(nr.queue||{});
+          nq.push({a:Number(p.a),b:Number(p.b),answer:Number(p.answer??Number(p.a)*Number(p.b)),id:p.id||Math.random().toString(36).slice(2,8)}); nr.queue=nq;
+          if(rIdx===0) r.queue.push(makeMultiplicationProblem());
+        }else{
+          t.score=Number(t.score||0)+1; t.solvedHistory=Array.isArray(t.solvedHistory)?t.solvedHistory:[];
+          t.solvedHistory.push({a:Number(p.a),b:Number(p.b),answer:Number(p.answer??Number(p.a)*Number(p.b))});
+          const first=t.runners[0]; first.queue=Array.isArray(first.queue)?first.queue:Object.values(first.queue||{}); if(first.queue.length===0) first.queue.push(makeMultiplicationProblem()); else first.queue=first.queue.slice(0,1);
+        }
+        data.updatedAt=Date.now(); return data;
+      });
+      if(!committed)return;
+      if(ansInput)ansInput.value='';
+      if(rIdx>=team.runners.length-1){sound.goal();triggerGoalAnimation();showStFeedback('🎉 정답! 마지막 주자 완주!','text-amber-500 font-bold');}
+      else{sound.passBaton();showStFeedback('정답! 다음 주자에게 배턴이 전달되었습니다!','text-emerald-500');}
+    }
+
+    async function studentPassProblem() {
+      if(!relayGame.isRunning)return;
+      const teamIdx=relayGame.currentStudentTeamId,rIdx=relayGame.currentStudentRunnerIdx;
+      const myRunner=relayGame.teams?.[teamIdx]?.runners?.[rIdx]; if(!myRunner||!myRunner.queue.length)return;
+      const now=Date.now(); if(myRunner.pauseUntil&&myRunner.pauseUntil>now)return;
+      const p=myRunner.queue[0], expectedId=p.id||`${p.a}x${p.b}`;
+      const pauseSec=30;
+      const committed=await window.firebaseStudentTransaction?.(data=>{
+        const t=data.teams?.[teamIdx], r=t?.runners?.[rIdx]; if(!t||!r)return data;
+        const q=Array.isArray(r.queue)?r.queue:Object.values(r.queue||{}); if(!q.length)return data;
+        const rp=q[0], remoteId=rp.id||`${rp.a}x${rp.b}`; if(remoteId!==expectedId)return data;
+        const last=rIdx>=t.runners.length-1;
+        r.pauseUntil=Date.now()+pauseSec*1000;
+        if(!last){
+          // 패스한 문제는 다음 주자에게 그대로 전달한다.
+          q.shift(); r.queue=q;
+          const nr=t.runners[rIdx+1], nq=Array.isArray(nr.queue)?nr.queue:Object.values(nr.queue||{});
+          nq.push({a:Number(rp.a),b:Number(rp.b),answer:Number(rp.answer??Number(rp.a)*Number(rp.b)),id:rp.id||Math.random().toString(36).slice(2,8)});
+          nr.queue=nq;
+          // 1번 주자는 문제가 쌓이지 않으며, 항상 최대 1문제만 가진다.
+          if(rIdx===0){
+            r.queue=[];
+            r.queue.push(makeMultiplicationProblem());
+          }
+        } else {
+          // 마지막 주자는 패스해도 문제를 버리지 않는다. 30초 뒤 이 문제를 맞히면 정상 득점한다.
+          r.queue=q.slice(0,1);
+        }
+        data.updatedAt=Date.now(); return data;
+      });
+      if(!committed)return;
+      const ansInput=document.getElementById('stAnsInput');if(ansInput)ansInput.value='';
+      sound.skip();showToast(`⏸ [${myRunner.studentName}] 패스로 인해 30초간 멈춥니다!`);
+    }
+
+    function showStFeedback(msg, colorClass) {
+      const fb = document.getElementById('stFeedback');
+      fb.innerHTML = msg;
+      fb.className = `mt-2 text-xs font-bold ${colorClass} h-5`;
+    }
+
+    function triggerStudentShake() {
+      const area = document.getElementById('centralProblemArea');
+      area.classList.add('shake-effect');
+      setTimeout(() => area.classList.remove('shake-effect'), 350);
+    }
+
+    function triggerGoalAnimation() {
+      const area = document.getElementById('centralProblemArea');
+      area.classList.add('ring-4', 'ring-amber-400');
+      setTimeout(() => area.classList.remove('ring-4', 'ring-amber-400'), 650);
+    }
+
+    /* =========================================================================
+       6. 칠판 뷰: 대형 전광판 트랙 및 레이싱 로직 & 카운트다운/긴장 사운드 연동
+       ========================================================================= */
+    function renderBoardTracks() {
+      const container = document.getElementById('boardTracksContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const topScore = Math.max(...relayGame.teams.slice(0, relayGame.activeTeamsCount).map(t => t.score), 0);
+      const targetMaxScore = Math.max(12, topScore + 3);
+
+      const count = relayGame.activeTeamsCount;
+      let trackH = 'h-32 sm:h-40';
+      let carSize = 'w-20 sm:w-26 h-10 sm:h-13 text-xl sm:text-2xl';
+      let wheelSize = 'w-4 h-2';
+      let scoreBadgeSize = 'text-xs px-2.5 py-0.5';
+      let startGateW = 'w-14 sm:w-18 text-xs sm:text-sm';
+      let finishGateW = 'w-14 sm:w-18';
+      let flameSize = 'text-xl sm:text-2xl';
+
+      if (count === 3) {
+        trackH = 'h-24 sm:h-30';
+        carSize = 'w-18 sm:w-22 h-9 sm:h-11 text-lg sm:text-xl';
+        wheelSize = 'w-3.5 h-1.5';
+        scoreBadgeSize = 'text-[11px] px-2 py-0.5';
+        startGateW = 'w-12 sm:w-15 text-xs';
+        finishGateW = 'w-12 sm:w-15';
+        flameSize = 'text-lg sm:text-xl';
+      } else if (count >= 4) {
+        trackH = 'h-18 sm:h-22';
+        carSize = 'w-15 sm:w-18 h-7 sm:h-9 text-base sm:text-lg';
+        wheelSize = 'w-3 h-1.5';
+        scoreBadgeSize = 'text-[10px] px-1.5 py-0.5';
+        startGateW = 'w-11 sm:w-13 text-[10px]';
+        finishGateW = 'w-11 sm:w-13';
+        flameSize = 'text-base sm:text-lg';
+      }
+
+      const TEAM_RACERS = [
+        { bg: 'bg-rose-500', border: 'border-rose-300', text: 'text-rose-600', accent: 'from-rose-500 to-red-600', carIcon: 'fa-car-side' },
+        { bg: 'bg-sky-500', border: 'border-sky-300', text: 'text-sky-600', accent: 'from-sky-500 to-blue-600', carIcon: 'fa-truck-monster' },
+        { bg: 'bg-amber-500', border: 'border-amber-300', text: 'text-amber-600', accent: 'from-amber-500 to-orange-600', carIcon: 'fa-motorcycle' },
+        { bg: 'bg-emerald-500', border: 'border-emerald-300', text: 'text-emerald-600', accent: 'from-emerald-500 to-teal-600', carIcon: 'fa-car' },
+        { bg: 'bg-purple-500', border: 'border-purple-300', text: 'text-purple-600', accent: 'from-purple-500 to-indigo-600', carIcon: 'fa-shuttle-space' }
+      ];
+
+      let currentLeader = null;
+      if (topScore > 0) {
+        currentLeader = relayGame.teams.slice(0, relayGame.activeTeamsCount).find(t => t.score === topScore);
+      }
+
+      for (let t = 0; t < relayGame.activeTeamsCount; t++) {
+        const team = relayGame.teams[t];
+        const theme = TEAM_RACERS[t % TEAM_RACERS.length];
+        const isLeader = currentLeader && team.score === topScore;
+        const lastRunner = team.runners[team.runners.length - 1];
+
+        const progressRatio = Math.min(1, team.score / targetMaxScore);
+        const carLeftPercent = 4 + (progressRatio * 78);
+
+        const laneBox = document.createElement('div');
+        laneBox.className = `bg-white rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 border-2 shadow-md transition-all duration-300 ${
+          isLeader ? 'border-amber-400 ring-4 ring-amber-300/30 shadow-amber-100' : 'border-slate-200'
+        }`;
+
+        laneBox.innerHTML = `
+          <div class="flex items-center justify-between mb-1.5 sm:mb-2">
+            <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl ${theme.bg} text-white font-jua text-xs sm:text-base flex items-center justify-center shadow-md">
+                ${t + 1}
+              </span>
+              <h3 class="font-jua text-base sm:text-xl text-slate-800 flex items-center gap-2">
+                ${team.name}
+                ${isLeader ? '<span class="text-[10px] sm:text-xs font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-300 flex items-center gap-1 shadow-sm"><span class="crown-bounce">👑</span> 선두</span>' : ''}
+              </h3>
+              
+              <!-- 승리 횟수 점수판 및 교사 +/- 조절기 -->
+              <div class="flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200 shadow-xs">
+                <span class="text-amber-500 font-bold text-xs sm:text-sm">🏆 승리:</span>
+                <span class="font-jua text-amber-800 text-sm sm:text-base px-1 min-w-[20px] text-center">${team.wins || 0}</span>
+                <span class="text-xs text-amber-600 font-bold">회</span>
+                <div class="flex items-center gap-0.5 ml-1 border-l border-amber-200 pl-1">
+                  <button onclick="changeTeamWins(${t}, -1)" class="w-5 h-5 rounded-md bg-white hover:bg-amber-100 active:scale-95 text-slate-600 font-bold flex items-center justify-center border border-amber-300 text-xs transition" title="승리 1 차감">-</button>
+                  <button onclick="changeTeamWins(${t}, 1)" class="w-5 h-5 rounded-md bg-white hover:bg-amber-100 active:scale-95 text-amber-700 font-bold flex items-center justify-center border border-amber-300 text-xs transition" title="승리 1 추가">+</button>
+                </div>
+              </div>
+
+              <span class="text-[11px] sm:text-xs text-slate-400 hidden md:inline">
+                마지막 주자: <strong class="text-slate-600">${lastRunner.order}번 (${lastRunner.studentName})</strong>
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span class="font-jua text-base sm:text-xl ${theme.text} bg-slate-50 px-3 py-0.5 rounded-xl border border-slate-200 shadow-inner">
+                ${team.score} 문제 통과 🏁
+              </span>
+            </div>
+          </div>
+
+          <div class="relative ${trackH} asphalt-road rounded-xl sm:rounded-2xl border-2 sm:border-4 border-slate-700 overflow-hidden flex items-center shadow-inner">
+            
+            <div class="absolute left-0 top-0 bottom-0 ${startGateW} bg-slate-900/90 border-r-2 sm:border-r-4 border-dashed border-white/40 flex flex-col items-center justify-center text-white/90 font-jua tracking-widest z-10 shadow-lg">
+              <span class="text-amber-400 font-bold">S</span><span>T</span><span>A</span><span>R</span><span>T</span>
+            </div>
+
+            <div class="w-full flex flex-col gap-1 my-auto pointer-events-none">
+              <div class="w-full border-t-2 border-dashed border-white/30"></div>
+              <div class="w-full border-t border-dashed border-amber-300/30"></div>
+            </div>
+
+            <div class="absolute right-0 top-0 bottom-0 ${finishGateW} border-l-2 sm:border-l-4 border-white/80 flex flex-col justify-between py-1.5 z-10 shadow-lg"
+                 style="background: repeating-conic-gradient(#000000 0% 25%, #ffffff 0% 50%) 50% / 12px 12px;">
+              <div class="bg-black/90 text-[9px] sm:text-[11px] text-white font-jua text-center py-0.5 mx-auto px-1.5 rounded border border-white/40 shadow">
+                FINISH
+              </div>
+            </div>
+
+            <div class="absolute top-1/2 -translate-y-1/2 transition-all duration-700 ease-out z-20 flex items-center"
+                 style="left: ${carLeftPercent}%;">
+              
+              <div class="relative -mr-2 z-10">
+                ${team.score > 0 ? `
+                  <div class="booster-flame text-amber-400 ${flameSize} transform -scale-x-100 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]">
+                    <i class="fa-solid fa-fire-flame-curved"></i>
+                  </div>
+                ` : ''}
+              </div>
+
+              <div class="flex flex-col items-center">
+                <div class="bg-white/95 text-slate-800 ${scoreBadgeSize} font-jua rounded-full shadow border border-slate-300 whitespace-nowrap mb-0.5 flex items-center gap-1">
+                  ${isLeader ? '<span class="text-amber-500">👑</span>' : ''}
+                  <strong class="${theme.text}">${team.score}점</strong>
+                </div>
+
+                <div class="${carSize} rounded-xl bg-gradient-to-r ${theme.accent} border-2 sm:border-3 border-white text-white flex items-center justify-center shadow-xl relative">
+                  <i class="fa-solid ${theme.carIcon}"></i>
+                  
+                  <div class="${wheelSize} bg-slate-950 rounded-full absolute -bottom-1 left-2 border border-slate-600 shadow"></div>
+                  <div class="${wheelSize} bg-slate-950 rounded-full absolute -bottom-1 right-2 border border-slate-600 shadow"></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        `;
+
+        container.appendChild(laneBox);
+      }
+
+      document.getElementById('boardTimerText').innerText = `${relayGame.timeLeft} 초`;
+    }
+
+    // [중요] 문제 풀이 중 긴박한 사운드 재생 (1초 루프 내에서 호출)
+    function handleTensionSound() {
+      if (!relayGame.isRunning) return;
+      // [수정] 칠판 뷰(대형 전광판)가 열려있을 때만 교실 전체 긴장감 사운드 재생
+      const boardView = document.getElementById('view-board');
+      if (!boardView || boardView.classList.contains('hidden')) return;
+
+      // 칠판에서는 경기가 진행되는 동안 긴장감 틱 재생 (시간이 15초 이하일 때 더 긴박하게)
+      const isUrgent = relayGame.timeLeft <= 15;
+      sound.tensionTick(isUrgent);
+    }
+
+    // [중요] 경기 종료 10초 전 화면 전체 대형 카운트다운 및 오디오 비프음
+    function handleCountdownTrigger(timeLeft) {
+      // [수정] 칠판 뷰(대형 전광판) 화면에서만 카운트다운 시각 연출 및 비프음 작동
+      const boardView = document.getElementById('view-board');
+      const isBoardActive = boardView && !boardView.classList.contains('hidden');
+
+      const overlay = document.getElementById('countdownOverlay');
+      const numEl = document.getElementById('countdownNumber');
+      const subEl = document.getElementById('countdownSub');
+
+      if (!isBoardActive) {
+        hideCountdownOverlay();
+        return;
+      }
+
+      if (!overlay || !numEl) return;
+
+      if (timeLeft <= 10 && timeLeft > 0) {
+        overlay.classList.remove('hidden');
+        numEl.innerText = timeLeft;
+        numEl.classList.remove('countdown-pop');
+        void numEl.offsetWidth; // CSS 애니메이션 재시작
+        numEl.classList.add('countdown-pop');
+
+        if (timeLeft <= 3) {
+          numEl.className = 'text-9xl sm:text-[14rem] font-black font-jua text-rose-500 drop-shadow-[0_15px_40px_rgba(225,29,72,0.9)] leading-none countdown-pop';
+          subEl.innerText = `⚠️ 경기 종료 ${timeLeft}초 전! 마지막 스퍼트!`;
+        } else {
+          numEl.className = 'text-9xl sm:text-[14rem] font-black font-jua text-amber-400 drop-shadow-[0_15px_35px_rgba(245,158,11,0.8)] leading-none countdown-pop';
+          subEl.innerText = `경기 종료 ${timeLeft}초 전!`;
+        }
+
+        sound.countdownBeep(false); // 10, 9, ... 1 경고 비프음
+
+      } else if (timeLeft <= 0) {
+        overlay.classList.remove('hidden');
+        numEl.innerText = 'FINISH!';
+        numEl.className = 'text-7xl sm:text-[11rem] font-black font-jua text-emerald-400 drop-shadow-[0_15px_40px_rgba(16,185,129,0.9)] leading-none countdown-pop';
+        subEl.innerText = '🏁 경기 종료! 결과를 확인하세요.';
+        sound.countdownBeep(true); // 경기 종료 최종 부저음
+
+        setTimeout(() => {
+          hideCountdownOverlay();
+        }, 1200);
+      } else {
+        hideCountdownOverlay();
+      }
+    }
+
+    function hideCountdownOverlay() {
+      const overlay = document.getElementById('countdownOverlay');
+      if (overlay) overlay.classList.add('hidden');
+    }
+
+    function startSyncedDisplayClock() {
+      if (relayGame.timerInterval) clearInterval(relayGame.timerInterval);
+      const tick = () => {
+        if (!relayGame.isRunning) return;
+        if (relayGame.gameEndAt) {
+          relayGame.timeLeft = Math.max(0, Math.ceil((relayGame.gameEndAt - Date.now()) / 1000));
+        }
+        const timerText = document.getElementById('boardTimerText');
+        if (timerText) timerText.innerText = `${relayGame.timeLeft} 초`;
+        const stTimer = document.getElementById('studentTeamTimer');
+        if (stTimer) stTimer.innerText = relayGame.timeLeft;
+        handleTensionSound();
+        handleCountdownTrigger(relayGame.timeLeft);
+        // 실제 경기 종료/승패 확정은 경기를 시작한 교사 기기의 기존 종료 로직이 담당한다.
+      };
+      tick();
+      relayGame.timerInterval = setInterval(tick, 200);
+    }
+
+    function toggleRelayGame() {
+      if (relayGame.isRunning) {
+        pauseGame();
+      } else {
+        if (relayGame.timeLeft <= 0 || relayGame.timeLeft === relayGame.gameTime) {
+          startRelayGame();
+        } else {
+          resumeGame();
+        }
+      }
+    }
+
+    function resumeGame() {
+      sound.init();
+      relayGame.isRunning = true;
+      relayGame.gameEndAt = Date.now() + Math.max(0, relayGame.timeLeft) * 1000;
+      const playIcon = document.getElementById('boardPlayIcon');
+      const playBtnText = document.getElementById('boardPlayBtnText');
+      if (playIcon) playIcon.className = 'fa-solid fa-pause';
+      if (playBtnText) playBtnText.innerText = '경기 중단';
+
+      startSyncedDisplayClock();
+      const ownerEndAt = relayGame.gameEndAt;
+      const ownerWatcher = setInterval(() => {
+        if (!relayGame.isRunning || relayGame.gameEndAt !== ownerEndAt) { clearInterval(ownerWatcher); return; }
+        if (Date.now() >= ownerEndAt) { clearInterval(ownerWatcher); relayGame.timeLeft = 0; endRelayGame(); window.firebaseRelayPush?.(); }
+      }, 200);
+      showToast("▶️ 경기가 재개되었습니다!");
+      window.firebaseRelayPush?.();
+    }
+
+    function startRelayGame() {
+      sound.init();
+      relayGame.isRunning = true;
+      relayGame.timeLeft = relayGame.gameTime;
+      relayGame.gameEndAt = Date.now() + relayGame.gameTime * 1000;
+
+      for (let t = 0; t < relayGame.activeTeamsCount; t++) {
+        const team = relayGame.teams[t];
+        team.score = 0;
+        team.solvedHistory = [];
+        team.runners.forEach((r, idx) => {
+          r.queue = [];
+          delete r.pauseUntil;
+          if (idx === 0) {
+            r.queue.push(makeMultiplicationProblem());
+          }
+        });
+      }
+
+      document.getElementById('boardPlayIcon').className = 'fa-solid fa-pause';
+      document.getElementById('boardPlayBtnText').innerText = '경기 중단';
+
+      renderBoardTracks();
+      renderStudentView();
+
+      startSyncedDisplayClock();
+      const ownerEndAt = relayGame.gameEndAt;
+      const ownerWatcher = setInterval(() => {
+        if (!relayGame.isRunning || relayGame.gameEndAt !== ownerEndAt) { clearInterval(ownerWatcher); return; }
+        if (Date.now() >= ownerEndAt) { clearInterval(ownerWatcher); relayGame.timeLeft = 0; endRelayGame(); window.firebaseRelayPush?.(); }
+      }, 200);
+
+      showToast("🚀 경기가 시작되었습니다! 1번 주자가 배턴을 쥡니다.");
+      window.firebaseRelayPush?.();
+    }
+
+    function pauseGame() {
+      if (relayGame.gameEndAt) relayGame.timeLeft = Math.max(0, Math.ceil((relayGame.gameEndAt - Date.now()) / 1000));
+      relayGame.isRunning = false;
+      relayGame.gameEndAt = null;
+      if (relayGame.timerInterval) clearInterval(relayGame.timerInterval);
+      hideCountdownOverlay();
+      document.getElementById('boardPlayIcon').className = 'fa-solid fa-play';
+      document.getElementById('boardPlayBtnText').innerText = '경기 재개';
+      showToast("경기가 일시 중단되었습니다.");
+      window.firebaseRelayPush?.();
+    }
+
+    function endRelayGame() {
+      relayGame.isRunning = false;
+      relayGame.gameEndAt = null;
+      if (relayGame.timerInterval) clearInterval(relayGame.timerInterval);
+
+      document.getElementById('boardPlayIcon').className = 'fa-solid fa-play';
+      document.getElementById('boardPlayBtnText').innerText = '새 경기 시작';
+
+      const sortedTeams = [...relayGame.teams.slice(0, relayGame.activeTeamsCount)]
+        .sort((a, b) => b.score - a.score);
+
+      const boardBox = document.getElementById('resultLeaderboard');
+      boardBox.innerHTML = '';
+
+      sortedTeams.forEach((t, rank) => {
+        const row = document.createElement('div');
+        row.className = `p-3 rounded-2xl border flex items-center justify-between ${
+          rank === 0 ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-300' : 'bg-slate-50 border-slate-200'
+        }`;
+        row.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full ${rank === 0 ? 'bg-amber-400 text-slate-900 font-bold' : 'bg-slate-200 text-slate-600'} flex items-center justify-center font-jua text-sm">
+              ${rank + 1}
+            </span>
+            <span class="font-jua text-slate-800 text-base">${t.name}</span>
+            <span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">누적 ${t.wins || 0}승</span>
+          </div>
+          <div class="font-jua text-xl text-amber-600">${t.score} 점</div>
+        `;
+        boardBox.appendChild(row);
+      });
+
+      if (sortedTeams.length > 0 && sortedTeams[0].score > 0) {
+        const topScoreVal = sortedTeams[0].score;
+        relayGame.teams.forEach(tm => {
+          if (tm.score === topScoreVal) {
+            tm.wins = (tm.wins || 0) + 1;
+          }
+        });
+        showToast(`🏆 경기 종료! 1위 [${sortedTeams[0].name}] 승리 횟수가 1 증가했습니다.`);
+      }
+
+      // 카운트다운 연출이 완전히 끝난 후 1.3초 뒤에 결과창 팝업
+      setTimeout(() => {
+        document.getElementById('resultModal').classList.remove('hidden');
+      }, 1300);
+    }
+
+    function changeTeamWins(teamIdx, delta) {
+      if (!relayGame.teams[teamIdx]) return;
+      relayGame.teams[teamIdx].wins = Math.max(0, (relayGame.teams[teamIdx].wins || 0) + delta);
+      sound.passBaton();
+      renderBoardTracks();
+      renderTeacherView();
+      showToast(`${relayGame.teams[teamIdx].name}의 승리 횟수: ${relayGame.teams[teamIdx].wins}승`);
+      window.firebaseRelayPush?.();
+    }
+
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-5 right-5 z-50 bg-slate-800 border border-slate-700 text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs font-bold flex items-center gap-2';
+      toast.innerHTML = `<i class="fa-solid fa-bell text-amber-400"></i> ${msg}`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    }
+
+    /* =========================================================================
+       7. 이벤트 바인딩 및 페이지 초기화
+       ========================================================================= */
+    document.addEventListener('DOMContentLoaded', () => {
+      window.addEventListener('keydown', (e) => {
+        const stView = document.getElementById('view-student');
+        if (!stView.classList.contains('hidden')) {
+          if (e.key === ' ' || e.code === 'Space') {
+            e.preventDefault();
+            studentPassProblem();
+          }
+        }
+      });
+
+      const soundBtn = document.getElementById('soundToggleBtn');
+      const soundIcon = document.getElementById('soundIcon');
+      soundBtn.addEventListener('click', () => {
+        sound.enabled = !sound.enabled;
+        if (sound.enabled) {
+          soundIcon.className = 'fa-solid fa-volume-high';
+          soundBtn.classList.remove('text-rose-400');
+        } else {
+          soundIcon.className = 'fa-solid fa-volume-xmark';
+          soundBtn.classList.add('text-rose-400');
+        }
+      });
+
+      switchView('home');
+    });
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, runTransaction } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBYbCu_j7cWsMv4XaNHrxqcgnep8OA5Iks",
+      authDomain: "multiplication-relay.firebaseapp.com",
+      databaseURL: "https://multiplication-relay-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "multiplication-relay",
+      storageBucket: "multiplication-relay.firebasestorage.app",
+      messagingSenderId: "115173700284",
+      appId: "1:115173700284:web:d831a14fadf78ac2c256b9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const gameRef = ref(db, 'multiplicationRelay/current');
+    let applyingRemote = false;
+    let firstSnapshot = true;
+
+    function cleanForFirebase() {
+      (relayGame.teams || []).forEach(t => { if (t.runners && t.runners[0] && Array.isArray(t.runners[0].queue) && t.runners[0].queue.length > 1) t.runners[0].queue = t.runners[0].queue.slice(0, 1); });
+      return {
+        isRunning: !!relayGame.isRunning,
+        gameTime: Number(relayGame.gameTime || 90),
+        timeLeft: Number(relayGame.timeLeft ?? relayGame.gameTime ?? 90),
+        gameEndAt: relayGame.isRunning ? Number(relayGame.gameEndAt || (Date.now() + Number(relayGame.timeLeft || 0) * 1000)) : null,
+        defaultPause: Number(relayGame.defaultPause || 30),
+        danRange: relayGame.danRange || 'all',
+        activeTeamsCount: Number(relayGame.activeTeamsCount || 5),
+        updatedAt: Date.now(),
+        teams: (relayGame.teams || []).map((t, ti) => ({
+          id: Number(t.id ?? ti), name: t.name || `${ti+1}조`,
+          score: Number(t.score || 0), wins: Number(t.wins || 0),
+          solvedHistory: Array.isArray(t.solvedHistory) ? t.solvedHistory : [],
+          runners: (t.runners || []).map((r, ri) => ({
+            order: Number(r.order || ri+1), studentName: r.studentName || `학생${ri+1}`,
+            pauseTime: Number(r.pauseTime || relayGame.defaultPause || 30),
+            ...(r.pauseUntil ? {pauseUntil:Number(r.pauseUntil)} : {}),
+            queue: (Array.isArray(r.queue) ? r.queue : Object.values(r.queue || {}))
+              .filter(p => p && Number.isFinite(Number(p.a)) && Number.isFinite(Number(p.b)))
+              .map(p => ({a:Number(p.a), b:Number(p.b), answer:Number(p.answer ?? Number(p.a)*Number(p.b)), id:p.id || Math.random().toString(36).slice(2,8)}))
+          }))
+        }))
+      };
+    }
+
+    window.firebaseRelayPush = async function() {
+      if (applyingRemote) return;
+      try { await set(gameRef, cleanForFirebase()); }
+      catch (e) { console.error('Firebase 저장 오류', e); showToast('Firebase 저장 오류: ' + e.message); }
+    };
+
+    // 학생 동작은 transaction으로 처리하여 동시 제출이 서로 덮어쓰지 않게 한다.
+    window.firebaseStudentTransaction = async function(mutator) {
+      try {
+        const result = await runTransaction(gameRef, current => {
+          if (!current || !Array.isArray(current.teams)) return current;
+          return mutator(current) || current;
+        }, { applyLocally: false });
+        return result.committed;
+      } catch (e) {
+        console.error('Firebase 학생 처리 오류', e);
+        showToast('학생 처리 오류: ' + e.message);
+        return false;
+      }
+    };
+
+    // 교사 명단/설정 변경은 경기 중 학생의 문제·점수·배턴 상태를 덮어쓰지 않도록 transaction으로 병합한다.
+    window.firebaseTeacherRosterPush = async function() {
+      if (applyingRemote) return;
+      const localTeams = relayGame.teams.map(t => ({
+        id: t.id, name: t.name,
+        runners: t.runners.map((r,ri) => ({ order:ri+1, studentName:r.studentName, pauseTime:30 }))
+      }));
+      try {
+        await runTransaction(gameRef, current => {
+          if (!current || !Array.isArray(current.teams)) return cleanForFirebase();
+          current.defaultPause = 30;
+          current.activeTeamsCount = Number(relayGame.activeTeamsCount || 5);
+          current.gameTime = Number(relayGame.gameTime || current.gameTime || 90);
+          current.danRange = relayGame.danRange || current.danRange || 'all';
+          current.updatedAt = Date.now();
+          localTeams.forEach((lt,ti) => {
+            if (!current.teams[ti]) return;
+            current.teams[ti].name = lt.name;
+            const rr = Array.isArray(current.teams[ti].runners) ? current.teams[ti].runners : Object.values(current.teams[ti].runners || {});
+            lt.runners.forEach((lr,ri) => {
+              if (!rr[ri]) return;
+              rr[ri].order = lr.order;
+              rr[ri].studentName = lr.studentName;
+              rr[ri].pauseTime = 30;
+            });
+            current.teams[ti].runners = rr;
+          });
+          return current;
+        }, {applyLocally:false});
+      } catch(e) { console.error('교사 명단 동기화 오류',e); showToast('교사 명단 동기화 오류: '+e.message); }
+    };
+
+    function applyRemote(data) {
+      if (!data || !Array.isArray(data.teams)) return;
+      const localTeam = relayGame.currentStudentTeamId;
+      const localRunner = relayGame.currentStudentRunnerIdx;
+      const timerInterval = relayGame.timerInterval;
+      const pauseInterval = relayGame.pauseInterval;
+      const normalizedTeams = data.teams.map((t,ti) => ({
+        ...t, id:Number(t.id ?? ti), score:Number(t.score||0), wins:Number(t.wins||0),
+        solvedHistory:Array.isArray(t.solvedHistory)?t.solvedHistory:[],
+        runners:(Array.isArray(t.runners)?t.runners:Object.values(t.runners||{})).map((r,ri)=>({
+          ...r, order:Number(r.order||ri+1), pauseTime:Number(r.pauseTime||data.defaultPause||30),
+          queue:(Array.isArray(r.queue)?r.queue:Object.values(r.queue||{}))
+            .filter(p=>p && Number.isFinite(Number(p.a)) && Number.isFinite(Number(p.b)))
+            .map(p=>({a:Number(p.a),b:Number(p.b),answer:Number(p.answer ?? Number(p.a)*Number(p.b)),id:p.id||''}))
+        }))
+      }));
+      normalizedTeams.forEach(t => { if (t.runners && t.runners[0] && t.runners[0].queue.length > 1) t.runners[0].queue = t.runners[0].queue.slice(0, 1); });
+      relayGame.isRunning=!!data.isRunning; relayGame.gameTime=Number(data.gameTime||90);
+      relayGame.timeLeft=Number(data.timeLeft ?? data.gameTime ?? 90); relayGame.gameEndAt=data.gameEndAt?Number(data.gameEndAt):null; relayGame.defaultPause=30;
+      relayGame.danRange=data.danRange||'all'; relayGame.activeTeamsCount=Number(data.activeTeamsCount||5); relayGame.teams=normalizedTeams;
+      relayGame.currentStudentTeamId=Math.min(localTeam, Math.max(0, normalizedTeams.length-1));
+      relayGame.currentStudentRunnerIdx=localRunner; relayGame.timerInterval=timerInterval; relayGame.pauseInterval=pauseInterval;
+      const team=relayGame.teams[relayGame.currentStudentTeamId];
+      if (team) relayGame.currentStudentRunnerIdx=Math.min(relayGame.currentStudentRunnerIdx, Math.max(0,team.runners.length-1));
+      // 원격 갱신 시 현재 기기의 답 입력값과 포커스를 보존한다.
+      const localAnsEl = document.getElementById('stAnsInput');
+      const localAnsValue = localAnsEl ? localAnsEl.value : '';
+      const localAnsFocused = !!(localAnsEl && document.activeElement === localAnsEl);
+      const beforeTeam = relayGame.teams?.[relayGame.currentStudentTeamId];
+      const beforeRunner = beforeTeam?.runners?.[relayGame.currentStudentRunnerIdx];
+      const beforeProblem = beforeRunner?.queue?.[0];
+      const beforeProblemId = beforeProblem ? (beforeProblem.id || `${beforeProblem.a}x${beforeProblem.b}`) : '';
+      updateStudentSelectors(); renderStudentView(); renderTeacherView(); renderBoardTracks();
+      const afterTeam = relayGame.teams?.[relayGame.currentStudentTeamId];
+      const afterRunner = afterTeam?.runners?.[relayGame.currentStudentRunnerIdx];
+      const afterProblem = afterRunner?.queue?.[0];
+      const afterProblemId = afterProblem ? (afterProblem.id || `${afterProblem.a}x${afterProblem.b}`) : '';
+      const restoredAnsEl = document.getElementById('stAnsInput');
+      if (restoredAnsEl && !restoredAnsEl.disabled && beforeProblemId && beforeProblemId === afterProblemId) {
+        restoredAnsEl.value = localAnsValue;
+        if (localAnsFocused) restoredAnsEl.focus({preventScroll:true});
+      }
+      const gt=document.getElementById('settingGameTime'); if(gt) gt.value=String(relayGame.gameTime);
+      const dp=document.getElementById('settingDefaultPause'); if(dp) dp.value=String(relayGame.defaultPause);
+      const dr=document.getElementById('settingDanRange'); if(dr) dr.value=relayGame.danRange;
+      const ac=document.getElementById('settingActiveTeams'); if(ac) ac.value=String(relayGame.activeTeamsCount);
+      if (relayGame.isRunning && relayGame.gameEndAt) startSyncedDisplayClock();
+      else if (relayGame.timerInterval) { clearInterval(relayGame.timerInterval); relayGame.timerInterval = null; }
+    }
+
+    onValue(gameRef, async snap => {
+      applyingRemote=true;
+      try {
+        if (!snap.exists()) { applyingRemote=false; await window.firebaseRelayPush(); applyingRemote=true; }
+        else applyRemote(snap.val());
+        if(firstSnapshot){ firstSnapshot=false; showToast('🔥 Firebase 실시간 연결 완료!'); }
+      } catch(e){ console.error(e); showToast('Firebase 연결 처리 오류: '+e.message); }
+      finally { applyingRemote=false; }
+    }, err => { console.error('Firebase 연결 오류',err); showToast('Firebase 연결 오류: '+err.message); });
+  </script>
+
+</body>
+</html>
