@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>문장 부호 탐험대 - 3단계 완성형 학습</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti for celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Tone.js for kid-friendly sound effects -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- Google Fonts: Jua & Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .font-jua {
+      font-family: 'Jua', cursive;
+    }
+
+    /* Floating & pulsing keyframes */
+    @keyframes gentle-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    .bounce-gentle {
+      animation: gentle-bounce 2.6s infinite ease-in-out;
+    }
+
+    /* Dragging item visual */
+    .dragging {
+      opacity: 0.4;
+      transform: scale(0.97);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Basket drop highlight */
+    .drop-active {
+      transform: scale(1.02);
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 25px rgba(59, 130, 246, 0.35);
+    }
+
+    /* Wrong wiggle animation */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake-animation {
+      animation: shake 0.45s ease-in-out;
+    }
+
+    .sentence-card {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: grab;
+    }
+    .sentence-card:active {
+      cursor: grabbing;
+    }
+
+    /* SVG Matching line interaction */
+    .line-canvas {
+      pointer-events: none;
+    }
+    .node-point {
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .node-point:hover {
+      transform: scale(1.2);
+    }
+    .node-point.active {
+      transform: scale(1.3);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);
+    }
+    .node-point.connected {
+      pointer-events: none;
+      cursor: default;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-amber-50 via-sky-50 to-indigo-50 min-h-screen text-slate-800 flex flex-col justify-between p-3 sm:p-6 antialiased selection:bg-amber-200">
+
+  <!-- Top Navigation & Stage Indicator -->
+  <header class="max-w-5xl mx-auto w-full pt-2 pb-4">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl bounce-gentle">✏️</span>
+        <div>
+          <span class="text-xs font-bold text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-full inline-block">초등 국어 탐험대</span>
+          <h1 class="text-2xl sm:text-3xl font-jua text-slate-800">문장 부호 마스터 챌린지</h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="sound-toggle" class="bg-white hover:bg-slate-50 active:scale-95 border border-slate-300 shadow-sm rounded-2xl px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 flex items-center gap-1 transition" title="소리 켜기/끄기">
+          <span id="sound-icon">🔊</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stepper Tabs -->
+    <div class="grid grid-cols-3 gap-2 bg-white/80 p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+      <!-- Step 1 Button -->
+      <button id="nav-step-1" onclick="navigateToStep(1)" class="step-btn py-2.5 px-3 rounded-xl font-jua text-sm sm:text-base flex items-center justify-center gap-1.5 transition bg-amber-500 text-white shadow-sm">
+        <span>1️⃣</span>
+        <span>부호 통에 쏙!</span>
+        <span id="badge-step-1" class="text-xs px-1.5 py-0.5 rounded-full bg-white/20 ml-1">진행중</span>
+      </button>
+
+      <!-- Step 2 Button (Initially locked) -->
+      <button id="nav-step-2" onclick="navigateToStep(2)" disabled class="step-btn py-2.5 px-3 rounded-xl font-jua text-sm sm:text-base flex items-center justify-center gap-1.5 transition bg-slate-100 text-slate-400 cursor-not-allowed">
+        <span>2️⃣</span>
+        <span>선으로 잇기</span>
+        <span id="badge-step-2" class="text-xs px-1.5 py-0.5 rounded-full bg-slate-200 ml-1">🔒 잠김</span>
+      </button>
+
+      <!-- Step 3 Button (Initially locked) -->
+      <button id="nav-step-3" onclick="navigateToStep(3)" disabled class="step-btn py-2.5 px-3 rounded-xl font-jua text-sm sm:text-base flex items-center justify-center gap-1.5 transition bg-slate-100 text-slate-400 cursor-not-allowed">
+        <span>3️⃣</span>
+        <span>빈칸 퀴즈</span>
+        <span id="badge-step-3" class="text-xs px-1.5 py-0.5 rounded-full bg-slate-200 ml-1">🔒 잠김</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== [PAGE 1: 문장 부호 통에 쏙!] ==================== -->
+  <main id="page-1" class="page-content max-w-5xl mx-auto w-full flex-1 flex flex-col gap-5">
+    <div class="flex flex-wrap items-center justify-between gap-3 bg-white/80 border border-slate-200/90 rounded-2xl px-5 py-3 shadow-xs">
+      <div>
+        <h2 class="font-jua text-xl text-slate-800 flex items-center gap-2">
+          <span>문장 부호 통에 쏙 넣기</span>
+          <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">카드를 알맞은 통으로 드래그하세요</span>
+        </h2>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="text-xs sm:text-sm font-semibold text-slate-600 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-xl">
+          남은 카드: <span id="remaining-count" class="font-jua text-base text-indigo-600">6</span> / 6
+        </div>
+        <button onclick="renderStep1Cards()" class="text-xs font-semibold text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 px-3 py-1.5 rounded-xl shadow-xs active:scale-95 transition">
+          다시 하기 🔄
+        </button>
+      </div>
+    </div>
+
+    <!-- Sentence Cards Waiting Pool -->
+    <section class="bg-white/75 backdrop-blur border border-slate-200/90 rounded-3xl p-4 sm:p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-3 px-1">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+          <h3 class="font-jua text-slate-700 text-base sm:text-lg">알맞은 통을 기다리는 문장 카드</h3>
+        </div>
+      </div>
+      <div id="card-pool" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 min-h-[130px] p-3 bg-slate-50/70 rounded-2xl border border-dashed border-slate-300">
+        <!-- Cards rendered via JS -->
+      </div>
+    </section>
+
+    <!-- 3 Punctuation Baskets -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-2">
+      <!-- ? Basket -->
+      <div data-target-punct="?" class="basket group relative flex flex-col rounded-3xl border-2 border-sky-300 bg-gradient-to-b from-sky-50/90 to-sky-100/50 p-4 shadow-sm min-h-[240px]">
+        <div class="flex items-center justify-between border-b border-sky-200/80 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-11 h-11 rounded-2xl bg-sky-500 text-white font-jua text-2xl flex items-center justify-center shadow-md shadow-sky-200">?</span>
+            <div>
+              <h4 class="font-jua text-lg text-sky-950">물음표 통</h4>
+              <p class="text-xs text-sky-700 font-medium">물어보는 문장</p>
+            </div>
+          </div>
+          <span class="basket-badge text-xs font-bold px-2 py-0.5 rounded-full bg-sky-200/80 text-sky-800">0개</span>
+        </div>
+        <div class="basket-drop-zone flex-1 flex flex-col gap-2 mt-3 p-2 rounded-2xl border-2 border-dashed border-sky-200/80 bg-white/40">
+          <div class="empty-placeholder h-full flex flex-col items-center justify-center text-center text-sky-400 py-6">
+            <span class="text-xs font-medium">'?' 통에 문장을 쏙!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- . Basket -->
+      <div data-target-punct="." class="basket group relative flex flex-col rounded-3xl border-2 border-emerald-300 bg-gradient-to-b from-emerald-50/90 to-emerald-100/50 p-4 shadow-sm min-h-[240px]">
+        <div class="flex items-center justify-between border-b border-emerald-200/80 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-11 h-11 rounded-2xl bg-emerald-500 text-white font-jua text-2xl flex items-center justify-center shadow-md shadow-emerald-200">.</span>
+            <div>
+              <h4 class="font-jua text-lg text-emerald-950">마침표 통</h4>
+              <p class="text-xs text-emerald-700 font-medium">설명이나 생각 문장</p>
+            </div>
+          </div>
+          <span class="basket-badge text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-800">0개</span>
+        </div>
+        <div class="basket-drop-zone flex-1 flex flex-col gap-2 mt-3 p-2 rounded-2xl border-2 border-dashed border-emerald-200/80 bg-white/40">
+          <div class="empty-placeholder h-full flex flex-col items-center justify-center text-center text-emerald-400 py-6">
+            <span class="text-xs font-medium">'.' 통에 문장을 쏙!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ! Basket -->
+      <div data-target-punct="!" class="basket group relative flex flex-col rounded-3xl border-2 border-rose-300 bg-gradient-to-b from-rose-50/90 to-rose-100/50 p-4 shadow-sm min-h-[240px]">
+        <div class="flex items-center justify-between border-b border-rose-200/80 pb-3">
+          <div class="flex items-center gap-2.5">
+            <span class="w-11 h-11 rounded-2xl bg-rose-500 text-white font-jua text-2xl flex items-center justify-center shadow-md shadow-rose-200">!</span>
+            <div>
+              <h4 class="font-jua text-lg text-rose-950">느낌표 통</h4>
+              <p class="text-xs text-rose-700 font-medium">기쁨·놀람 느낌 문장</p>
+            </div>
+          </div>
+          <span class="basket-badge text-xs font-bold px-2 py-0.5 rounded-full bg-rose-200/80 text-rose-800">0개</span>
+        </div>
+        <div class="basket-drop-zone flex-1 flex flex-col gap-2 mt-3 p-2 rounded-2xl border-2 border-dashed border-rose-200/80 bg-white/40">
+          <div class="empty-placeholder h-full flex flex-col items-center justify-center text-center text-rose-400 py-6">
+            <span class="text-xs font-medium">'!' 통에 문장을 쏙!</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Next Step CTA (Shown on clear) -->
+    <div id="p1-next-banner" class="hidden bg-emerald-500 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between animate-bounce">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">🎉</span>
+        <div>
+          <h4 class="font-jua text-lg">1단계 완료! 멋져요!</h4>
+          <p class="text-xs text-emerald-100">이제 2단계 '선으로 알맞게 잇기'에 도전할 수 있습니다.</p>
+        </div>
+      </div>
+      <button onclick="navigateToStep(2)" class="bg-white text-emerald-700 font-jua px-5 py-2.5 rounded-xl shadow hover:bg-emerald-50 active:scale-95 transition">
+        2단계로 가기 👉
+      </button>
+    </div>
+  </main>
+
+  <!-- ==================== [PAGE 2: 선으로 알맞게 잇기] ==================== -->
+  <main id="page-2" class="page-content max-w-5xl mx-auto w-full flex-1 flex flex-col gap-4 hidden">
+    <!-- Header banner recreating user's captured textbook design -->
+    <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200/80">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4 mb-4">
+        <div class="flex items-start gap-3">
+          <span class="w-9 h-9 rounded-xl bg-amber-400 text-slate-900 font-jua text-xl flex items-center justify-center shadow-xs mt-0.5">Q</span>
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-jua text-slate-900 leading-tight">
+              문장이 어떻게 쓰였는지 선으로 알맞게 이어 보세요.
+            </h2>
+            <div class="inline-flex items-center gap-1.5 text-xs text-orange-600 font-semibold mt-1">
+              <span class="w-4 h-4 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">!</span>
+              <span>알맞은 것끼리 점(동그라미)을 클릭하여 선으로 이으세요.</span>
+            </div>
+          </div>
+        </div>
+        <button onclick="resetStep2Lines()" class="self-end sm:self-auto text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition flex items-center gap-1">
+          <span>🔄</span> 선 다시 잇기
+        </button>
+      </div>
+
+      <!-- Line matching playground area with SVG overlay -->
+      <div id="matching-stage" class="relative select-none min-h-[360px] p-2 sm:p-4 bg-slate-50/50 rounded-2xl border border-slate-200 overflow-hidden">
+        <!-- SVG Canvas for Drawing Lines (Positioned ABOVE cards with z-30 and pointer-events-none) -->
+        <svg id="svg-canvas" class="absolute inset-0 w-full h-full line-canvas z-30 pointer-events-none">
+          <!-- Active dragging temporary line -->
+          <line id="temp-line" x1="0" y1="0" x2="0" y2="0" stroke="#f59e0b" stroke-width="4" stroke-dasharray="6,6" style="display: none;" />
+          <!-- Final confirmed lines will be appended here -->
+          <g id="permanent-lines"></g>
+        </svg>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 relative z-10 py-2">
+          
+          <!-- Left Column (Sentences) -->
+          <div class="flex flex-col justify-around gap-4" id="left-nodes-container">
+            <!-- Left Item 1 -->
+            <div class="flex items-center justify-between bg-amber-50/90 border-2 border-amber-200 hover:border-amber-300 rounded-2xl p-4 shadow-xs transition">
+              <span class="font-jua text-base sm:text-lg text-slate-800">즐거운 시간 보냈나요?</span>
+              <button data-node-side="left" data-id="1" class="node-point left-node w-8 h-8 rounded-full bg-sky-500 border-3 border-white shadow flex items-center justify-center text-white text-xs font-bold transition hover:bg-sky-600" title="선 연결 시작 점">
+                ➤
+              </button>
+            </div>
+
+            <!-- Left Item 2 -->
+            <div class="flex items-center justify-between bg-sky-50/90 border-2 border-sky-200 hover:border-sky-300 rounded-2xl p-4 shadow-xs transition">
+              <span class="font-jua text-base sm:text-lg text-slate-800">저도 여러분을 만나 매우 반가웠어요!</span>
+              <button data-node-side="left" data-id="2" class="node-point left-node w-8 h-8 rounded-full bg-sky-500 border-3 border-white shadow flex items-center justify-center text-white text-xs font-bold transition hover:bg-sky-600" title="선 연결 시작 점">
+                ➤
+              </button>
+            </div>
+
+            <!-- Left Item 3 -->
+            <div class="flex items-center justify-between bg-rose-50/90 border-2 border-rose-200 hover:border-rose-300 rounded-2xl p-4 shadow-xs transition">
+              <span class="font-jua text-base sm:text-lg text-slate-800">이 그림은 여자아이 세 명이 공기놀이하는 모습을 그린 것이에요.</span>
+              <button data-node-side="left" data-id="3" class="node-point left-node w-8 h-8 rounded-full bg-sky-500 border-3 border-white shadow flex items-center justify-center text-white text-xs font-bold transition hover:bg-sky-600" title="선 연결 시작 점">
+                ➤
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column (Descriptions) -->
+          <div class="flex flex-col justify-around gap-4" id="right-nodes-container">
+            <!-- Right Item A (Correct match: 2) -->
+            <div class="flex items-center gap-3 bg-slate-100/90 border-2 border-slate-200 hover:border-slate-300 rounded-2xl p-4 shadow-xs transition">
+              <button data-node-side="right" data-id="A" class="node-point right-node w-8 h-8 rounded-full bg-rose-400 border-3 border-white shadow flex items-center justify-center text-white text-xs font-bold transition hover:bg-rose-500 flex-shrink-0" title="연결 도착 점">
+                ●
+              </button>
+              <span class="font-jua text-base sm:text-lg text-slate-800">기쁨, 슬픔, 놀람처럼 강한 느낌을 나타낸다.</span>
+            </div>
+
+            <!-- Right Item B (Correct match: 3) -->
+            <div class="flex items-center gap-3 bg-slate-100/90 border-2 border-slate-200 hover:border-slate-300 rounded-2xl p-4 shadow-xs transition">
+              <button data-node-side="right" data-id="B" class="node-point right-node w-8 h-8 rounded-full bg-rose-400 border-3 border-white shadow flex items-center justify-center text-white text-xs font-bold transition hover:bg-rose-500 flex-shrink-0" title="연결 도착 점">
+                ●
+              </button>
+              <span class="font-jua text-base sm:text-lg text-slate-800">무엇을 설명하거나 생각을 나타낸다.</span>
+            </div>
+
+            <!-- Right Item C (Correct match: 1) -->
+            <div class="flex items-center gap-3 bg-slate-100/90 border-2 border-slate-200 hover:border-slate-300 rounded-2xl p-4 shadow-xs transition">
+              <button data-node-side="right" data-id="C" class="node-point right-node w-8 h-8 rounded-full bg-rose-400 border-3 border-white shadow flex items-center justify-center text-white text-xs font-bold transition hover:bg-rose-500 flex-shrink-0" title="연결 도착 점">
+                ●
+              </button>
+              <span class="font-jua text-base sm:text-lg text-slate-800">무엇인가를 물어본다.</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Helper tip -->
+      <p class="text-xs text-slate-500 text-center mt-3 font-medium">
+        💡 파란색 화살표(➤)를 누른 뒤, 알맞은 설명 옆 빨간색 원(●)을 차례로 누르면 선이 이어집니다!
+      </p>
+    </div>
+
+    <!-- Step 2 Success Banner -->
+    <div id="p2-next-banner" class="hidden bg-emerald-500 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between animate-bounce">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">👏</span>
+        <div>
+          <h4 class="font-jua text-lg">2단계 선 잇기 모두 성공!</h4>
+          <p class="text-xs text-emerald-100">마지막 3단계 '빈칸 퀴즈'가 잠금 해제되었습니다.</p>
+        </div>
+      </div>
+      <button onclick="navigateToStep(3)" class="bg-white text-emerald-700 font-jua px-5 py-2.5 rounded-xl shadow hover:bg-emerald-50 active:scale-95 transition">
+        3단계로 가기 👉
+      </button>
+    </div>
+  </main>
+
+  <!-- ==================== [PAGE 3: 빈칸 퀴즈 & 구글 폼] ==================== -->
+  <main id="page-3" class="page-content max-w-5xl mx-auto w-full flex-1 flex flex-col gap-5 hidden">
+    <!-- Quiz Card -->
+    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/90">
+      <div class="flex items-center gap-3 border-b border-slate-100 pb-4 mb-5">
+        <span class="text-3xl">🧩</span>
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-jua text-slate-800">알맞은 낱말을 입력해 문장을 완성해요</h2>
+          <p class="text-xs sm:text-sm text-slate-500 font-medium">아래 빈칸에 들어갈 알맞은 낱말을 직접 적고 [정답 확인하기]를 눌러보세요.</p>
+        </div>
+      </div>
+
+      <!-- Paragraph with Inline Inputs (Centered, perfectly balanced margins and responsive padding) -->
+      <div class="max-w-3xl mx-auto w-full px-5 py-7 sm:px-12 sm:py-9 bg-slate-50/90 rounded-3xl border border-slate-200 shadow-inner">
+        <p class="text-base sm:text-lg leading-[3.25rem] sm:leading-[3.75rem] font-medium text-slate-800 text-center sm:text-justify break-keep tracking-normal">
+          <input id="quiz-blank-1" type="text" placeholder="입력" class="w-28 sm:w-32 h-11 inline-block text-center font-jua text-indigo-700 bg-white border-2 border-indigo-300 focus:border-indigo-600 rounded-xl px-2 outline-none transition align-middle mx-1 shadow-xs" autocomplete="off" />는 문장의 뜻을 잘 나타내려고 쓰는 여러 가지 부호를 한다. 글쓴이의 <input id="quiz-blank-2" type="text" placeholder="입력" class="w-28 sm:w-32 h-11 inline-block text-center font-jua text-indigo-700 bg-white border-2 border-indigo-300 focus:border-indigo-600 rounded-xl px-2 outline-none transition align-middle mx-1 shadow-xs" autocomplete="off" />에 따라 사용하는 <input id="quiz-blank-3" type="text" placeholder="입력" class="w-28 sm:w-32 h-11 inline-block text-center font-jua text-indigo-700 bg-white border-2 border-indigo-300 focus:border-indigo-600 rounded-xl px-2 outline-none transition align-middle mx-1 shadow-xs" autocomplete="off" />가 달라진다. 글을 읽을 때 <input id="quiz-blank-4" type="text" placeholder="입력" class="w-28 sm:w-32 h-11 inline-block text-center font-jua text-indigo-700 bg-white border-2 border-indigo-300 focus:border-indigo-600 rounded-xl px-2 outline-none transition align-middle mx-1 shadow-xs" autocomplete="off" />를 잘 살펴보면 문장의 <input id="quiz-blank-5" type="text" placeholder="입력" class="w-28 sm:w-32 h-11 inline-block text-center font-jua text-indigo-700 bg-white border-2 border-indigo-300 focus:border-indigo-600 rounded-xl px-2 outline-none transition align-middle mx-1 shadow-xs" autocomplete="off" />을 이해하는 데 도움이 돼.
+        </p>
+      </div>
+
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <p id="quiz-status-text" class="text-sm font-semibold text-slate-500">
+          모든 빈칸을 채운 후 확인 버튼을 눌러주세요.
+        </p>
+        <button id="quiz-submit-btn" onclick="checkBlankQuiz()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-jua text-base sm:text-lg px-6 py-2.5 rounded-2xl shadow-md transition">
+          정답 확인하기 ✔
+        </button>
+      </div>
+    </div>
+
+    <!-- Final Google Form Embed Section (Unlocked ONLY after completing Quiz) -->
+    <section id="google-form-container" class="hidden bg-white rounded-3xl p-6 sm:p-8 shadow-sm border-2 border-emerald-400 transition-all duration-500">
+      <div class="text-center max-w-xl mx-auto mb-6">
+        <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
+          🎓
+        </div>
+        <h3 class="text-2xl sm:text-3xl font-jua text-slate-800">모든 단계를 완벽히 해결했어요!</h3>
+        <p class="text-slate-600 text-sm mt-1">
+          마지막으로 아래 학습 평가 설문지를 작성하여 오늘의 국어 탐험을 완성해 주세요!
+        </p>
+      </div>
+
+      <div class="w-full flex justify-center overflow-hidden rounded-2xl bg-slate-50 border border-slate-200 p-2 sm:p-4">
+        <iframe 
+          src="https://docs.google.com/forms/d/e/1FAIpQLSdBXY7O-5XNN_hExe2b4jx1gyUKfKerrIJPTEO-mKufCVlAFQ/viewform?embedded=true" 
+          width="640" 
+          height="1497" 
+          frameborder="0" 
+          marginheight="0" 
+          marginwidth="0" 
+          class="max-w-full rounded-xl shadow-xs"
+        >로드 중…</iframe>
+      </div>
+    </section>
+  </main>
+
+  <!-- Feedback Toast Notification -->
+  <div id="feedback-toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white px-5 py-3 rounded-2xl shadow-xl font-medium text-sm flex items-center gap-2.5 opacity-0 pointer-events-none transition-all duration-300 z-50">
+    <span id="toast-icon">💡</span>
+    <span id="toast-msg">안내 메시지</span>
+  </div>
+
+  <footer class="max-w-5xl mx-auto w-full text-center py-3 text-xs text-slate-400 font-medium">
+    초등 국어 문장 부호 마스터 학습 프로그램
+  </footer>
+
+  <script>
+    // State management for progression
+    const progressState = {
+      step1Cleared: false,
+      step2Cleared: false,
+      step3Cleared: false,
+      currentStep: 1
+    };
+
+    let soundEnabled = true;
+    let synth = null;
+
+    function initAudio() {
+      if (!synth && window.Tone) {
+        try {
+          synth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.02, decay: 0.1, sustain: 0.1, release: 0.3 }
+          }).toDestination();
+          synth.volume.value = -6;
+        } catch (e) {
+          console.warn("Tone.js init error:", e);
+        }
+      }
+    }
+
+    function playTone(type) {
+      if (!soundEnabled) return;
+      try {
+        if (window.Tone && Tone.context.state !== 'running') {
+          Tone.start();
+        }
+        initAudio();
+        const now = Tone.now();
+        if (type === 'success') {
+          synth.triggerAttackRelease("C5", "8n", now);
+          synth.triggerAttackRelease("G5", "8n", now + 0.1);
+        } else if (type === 'error') {
+          synth.triggerAttackRelease(["C3", "F#3"], "6n", now);
+        } else if (type === 'victory') {
+          synth.triggerAttackRelease("C5", "16n", now);
+          synth.triggerAttackRelease("E5", "16n", now + 0.1);
+          synth.triggerAttackRelease("G5", "16n", now + 0.2);
+          synth.triggerAttackRelease("C6", "4n", now + 0.3);
+        }
+      } catch (e) {}
+    }
+
+    let toastTimeout = null;
+    function showToast(message, icon = "💡", isError = false) {
+      clearTimeout(toastTimeout);
+      const toast = document.getElementById('feedback-toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.innerText = message;
+      toastIcon.innerText = icon;
+      toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-2xl shadow-xl font-medium text-sm flex items-center gap-2.5 transition-all duration-300 z-50 opacity-100 translate-y-0 ${
+        isError ? 'bg-rose-900/90 text-rose-100 border border-rose-700' : 'bg-slate-900/90 text-white'
+      }`;
+
+      toastTimeout = setTimeout(() => {
+        toast.classList.replace('opacity-100', 'opacity-0');
+        toast.classList.add('translate-y-2');
+      }, 2600);
+    }
+
+    // Tab navigation logic with locks
+    function navigateToStep(stepNumber) {
+      if (stepNumber === 2 && !progressState.step1Cleared) {
+        showToast("1단계 문장 부호 통에 카드를 모두 넣어야 2단계로 갈 수 있어요!", "🔒", true);
+        playTone('error');
+        return;
+      }
+      if (stepNumber === 3 && !progressState.step2Cleared) {
+        showToast("2단계 선 잇기를 모두 연결해야 3단계로 갈 수 있어요!", "🔒", true);
+        playTone('error');
+        return;
+      }
+
+      progressState.currentStep = stepNumber;
+
+      // Hide all pages
+      document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+      document.getElementById(`page-${stepNumber}`).classList.remove('hidden');
+
+      // Update Tab Styles with exact element ID
+      for (let s = 1; s <= 3; s++) {
+        const btn = document.getElementById(`nav-step-${s}`);
+        if (!btn) continue;
+        if (s === stepNumber) {
+          btn.className = "step-btn py-2.5 px-3 rounded-xl font-jua text-sm sm:text-base flex items-center justify-center gap-1.5 transition bg-amber-500 text-white shadow-sm";
+        } else {
+          const isUnlocked = (s === 1) || (s === 2 && progressState.step1Cleared) || (s === 3 && progressState.step2Cleared);
+          if (isUnlocked) {
+            btn.className = "step-btn py-2.5 px-3 rounded-xl font-jua text-sm sm:text-base flex items-center justify-center gap-1.5 transition bg-white text-slate-700 hover:bg-slate-100 shadow-xs border border-slate-200";
+          } else {
+            btn.className = "step-btn py-2.5 px-3 rounded-xl font-jua text-sm sm:text-base flex items-center justify-center gap-1.5 transition bg-slate-100 text-slate-400 cursor-not-allowed";
+          }
+        }
+      }
+
+      if (stepNumber === 2) {
+        // Redraw SVG line coords after page display
+        setTimeout(updateAllDrawnLines, 50);
+      }
+    }
+
+    // ==================== STEP 1 LOGIC ====================
+    const STEP1_CARDS = [
+      { id: "s1", text: "즐거운 시간 보냈나요?", punct: "?", hint: "상대방에게 궁금한 점을 물어보고 있어요." },
+      { id: "s2", text: "저도 여러분을 만나 매우 반가웠어요!", punct: "!", hint: "반가운 마음과 기쁨의 느낌을 표현하고 있어요." },
+      { id: "s3", text: "우리 미술관에서 본 작품들 가운데 어떤 작품이 가장 기억에 남았나요?", punct: "?", hint: "어떤 작품이 기억에 남는지 묻고 있어요." },
+      { id: "s4", text: "정말 멋진 작품들이에요!", punct: "!", hint: "작품을 보고 감탄하는 느낌을 힘주어 말하고 있어요." },
+      { id: "s5", text: "여러분을 특별 전시회에 초대하고 싶어요.", punct: ".", hint: "자신의 생각과 계획을 차분히 설명하고 있어요." },
+      { id: "s6", text: "이 그림은 여자아이 세 명이 공기놀이하는 모습을 그린 것이에요.", punct: ".", hint: "그림 내용을 자세히 설명하는 문장이에요." }
+    ];
+
+    let placedP1Cards = new Map();
+    let draggedP1Id = null;
+
+    function renderStep1Cards() {
+      const cardPool = document.getElementById('card-pool');
+      cardPool.innerHTML = '';
+      placedP1Cards.clear();
+
+      document.getElementById('p1-next-banner').classList.add('hidden');
+
+      const shuffled = [...STEP1_CARDS].sort(() => Math.random() - 0.5);
+
+      shuffled.forEach(item => {
+        const card = document.createElement('div');
+        card.id = `card-${item.id}`;
+        card.setAttribute('draggable', 'true');
+        card.setAttribute('data-id', item.id);
+        card.className = "sentence-card group relative bg-white border border-slate-200 rounded-2xl p-3.5 shadow-xs hover:shadow-md hover:border-amber-300 flex items-start gap-2.5 select-none";
+
+        // Plain text: NO yellow highlighting as requested
+        card.innerHTML = `
+          <div class="mt-0.5 text-slate-400 group-hover:text-amber-500 transition-colors flex-shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="sentence-text text-sm sm:text-base font-medium text-slate-800 break-keep leading-snug">
+              ${item.text}
+            </p>
+          </div>
+        `;
+
+        attachP1CardEvents(card);
+        cardPool.appendChild(card);
+      });
+
+      document.querySelectorAll('.basket').forEach(basket => {
+        const dropZone = basket.querySelector('.basket-drop-zone');
+        dropZone.querySelectorAll('.sentence-card').forEach(el => el.remove());
+        const placeholder = dropZone.querySelector('.empty-placeholder');
+        if (placeholder) placeholder.style.display = 'flex';
+        const badge = basket.querySelector('.basket-badge');
+        if (badge) badge.innerText = "0개";
+      });
+
+      updateP1Stats();
+    }
+
+    function attachP1CardEvents(card) {
+      card.addEventListener('dragstart', (e) => {
+        draggedP1Id = card.getAttribute('data-id');
+        card.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', draggedP1Id);
+        e.dataTransfer.effectAllowed = 'move';
+        initAudio();
+      });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        draggedP1Id = null;
+      });
+
+      // Mobile touch events
+      card.addEventListener('touchstart', handleP1TouchStart, { passive: false });
+      card.addEventListener('touchmove', handleP1TouchMove, { passive: false });
+      card.addEventListener('touchend', handleP1TouchEnd, { passive: false });
+    }
+
+    // Touch dragging variables
+    let p1TouchClone = null;
+    let p1TouchEl = null;
+    let p1StartX = 0;
+    let p1StartY = 0;
+
+    function handleP1TouchStart(e) {
+      if (e.touches.length > 1) return;
+      initAudio();
+      const touch = e.touches[0];
+      p1TouchEl = e.currentTarget;
+      draggedP1Id = p1TouchEl.getAttribute('data-id');
+
+      p1StartX = touch.clientX;
+      p1StartY = touch.clientY;
+
+      const rect = p1TouchEl.getBoundingClientRect();
+      p1TouchClone = p1TouchEl.cloneNode(true);
+      p1TouchClone.style.position = 'fixed';
+      p1TouchClone.style.top = `${rect.top}px`;
+      p1TouchClone.style.left = `${rect.left}px`;
+      p1TouchClone.style.width = `${rect.width}px`;
+      p1TouchClone.style.zIndex = '9999';
+      p1TouchClone.style.opacity = '0.9';
+      p1TouchClone.style.pointerEvents = 'none';
+      p1TouchClone.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
+      document.body.appendChild(p1TouchClone);
+
+      p1TouchEl.classList.add('opacity-40');
+    }
+
+    function handleP1TouchMove(e) {
+      if (!p1TouchClone) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - p1StartX;
+      const deltaY = touch.clientY - p1StartY;
+
+      const rect = p1TouchEl.getBoundingClientRect();
+      p1TouchClone.style.top = `${rect.top + deltaY}px`;
+      p1TouchClone.style.left = `${rect.left + deltaX}px`;
+
+      const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+      document.querySelectorAll('.basket').forEach(basket => {
+        if (basket.contains(elemBelow)) {
+          basket.classList.add('drop-active');
+        } else {
+          basket.classList.remove('drop-active');
+        }
+      });
+    }
+
+    function handleP1TouchEnd(e) {
+      if (!p1TouchEl) return;
+      document.querySelectorAll('.basket').forEach(b => b.classList.remove('drop-active'));
+      const touch = e.changedTouches[0];
+      const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+      let targetBasket = null;
+      document.querySelectorAll('.basket').forEach(b => {
+        if (b.contains(elemBelow)) targetBasket = b;
+      });
+
+      if (p1TouchClone && p1TouchClone.parentNode) {
+        p1TouchClone.parentNode.removeChild(p1TouchClone);
+      }
+      p1TouchClone = null;
+      p1TouchEl.classList.remove('opacity-40');
+
+      if (targetBasket && draggedP1Id) {
+        handleP1Drop(draggedP1Id, targetBasket);
+      }
+      p1TouchEl = null;
+      draggedP1Id = null;
+    }
+
+    // Set up basket drop listeners
+    document.querySelectorAll('.basket').forEach(basket => {
+      basket.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        basket.classList.add('drop-active');
+      });
+
+      basket.addEventListener('dragleave', (e) => {
+        if (!basket.contains(e.relatedTarget)) {
+          basket.classList.remove('drop-active');
+        }
+      });
+
+      basket.addEventListener('drop', (e) => {
+        e.preventDefault();
+        basket.classList.remove('drop-active');
+        const cardId = e.dataTransfer.getData('text/plain') || draggedP1Id;
+        if (cardId) handleP1Drop(cardId, basket);
+      });
+    });
+
+    function handleP1Drop(cardId, basketEl) {
+      const cardData = STEP1_CARDS.find(item => item.id === cardId);
+      const cardElement = document.getElementById(`card-${cardId}`);
+      if (!cardData || !cardElement) return;
+
+      const targetPunct = basketEl.getAttribute('data-target-punct');
+      const dropZone = basketEl.querySelector('.basket-drop-zone');
+      const placeholder = dropZone.querySelector('.empty-placeholder');
+
+      if (cardData.punct === targetPunct) {
+        // Correct Basket
+        playTone('success');
+        showToast(`정답! '${targetPunct}' 통에 쏙 들어갔어요!`, '✨');
+
+        cardElement.classList.remove('sentence-card', 'hover:border-amber-300');
+        cardElement.classList.add('bg-white/95', 'border-emerald-200', 'shadow-xs');
+        cardElement.removeAttribute('draggable');
+
+        const iconContainer = cardElement.querySelector('div:first-child');
+        if (iconContainer) {
+          iconContainer.innerHTML = `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 text-xs font-bold">✓</span>`;
+        }
+
+        dropZone.appendChild(cardElement);
+        if (placeholder) placeholder.style.display = 'none';
+
+        placedP1Cards.set(cardId, targetPunct);
+
+        // Update badge count
+        const count = dropZone.querySelectorAll('[data-id]').length;
+        const badge = basketEl.querySelector('.basket-badge');
+        if (badge) badge.innerText = `${count}개`;
+
+        updateP1Stats();
+
+        // Check completion of Step 1
+        if (placedP1Cards.size === STEP1_CARDS.length) {
+          unlockStep2();
+        }
+      } else {
+        // Incorrect
+        playTone('error');
+        basketEl.classList.add('shake-animation');
+        setTimeout(() => basketEl.classList.remove('shake-animation'), 450);
+        showToast(`앗! 이 문장의 끝부호는 '${targetPunct}'가 아니에요. 힌트: ${cardData.hint}`, '💡', true);
+      }
+    }
+
+    function updateP1Stats() {
+      const remaining = STEP1_CARDS.length - placedP1Cards.size;
+      document.getElementById('remaining-count').innerText = remaining;
+    }
+
+    function unlockStep2() {
+      progressState.step1Cleared = true;
+      playTone('victory');
+
+      // Update Step 1 Badge
+      document.getElementById('badge-step-1').innerText = "완료 ✔";
+      document.getElementById('badge-step-1').className = "text-xs px-1.5 py-0.5 rounded-full bg-emerald-400 text-white ml-1";
+
+      // Unlock Step 2 button
+      const nav2 = document.getElementById('nav-step-2');
+      nav2.disabled = false;
+      nav2.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+      nav2.classList.add('bg-white', 'text-slate-700', 'hover:bg-slate-100', 'border', 'border-slate-200');
+      document.getElementById('badge-step-2').innerText = "도전 가능";
+      document.getElementById('badge-step-2').className = "text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 ml-1";
+
+      document.getElementById('p1-next-banner').classList.remove('hidden');
+
+      try {
+        confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+      } catch (e) {}
+    }
+
+    // ==================== STEP 2: SVG LINE MATCHING ====================
+    // Correct mappings based on the textbook image:
+    // Left 1 ("즐거운 시간 보냈나요?") -> Right C ("무엇인가를 물어본다.")
+    // Left 2 ("저도 여러분을 만나 매우 반가웠어요!") -> Right A ("기쁨, 슬픔, 놀람처럼 강한 느낌을 나타낸다.")
+    // Left 3 ("이 그림은 여자아이 세 명이...") -> Right B ("무엇을 설명하거나 생각을 나타낸다.")
+    const STEP2_CORRECT_PAIRS = {
+      "1": "C",
+      "2": "A",
+      "3": "B"
+    };
+
+    let selectedLeftNode = null;
+    let step2Connections = new Map(); // leftId -> rightId
+
+    const stageEl = document.getElementById('matching-stage');
+    const svgCanvas = document.getElementById('svg-canvas');
+    const tempLine = document.getElementById('temp-line');
+    const permanentLinesG = document.getElementById('permanent-lines');
+
+    function getNodeCenter(nodeEl) {
+      const stageRect = stageEl.getBoundingClientRect();
+      const nodeRect = nodeEl.getBoundingClientRect();
+      return {
+        x: nodeRect.left + nodeRect.width / 2 - stageRect.left,
+        y: nodeRect.top + nodeRect.height / 2 - stageRect.top
+      };
+    }
+
+    // Attach click events to nodes
+    document.querySelectorAll('.node-point').forEach(node => {
+      node.addEventListener('click', (e) => {
+        e.stopPropagation();
+        initAudio();
+        const side = node.getAttribute('data-node-side');
+        const id = node.getAttribute('data-id');
+
+        if (side === 'left') {
+          handleLeftNodeClick(node, id);
+        } else if (side === 'right') {
+          handleRightNodeClick(node, id);
+        }
+      });
+    });
+
+    function handleLeftNodeClick(node, id) {
+      // Clear previous active states
+      document.querySelectorAll('.left-node').forEach(n => n.classList.remove('active'));
+
+      // If already connected, do nothing
+      if (node.classList.contains('connected')) {
+        showToast("이미 알맞게 연결된 문장입니다.", "ℹ️");
+        return;
+      }
+
+      selectedLeftNode = { element: node, id: id };
+      node.classList.add('active');
+      showToast("오른쪽에서 알맞은 설명 옆 빨간 원(●)을 눌러주세요!", "👉");
+    }
+
+    function handleRightNodeClick(node, id) {
+      if (!selectedLeftNode) {
+        showToast("먼저 왼쪽 문장의 파란 화살표(➤)를 선택해 주세요!", "👆", true);
+        playTone('error');
+        return;
+      }
+
+      if (node.classList.contains('connected')) {
+        showToast("이미 다른 문장과 연결된 설명입니다.", "⚠️", true);
+        return;
+      }
+
+      const leftId = selectedLeftNode.id;
+      const expectedRightId = STEP2_CORRECT_PAIRS[leftId];
+
+      if (id === expectedRightId) {
+        // MATCH SUCCESS!
+        playTone('success');
+        step2Connections.set(leftId, id);
+
+        // Mark as connected
+        selectedLeftNode.element.classList.remove('active');
+        selectedLeftNode.element.classList.add('connected', '!bg-emerald-500');
+        selectedLeftNode.element.innerText = "✓";
+
+        node.classList.add('connected', '!bg-emerald-500');
+        node.innerText = "✓";
+
+        // Draw line
+        drawConfirmedLine(selectedLeftNode.element, node, leftId);
+        selectedLeftNode = null;
+
+        showToast("정답입니다! 선이 바르게 이어졌어요!", "✨");
+
+        if (step2Connections.size === 3) {
+          unlockStep3();
+        }
+      } else {
+        // MATCH FAILED
+        playTone('error');
+        showToast("알맞은 짝이 아니에요. 문장의 뜻과 부호를 다시 한번 살펴보세요!", "🧐", true);
+        
+        node.classList.add('shake-animation');
+        setTimeout(() => node.classList.remove('shake-animation'), 450);
+      }
+    }
+
+    function drawConfirmedLine(fromNode, toNode, connectionKey) {
+      const fromPos = getNodeCenter(fromNode);
+      const toPos = getNodeCenter(toNode);
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("id", `line-${connectionKey}`);
+      line.setAttribute("x1", fromPos.x);
+      line.setAttribute("y1", fromPos.y);
+      line.setAttribute("x2", toPos.x);
+      line.setAttribute("y2", toPos.y);
+      line.setAttribute("stroke", "#10b981"); // Emerald color
+      line.setAttribute("stroke-width", "4");
+      line.setAttribute("stroke-linecap", "round");
+      line.style.transition = "all 0.3s ease";
+
+      permanentLinesG.appendChild(line);
+    }
+
+    function updateAllDrawnLines() {
+      step2Connections.forEach((rightId, leftId) => {
+        const leftNode = document.querySelector(`.left-node[data-id="${leftId}"]`);
+        const rightNode = document.querySelector(`.right-node[data-id="${rightId}"]`);
+        const line = document.getElementById(`line-${leftId}`);
+        if (leftNode && rightNode && line) {
+          const fromPos = getNodeCenter(leftNode);
+          const toPos = getNodeCenter(rightNode);
+          line.setAttribute("x1", fromPos.x);
+          line.setAttribute("y1", fromPos.y);
+          line.setAttribute("x2", toPos.x);
+          line.setAttribute("y2", toPos.y);
+        }
+      });
+    }
+
+    window.addEventListener('resize', updateAllDrawnLines);
+
+    function resetStep2Lines() {
+      step2Connections.clear();
+      selectedLeftNode = null;
+      permanentLinesG.innerHTML = '';
+
+      document.querySelectorAll('.left-node').forEach(node => {
+        node.classList.remove('connected', 'active', '!bg-emerald-500');
+        node.innerText = "➤";
+      });
+      document.querySelectorAll('.right-node').forEach(node => {
+        node.classList.remove('connected', '!bg-emerald-500');
+        node.innerText = "●";
+      });
+
+      document.getElementById('p2-next-banner').classList.add('hidden');
+      showToast("선 잇기가 처음 상태로 초기화되었습니다.", "🔄");
+    }
+
+    function unlockStep3() {
+      progressState.step2Cleared = true;
+      playTone('victory');
+
+      document.getElementById('badge-step-2').innerText = "완료 ✔";
+      document.getElementById('badge-step-2').className = "text-xs px-1.5 py-0.5 rounded-full bg-emerald-400 text-white ml-1";
+
+      const nav3 = document.getElementById('nav-step-3');
+      nav3.disabled = false;
+      nav3.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+      nav3.classList.add('bg-white', 'text-slate-700', 'hover:bg-slate-100', 'border', 'border-slate-200');
+      document.getElementById('badge-step-3').innerText = "도전 가능";
+      document.getElementById('badge-step-3').className = "text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 ml-1";
+
+      document.getElementById('p2-next-banner').classList.remove('hidden');
+
+      try {
+        confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+      } catch (e) {}
+    }
+
+    // ==================== STEP 3: BLANK QUIZ & GOOGLE FORM ====================
+    // Target Sentence:
+    // (문장 부호)는 문장의 뜻을 잘 나타내려고 쓰는 여러 가지 부호를 한다. 
+    // 글쓴이의 (생각)에 따라 사용하는 (문장 부호)가 달라진다. 
+    // 글을 읽을 때 (문장 부호)를 잘 살펴보면 문장의 (뜻)을 이해하는 데 도움이 돼.
+
+    function checkBlankQuiz() {
+      initAudio();
+      const normalize = (str) => (str || '').replace(/\s+/g, '').trim().toLowerCase();
+
+      const b1 = normalize(document.getElementById('quiz-blank-1').value);
+      const b2 = normalize(document.getElementById('quiz-blank-2').value);
+      const b3 = normalize(document.getElementById('quiz-blank-3').value);
+      const b4 = normalize(document.getElementById('quiz-blank-4').value);
+      const b5 = normalize(document.getElementById('quiz-blank-5').value);
+
+      const isB1Correct = (b1 === "문장부호");
+      const isB2Correct = (b2 === "생각");
+      const isB3Correct = (b3 === "문장부호");
+      const isB4Correct = (b4 === "문장부호");
+      const isB5Correct = (b5 === "뜻");
+
+      // Visual feedback on inputs
+      markInput('quiz-blank-1', isB1Correct);
+      markInput('quiz-blank-2', isB2Correct);
+      markInput('quiz-blank-3', isB3Correct);
+      markInput('quiz-blank-4', isB4Correct);
+      markInput('quiz-blank-5', isB5Correct);
+
+      if (isB1Correct && isB2Correct && isB3Correct && isB4Correct && isB5Correct) {
+        // All correct!
+        progressState.step3Cleared = true;
+        playTone('victory');
+
+        document.getElementById('badge-step-3').innerText = "완료 ✔";
+        document.getElementById('badge-step-3').className = "text-xs px-1.5 py-0.5 rounded-full bg-emerald-400 text-white ml-1";
+
+        const statusEl = document.getElementById('quiz-status-text');
+        statusEl.innerHTML = `<span class="text-emerald-600 font-bold">🎉 모든 빈칸을 완벽하게 맞혔습니다! 아래 설문 평가가 열렸습니다.</span>`;
+        document.getElementById('quiz-submit-btn').classList.add('hidden');
+
+        // Reveal Google Form
+        const formContainer = document.getElementById('google-form-container');
+        formContainer.classList.remove('hidden');
+        formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        showToast("축하합니다! 3단계 빈칸 퀴즈를 모두 맞혔습니다! 🎊", "🌟");
+
+        try {
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.5 }
+          });
+        } catch (e) {}
+
+      } else {
+        playTone('error');
+        showToast("틀린 빈칸이 있어요! 붉은색 표시를 확인하고 다시 입력해 보세요.", "🧐", true);
+        document.getElementById('quiz-status-text').innerHTML = `<span class="text-rose-600 font-bold">빨간색으로 표시된 칸의 낱말을 다시 확인해 보세요!</span>`;
+      }
+    }
+
+    function markInput(elementId, isCorrect) {
+      const el = document.getElementById(elementId);
+      if (isCorrect) {
+        el.classList.remove('border-rose-400', 'bg-rose-50', 'text-rose-700');
+        el.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+      } else {
+        el.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+        el.classList.add('border-rose-400', 'bg-rose-50', 'text-rose-700');
+      }
+    }
+
+    // Toggle Sound button
+    document.getElementById('sound-toggle').addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      document.getElementById('sound-icon').innerText = soundEnabled ? '🔊' : '🔇';
+      showToast(soundEnabled ? '효과음이 켜졌습니다.' : '효과음이 꺼졌습니다.', soundEnabled ? '🔊' : '🔇');
+    });
+
+    // Initialize application on page load
+    window.onload = function() {
+      renderStep1Cards();
+    };
+  </script>
+</body>
+</html>
