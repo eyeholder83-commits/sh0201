@@ -22,6 +22,19 @@
       overscroll-behavior-y: none;
     }
 
+    /* 이름·탭·필기 도구를 한 덩어리로 화면 위에 유지 */
+    #studentPageHeader {
+      position: sticky;
+      top: 0;
+      z-index: 35;
+      background: #f8fafc;
+      padding: 0;
+      box-shadow: 0 4px 8px rgba(15, 23, 42, 0.06);
+    }
+    #studentPenToolbar { padding: 8px 12px; }
+    body.student-view-active #firebaseStatus { display: none; }
+    body.student-view-active main { padding-top: 0; }
+
     /* 독서 지문 본문 타이포그래피 */
     .spec-reading-body {
       line-height: 2.2 !important;
@@ -37,11 +50,11 @@
     }
 
     .reading-stop-mark {
-      background: #fde047;
-      color: #111827;
-      border-radius: 4px;
-      box-shadow: 0 0 0 3px #fde047;
-      font-weight: 900;
+      background: rgba(250, 204, 21, 0.30);
+      color: inherit;
+      border-radius: 2px;
+      box-shadow: none;
+      font-weight: inherit;
     }
 
     /* 태블릿 필기 캔버스 레이어 */
@@ -72,60 +85,6 @@
 </head>
 <body class="min-h-screen flex flex-col bg-slate-50 text-slate-800">
 
-  <!-- Top Global Navigation Bar -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-      
-      <!-- Brand & Title -->
-      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('home')">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-md">
-          <i class="ph-bold ph-book-open"></i>
-        </div>
-        <div>
-          <h1 class="font-extrabold text-slate-900 tracking-tight text-base sm:text-lg flex items-center space-x-2">
-            <span>독서·글쓰기 뷰어</span>
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">초등 3학년 맞춤</span>
-          </h1>
-          <p class="text-xs text-slate-600 hidden sm:block">실시간 낭독 신호 & 맞춤형 어휘/중심내용 지도</p>
-        </div>
-      </div>
-
-      <!-- Mode Switching Buttons & Teacher Logout -->
-      <nav class="flex items-center space-x-1.5 sm:space-x-2">
-        <button type="button" onclick="switchView('home')" id="navBtn-home"
-          class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all flex items-center space-x-1.5">
-          <i class="ph-bold ph-house text-base"></i>
-          <span class="hidden md:inline">홈</span>
-        </button>
-
-        <button type="button" onclick="requestProtectedView('teacher')" id="navBtn-teacher"
-          class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all flex items-center space-x-1.5">
-          <i class="ph-bold ph-chalkboard-teacher text-base text-blue-600"></i>
-          <span>교사 뷰</span>
-        </button>
-
-        <button type="button" onclick="requestProtectedView('board')" id="navBtn-board"
-          class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all flex items-center space-x-1.5">
-          <i class="ph-bold ph-presentation text-base text-indigo-600"></i>
-          <span>전자칠판</span>
-        </button>
-
-        <button type="button" onclick="switchView('student')" id="navBtn-student"
-          class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition-all flex items-center space-x-1.5">
-          <i class="ph-bold ph-student text-base"></i>
-          <span>학생 뷰</span>
-        </button>
-
-        <!-- 교사 로그아웃 버튼 (인증 시 노출) -->
-        <button type="button" onclick="teacherLogout()" id="navBtn-teacherLogout"
-          class="hidden px-2.5 py-2 rounded-xl text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-all border border-red-200 flex items-center space-x-1">
-          <i class="ph-bold ph-sign-out"></i>
-          <span>로그아웃</span>
-        </button>
-      </nav>
-    </div>
-  </header>
-
   <div id="firebaseStatus" role="status" class="text-center text-xs py-2 bg-amber-50 text-amber-800">Firebase 연결 중…</div>
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
 
@@ -145,6 +104,7 @@
               <i class="ph-duotone ph-chalkboard-teacher"></i>
             </div>
             <h3 class="text-xl font-bold text-slate-900">교사 뷰 (수업 통제)</h3>
+            <button type="button" id="navBtn-teacherLogout" onclick="event.stopPropagation();teacherLogout()" class="hidden px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold">교사 로그아웃</button>
             <p class="text-xs text-slate-500 leading-relaxed">
               지문 작성, 문장 신호 전송, 실시간 퀴즈 및 복습 퀴즈(HTML+Tailwind 인터랙티브 코드)를 총괄 관리합니다.
             </p>
@@ -205,18 +165,16 @@
         </div>
 
         <!-- Teacher Settings Buttons -->
-        <div class="flex items-center space-x-2">
-          <button type="button" onclick="openGeminiSettings()" class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">AI 낱말 뜻 설정</button>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="openTeacherVocabulary()" class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">지문 어휘 사전</button>
           <button type="button" onclick="openDriveSettingsModal()" 
             class="px-3.5 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-sm transition-all flex items-center space-x-1.5">
             <i class="ph-bold ph-google-drive-logo text-emerald-600 text-sm"></i>
             <span>구글 드라이브 연동</span>
           </button>
-          <button type="button" onclick="teacherLogout()" 
-            class="px-3.5 py-2 rounded-xl bg-red-50 border border-red-200 hover:bg-red-100 text-red-700 text-xs font-bold transition-all flex items-center space-x-1.5">
-            <i class="ph-bold ph-sign-out text-sm"></i>
-            <span>교사 로그아웃</span>
-          </button>
+          <button type="button" onclick="switchView('student')" class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">학생뷰</button>
+          <button type="button" onclick="switchView('board')" class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold">칠판뷰</button>
+          <button type="button" onclick="switchView('home')" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">홈</button>
         </div>
       </div>
 
@@ -611,6 +569,7 @@
     <!-- [VIEW 3] DIGITAL BOARD VIEW (전자칠판 - 단일 배타적 화면) -->
     <section id="view-board" class="hidden space-y-6">
       
+      <div class="flex justify-end"><button type="button" onclick="switchView('home')" class="px-3 py-2 rounded-xl bg-white border text-xs font-bold">홈</button></div>
       <!-- Board Top Header Banner -->
       <div class="bg-indigo-900 text-white rounded-3xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -670,6 +629,7 @@
     <!-- [VIEW 4] STUDENT VIEW (4단계 탭 체제) -->
     <section id="view-student" class="hidden space-y-5">
       
+      <header id="studentPageHeader" class="space-y-1">
       <!-- Student Profile Header Bar -->
       <div class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex items-center space-x-3">
@@ -678,12 +638,13 @@
           </div>
           <div>
             <div class="flex items-center space-x-2">
+              <button type="button" onclick="requestProtectedView('home')" class="px-2 py-1 rounded-lg bg-slate-100 text-xs font-bold">홈</button>
               <span id="studentCurrentNameDisplay" class="text-base sm:text-lg font-black text-slate-900">학생 이름 미등록</span>
-              <button type="button" onclick="openStudentLoginModal()" class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all">
-                이름 변경
+              <button type="button" onclick="studentLogout()" class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all">
+                로그아웃
               </button>
             </div>
-            <p class="text-xs text-slate-500">선생님이 신호를 보내면 내 차례가 깜빡입니다.</p>
+            <p class="text-xs text-slate-500">선생님이 신호를 보내면 내 이름과 차례 알림이 나타납니다.</p>
           </div>
         </div>
 
@@ -699,7 +660,7 @@
       <div class="flex items-center space-x-2 sm:space-x-3 border-b-2 border-slate-200 pb-2 overflow-x-auto">
         <button type="button" onclick="switchStudentReadingMode('read')" id="studentTabBtn-read"
           class="px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all bg-blue-600 text-white shadow-md flex items-center space-x-1.5 shrink-0">
-          <span class="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[11px] font-black">1</span>
+          <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-[11px] font-black shrink-0">1</span>
           <i class="ph-bold ph-book-open-text"></i>
           <span>글 읽기</span>
         </button>
@@ -725,7 +686,7 @@
           <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[11px] font-black">4</span>
           <i class="ph-bold ph-code"></i>
           <span>복습 퀴즈</span>
-          <span id="studentReviewQuizLiveDot" class="hidden w-2 h-2 rounded-full bg-red-500 animate-ping absolute top-2 right-2"></span>
+
         </button>
       </div>
 
@@ -789,19 +750,9 @@
         </div>
       </div>
 
-      <!-- Turn Signal Alert Banner -->
-      <div id="studentTurnAlertBanner" class="hidden bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 p-4 rounded-2xl shadow-lg border-2 border-amber-600 flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl shadow-md text-amber-600">
-            <i class="ph-fill ph-bell-ringing"></i>
-          </div>
-          <div>
-            <h4 class="font-black text-sm sm:text-base">지금은 내 낭독 차례입니다!</h4>
-            <p class="text-xs font-bold opacity-90">지정된 문장을 소리 내어 바르게 읽어보세요.</p>
-          </div>
-        </div>
-        <span class="px-3 py-1 rounded-xl bg-slate-950 text-amber-300 font-extrabold text-xs">낭독 중</span>
-      </div>
+
+
+      </header>
 
       <!-- Student Main Reading Container (Tabs 1, 2, 3) -->
       <article class="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm relative space-y-6" id="studentReadingContainer">
@@ -878,19 +829,8 @@
       <div id="studentReviewQuizSection" class="hidden space-y-4">
         
         <!-- Active Review Quiz Card -->
-        <div id="studentReviewQuizActiveCard" class="bg-white rounded-3xl p-6 sm:p-8 border-2 border-indigo-500 shadow-xl space-y-4">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div class="flex items-center space-x-2">
-              <div class="w-9 h-9 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl font-black">
-                <i class="ph-bold ph-code"></i>
-              </div>
-              <div>
-                <h3 class="text-base sm:text-lg font-black text-slate-900" id="studentReviewQuizTitle">복습 퀴즈</h3>
-                <p class="text-xs text-slate-500">선생님이 출제하신 인터랙티브 웹 퀴즈를 직접 풀어보세요.</p>
-              </div>
-            </div>
-            <span class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black">출제 중</span>
-          </div>
+        <div id="studentReviewQuizActiveCard" class="bg-white rounded-3xl p-3 sm:p-4 border border-slate-200 shadow-sm space-y-2">
+          <h3 id="studentReviewQuizTitle" class="text-base font-black text-slate-900">복습 퀴즈</h3>
 
           <!-- Interactive Iframe Sandbox for Student -->
           <div class="w-full rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden relative shadow-inner p-1 sm:p-2">
@@ -978,18 +918,15 @@
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs sm:text-sm font-extrabold text-amber-900 flex items-center space-x-1.5">
               <i class="ph-fill ph-lightbulb text-amber-500 text-base"></i>
-              <span>3학년 눈높이 쉬운 뜻</span>
+              <span>단어의 뜻</span>
             </span>
-            <button type="button" onclick="copyDictMeaningToInput()" 
-              class="text-xs font-extrabold text-amber-800 bg-white hover:bg-amber-100 border border-amber-300 px-3 py-1 rounded-lg transition-all shadow-xs">
-              이 뜻으로 채우기
-            </button>
           </div>
           <div id="dictModalRecommendedMeaning" class="text-base sm:text-lg font-extrabold text-slate-900 leading-relaxed bg-white/90 p-4 rounded-xl border border-amber-100 shadow-xs">
             뜻풀이를 불러오는 중...
           </div>
         </div>
 
+        <div class="p-4 bg-white rounded-xl border border-amber-100"><span class="text-sm font-bold text-amber-900">기본형</span><p id="dictModalBaseForm" class="mt-2 font-bold text-slate-900"></p></div>
         <div id="dictModalExampleBox" class="p-3.5 sm:p-4 rounded-xl bg-white border border-amber-100 space-y-1.5">
           <span class="text-xs font-black text-orange-600 uppercase tracking-wide flex items-center space-x-1.5">
             <i class="ph-bold ph-pencil-simple text-sm"></i>
@@ -999,41 +936,28 @@
         </div>
       </div>
 
-      <div class="space-y-2">
-        <label class="block text-xs sm:text-sm font-bold text-slate-700">
-          <span>내가 이해한 뜻 (직접 쓰기 / 고치기)</span>
-        </label>
-        <textarea id="dictModalStudentMeaning" rows="3" placeholder="사전 뜻을 읽고 내가 이해한 쉬운 말로 적어보세요."
-          class="w-full p-3.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none"></textarea>
-      </div>
-
-      <div class="pt-3 flex items-center justify-between gap-3 border-t border-slate-100">
-        <button type="button" onclick="retryFetchDictMeaning()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-bold transition-all flex items-center space-x-1.5 shrink-0">
-          <i class="ph-bold ph-arrows-clockwise text-sm"></i>
-          <span>다시 조회</span>
-        </button>
-
-        <div class="flex items-center space-x-2.5">
-          <button type="button" onclick="closeDictModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-all">
-            취소
-          </button>
-          <button type="button" onclick="saveDictModalMeaning()" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all">
-            뜻 저장하기
-          </button>
-        </div>
-      </div>
+      <div class="pt-3 flex justify-end border-t border-slate-100"><button type="button" onclick="closeDictModal()" class="px-6 py-3 bg-amber-500 text-white rounded-xl font-bold">닫기</button></div>
     </div>
   </div>
 
-  <!-- MODAL: Teacher Password Verification (Password 5658 completely concealed) -->
+  <div id="studentTurnModal" role="dialog" aria-modal="true" aria-labelledby="studentTurnModalText" class="hidden fixed inset-0 bg-slate-900/30 z-50 flex items-center justify-center p-4 pointer-events-none">
+    <div class="bg-white border-2 border-amber-300 rounded-3xl p-8 shadow-xl text-center"><p id="studentTurnModalText" class="text-2xl font-black text-amber-900" role="status" aria-live="polite"></p></div>
+  </div>
+  <div id="collectWordModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" aria-labelledby="collectWordQuestion" class="bg-white rounded-3xl p-6 max-w-sm w-full space-y-5">
+      <p id="collectWordQuestion" class="text-lg font-bold"></p>
+      <div class="flex gap-3"><button onclick="confirmCollectWord()" class="flex-1 p-3 bg-amber-500 text-white rounded-xl font-bold">네</button><button onclick="cancelCollectWord()" class="flex-1 p-3 bg-slate-100 rounded-xl font-bold">아니오</button></div>
+    </div>
+  </div>
+  <!-- MODAL: Password Verification -->
   <div id="passwordModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-slate-100">
       <div class="text-center space-y-1">
         <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-2xl mx-auto mb-2">
           <i class="ph-bold ph-lock-key"></i>
         </div>
-        <h3 class="text-lg font-black text-slate-900">교사 인증 비밀번호</h3>
-        <p class="text-xs text-slate-600">수업 통제를 위해 교사 비밀번호를 입력하세요.</p>
+        <h3 id="passwordModalTitle" class="text-lg font-black text-slate-900">교사 인증 비밀번호</h3>
+        <p id="passwordModalDescription" class="text-xs text-slate-600">수업 통제를 위해 교사 비밀번호를 입력하세요.</p>
       </div>
 
       <input type="password" id="passwordInput" placeholder="비밀번호 입력" maxlength="8"
@@ -1122,15 +1046,19 @@
     </div>
   </div>
 
-  <div id="geminiSettingsModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4">
-      <h3 class="font-black text-lg">AI 낱말 뜻 설정</h3>
-      <p class="text-sm text-slate-600">Gemini 낱말 설명 서버의 웹 앱 주소를 입력하세요. API 키는 서버의 스크립트 속성에 등록합니다.</p>
-      <label for="geminiWebAppUrlInput" class="block text-sm font-bold">Apps Script 웹 앱 URL</label>
-      <input id="geminiWebAppUrlInput" type="url" placeholder="https://script.google.com/macros/s/…/exec" class="w-full border rounded-xl p-3 text-xs">
+  <div id="teacherVocabularyModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto space-y-4">
+      <h3 class="font-black text-lg">지문별 어휘 사전</h3>
+      <p class="text-sm text-slate-600">지문을 선택하고 학생이 누를 낱말의 쉬운 뜻과 예문을 등록하세요. 연결 표현에는 쓸어, 쓸다처럼 같은 뜻으로 쓰인 형태를 쉼표로 입력하세요.</p>
+      <select id="vocabPassageSelect" onchange="renderTeacherVocabulary()" class="w-full border rounded-xl p-3"></select>
+      <button onclick="extractVocabularyWords()" class="p-2 bg-blue-50 rounded-xl">지문 낱말 가져오기</button>
+      <button onclick="addVocabularyRow()" class="p-2 bg-amber-50 rounded-xl">낱말 추가</button>
+      <p class="text-xs text-slate-500">낱말 가져오기는 낱말 목록만 만듭니다. 뜻과 예문은 교사가 입력합니다. 지문 변경 전 저장해주세요.</p>
+      <div class="flex flex-wrap gap-2 items-center"><button type="button" onclick="selectAllVocabularyRows()" class="p-2 bg-slate-100 rounded-xl font-bold">전체 선택 / 해제</button><button type="button" onclick="deleteSelectedVocabularyRows()" class="p-2 bg-red-50 text-red-700 rounded-xl font-bold">선택한 행 삭제</button><button type="button" onclick="deleteAllVocabularyRows()" class="p-2 bg-red-600 text-white rounded-xl font-bold">전체 행 삭제</button><span class="text-xs text-slate-500">삭제 후 사전 저장하기를 눌러 반영하세요.</span></div><div class="overflow-x-auto"><table class="w-full border-collapse text-sm" style="min-width:900px"><thead class="bg-amber-50"><tr><th class="p-2 sticky left-0 bg-amber-50">선택</th><th class="p-2">낱말</th><th class="p-2">기본형</th><th class="p-2">연결 표현</th><th class="p-2">단어의 뜻</th><th class="p-2">생활 속 예문</th><th class="p-2">삭제</th></tr></thead><tbody id="teacherVocabularyRows"></tbody></table></div>
+      <details class="border rounded-xl p-3"><summary class="font-bold cursor-pointer">시트에서 여러 낱말 한 번에 붙여넣기</summary><p class="text-xs my-2">열 순서: 낱말 · 기본형 · 연결 표현 · 단어의 뜻 · 생활 속 예문. 구글시트/엑셀의 5열을 복사해 아래에 붙여넣으세요. 표의 셀에 직접 여러 셀을 붙여넣어도 됩니다.</p><textarea id="vocabBulkInput" rows="6" class="w-full border rounded p-3" placeholder="시트에서 복사한 내용을 붙여넣으세요."></textarea><button onclick="importVocabularySheet()" class="p-3 bg-blue-50 rounded-xl font-bold">표에 추가하기</button></details>
       <div class="flex gap-2">
-        <button onclick="document.getElementById('geminiSettingsModal').classList.add('hidden')" class="flex-1 p-3 bg-slate-100 rounded-xl font-bold">닫기</button>
-        <button onclick="saveGeminiSettings()" class="flex-1 p-3 bg-amber-500 text-white rounded-xl font-bold">저장하기</button>
+        <button onclick="document.getElementById('teacherVocabularyModal').classList.add('hidden')" class="flex-1 p-3 bg-slate-100 rounded-xl">닫기</button>
+        <button onclick="saveTeacherVocabulary()" class="flex-1 p-3 bg-amber-500 text-white rounded-xl font-bold">사전 저장하기</button>
       </div>
     </div>
   </div>
@@ -1192,61 +1120,129 @@
     /* 초등 3학년 맞춤형 어휘 사전 DB & 한국어 형태소 정규화 */
     let studentCollectedWords = [];
     let currentInspectingWordId = null;
-    const DEFAULT_GEMINI_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzwevKv-2mksCeYkQKS7vREaENdLqSqnNo6fgr8lNJhE1G6dNVPZtjeTc_gElU0fQHx/exec';
-    let geminiWebAppUrl = DEFAULT_GEMINI_WEB_APP_URL;
-    const geminiRequests = new Map();
-
-    const GRADE2_FRIENDLY_DICTIONARY = {
-      "끊임없이": { meaning: "중간에 멈추거나 쉬지 않고 계속해서 쭉 이어지는 모습이에요.", example: "기차가 멈추지 않고 끊임없이 달립니다." },
-      "끊임없다": { meaning: "중간에 멈추거나 쉬지 않고 계속해서 쭉 이어지는 모습이에요.", example: "사람들의 발길이 끊임없이 이어집니다." },
-      "디지털": { meaning: "컴퓨터나 스마트폰처럼 숫자로 정보를 다루는 편리한 기술 세상이에요.", example: "우리는 디지털 화면으로 재미있게 공부해요." },
-      "인공지능": { meaning: "컴퓨터가 사람처럼 똑똑하게 생각하고 배우는 놀라운 기술이에요.", example: "인공지능 로봇이 친구처럼 대답해 줍니다." },
-      "방대한": { meaning: "어마어마하게 넓고 아주 많은 양을 말해요.", example: "도서관에는 방대한 양의 책이 가득 차 있어요." },
-      "쏟아지다": { meaning: "비나 물건이 한꺼번에 와르르 많이 떨어지는 거예요.", example: "갑자기 하늘에서 소나기가 쏟아져서 우산을 썼어요." },
-      "비약적": { meaning: "한 단계씩 가는 게 아니라, 훌쩍 높이 뛰어넘어 크게 발전하는 거예요.", example: "로봇 기술이 비약적으로 발전했어요." },
-      "수동적": { meaning: "스스로 하지 않고 다른 사람이 시키는 대로만 따라 하는 거예요.", example: "수동적으로 듣기만 하지 않고 직접 손을 들었어요." },
-      "능동적": { meaning: "누가 시키지 않아도 스스로 앞장서서 신나게 하는 거예요.", example: "능동적으로 책을 골라 즐겁게 읽었습니다." },
-      "맥락": { meaning: "글이나 이야기 속에서 앞뒤 내용이 서로 이어지는 흐름이에요.", example: "앞뒤 맥락을 살펴보면 무슨 뜻인지 금방 알 수 있어요." },
-      "비판적": { meaning: "무조건 믿지 않고, '진짜 그럴까?' 하고 똑똑하게 따져 보는 거예요.", example: "사실인지 비판적으로 생각하며 글을 읽어요." },
-      "통찰력": { meaning: "숨겨진 깊은 뜻을 꿰뚫어 환하게 알아채는 슬기로운 생각의 힘이에요.", example: "책을 많이 읽으면 남다른 통찰력이 생깁니다." },
-      "음미하며": { meaning: "맛을 꼭꼭 씹어 느끼듯이, 글의 좋은 뜻을 마음에 깊이 새기며 읽는 거예요.", example: "시의 아름다운 문장을 음미하며 천천히 읽었습니다." },
-      "정제된": { meaning: "거칠거나 필요 없는 찌꺼기를 깨끗하게 걸러내어 아주 바르게 다듬은 거예요.", example: "선생님께서 정제된 바른 글을 들려주셨어요." },
-      "안주하지": { meaning: "지금 상태에만 편안하게 머무르지 않고 더 힘차게 나아가는 거예요.", example: "한 번 이긴 것에 안주하지 않고 더 열심히 연습했어요." },
-      "빗자루": { meaning: "방이나 마당의 먼지와 쓰레기를 쓱쓱 쓸어내는 도구예요.", example: "교실 바닥을 빗자루로 깨끗하게 쓸었어요." },
-      "수수": { meaning: "키가 크고 알맹이가 붉은 곡식 풀로, 줄기로 빗자루를 만듭니다.", example: "수수 줄기로 튼튼한 빗자루를 만들었습니다." },
-      "갈대": { meaning: "물가에서 바람에 흔들리며 자라는 키 큰 풀이에요.", example: "강가에 갈대가 멋지게 흔들렸어요." },
-      "댑싸리": { meaning: "줄기가 촘촘하고 튼튼해서 마당을 쓰는 빗자루를 만들 때 쓰는 풀이에요.", example: "할머니께서 댑싸리로 마당 빗자루를 매셨어요." },
-      "가지런히": { meaning: "비뚤어지거나 흩어지지 않고 나란하게 줄을 잘 맞춘 모양이에요.", example: "신발을 가지런히 정리했습니다." },
-      "쓰임새": { meaning: "어떤 물건이 사용되는 곳이나 쓸모를 뜻해요.", example: "빗자루의 쓰임새는 쓰레기를 쓸어 모으는 것입니다." }
-    };
-
-    function searchGrade2FriendlyMeaning(rawWord) {
-      if (!rawWord) return null;
-      const pure = rawWord.replace(/[^가-힣a-zA-Z0-9]/g, '');
-      if (GRADE2_FRIENDLY_DICTIONARY[pure]) return GRADE2_FRIENDLY_DICTIONARY[pure];
-
-      // 한국어 조사/어미 제거 스마트 매칭
-      const stemEndings = [
-        "입니다", "합니다", "습니다", "으로", "에서", "에게", "보다", "처럼",
-        "하고", "하며", "하니", "하면", "하는", "이다", "이라", "이고",
-        "은", "는", "이", "가", "을", "를", "에", "로", "와", "과", "도", "만"
-      ];
-      for (const end of stemEndings) {
-        if (pure.endsWith(end) && pure.length > end.length + 1) {
-          const stem = pure.substring(0, pure.length - end.length);
-          if (GRADE2_FRIENDLY_DICTIONARY[stem]) return GRADE2_FRIENDLY_DICTIONARY[stem];
-          if (GRADE2_FRIENDLY_DICTIONARY[stem + "다"]) return GRADE2_FRIENDLY_DICTIONARY[stem + "다"];
+    let teacherVocabulary = {};
+    const normalizeVocabularyWord = word => String(word || '').replace(/[^가-힣a-zA-Z0-9]/g, '');
+    function lookupTeacherVocabulary(word, passageId) {
+      const pure = normalizeVocabularyWord(word);
+      return (teacherVocabulary[passageId] || []).find(entry =>
+        [entry.word, ...(entry.aliases || [])].some(alias => normalizeVocabularyWord(alias) === pure)
+        && entry.meaning && entry.example) || null;
+    }
+    const vocabularyFields = ['word','baseForm','aliases','meaning','example'];
+    function vocabularyRow(entry = {}) {
+      const row = document.createElement('tr'); row.className = 'vocab-editor-row';
+      const selectionCell = document.createElement('td'); selectionCell.className = 'border p-2 sticky left-0 bg-white';
+      const selection = document.createElement('input'); selection.type = 'checkbox'; selection.className = 'vocab-row-selection'; selection.setAttribute('aria-label','삭제할 행 선택');
+      selectionCell.appendChild(selection); row.appendChild(selectionCell);
+      for (const field of vocabularyFields) {
+        const cell = document.createElement('td'); cell.className = 'border p-1 align-top';
+        const input = document.createElement('textarea'); input.rows = 2; input.dataset.field = field;
+        input.className = 'w-full p-2 rounded resize-y'; input.setAttribute('aria-label', {word:'낱말',baseForm:'기본형',aliases:'연결 표현',meaning:'단어의 뜻',example:'생활 속 예문'}[field]);
+        input.value = field === 'aliases' ? (entry.aliases || []).join(', ') : entry[field] || '';
+        input.addEventListener('paste', event => {
+          const text = event.clipboardData.getData('text/plain');
+          if (!text.includes('\t') && !text.includes('\n')) return;
+          event.preventDefault(); pasteVocabularyCells(text,row,vocabularyFields.indexOf(field));
+        });
+        cell.appendChild(input); row.appendChild(cell);
+      }
+      const cell = document.createElement('td'), button = document.createElement('button');
+      button.textContent = '삭제'; button.className = 'text-red-600 p-2'; button.onclick = () => row.remove(); cell.appendChild(button); row.appendChild(cell);
+      document.getElementById('teacherVocabularyRows').appendChild(row); return row;
+    }
+    function selectAllVocabularyRows() {
+      if (!isTeacherAuthenticated()) return;
+      const checks = [...document.querySelectorAll('.vocab-row-selection')];
+      const select = checks.some(check => !check.checked); checks.forEach(check => check.checked = select);
+    }
+    function deleteSelectedVocabularyRows() {
+      if (!isTeacherAuthenticated()) return;
+      const rows = [...document.querySelectorAll('.vocab-editor-row')].filter(row => row.querySelector('.vocab-row-selection').checked);
+      if (!rows.length) {showCustomAlert('행 선택','삭제할 행의 체크박스를 선택해주세요.');return;}
+      if (confirm('선택한 ' + rows.length + '개 행을 삭제할까요? 사전 저장하기를 누르면 학생 화면에 반영됩니다.')) rows.forEach(row => row.remove());
+    }
+    function deleteAllVocabularyRows() {
+      if (!isTeacherAuthenticated()) return;
+      if (!document.getElementById('teacherVocabularyRows').children.length) return;
+      if (confirm('선택한 지문의 어휘 표를 모두 비울까요? 사전 저장하기를 누르면 학생 화면에 반영됩니다.')) document.getElementById('teacherVocabularyRows').replaceChildren();
+    }
+    function parseVocabularySheet(text) {
+      // Spreadsheet TSV supports quoted cells, embedded tabs/newlines and doubled quotes.
+      const rows = []; let row = [], cell = '', quoted = false;
+      text = String(text).replace(/\r\n?/g,'\n');
+      for (let i=0;i<text.length;i++) {
+        const c = text[i];
+        if (c === '"' && (quoted || !cell)) { if (quoted && text[i+1] === '"') {cell += '"'; i++;} else quoted = !quoted; }
+        else if (!quoted && (c === '\t' || c === '\n')) { row.push(cell); cell=''; if (c === '\n') { rows.push(row); row=[]; } }
+        else cell += c;
+      }
+      row.push(cell); rows.push(row); return rows.filter(r => r.some(c=>c.trim()));
+    }
+    function pasteVocabularyCells(text, startRow, startColumn) {
+      const table = document.getElementById('teacherVocabularyRows');
+      const start = [...table.children].indexOf(startRow);
+      parseVocabularySheet(text).forEach((cells, offset) => {
+        const row = table.children[start+offset] || vocabularyRow();
+        cells.slice(0,5-startColumn).forEach((value,column) => row.querySelector(`[data-field="${vocabularyFields[startColumn+column]}"]`).value = value);
+      });
+    }
+    function importVocabularySheet() {
+      if (!isTeacherAuthenticated()) return;
+      const input = document.getElementById('vocabBulkInput'); const rows = parseVocabularySheet(input.value);
+      if (rows[0]?.[0]?.trim() === '낱말') rows.shift();
+      if (rows.some(row=>row.length>5)) {showCustomAlert('열 확인','낱말, 기본형, 연결 표현, 뜻, 예문의 5열만 복사해주세요.');return;}
+      for (const row of rows) vocabularyRow({word:row[0] || '',baseForm:row[1] || '',aliases:(row[2] || '').split(/[,，]/).map(v=>v.trim()).filter(Boolean),meaning:row[3] || '',example:row[4] || ''});
+      input.value='';
+    }
+    function openTeacherVocabulary() {
+      if (!isTeacherAuthenticated()) return;
+      const select = document.getElementById('vocabPassageSelect');
+      select.replaceChildren();
+      for (const passage of passagesBank) { const option = document.createElement('option'); option.value = passage.id; option.textContent = passage.title; select.appendChild(option); }
+      if (passagesBank.some(p => p.id === currentPassageId)) select.value = currentPassageId;
+      renderTeacherVocabulary();
+      document.getElementById('teacherVocabularyModal').classList.remove('hidden');
+    }
+    function renderTeacherVocabulary() {
+      document.getElementById('teacherVocabularyRows').replaceChildren();
+      for (const entry of teacherVocabulary[document.getElementById('vocabPassageSelect').value] || []) vocabularyRow(entry);
+    }
+    function addVocabularyRow() { if (isTeacherAuthenticated()) vocabularyRow(); }
+    function extractVocabularyWords() {
+      if (!isTeacherAuthenticated()) return;
+      const passage = passagesBank.find(p => p.id === document.getElementById('vocabPassageSelect').value);
+      if (!passage) return;
+      const existing = new Set([...document.querySelectorAll('.vocab-editor-row [data-field="word"]')].map(input => normalizeVocabularyWord(input.value)));
+      for (const word of new Set((passage.content || '').replace(/\[사진\s*\d+\]/g,'').split(/\s+/).map(normalizeVocabularyWord).filter(Boolean)))
+        if (!existing.has(word)) vocabularyRow({word});
+    }
+    function saveTeacherVocabulary() {
+      if (!isTeacherAuthenticated()) return;
+      const id = document.getElementById('vocabPassageSelect').value;
+      if (!passagesBank.some(p => p.id === id)) { showCustomAlert('지문 확인','먼저 지문을 등록해주세요.'); return; }
+      const entries = [...document.querySelectorAll('.vocab-editor-row')].map(row => {
+        const value = field => row.querySelector(`[data-field="${field}"]`).value.trim();
+        return {word:value('word'), baseForm:value('baseForm'), aliases:value('aliases').split(/[,，\n]/).map(s=>s.trim()).filter(Boolean), meaning:value('meaning'), example:value('example')};
+      }).filter(e => e.word || e.meaning || e.example);
+      const seen = new Set();
+      for (const entry of entries) {
+        if (!entry.word) { showCustomAlert('입력 확인','낱말을 입력해주세요.'); return; }
+        if ((entry.meaning && !entry.example) || (!entry.meaning && entry.example)) { showCustomAlert('입력 확인',entry.word + '의 뜻과 예문을 함께 입력해주세요. 둘 다 비우면 준비 중으로 저장됩니다.'); return; }
+        for (const alias of new Set([entry.word,...entry.aliases].map(normalizeVocabularyWord))) {
+          if (!alias || seen.has(alias)) { showCustomAlert('중복 확인','낱말이나 연결 표현이 다른 항목과 겹칩니다: ' + alias); return; } seen.add(alias);
         }
       }
-
-      // 활용 어미 변형 검사
-      if (pure.startsWith("쏟아")) return GRADE2_FRIENDLY_DICTIONARY["쏟아지다"];
-      if (pure.startsWith("끊임")) return GRADE2_FRIENDLY_DICTIONARY["끊임없이"];
-      if (pure.startsWith("비판")) return GRADE2_FRIENDLY_DICTIONARY["비판적"];
-      if (pure.startsWith("음미")) return GRADE2_FRIENDLY_DICTIONARY["음미하며"];
-      if (pure.startsWith("정제")) return GRADE2_FRIENDLY_DICTIONARY["정제된"];
-
-      return null;
+      teacherVocabulary[id] = entries;
+      showCustomAlert('사전 저장 완료','이 지문의 뜻과 예문이 학생 화면에 공유됩니다.');
+    }
+    function fillTeacherMeaning(item) {
+      const entry = lookupTeacherVocabulary(item.word,item.passageId);
+      item.baseForm = entry ? entry.baseForm || entry.word : '';
+      item.teacherMeaning = entry ? entry.meaning : '';
+      item.teacherExample = entry ? entry.example : '';
+      if (!item.studentMeaningSaved) item.meaning = item.teacherMeaning;
+      item.exampleSentence = item.teacherExample;
+      return entry;
     }
 
     /* S펜 및 그리기 도구 상태 */
@@ -1279,6 +1275,20 @@
     let currentPassageId = "sample-passage-1";
     let readingAssignments = [];
     let currentSignaledStudent = null;
+    let currentTurnSignalId = null, lastDisplayedTurnSignalId = null, turnModalTimer = null;
+    function hideStudentTurnModal() {
+      clearTimeout(turnModalTimer);
+      document.getElementById('studentTurnModal').classList.add('hidden');
+    }
+    function updateStudentTurnModal() {
+      if (currentView !== 'student' || !loggedInStudentName || loggedInStudentName !== currentSignaledStudent) {hideStudentTurnModal();return;}
+      const key = currentTurnSignalId || currentSignaledStudent + ':' + currentSignaledEndIndex;
+      if (lastDisplayedTurnSignalId === key) return;
+      lastDisplayedTurnSignalId = key; hideStudentTurnModal();
+      document.getElementById('studentTurnModalText').textContent = loggedInStudentName + ' 학생 차례입니다';
+      document.getElementById('studentTurnModal').classList.remove('hidden');
+      turnModalTimer = setTimeout(hideStudentTurnModal, 1000);
+    }
     let currentSignaledEndIndex = null;
 
     /* 실시간 퀴즈 및 복습 코드 퀴즈 상태 */
@@ -1295,6 +1305,7 @@
     /* Navigation */
     function switchView(viewName) {
       currentView = viewName;
+      document.body.classList.toggle('student-view-active', viewName === 'student');
       ['home', 'teacher', 'board', 'student'].forEach(v => {
         const el = document.getElementById(`view-${v}`);
         const btn = document.getElementById(`navBtn-${v}`);
@@ -1314,11 +1325,13 @@
     }
 
     function requestProtectedView(target) {
-      if (isTeacherAuthenticated()) {
+      if (target !== 'home' && isTeacherAuthenticated()) {
         switchView(target);
         return;
       }
       targetProtectedView = target;
+      document.getElementById('passwordModalTitle').textContent = target === 'home' ? '홈 이동 확인' : '교사 인증 비밀번호';
+      document.getElementById('passwordModalDescription').textContent = target === 'home' ? '홈으로 이동하려면 비밀번호를 입력하세요.' : '수업 통제를 위해 교사 비밀번호를 입력하세요.';
       document.getElementById('passwordInput').value = "";
       document.getElementById('passwordModal').classList.remove('hidden');
       setTimeout(() => document.getElementById('passwordInput').focus(), 100);
@@ -1326,17 +1339,39 @@
 
     function closePasswordModal() {
       document.getElementById('passwordModal').classList.add('hidden');
+      document.getElementById('passwordInput').value = '';
+      targetProtectedView = null;
     }
 
-    function verifyPasswordAndProceed() {
+    let verifyingPassword = false;
+    async function verifyPasswordAndProceed() {
+      if (verifyingPassword) return;
+      verifyingPassword = true;
+      const target = targetProtectedView;
       const pw = document.getElementById('passwordInput').value.trim();
-      if (pw === '5658') {
-        setTeacherAuthenticated(true);
-        closePasswordModal();
-        switchView(targetProtectedView || 'teacher');
-      } else {
-        showCustomAlert("인증 실패", "비밀번호가 올바르지 않습니다.", "ph-x-circle");
-      }
+      try {
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+        const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+        if (targetProtectedView !== target || document.getElementById('passwordModal').classList.contains('hidden')) return;
+        document.getElementById('passwordInput').value = '';
+        if (hash === 'd283fc7ed27a618f0d8e673ffbd01c18ba8d472f095f375f93576d3ed40c4782') {
+          if (target !== 'home') setTeacherAuthenticated(true);
+          closePasswordModal();
+          switchView(target || 'teacher');
+        } else {
+          showCustomAlert('인증 실패', '비밀번호가 올바르지 않습니다.', 'ph-x-circle');
+        }
+      } catch (error) {
+        showCustomAlert('인증 오류', '인증 기능을 사용할 수 없습니다. HTTPS로 게시된 페이지에서 다시 시도해주세요.');
+      } finally { verifyingPassword = false; }
+    }
+
+    function studentLogout() {
+      resetStudentActivity();
+      loggedInStudentName = '';
+      updateStudentNameDisplay(); closeStudentLoginModal();
+      switchStudentReadingMode('read');
+      switchView('home');
     }
 
     function teacherLogout() {
@@ -1376,7 +1411,20 @@
 
     /* 4. 복습퀴즈 보관함: HTML + Tailwind Code Visualization Logic */
     /* 상단 잘림 방지 (justify-start) 및 스크롤 증폭 방지 래퍼 */
-    function wrapInteractiveQuizHTML(rawCode) {
+    function compactStudentQuizHeader() {
+      const removeTitle = () => {
+        document.querySelectorAll('h1,h2,h3,[role="heading"]').forEach(heading => {
+          const text = heading.textContent.replace(/[^가-힣0-9]/g, '');
+          if (!/^(국어)?(초등)?2학년(국어)?글쓰기$/.test(text)) return;
+          const header = heading.closest('header');
+          (header || heading).remove();
+        });
+      };
+      removeTitle();
+      new MutationObserver(removeTitle).observe(document.body, {childList: true, subtree: true});
+    }
+
+    function wrapInteractiveQuizHTML(rawCode, compactStudent = false) {
       return `
         <!DOCTYPE html>
         <html lang="ko">
@@ -1405,6 +1453,7 @@
           <div id="quiz-inner-wrapper" class="w-full max-w-2xl mx-auto flex flex-col items-center justify-start space-y-3">
             ${rawCode}
           </div>
+          ${compactStudent ? '<script>(' + compactStudentQuizHeader.toString() + ')();<\/script>' : ''}
         </body>
         </html>
       `;
@@ -1963,6 +2012,7 @@
     }
 
     function sendTurnSignalToStudent(studentName, startIdx, endIdx) {
+      currentTurnSignalId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
       currentSignaledStudent = studentName;
       currentSignaledEndIndex = endIdx;
       renderSentenceSignalCards();
@@ -2087,10 +2137,38 @@
 
     function confirmStudentName(name) {
       if (!name || !name.trim()) return;
-      loggedInStudentName = name.trim();
+      const nextName = name.trim();
+      const nameChanged = nextName !== loggedInStudentName;
+      loggedInStudentName = nextName;
+      if (nameChanged) {
+        resetStudentActivity();
+        if (activeQuiz) openStudentQuizModal(activeQuiz);
+        updateStudentReviewQuizTabUI();
+      }
       updateStudentNameDisplay();
       closeStudentLoginModal();
       renderStudentPassageContent();
+    }
+
+    // Student activity stays in this page; changing identity clears the previous work.
+    function resetStudentActivity() {
+      studentCollectedWords = [];
+      currentInspectingWordId = null;
+      cancelCollectWord(); closeDictModal(); closeStudentQuizModal();
+      selectedOxAnswer = ''; isDrawing = false;
+      lastDisplayedTurnSignalId = null; hideStudentTurnModal();
+      const manualInput = document.getElementById('manualWordInput');
+      if (manualInput) manualInput.value = '';
+      document.getElementById('studentQuizInputArea').innerHTML = '';
+      document.getElementById('studentQuizResultArea').classList.add('hidden');
+      document.getElementById('studentQuizSubmissionStatus').textContent = '답안 작성 중';
+      const iframe = document.getElementById('studentReviewQuizTabIframe');
+      if (iframe) iframe.srcdoc = '';
+      ['studentPenCanvasRead', 'studentPenCanvasSummary'].forEach(id => {
+        const canvas = document.getElementById(id);
+        if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+      });
+      updateVocabCounters(); renderStudentVocabCards();
     }
 
     function updateStudentNameDisplay() {
@@ -2141,20 +2219,21 @@
       const emptyCard = document.getElementById('studentReviewQuizEmptyCard');
       const iframe = document.getElementById('studentReviewQuizTabIframe');
       const titleEl = document.getElementById('studentReviewQuizTitle');
-      const liveDot = document.getElementById('studentReviewQuizLiveDot');
+
 
       if (activeReviewQuiz) {
         if (activeCard) activeCard.classList.remove('hidden');
         if (emptyCard) emptyCard.classList.add('hidden');
         if (titleEl) titleEl.textContent = activeReviewQuiz.title || "복습 퀴즈";
         if (iframe) {
-          iframe.srcdoc = wrapInteractiveQuizHTML(activeReviewQuiz.code);
+          const quizHTML = wrapInteractiveQuizHTML(activeReviewQuiz.code, true);
+          if (iframe.srcdoc !== quizHTML) iframe.srcdoc = quizHTML;
         }
-        if (liveDot) liveDot.classList.remove('hidden');
+
       } else {
         if (activeCard) activeCard.classList.add('hidden');
         if (emptyCard) emptyCard.classList.remove('hidden');
-        if (liveDot) liveDot.classList.add('hidden');
+
       }
     }
 
@@ -2237,42 +2316,53 @@
       if (!target) return;
       const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
       let node, lastMatch = null;
+      const textNodes = [];
       while ((node = walker.nextNode())) {
+        textNodes.push(node);
         const matches = [...node.textContent.matchAll(/[.!?…。！？]+/g)];
         if (matches.length) lastMatch = {node, match: matches.at(-1)};
       }
       if (!lastMatch) return;
       const {node: textNode, match} = lastMatch;
-      const punctuation = textNode.splitText(match.index);
-      punctuation.splitText(match[0].length);
-      const mark = document.createElement('mark');
-      mark.className = 'reading-stop-mark';
-      mark.title = '여기까지 읽으세요';
-      mark.setAttribute('aria-label', '여기까지 읽으세요: ' + match[0]);
-      punctuation.replaceWith(mark);
-      mark.appendChild(punctuation);
+      function markTextRange(node, start, length) {
+        const segment = node.splitText(start); segment.splitText(length);
+        const mark = document.createElement('mark'); mark.className = 'reading-stop-mark';
+        mark.title = '여기까지 읽으세요'; mark.setAttribute('aria-label', '여기까지 읽으세요');
+        segment.replaceWith(mark); mark.appendChild(segment);
+      }
+      // Highlight the final visible letter with the ending punctuation, preserving word links.
+      const before = textNode.textContent.slice(0, match.index);
+      const visible = [...before.matchAll(/[^\s.!?…。！？"'“”‘’]/gu)].at(-1);
+      if (visible) {
+        markTextRange(textNode, visible.index, match.index + match[0].length - visible.index);
+      } else {
+        const previousNodes = textNodes.slice(0,textNodes.indexOf(textNode));
+        let preceding = null;
+        for (const previous of previousNodes.reverse()) {
+          const letter = [...previous.textContent.matchAll(/[^\s.!?…。！？"'“”‘’]/gu)].at(-1);
+          if (letter) {preceding = {node:previous,letter};break;}
+        }
+        markTextRange(textNode,match.index,match[0].length);
+        if (preceding) markTextRange(preceding.node,preceding.letter.index,preceding.letter[0].length);
+      }
     }
 
+    let pendingCollectedWord = null;
     function onWordClickedFromPassage(word, sentence) {
-      if (studentReadingMode !== 'read') return;
-      if (!word) return;
-      const existing = studentCollectedWords.find(w => w.word === word);
-      if (existing) {
-        openDictModalForWord(existing.id);
-        return;
+      if (studentReadingMode !== 'read' || !word) return;
+      pendingCollectedWord = {word, sentence, passageId:currentPassageId};
+      document.getElementById('collectWordQuestion').textContent = "'" + word + "'를 모르는 단어로 넘길까요?";
+      document.getElementById('collectWordModal').classList.remove('hidden');
+    }
+    function cancelCollectWord() { pendingCollectedWord=null; document.getElementById('collectWordModal').classList.add('hidden'); }
+    function confirmCollectWord() {
+      const pending = pendingCollectedWord; cancelCollectWord();
+      if (!pending || pending.passageId !== currentPassageId) return;
+      if (!studentCollectedWords.some(w=>w.word===pending.word && w.passageId===pending.passageId)) {
+        const item={id:'w-'+Date.now()+'-'+Math.random().toString(36).slice(2),word:pending.word,passageId:pending.passageId,contextSentence:pending.sentence,meaning:'',exampleSentence:''};
+        fillTeacherMeaning(item); studentCollectedWords.push(item);
+        updateVocabCounters(); renderStudentVocabCards(); renderStudentPassageContent();
       }
-
-      const lookup = searchGrade2FriendlyMeaning(word) || {
-        meaning: '', 
-        example: sentence ? `"${sentence}"` : `${word} 낱말이 쓰인 예문입니다.`
-      };
-
-      const newItem = { id: 'w-' + Date.now(), word, contextSentence: sentence, meaning: lookup.meaning, exampleSentence: lookup.example };
-      studentCollectedWords.push(newItem);
-      updateVocabCounters();
-      renderStudentPassageContent();
-
-      openDictModalForWord(newItem.id);
     }
 
     function addManualWord() {
@@ -2280,15 +2370,9 @@
       const val = input?.value.trim();
       if (!val) return;
 
-      const lookup = searchGrade2FriendlyMeaning(val) || {
-        meaning: `"${val}" 낱말의 뜻을 생각하며 천천히 읽어보세요.`,
-        example: `${val} 낱말이 쓰인 생활 속 예문입니다.`
-      };
-
-      studentCollectedWords.push({
-        id: 'w-' + Date.now(), word: val, contextSentence: "직접 추가", meaning: lookup.meaning, exampleSentence: lookup.example
-      });
-
+      const item = {id: 'w-' + Date.now(), word: val, passageId: currentPassageId, contextSentence: '직접 추가', meaning: '', exampleSentence: ''};
+      fillTeacherMeaning(item);
+      studentCollectedWords.push(item);
       input.value = "";
       updateVocabCounters();
       renderStudentVocabCards();
@@ -2316,19 +2400,19 @@
       }
 
       container.innerHTML = studentCollectedWords.map(item => `
-        <div class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-2">
+        <div role="button" tabindex="0" onclick="openDictModalForWord('${item.id}')" onkeydown="if(event.target===this &amp;&amp; (event.key==='Enter' || event.key===' ')) {event.preventDefault();openDictModalForWord('${item.id}');}" class="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-2 cursor-pointer">
           <div class="flex items-center justify-between">
             <span class="font-black text-slate-900 text-base">${escapeHtml(item.word)}</span>
             <div class="flex items-center space-x-1.5 shrink-0">
-              <button type="button" onclick="openDictModalForWord('${item.id}')" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs">
+              <button type="button" onclick="event.stopPropagation();openDictModalForWord('${item.id}')" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs">
                 뜻 확인
               </button>
-              <button type="button" onclick="deleteCollectedWord('${item.id}')" class="p-1.5 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors" title="어휘 카드 삭제">
+              <button type="button" onclick="event.stopPropagation();deleteCollectedWord('${item.id}')" class="p-1.5 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors" title="어휘 카드 삭제">
                 <i class="ph-bold ph-trash text-sm"></i>
               </button>
             </div>
           </div>
-          <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(item.meaning)}</p>
+          <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(item.meaning || "설명이 아직 준비되지 않았어요.")}</p><p class="text-xs text-amber-700 leading-relaxed">예문: ${escapeHtml(item.exampleSentence || "예문이 아직 준비되지 않았어요.")}</p>
         </div>
       `).join('');
     }
@@ -2341,132 +2425,15 @@
     }
 
     function openDictModalForWord(wordId) {
-      const item = studentCollectedWords.find(w => w.id === wordId);
-      if (!item) return;
-
-      currentInspectingWordId = wordId;
-      document.getElementById('dictModalWordTitle').textContent = item.word;
-      document.getElementById('dictModalRecommendedMeaning').textContent = item.meaning;
-      document.getElementById('dictModalExampleSentence').textContent = item.exampleSentence || "예문이 등록되어 있습니다.";
-      document.getElementById('dictModalStudentMeaning').value = item.meaning;
-
+      const item=studentCollectedWords.find(w=>w.id===wordId); if (!item) return;
+      currentInspectingWordId=wordId; fillTeacherMeaning(item);
+      document.getElementById('dictModalWordTitle').textContent=item.word;
+      document.getElementById('dictModalRecommendedMeaning').textContent=item.teacherMeaning || '선생님이 아직 설명을 준비하지 않은 낱말이에요.';
+      document.getElementById('dictModalBaseForm').textContent=item.baseForm || '기본형이 아직 등록되지 않았어요.';
+      document.getElementById('dictModalExampleSentence').textContent=item.teacherExample || '예문이 아직 준비되지 않았어요.';
       document.getElementById('studentDictModal').classList.remove('hidden');
-      loadGeminiMeaning(item);
     }
-
-    function closeDictModal() {
-      document.getElementById('studentDictModal').classList.add('hidden');
-    }
-
-    function saveDictModalMeaning() {
-      const item = studentCollectedWords.find(w => w.id === currentInspectingWordId);
-      if (!item) return;
-      if (item) {
-        const entered = document.getElementById('dictModalStudentMeaning').value.trim();
-        if (!entered) { showCustomAlert('입력 확인', '내가 이해한 뜻을 입력해주세요.'); return; }
-        item.meaning = entered;
-        item.studentMeaningSaved = true;
-      }
-      closeDictModal();
-      renderStudentVocabCards();
-      showCustomAlert("뜻 저장 완료", `'${item.word}' 낱말의 뜻이 어휘 카드에 저장되었습니다.`, "ph-check-circle");
-    }
-
-    function copyDictMeaningToInput() {
-      const item = studentCollectedWords.find(w => w.id === currentInspectingWordId);
-      if (!item) return;
-      const text = item.aiMeaning || (geminiWebAppUrl ? '' : item.meaning);
-      if (!text) return;
-      document.getElementById('dictModalStudentMeaning').value = text;
-    }
-
-    function retryFetchDictMeaning() {
-      const item = studentCollectedWords.find(w => w.id === currentInspectingWordId);
-      if (item) loadGeminiMeaning(item, true);
-    }
-
-    function openGeminiSettings() {
-      if (!isTeacherAuthenticated()) return;
-      document.getElementById('geminiWebAppUrlInput').value = geminiWebAppUrl;
-      document.getElementById('geminiSettingsModal').classList.remove('hidden');
-    }
-    function saveGeminiSettings() {
-      const url = document.getElementById('geminiWebAppUrlInput').value.trim();
-      if (url && !/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url)) {
-        showCustomAlert('주소 확인', '배포된 Apps Script 웹 앱의 /exec 주소를 입력해주세요.'); return;
-      }
-      geminiWebAppUrl = url;
-      document.getElementById('geminiSettingsModal').classList.add('hidden');
-      showCustomAlert('설정 저장', 'AI 낱말 뜻 서버 주소가 학생 화면에도 공유됩니다.');
-    }
-    function requestGeminiMeaning(word, context) {
-      const endpoint = geminiWebAppUrl;
-      if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(endpoint))
-        return Promise.reject(new Error('선생님이 AI 낱말 뜻 서버 주소를 설정해야 합니다.'));
-      // Apps Script ContentService redirects: JSONP handles cross-origin replies.
-      return new Promise((resolve, reject) => {
-        const callback = 'readingGemini_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-        const script = document.createElement('script');
-        let timer;
-        const cleanup = () => {
-          clearTimeout(timer); script.remove();
-          // A slow response after a timeout must not affect a different word.
-          window[callback] = () => {};
-          setTimeout(() => delete window[callback], 60000);
-        };
-        window[callback] = data => {
-          cleanup();
-          if (!data || !data.ok) { reject(new Error(data?.error || '뜻 설명을 불러오지 못했습니다.')); return; }
-          if (typeof data.meaning !== 'string' || typeof data.example !== 'string') {
-            reject(new Error('서버 응답을 확인해주세요.')); return;
-          }
-          resolve(data);
-        };
-        script.onerror = () => { cleanup(); reject(new Error('AI 서버 연결을 확인해주세요. 웹 앱 접근 권한은 모든 사용자로 배포해야 합니다.')); };
-        timer = setTimeout(() => {cleanup(); reject(new Error('AI 답변이 늦어지고 있습니다. 다시 조회해주세요.'));}, 45000);
-        const params = new URLSearchParams({action:'meaning',word,context:context.slice(0,1800),callback});
-        script.src = endpoint + '?' + params.toString();
-        document.head.appendChild(script);
-      });
-    }
-    async function loadGeminiMeaning(item, force = false) {
-      const isSelected = () => currentInspectingWordId === item.id && studentCollectedWords.includes(item);
-      const writeView = (meaning, example) => {
-        if (!isSelected()) return;
-        document.getElementById('dictModalRecommendedMeaning').textContent = meaning;
-        document.getElementById('dictModalExampleSentence').textContent = example;
-      };
-      if (!geminiWebAppUrl) {
-        writeView(item.meaning || '선생님이 AI 낱말 뜻 연결을 설정하면 쉬운 뜻을 볼 수 있어요.',
-          item.exampleSentence || ''); return;
-      }
-      if (item.aiMeaning && item.aiEndpoint === geminiWebAppUrl && !force) {
-        writeView(item.aiMeaning, item.aiExample); return;
-      }
-      const field = document.getElementById('dictModalStudentMeaning');
-      const previousInput = field.value;
-      writeView('Gemini가 문장에 맞는 쉬운 뜻을 설명하고 있어요…', '잠시 기다려주세요.');
-      try {
-        const key = JSON.stringify([geminiWebAppUrl,item.word,item.contextSentence]);
-        if (!geminiRequests.has(key)) {
-          const pending = requestGeminiMeaning(item.word, item.contextSentence === '직접 추가' ? '' : item.contextSentence || '');
-          geminiRequests.set(key,pending);
-          pending.then(()=>geminiRequests.delete(key),()=>geminiRequests.delete(key));
-        }
-        const endpoint = geminiWebAppUrl;
-        const result = await geminiRequests.get(key);
-        if (!studentCollectedWords.includes(item) || endpoint !== geminiWebAppUrl) return;
-        item.aiMeaning = result.meaning; item.aiExample = result.example; item.aiEndpoint = endpoint;
-        // Keep a student's own saved wording when refreshing AI recommendations.
-        if (!item.studentMeaningSaved) item.meaning = result.meaning;
-        item.exampleSentence = result.example;
-        writeView(result.meaning,result.example);
-        if (isSelected() && !item.studentMeaningSaved && field.value === previousInput) field.value = result.meaning;
-        renderStudentVocabCards();
-      } catch(error) {
-        writeView(error.message, '뜻이 나오지 않으면 선생님께 알려주세요.');
-      }
-    }
+    function closeDictModal() {document.getElementById('studentDictModal').classList.add('hidden');}
 
     function adjustFontSize(delta) {
       currentReadingFontSize = delta === 0 ? 18 : Math.max(14, Math.min(26, currentReadingFontSize + delta));
@@ -2494,7 +2461,15 @@
       const rect = container.getBoundingClientRect();
       ['studentPenCanvasRead', 'studentPenCanvasSummary'].forEach(id => {
         const c = document.getElementById(id);
-        if (c) { c.width = rect.width; c.height = rect.height; }
+        if (c && rect.width > 0 && rect.height > 0) {
+          const width = Math.round(rect.width), height = Math.round(rect.height);
+          if (c.width === width && c.height === height) return;
+          const saved = document.createElement('canvas');
+          saved.width = c.width; saved.height = c.height;
+          saved.getContext('2d').drawImage(c, 0, 0);
+          c.width = width; c.height = height;
+          c.getContext('2d').drawImage(saved, 0, 0);
+        }
       });
     }
 
@@ -2596,7 +2571,8 @@
 
     async function captureAndExportStudentWork() {
       const container = document.getElementById('studentReadingContainer');
-      if (!container) return;
+      if (!container || !loggedInStudentName) return;
+      const submittingStudent = loggedInStudentName;
 
       showCustomAlert("제출 진행 중", "선생님 구글 드라이브로 수합 중입니다...", "ph-spinner");
 
@@ -2611,12 +2587,12 @@
           mode: 'no-cors',
           body: JSON.stringify({
             folderId: folderId,
-            fileName: `[${loggedInStudentName || '학생'}]_중심내용밑줄.png`,
+            fileName: `[${submittingStudent}]_중심내용밑줄.png`,
             base64: base64Data
           })
         });
 
-        showCustomAlert("제출 완료!", `[${loggedInStudentName || '학생'}] 학생의 밑줄 캡처 이미지가 선생님 구글 드라이브 폴더로 전송되었습니다!`, "ph-check-circle");
+        showCustomAlert("제출 완료!", `[${submittingStudent}] 학생의 밑줄 캡처 이미지가 선생님 구글 드라이브 폴더로 전송되었습니다!`, "ph-check-circle");
       } catch (e) {
         showCustomAlert("제출 오류", "전송 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.", "ph-x-circle");
       }
@@ -2749,13 +2725,13 @@
         if (currentView === 'board') renderBoardView();
         if (currentView === 'student') {
           const isMyTurn = (loggedInStudentName && loggedInStudentName === data.student);
-          document.getElementById('studentTurnAlertBanner').classList.toggle('hidden', !isMyTurn);
+          updateStudentTurnModal();
         }
       } 
       else if (data.type === 'CLEAR_SIGNAL') {
         currentSignaledStudent = null;
         if (currentView === 'board') renderBoardView();
-        if (currentView === 'student') document.getElementById('studentTurnAlertBanner').classList.add('hidden');
+        hideStudentTurnModal();
       } 
       else if (data.type === 'QUIZ_BROADCAST') {
         activeQuiz = data.quiz;
@@ -2821,8 +2797,8 @@
     const syncStatus = text => document.getElementById('firebaseStatus').textContent = text;
     function sharedState() {
       return JSON.parse(JSON.stringify({passagesBank, currentPassageId, readingAssignments,
-        currentSignaledStudent, currentSignaledEndIndex, quizBank, activeQuiz,
-        reviewQuizzesBank, activeReviewQuiz, quizReveal, geminiWebAppUrl,
+        currentSignaledStudent, currentSignaledEndIndex, currentTurnSignalId, quizBank, activeQuiz,
+        reviewQuizzesBank, activeReviewQuiz, quizReveal, teacherVocabulary,
         driveSettings: {url: document.getElementById('driveWebAppUrlInput').value,
           folder: document.getElementById('driveFolderIdInput').value}}));
     }
@@ -2835,19 +2811,27 @@
     }
     function refreshSyncedScreen(old) {
       const now = sharedState();
+      if (currentView !== 'student') hideStudentTurnModal();
+      if (JSON.stringify(old.teacherVocabulary) !== JSON.stringify(now.teacherVocabulary)) {
+        studentCollectedWords.forEach(fillTeacherMeaning);
+        renderStudentVocabCards();
+        if (currentInspectingWordId && !document.getElementById('studentDictModal').classList.contains('hidden')) openDictModalForWord(currentInspectingWordId);
+      }
       const passageChanged = old.currentPassageId !== now.currentPassageId ||
-        JSON.stringify(old.passagesBank) !== JSON.stringify(now.passagesBank);
+        JSON.stringify(old.passagesBank.find(p => p.id === old.currentPassageId)) !==
+        JSON.stringify(now.passagesBank.find(p => p.id === now.currentPassageId));
       renderRegisteredPassagesList(); syncPassageSelectorInSignalTab();
       renderSentenceSignalCards(); renderQuizBankList(); renderReviewQuizBankList();
       document.getElementById('teacherActiveQuizControls').classList.toggle('hidden', !activeQuiz);
       if (passageChanged) {
-        studentCollectedWords = []; updateVocabCounters(); renderStudentVocabCards();
+        resetStudentActivity();
+        if (currentView === 'student' && activeQuiz) openStudentQuizModal(activeQuiz);
+        if (currentView === 'student') updateStudentReviewQuizTabUI();
         if (currentView === 'student') renderStudentPassageContent();
       }
       if (currentView === 'board' && JSON.stringify(old) !== JSON.stringify(now)) renderBoardView();
       if (currentView === 'student') {
-        document.getElementById('studentTurnAlertBanner').classList.toggle('hidden',
-          !loggedInStudentName || loggedInStudentName !== currentSignaledStudent);
+        updateStudentTurnModal();
         if (JSON.stringify(old.activeQuiz) !== JSON.stringify(activeQuiz)) {
           if (activeQuiz) { selectedOxAnswer = ''; openStudentQuizModal(activeQuiz); }
           else closeStudentQuizModal();
@@ -2874,13 +2858,13 @@
       const old = sharedState();
       passagesBank = data.passagesBank || []; currentPassageId = data.currentPassageId || null;
       readingAssignments = data.readingAssignments || [];
+      currentTurnSignalId = data.currentTurnSignalId || null;
       currentSignaledStudent = data.currentSignaledStudent || null;
       currentSignaledEndIndex = data.currentSignaledEndIndex || null;
       quizBank = data.quizBank || []; activeQuiz = data.activeQuiz || null;
       reviewQuizzesBank = data.reviewQuizzesBank || []; activeReviewQuiz = data.activeReviewQuiz || null;
       quizReveal = data.quizReveal || null;
-      geminiWebAppUrl = (!data.geminiWebAppUrl || data.geminiWebAppUrl === 'https://script.google.com/macros/s/AKfycbxpSz6LwgAcSGFIF2uw93xWAJx6kipNlpIblKw8RuAYy9_T-ddZHk4jxKEanAX34jK-/exec')
-        ? DEFAULT_GEMINI_WEB_APP_URL : data.geminiWebAppUrl;
+      teacherVocabulary = data.teacherVocabulary || {};
       if (data.driveSettings) {
         document.getElementById('driveWebAppUrlInput').value = data.driveSettings.url || '';
         document.getElementById('driveFolderIdInput').value = data.driveSettings.folder || '';
@@ -2892,7 +2876,7 @@
       'executeRandomSentenceAssignment','sendTurnSignalToStudent','clearActiveReadingSignal',
       'saveQuizToBank','deleteQuiz','broadcastLiveQuiz','revealActiveQuizAnswer','closeActiveQuizBroadcast',
       'saveCodeReviewQuiz','broadcastLiveCodeQuizFromEditor','stopReviewQuizBroadcast',
-      'broadcastReviewQuizFromBank','deleteReviewQuiz','saveDriveSettings','saveGeminiSettings'];
+      'broadcastReviewQuizFromBank','deleteReviewQuiz','saveDriveSettings','saveTeacherVocabulary'];
     for (const name of syncedActions) {
       const original = window[name];
       window[name] = async function(...args) {
@@ -2943,10 +2927,12 @@
         document.querySelector('input[name="studentQuizAnswerRadio"]:checked')?.value :
         document.getElementById('studentQuizShortText')?.value.trim();
       if (!answer) { showCustomAlert('답안 확인', '답안을 선택하거나 입력해주세요.'); return; }
+      const submittingStudent = loggedInStudentName, submittingQuizId = activeQuiz.id;
       try {
         await firebaseApi.set(firebaseApi.ref(firebaseApi.db,
-          'readingWritingViewer/answers/'+activeQuiz.id+'/'+encodeURIComponent(loggedInStudentName)),
-          {student: loggedInStudentName, answer, submittedAt: firebaseApi.serverTimestamp()});
+          'readingWritingViewer/answers/'+submittingQuizId+'/'+encodeURIComponent(submittingStudent)),
+          {student: submittingStudent, answer, submittedAt: firebaseApi.serverTimestamp()});
+        if (loggedInStudentName !== submittingStudent || activeQuiz?.id !== submittingQuizId) return;
         document.getElementById('studentQuizSubmissionStatus').textContent = '제출 완료!';
         showCustomAlert('제출 완료', '선생님께 답안이 저장되었습니다.');
       } catch(e) { showCustomAlert('제출 실패', e.message); }
