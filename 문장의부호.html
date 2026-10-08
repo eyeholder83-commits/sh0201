@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>반짝반짝 문장부호 배움터</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: radial-gradient(circle at top, #f0fdf4, #e0f2fe 50%, #fef3c7);
+      min-height: 100vh;
+    }
+    .font-jua {
+      font-family: 'Jua', sans-serif;
+    }
+    .font-dodum {
+      font-family: 'Gowun Dodum', sans-serif;
+    }
+    .card-bounce {
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+    }
+    .card-bounce:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.12);
+    }
+    .pop-anim {
+      animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .confetti-piece {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      animation: confettiFall 2.4s ease-out forwards;
+      pointer-events: none;
+      z-index: 100;
+    }
+    @keyframes confettiFall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(400px) rotate(720deg); opacity: 0; }
+    }
+    .blank-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 3.5rem;
+      height: 2.75rem;
+      border: 3px dashed #6366f1;
+      background-color: #eef2ff;
+      border-radius: 0.875rem;
+      vertical-align: middle;
+      margin: 0 0.25rem;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    }
+    .tight-quotes {
+      letter-spacing: -0.18em;
+      display: inline-block;
+      padding-right: 0.18em;
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased p-4 md:p-8 flex flex-col justify-between">
+  <div class="max-w-6xl mx-auto w-full">
+    <header class="text-center mb-10">
+      <div class="inline-flex items-center gap-2 bg-white/95 backdrop-blur-md px-5 py-2.5 rounded-full border border-emerald-300 text-emerald-800 text-base md:text-lg font-bold mb-4 shadow-sm">
+        <i class="fa-solid fa-shapes text-emerald-600 text-xl"></i> 쉽고 재밌는 한글 문해력 탐험
+      </div>
+      <h1 class="text-4xl md:text-6xl font-black font-jua text-slate-900 tracking-tight flex items-center justify-center gap-3">
+        <span>✨ 문장부호 5형제 탐험대</span>
+      </h1>
+      <p class="text-slate-700 mt-3 text-lg md:text-2xl font-dodum font-semibold">문장을 바르고 생생하게 만드는 마법의 부호들을 배워보아요!</p>
+      
+      <!-- Reordered and Renamed Navigation Tabs -->
+      <div class="flex flex-wrap justify-center gap-3 mt-8">
+        <button id="tab-cards" onclick="switchTab('cards')" class="px-7 py-3.5 rounded-2xl font-black text-lg md:text-xl transition-all bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 flex items-center gap-2.5">
+          <i class="fa-solid fa-table-cells-large"></i> 문장 부호 보기
+        </button>
+        <button id="tab-table" onclick="switchTab('table')" class="px-7 py-3.5 rounded-2xl font-black text-lg md:text-xl transition-all bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200 flex items-center gap-2.5 shadow-sm">
+          <i class="fa-solid fa-list-check text-emerald-600"></i> 한눈에 표로 정리
+        </button>
+        <button id="tab-quiz" onclick="switchTab('quiz')" class="px-7 py-3.5 rounded-2xl font-black text-lg md:text-xl transition-all bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200 flex items-center gap-2.5 shadow-sm">
+          <i class="fa-solid fa-gamepad text-indigo-500"></i> 퀴즈 풀기
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <!-- TAB 1: 문장 부호 보기 VIEW -->
+      <section id="view-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Javascript dynamically injects cards here -->
+      </section>
+
+      <!-- TAB 2: 한눈에 표로 정리 VIEW -->
+      <section id="view-table" class="hidden">
+        <div class="bg-white rounded-3xl shadow-xl border-2 border-slate-200 overflow-hidden">
+          <div class="p-6 bg-slate-50 border-b-2 border-slate-200 flex items-center justify-between">
+            <h2 class="font-jua text-2xl md:text-3xl text-slate-900 flex items-center gap-3">
+              <i class="fa-solid fa-book-bookmark text-emerald-600"></i> 문장부호 총정리 요약표
+            </h2>
+            <span class="text-sm md:text-base font-bold text-slate-600 bg-white px-4 py-1.5 rounded-full border border-slate-300">초등 국어 필수</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-700 text-lg font-black border-b-2 border-slate-200">
+                  <th class="py-5 px-6 text-center w-36">문장부호</th>
+                  <th class="py-5 px-6 w-44">이름</th>
+                  <th class="py-5 px-6">언제 사용할까요?</th>
+                  <th class="py-5 px-6">대표 예시</th>
+                </tr>
+              </thead>
+              <tbody id="table-body" class="divide-y-2 divide-slate-100 text-base md:text-lg">
+                <!-- Javascript populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: 퀴즈 풀기 VIEW -->
+      <section id="view-quiz" class="hidden max-w-3xl mx-auto">
+        <div class="bg-white rounded-3xl p-7 md:p-10 shadow-2xl border-2 border-slate-200 relative overflow-hidden">
+          <div id="quiz-confetti-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+          
+          <div class="flex items-center justify-between border-b-2 border-slate-100 pb-5 mb-7">
+            <span class="text-base uppercase tracking-wider font-extrabold px-4 py-2 bg-amber-100 text-amber-900 rounded-full flex items-center gap-2">
+              <i class="fa-solid fa-star text-amber-500"></i> 미션 문제 <span id="quiz-current-num" class="text-xl font-black">1</span> / 5
+            </span>
+            <div class="text-base md:text-lg font-bold text-slate-600">
+              현재 맞힌 개수: <span id="quiz-score" class="text-emerald-600 font-black text-2xl">0</span> / 5
+            </div>
+          </div>
+
+          <!-- Question Display Area -->
+          <div id="quiz-question-box" class="text-center py-6">
+            <p class="text-lg md:text-xl font-bold text-indigo-600 mb-5 font-dodum">빈 네모 칸에 들어갈 알맞은 문장부호를 골라보세요!</p>
+            <div id="quiz-sentence" class="text-2xl md:text-4xl font-jua text-slate-900 leading-relaxed min-h-[110px] flex items-center justify-center flex-wrap px-4 gap-2">
+              <!-- Question injected -->
+            </div>
+          </div>
+
+          <!-- Answer Options -->
+          <div id="quiz-options-area" class="mt-6 pt-6 border-t-2 border-slate-100">
+            <p class="text-base text-center text-slate-500 mb-5 font-bold">아래 부호 중 하나를 눌러보세요</p>
+            <div id="quiz-options" class="grid grid-cols-5 gap-3 md:gap-4">
+              <!-- 5 Option buttons -->
+            </div>
+          </div>
+
+          <!-- Feedback Alert -->
+          <div id="quiz-feedback" class="mt-8 hidden p-5 rounded-2xl text-center text-lg font-bold transition-all"></div>
+
+          <!-- Next / Retry Button -->
+          <div class="mt-8 flex justify-end">
+            <button id="quiz-next-btn" onclick="nextQuiz()" class="hidden px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-lg md:text-xl rounded-2xl shadow-lg transition-all flex items-center gap-2.5">
+              <span>다음 문제</span> <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+
+          <!-- Final Screen (Success with Iframe or Retry) -->
+          <div id="quiz-result-area" class="hidden text-center py-4">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white rounded-3xl p-7 md:p-9 max-w-lg w-full shadow-2xl relative pop-anim border-2 border-slate-200 max-h-[90vh] overflow-y-auto">
+        <button onclick="closeModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-800 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div id="modal-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 문장부호 5가지 상세 정보 (예시 문장 3개씩 포함)
+    const punctuationData = [
+      {
+        id: 'period',
+        mark: '.',
+        name: '마침표',
+        usage: '문장이 끝날 때 써요.',
+        description: '설명하는 문장이나 일기를 쓸 때, 문장의 맨 끝에 콕 찍어주는 부호예요.',
+        examples: [
+          { text: '나는 오늘 학교에 갔어요', highlight: '.' },
+          { text: '내일은 날씨가 맑겠습니다', highlight: '.' },
+          { text: '강아지가 마당에서 신나게 뜁니다', highlight: '.' }
+        ]
+      },
+      {
+        id: 'question',
+        mark: '?',
+        name: '물음표',
+        usage: '궁금한 것을 물어볼 때 써요.',
+        description: '상대방에게 궁금한 것이 있어서 질문하거나 되물을 때 끝에 붙여요.',
+        examples: [
+          { text: '너는 무엇을 좋아하니', highlight: '?' },
+          { text: '지금은 몇 시인가요', highlight: '?' },
+          { text: '오늘 저녁에 같이 놀이터 갈래', highlight: '?' }
+        ]
+      },
+      {
+        id: 'exclamation',
+        mark: '!',
+        name: '느낌표',
+        usage: '기쁨, 놀람, 감탄처럼 강한 느낌을 나타낼 때 써요.',
+        description: '깜짝 놀라거나, 신나고 감탄했을 때, 또는 큰 소리로 부를 때 힘주어 써요.',
+        examples: [
+          { text: '우와, 정말 멋지다', highlight: '!' },
+          { text: '앗, 깜짝이야', highlight: '!' },
+          { text: '생일 진심으로 축하해', highlight: '!' }
+        ]
+      },
+      {
+        id: 'comma',
+        mark: ',',
+        name: '쉼표',
+        usage: '문장을 읽다가 잠깐 쉬거나, 여러 가지를 나누어 쓸 때 써요.',
+        description: '비슷한 단어를 나란히 늘어놓을 때나 문장의 호흡을 잠깐 쉬을 때 써요.',
+        examples: [
+          { full: '나는 사과<b class="text-black text-2xl font-black">,</b> 배<b class="text-black text-2xl font-black">,</b> 포도를 좋아해요.' },
+          { full: '어머니<b class="text-black text-2xl font-black">,</b> 아버지<b class="text-black text-2xl font-black">,</b> 동생과 함께 여행을 갔어요.' },
+          { full: '빨강<b class="text-black text-2xl font-black">,</b> 노랑<b class="text-black text-2xl font-black">,</b> 파랑 물감으로 그림을 그려요.' }
+        ]
+      },
+      {
+        id: 'quotes',
+        mark: '“”',
+        name: '큰따옴표',
+        usage: '다른 사람이 한 말을 그대로 나타낼 때 써요.',
+        description: '입으로 소리 내어 말한 대화나 마음속 생각을 글 속에 담을 때 양쪽에 써요.',
+        examples: [
+          { full: '민수가 <b class="text-black font-black">“우리 같이 놀자.”</b>라고 말했어요.' },
+          { full: '지우는 <b class="text-black font-black">“정말 고마워!”</b>라고 속삭였습니다.' },
+          { full: '선생님께서 <b class="text-black font-black">“모두 자리에 앉으세요.”</b>라고 하셨어요.' }
+        ]
+      }
+    ];
+
+    // 카드와 모달 간 열림 상태를 공유 및 동기화하기 위한 상태 저장 객체
+    const exampleOpenState = {
+      period: { 1: false, 2: false, 3: false },
+      question: { 1: false, 2: false, 3: false },
+      exclamation: { 1: false, 2: false, 3: false },
+      comma: { 1: false, 2: false, 3: false },
+      quotes: { 1: false, 2: false, 3: false }
+    };
+
+    // 퀴즈 문제 풀 (5개 부호별 각 여러 문항 준비)
+    const quizDatabase = {
+      period: [
+        { type: 'normal', prefix: '나는 오늘 학교에 갔어요', suffix: '', correct: '.', reason: '문장이 완전히 끝났으므로 마침표(.)를 씁니다.' },
+        { type: 'normal', prefix: '내일은 날씨가 맑겠습니다', suffix: '', correct: '.', reason: '설명하는 문장의 끝에는 마침표(.)를 콕 찍어줍니다.' },
+        { type: 'normal', prefix: '친구와 함께 도서관에서 책을 읽었습니다', suffix: '', correct: '.', reason: '문장이 끝맺어지는 자리이므로 마침표(.)를 사용합니다.' }
+      ],
+      question: [
+        { type: 'normal', prefix: '너는 점심에 무엇을 먹었니', suffix: '', correct: '?', reason: '궁금한 것을 물어보는 질문 문장이므로 물음표(?)를 씁니다.' },
+        { type: 'normal', prefix: '오늘 우리 집에 놀러 올 수 있니', suffix: '', correct: '?', reason: '상대방에게 물어보는 문장이므로 물음표(?)가 필요합니다.' },
+        { type: 'normal', prefix: '가장 좋아하는 운동은 무엇인가요', suffix: '', correct: '?', reason: '질문하는 끝자리에는 물음표(?)를 붙입니다.' }
+      ],
+      exclamation: [
+        { type: 'normal', prefix: '우와, 무지개가 정말 예쁘다', suffix: '', correct: '!', reason: '감탄하고 감정을 크게 표현하므로 느낌표(!)를 씁니다.' },
+        { type: 'normal', prefix: '앗, 발을 헛디딜 뻔했네', suffix: '', correct: '!', reason: '깜짝 놀란 느낌을 나타내므로 느낌표(!)를 씁니다.' },
+        { type: 'normal', prefix: '생일 진심으로 축하해', suffix: '', correct: '!', reason: '축하하는 기쁜 마음을 강하게 전하므로 느낌표(!)를 씁니다.' }
+      ],
+      comma: [
+        { type: 'comma', prefix: '나는 사과', mid: ' 배', suffix: ' 포도를 좋아해요.', correct: ',', reason: '사과, 배, 포도처럼 여러 가지를 나누어 쓸 때 쉼표(,)를 씁니다.' },
+        { type: 'comma', prefix: '연필', mid: ' 지우개', suffix: ' 공책을 가방에 넣었어요.', correct: ',', reason: '물건들을 나란히 열거할 때 쉼표(,)를 씁니다.' },
+        { type: 'comma', prefix: '봄', mid: ' 여름', suffix: ' 가을, 겨울은 사계절이에요.', correct: ',', reason: '단어들을 나누어 나타낼 때 쉼표(,)를 사용합니다.' }
+      ],
+      quotes: [
+        { type: 'quote', prefix: '민수가 ', mid: '우리 같이 놀자.', suffix: '라고 말했어요.', correct: '“”', reason: '민수가 직접 한 말을 그대로 나타내므로 큰따옴표(“”)로 감싸줍니다.' },
+        { type: 'quote', prefix: '영희가 웃으며 ', mid: '오늘 정말 신난다!', suffix: '라고 외쳤어요.', correct: '“”', reason: '실제로 소리 내어 한 말이므로 큰따옴표(“”)를 씁니다.' },
+        { type: 'quote', prefix: '선생님께서 ', mid: '차례대로 줄을 서세요.', suffix: '라고 말씀하셨습니다.', correct: '“”', reason: '말씀하신 내용을 그대로 가져와 쓸 때는 큰따옴표(“”)로 묶습니다.' }
+      ]
+    };
+
+    function getFormattedExampleText(item, ex) {
+      if (item.mark === ',' || item.id === 'quotes') {
+        return ex.full;
+      }
+      return `${ex.text}<b class="text-black font-black text-2xl">${ex.highlight}</b>`;
+    }
+
+    function renderCards() {
+      const container = document.getElementById('view-cards');
+      container.innerHTML = punctuationData.map(item => {
+        const markDisplay = item.id === 'quotes' 
+          ? `<span class="tight-quotes">${item.mark}</span>` 
+          : item.mark;
+
+        const examplesHtml = item.examples.map((ex, idx) => {
+          const num = idx + 1;
+          const isOpen = exampleOpenState[item.id][num];
+          const sentenceText = getFormattedExampleText(item, ex);
+
+          return `
+            <div class="mt-2.5">
+              <div class="flex items-center gap-3">
+                <button type="button" 
+                  onclick="toggleExample('${item.id}', ${num})" 
+                  id="circle-btn-${item.id}-${num}"
+                  class="w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center flex-shrink-0 shadow-sm cursor-pointer active:scale-90 font-black text-sm ${isOpen ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-indigo-50 border-indigo-400 text-indigo-700 hover:bg-indigo-500 hover:text-white'}">
+                  ${num}
+                </button>
+                <div id="example-text-${item.id}-${num}" class="${isOpen ? '' : 'hidden'} text-slate-800 text-lg md:text-xl font-bold font-dodum bg-indigo-50/70 px-3.5 py-2 rounded-xl border border-indigo-200 transition-all flex-1">
+                  ${sentenceText}
+                </div>
+                <span id="example-hint-${item.id}-${num}" class="${isOpen ? 'hidden' : ''} text-sm font-semibold text-slate-400 font-dodum cursor-pointer" onclick="toggleExample('${item.id}', ${num})">
+                  동그라미를 눌러 예시 확인
+                </span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="card-bounce bg-white rounded-3xl p-7 border-2 border-slate-200 shadow-xl flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-base md:text-lg font-black px-4 py-1.5 rounded-full bg-slate-100 text-slate-800 border border-slate-300">
+                  ${item.name}
+                </span>
+                <button onclick="openDetail('${item.id}')" class="text-slate-500 hover:text-indigo-600 text-sm md:text-base flex items-center gap-1.5 font-bold transition-colors">
+                  <i class="fa-solid fa-circle-info"></i> 자세히 보기
+                </button>
+              </div>
+              
+              <!-- White card with black mark -->
+              <div class="flex items-center gap-5 my-3">
+                <div class="w-24 h-24 rounded-3xl bg-white border-2 border-slate-300 shadow-md flex items-center justify-center text-black font-jua text-5xl md:text-6xl flex-shrink-0">
+                  ${markDisplay}
+                </div>
+                <div>
+                  <h3 class="text-2xl md:text-3xl font-black font-jua text-slate-900">${item.name}</h3>
+                  <p class="text-base text-slate-500 font-dodum font-bold">언제 사용할까요?</p>
+                </div>
+              </div>
+
+              <div class="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-lg md:text-xl font-bold leading-relaxed font-dodum">
+                💡 ${item.usage}
+              </div>
+            </div>
+
+            <!-- 3 Toggleable Examples Section -->
+            <div class="mt-6 pt-4 border-t-2 border-slate-100">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-black text-slate-500 uppercase tracking-wider">
+                  <i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> 예시 문장 (3개)
+                </span>
+                <span class="text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-md">동그라미 클릭!</span>
+              </div>
+              <div class="space-y-1">
+                ${examplesHtml}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 카드와 모달의 UI를 동시에 동기화하는 공통 함수
+    function applyExampleVisibility(id, num, isOpen) {
+      // 1. 카드 뷰 동기화
+      const cardText = document.getElementById(`example-text-${id}-${num}`);
+      const cardHint = document.getElementById(`example-hint-${id}-${num}`);
+      const cardBtn = document.getElementById(`circle-btn-${id}-${num}`);
+      if (cardText && cardHint && cardBtn) {
+        if (isOpen) {
+          cardText.classList.remove('hidden');
+          cardHint.classList.add('hidden');
+          cardBtn.className = "w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center flex-shrink-0 shadow-sm cursor-pointer active:scale-90 font-black text-sm bg-indigo-600 text-white border-indigo-600";
+        } else {
+          cardText.classList.add('hidden');
+          cardHint.classList.remove('hidden');
+          cardBtn.className = "w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center flex-shrink-0 shadow-sm cursor-pointer active:scale-90 font-black text-sm bg-indigo-50 border-indigo-400 text-indigo-700 hover:bg-indigo-500 hover:text-white";
+        }
+      }
+
+      // 2. 모달 뷰 동기화 (모달이 열려 있는 경우)
+      const modalText = document.getElementById(`modal-example-text-${id}-${num}`);
+      const modalHint = document.getElementById(`modal-example-hint-${id}-${num}`);
+      const modalBtn = document.getElementById(`modal-circle-btn-${id}-${num}`);
+      if (modalText && modalHint && modalBtn) {
+        if (isOpen) {
+          modalText.classList.remove('hidden');
+          modalHint.classList.add('hidden');
+          modalBtn.className = "w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center flex-shrink-0 shadow-sm cursor-pointer active:scale-90 font-black text-sm bg-indigo-600 text-white border-indigo-600";
+        } else {
+          modalText.classList.add('hidden');
+          modalHint.classList.remove('hidden');
+          modalBtn.className = "w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center flex-shrink-0 shadow-sm cursor-pointer active:scale-90 font-black text-sm bg-indigo-50 border-indigo-400 text-indigo-700 hover:bg-indigo-500 hover:text-white";
+        }
+      }
+    }
+
+    // 예시 문장 토글 (카드/모달 어디서 눌러도 양쪽 모두 변경)
+    function toggleExample(id, num) {
+      exampleOpenState[id][num] = !exampleOpenState[id][num];
+      applyExampleVisibility(id, num, exampleOpenState[id][num]);
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = punctuationData.map(item => {
+        let firstEx = '';
+        if (item.mark === ',' || item.id === 'quotes') {
+          firstEx = item.examples[0].full;
+        } else {
+          firstEx = `${item.examples[0].text}<b class="text-black font-black text-2xl">${item.examples[0].highlight}</b>`;
+        }
+
+        const markDisplay = item.id === 'quotes' 
+          ? `<span class="tight-quotes">${item.mark}</span>` 
+          : item.mark;
+
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-5 px-6 text-center">
+              <span class="inline-flex items-center justify-center w-16 h-14 rounded-2xl bg-white border-2 border-slate-300 font-jua text-3xl md:text-4xl text-black shadow-sm">
+                ${markDisplay}
+              </span>
+            </td>
+            <td class="py-5 px-6 font-black text-xl text-slate-900">${item.name}</td>
+            <td class="py-5 px-6 text-slate-700 font-semibold text-lg md:text-xl">${item.usage}</td>
+            <td class="py-5 px-6 text-slate-900 font-bold text-lg md:text-xl">${firstEx}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openDetail(id) {
+      const item = punctuationData.find(d => d.id === id);
+      if (!item) return;
+      const modal = document.getElementById('detail-modal');
+      const content = document.getElementById('modal-content');
+
+      const markDisplay = item.id === 'quotes' 
+        ? `<span class="tight-quotes">${item.mark}</span>` 
+        : item.mark;
+
+      // 모달 내 예시 문장도 현재 열림 상태(exampleOpenState)를 그대로 반영
+      const modalExamplesHtml = item.examples.map((ex, idx) => {
+        const num = idx + 1;
+        const isOpen = exampleOpenState[item.id][num];
+        const sentenceText = getFormattedExampleText(item, ex);
+
+        return `
+          <div class="mt-2.5">
+            <div class="flex items-center gap-3">
+              <button type="button" 
+                onclick="toggleExample('${item.id}', ${num})" 
+                id="modal-circle-btn-${item.id}-${num}"
+                class="w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center flex-shrink-0 shadow-sm cursor-pointer active:scale-90 font-black text-sm ${isOpen ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-indigo-50 border-indigo-400 text-indigo-700 hover:bg-indigo-500 hover:text-white'}">
+                ${num}
+              </button>
+              <div id="modal-example-text-${item.id}-${num}" class="${isOpen ? '' : 'hidden'} text-slate-800 text-lg md:text-xl font-bold font-dodum bg-white px-3.5 py-2 rounded-xl border border-indigo-200 transition-all flex-1">
+                ${sentenceText}
+              </div>
+              <span id="modal-example-hint-${item.id}-${num}" class="${isOpen ? 'hidden' : ''} text-sm font-semibold text-slate-400 font-dodum cursor-pointer" onclick="toggleExample('${item.id}', ${num})">
+                동그라미를 눌러 예시 확인
+              </span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      content.innerHTML = `
+        <div class="text-center">
+          <div class="w-24 h-24 mx-auto rounded-3xl bg-white border-4 border-slate-300 flex items-center justify-center text-black font-jua text-5xl shadow-lg mb-4">
+            ${markDisplay}
+          </div>
+          <span class="inline-block text-base font-black px-4 py-1 rounded-full bg-slate-100 text-slate-800 border border-slate-300 mb-2">${item.name}</span>
+          <h2 class="text-3xl font-black font-jua text-slate-900 mb-2">${item.name}</h2>
+          <p class="text-slate-700 text-lg font-dodum leading-relaxed mb-6 font-semibold">${item.description}</p>
+        </div>
+
+        <div class="space-y-4 bg-slate-50 p-5 rounded-2xl border-2 border-slate-200 text-left">
+          <div>
+            <span class="text-sm font-bold text-slate-500 block mb-1">📌 언제 사용할까요?</span>
+            <p class="text-xl font-black text-slate-900 leading-snug">${item.usage}</p>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-bold text-slate-500 block">💬 예시 문장 (3개)</span>
+              <span class="text-xs text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-md">동그라미 클릭!</span>
+            </div>
+            <div class="space-y-1">
+              ${modalExamplesHtml}
+            </div>
+          </div>
+        </div>
+
+        <button onclick="closeModal()" class="w-full mt-6 py-4 rounded-2xl font-black text-xl bg-slate-900 hover:bg-black text-white shadow-lg transition-transform active:scale-95">
+          확인 완료!
+        </button>
+      `;
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('detail-modal').classList.add('hidden');
+    }
+
+    let currentQuizSet = [];
+    let currentQuizIndex = 0;
+    let quizScore = 0;
+    let answered = false;
+
+    // 5가지 부호(마침표, 물음표, 느낌표, 쉼표, 큰따옴표) 각각 1문제씩 무작위 추출하여 셔플
+    function generateQuizSet() {
+      const keys = ['period', 'question', 'exclamation', 'comma', 'quotes'];
+      const set = keys.map(key => {
+        const pool = quizDatabase[key];
+        const randomItem = pool[Math.floor(Math.random() * pool.length)];
+        return { ...randomItem };
+      });
+      // 무작위 순서로 섞기
+      return set.sort(() => Math.random() - 0.5);
+    }
+
+    function initQuiz() {
+      currentQuizSet = generateQuizSet();
+      currentQuizIndex = 0;
+      quizScore = 0;
+
+      document.getElementById('quiz-question-box').classList.remove('hidden');
+      document.getElementById('quiz-options-area').classList.remove('hidden');
+      document.getElementById('quiz-result-area').classList.add('hidden');
+
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      answered = false;
+      const q = currentQuizSet[currentQuizIndex];
+      document.getElementById('quiz-current-num').innerText = currentQuizIndex + 1;
+      document.getElementById('quiz-score').innerText = quizScore;
+      
+      const sentenceContainer = document.getElementById('quiz-sentence');
+      const feedback = document.getElementById('quiz-feedback');
+      const nextBtn = document.getElementById('quiz-next-btn');
+
+      feedback.classList.add('hidden');
+      nextBtn.classList.add('hidden');
+
+      // '?' 대신 물음표와 헷갈리지 않는 빈 네모 박스(■ 빈칸) 적용
+      if (q.type === 'quote') {
+        sentenceContainer.innerHTML = `
+          <span>${q.prefix}</span>
+          <span class="blank-box"></span>
+          <span class="text-indigo-900 font-black px-1">${q.mid}</span>
+          <span class="blank-box"></span>
+          <span>${q.suffix}</span>
+        `;
+      } else if (q.type === 'comma') {
+        sentenceContainer.innerHTML = `
+          <span>${q.prefix}</span>
+          <span class="blank-box"></span>
+          <span>${q.mid}</span>
+          <span class="blank-box"></span>
+          <span>${q.suffix}</span>
+        `;
+      } else {
+        sentenceContainer.innerHTML = `
+          <span>${q.prefix}</span>
+          <span class="blank-box"></span>
+          <span>${q.suffix}</span>
+        `;
+      }
+
+      // 흰색 카드 + 검정색 부호 5개 선택지
+      const optionsContainer = document.getElementById('quiz-options');
+      optionsContainer.innerHTML = punctuationData.map(item => {
+        const markDisplay = item.id === 'quotes' 
+          ? `<span class="tight-quotes">${item.mark}</span>` 
+          : item.mark;
+
+        return `
+          <button onclick="handleAnswer('${item.mark}')" class="quiz-option-btn py-5 px-3 rounded-2xl bg-white hover:bg-slate-50 hover:shadow-lg border-2 border-slate-300 transition-all font-jua flex flex-col items-center justify-center gap-1 active:scale-95 shadow-sm">
+            <span class="text-3xl md:text-4xl text-black font-black">${markDisplay}</span>
+            <span class="text-sm md:text-base font-dodum font-bold text-slate-700">${item.name}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function handleAnswer(selectedMark) {
+      if (answered) return;
+      answered = true;
+      const q = currentQuizSet[currentQuizIndex];
+      const feedback = document.getElementById('quiz-feedback');
+      const nextBtn = document.getElementById('quiz-next-btn');
+
+      const isCorrect = (selectedMark === q.correct);
+
+      if (isCorrect) {
+        quizScore += 1;
+        document.getElementById('quiz-score').innerText = quizScore;
+        feedback.className = "mt-8 p-5 rounded-2xl text-center text-lg font-bold bg-emerald-100 text-emerald-900 border-2 border-emerald-300";
+        feedback.innerHTML = `
+          <div class="flex items-center justify-center gap-2 text-2xl font-jua text-emerald-800 mb-1">
+            <i class="fa-solid fa-circle-check text-2xl"></i> 정답입니다! 멋져요!
+          </div>
+          <p class="font-dodum font-bold text-base md:text-lg text-slate-700 mt-2">${q.reason}</p>
+        `;
+        launchConfetti();
+      } else {
+        feedback.className = "mt-8 p-5 rounded-2xl text-center text-lg font-bold bg-rose-100 text-rose-900 border-2 border-rose-300";
+        feedback.innerHTML = `
+          <div class="flex items-center justify-center gap-2 text-2xl font-jua text-rose-800 mb-1">
+            <i class="fa-solid fa-circle-xmark text-2xl"></i> 틀렸어요! 다시 한 번 확인해볼까요?
+          </div>
+          <p class="font-dodum font-bold text-base md:text-lg text-slate-800 mt-2">정답은 <b>[ ${q.correct} ]</b> 입니다. ${q.reason}</p>
+        `;
+      }
+
+      feedback.classList.remove('hidden');
+      nextBtn.classList.remove('hidden');
+
+      if (currentQuizIndex === currentQuizSet.length - 1) {
+        nextBtn.innerHTML = `<span>결과 확인하기</span> <i class="fa-solid fa-flag-checkered"></i>`;
+      } else {
+        nextBtn.innerHTML = `<span>다음 문제</span> <i class="fa-solid fa-arrow-right"></i>`;
+      }
+    }
+
+    function nextQuiz() {
+      currentQuizIndex++;
+      if (currentQuizIndex >= currentQuizSet.length) {
+        showQuizFinalResult();
+      } else {
+        loadQuestion();
+      }
+    }
+
+    function showQuizFinalResult() {
+      const qBox = document.getElementById('quiz-question-box');
+      const optArea = document.getElementById('quiz-options-area');
+      const feedback = document.getElementById('quiz-feedback');
+      const nextBtn = document.getElementById('quiz-next-btn');
+      const resultArea = document.getElementById('quiz-result-area');
+
+      qBox.classList.add('hidden');
+      optArea.classList.add('hidden');
+      feedback.classList.add('hidden');
+      nextBtn.classList.add('hidden');
+      resultArea.classList.remove('hidden');
+
+      const isAllCorrect = (quizScore === 5);
+
+      if (isAllCorrect) {
+        // 5문제 모두 정답: 설문지 임베드 노출
+        resultArea.innerHTML = `
+          <div class="text-center py-4">
+            <div class="text-7xl mb-4">👑</div>
+            <span class="inline-block px-4 py-1.5 bg-emerald-100 text-emerald-800 rounded-full font-bold text-base mb-3 border border-emerald-300">
+              미션 성공! 5문제 모두 정답!
+            </span>
+            <h3 class="text-3xl md:text-4xl font-black font-jua text-slate-900 mb-3">축하합니다! 문장부호 마스터가 되었어요!</h3>
+            <p class="text-slate-700 text-lg md:text-xl font-dodum font-bold mb-6">
+              아래 확인 설문에 응답하여 미션을 최종 완료해주세요!
+            </p>
+
+            <!-- Google Form Embed -->
+            <div class="mt-6 w-full overflow-hidden rounded-3xl border-2 border-indigo-200 shadow-xl bg-slate-50 p-2">
+              <iframe 
+                src="https://docs.google.com/forms/d/e/1FAIpQLSdBXY7O-5XNN_hExe2b4jx1gyUKfKerrIJPTEO-mKufCVlAFQ/viewform?embedded=true" 
+                width="100%" 
+                height="1200" 
+                frameborder="0" 
+                marginheight="0" 
+                marginwidth="0" 
+                class="w-full rounded-2xl">
+                로드 중…
+              </iframe>
+            </div>
+
+            <div class="mt-8">
+              <button onclick="initQuiz()" class="px-7 py-3.5 bg-slate-800 hover:bg-black text-white font-black text-lg rounded-2xl shadow-lg transition-transform active:scale-95 inline-flex items-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> 퀴즈 한 번 더 풀기
+              </button>
+            </div>
+          </div>
+        `;
+        launchConfetti();
+        setTimeout(launchConfetti, 800);
+      } else {
+        // 틀린 문제가 있는 경우: 반드시 재도전
+        resultArea.innerHTML = `
+          <div class="text-center py-8">
+            <div class="text-7xl mb-4">💪</div>
+            <span class="inline-block px-4 py-1.5 bg-rose-100 text-rose-800 rounded-full font-bold text-base mb-3 border border-rose-300">
+              재도전 필요 (${quizScore} / 5문제 맞힘)
+            </span>
+            <h3 class="text-3xl md:text-4xl font-black font-jua text-slate-900 mb-3">아쉽지만 5문제를 모두 맞혀야 해요!</h3>
+            <p class="text-slate-700 text-lg md:text-xl font-dodum font-semibold max-w-xl mx-auto mb-8 leading-relaxed">
+              마침표, 물음표, 느낌표, 쉼표, 큰따옴표를 한 번씩 모두 맞혀야 완료 미션이 열려요. 다시 한 번 힘내서 도전해볼까요?
+            </p>
+            <button onclick="initQuiz()" class="px-9 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xl rounded-2xl shadow-xl transition-all transform active:scale-95 inline-flex items-center gap-3">
+              <i class="fa-solid fa-rotate-right"></i> 새로운 5문제 다시 도전하기!
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    function launchConfetti() {
+      const container = document.getElementById('quiz-confetti-container');
+      const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
+      for (let i = 0; i < 25; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = (Math.random() * 0.4) + 's';
+        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        container.appendChild(piece);
+        setTimeout(() => piece.remove(), 2500);
+      }
+    }
+
+    function switchTab(tab) {
+      const views = ['cards', 'table', 'quiz'];
+      views.forEach(v => {
+        document.getElementById(`view-${v}`).classList.add('hidden');
+        const tabBtn = document.getElementById(`tab-${v}`);
+        tabBtn.className = "px-7 py-3.5 rounded-2xl font-black text-lg md:text-xl transition-all bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200 flex items-center gap-2.5 shadow-sm";
+      });
+
+      document.getElementById(`view-${tab}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      activeBtn.className = "px-7 py-3.5 rounded-2xl font-black text-lg md:text-xl transition-all bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 flex items-center gap-2.5";
+
+      if (tab === 'quiz' && currentQuizSet.length === 0) {
+        initQuiz();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderCards();
+      renderTable();
+    });
+  </script>
+</body>
+</html>
