@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>초등 2학년 수학 곱셈구구 학습지</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .font-jua {
+      font-family: 'Jua', sans-serif;
+    }
+    @media print {
+      body {
+        background: white !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-page {
+        box-shadow: none !important;
+        border: 2px solid #333 !important;
+        margin: 0 auto !important;
+        max-width: 100% !important;
+        padding: 24px !important;
+        page-break-after: avoid;
+      }
+      .input-box {
+        border-color: #333 !important;
+        background: transparent !important;
+      }
+      .matching-canvas {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-amber-50 min-h-screen py-8 px-4 text-slate-800">
+
+  <!-- 시작 전 학생 이름 입력 모달 -->
+  <div id="name_modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border-4 border-amber-300 text-center transform transition-all animate-bounce-short">
+      <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+        ✏️
+      </div>
+      <h2 class="text-2xl font-black font-jua text-amber-800 mb-2">반가워요! 이름을 알려주세요</h2>
+      <p class="text-sm text-slate-600 mb-6">곱셈구구 문제를 풀기 전에 이름을 입력해 주세요.</p>
+      
+      <div class="space-y-4">
+        <div>
+          <input type="text" id="user_name_input" placeholder="이름을 입력하세요" 
+            class="w-full px-4 py-3 text-center text-xl font-bold font-jua border-2 border-slate-300 rounded-2xl focus:border-amber-500 focus:outline-none focus:ring-4 focus:ring-amber-200 transition"
+            onkeypress="if(event.key === 'Enter') startWorksheet()"
+          >
+          <p id="name_input_error" class="text-rose-500 text-xs font-bold mt-2 hidden">이름을 입력해 주세요!</p>
+        </div>
+        <button onclick="startWorksheet()" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-lg font-jua rounded-2xl shadow-lg hover:shadow-xl transition transform active:scale-95">
+          문제 풀러 출발! 🚀
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 통과 알림 모달 -->
+  <div id="pass_modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border-4 border-emerald-400 text-center transform transition-all animate-bounce-short">
+      <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+        🎉
+      </div>
+      <h2 class="text-3xl font-black font-jua text-emerald-700 mb-2">통과입니다!</h2>
+      <p class="text-sm text-slate-600 mb-6 font-semibold">
+        축하합니다! 모든 문제를 통과했습니다.<br>설문 페이지로 이동합니다.
+      </p>
+      <button onclick="confirmPassAndProceed()" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg font-jua rounded-2xl shadow-lg hover:shadow-xl transition transform active:scale-95">
+        설문 작성하러 가기 ➔
+      </button>
+    </div>
+  </div>
+
+  <!-- 메인 헤더 (날짜 및 이름 카드 제거) -->
+  <header id="top_header" class="max-w-3xl mx-auto mb-6 text-center bg-white p-5 rounded-3xl shadow-md border-2 border-amber-200">
+    <h1 class="text-2xl sm:text-3xl font-black font-jua text-amber-900 tracking-wide flex items-center justify-center gap-2">
+      <span>✏️</span> 초등 2학년 곱셈구구 학습지
+    </h1>
+    <p class="text-xs sm:text-sm text-slate-500 mt-1 font-semibold">문제를 꼼꼼히 풀고 정답을 채점해 보세요!</p>
+  </header>
+
+  <!-- 메인 학습지 카드 컨테이너 -->
+  <main class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-10 shadow-xl border-4 border-amber-300 print-page">
+
+    <!-- 문제 영역 -->
+    <div class="space-y-10">
+
+      <!-- 문제 1 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">1</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3">
+              <span class="inline-block border-2 border-slate-700 w-5 h-5 align-middle mb-1 rounded-sm"></span> 안에 알맞은 수를 써넣으세요.
+            </h3>
+
+            <!-- 시각 자료 (양말 6켤레) -->
+            <div class="border-2 border-slate-800 rounded-2xl p-4 bg-slate-50 flex flex-wrap justify-around items-center gap-2 mb-5">
+              <!-- 양말 6켤레 렌더링 -->
+              <div class="flex items-center gap-1 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200" title="1켤레 (2짝)">
+                <span class="text-3xl select-none">🧦</span>
+                <span class="text-xs font-bold text-slate-500 bg-amber-100 px-1.5 py-0.5 rounded">2짝</span>
+              </div>
+              <div class="flex items-center gap-1 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200" title="2켤레 (2짝)">
+                <span class="text-3xl select-none">🧦</span>
+                <span class="text-xs font-bold text-slate-500 bg-amber-100 px-1.5 py-0.5 rounded">2짝</span>
+              </div>
+              <div class="flex items-center gap-1 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200" title="3켤레 (2짝)">
+                <span class="text-3xl select-none">🧦</span>
+                <span class="text-xs font-bold text-slate-500 bg-amber-100 px-1.5 py-0.5 rounded">2짝</span>
+              </div>
+              <div class="flex items-center gap-1 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200" title="4켤레 (2짝)">
+                <span class="text-3xl select-none">🧦</span>
+                <span class="text-xs font-bold text-slate-500 bg-amber-100 px-1.5 py-0.5 rounded">2짝</span>
+              </div>
+              <div class="flex items-center gap-1 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200" title="5켤레 (2짝)">
+                <span class="text-3xl select-none">🧦</span>
+                <span class="text-xs font-bold text-slate-500 bg-amber-100 px-1.5 py-0.5 rounded">2짝</span>
+              </div>
+              <div class="flex items-center gap-1 bg-white px-3 py-2 rounded-xl shadow-sm border border-slate-200" title="6켤레 (2짝)">
+                <span class="text-3xl select-none">🧦</span>
+                <span class="text-xs font-bold text-slate-500 bg-amber-100 px-1.5 py-0.5 rounded">2짝</span>
+              </div>
+            </div>
+
+            <!-- 수식 입력란 -->
+            <div class="flex items-center justify-center gap-2 text-2xl font-bold font-jua">
+              <span>2</span>
+              <span>×</span>
+              <input type="number" id="q1_input1" class="input-box w-16 h-14 text-center text-2xl font-bold border-2 border-slate-800 rounded-xl focus:border-amber-500 focus:outline-none" placeholder="?">
+              <span>=</span>
+              <input type="number" id="q1_input2" class="input-box w-20 h-14 text-center text-2xl font-bold border-2 border-slate-800 rounded-xl focus:border-amber-500 focus:outline-none" placeholder="?">
+            </div>
+            <div id="q1_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 2 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">2</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3 flex flex-wrap items-center justify-between">
+              <span>2단 곱셈구구를 바르게 나타낸 것을 <u class="underline decoration-wavy decoration-amber-500">모두</u> 고르세요.</span>
+              <span class="text-sm font-normal text-slate-500">( 정답 2개 선택 )</span>
+            </h3>
+
+            <!-- 5지선다 선택지 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <label class="q2-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="checkbox" name="q2" value="1" class="w-5 h-5 accent-amber-500 rounded">
+                <span class="font-bold text-lg font-jua">① 2 × 4 = 10</span>
+              </label>
+
+              <label class="q2-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="checkbox" name="q2" value="2" class="w-5 h-5 accent-amber-500 rounded">
+                <span class="font-bold text-lg font-jua">② 2 × 6 = 12</span>
+              </label>
+
+              <label class="q2-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="checkbox" name="q2" value="3" class="w-5 h-5 accent-amber-500 rounded">
+                <span class="font-bold text-lg font-jua">③ 2 × 3 = 8</span>
+              </label>
+
+              <label class="q2-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="checkbox" name="q2" value="4" class="w-5 h-5 accent-amber-500 rounded">
+                <span class="font-bold text-lg font-jua">④ 2 × 7 = 16</span>
+              </label>
+
+              <label class="q2-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="checkbox" name="q2" value="5" class="w-5 h-5 accent-amber-500 rounded">
+                <span class="font-bold text-lg font-jua">⑤ 2 × 9 = 18</span>
+              </label>
+            </div>
+            <div id="q2_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 3 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">3</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3">
+              그림을 보고 <span class="inline-block border-2 border-slate-700 w-5 h-5 align-middle mb-1 rounded-sm"></span> 안에 알맞은 수를 써넣으세요.
+            </h3>
+
+            <!-- 시각 자료 (접시 4개, 각각 5개 구슬) -->
+            <div class="border-2 border-slate-800 rounded-2xl p-4 bg-slate-50 flex flex-wrap justify-around items-center gap-3 mb-5">
+              <!-- 접시 1 -->
+              <div class="flex flex-col items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="w-20 h-16 rounded-full border-2 border-slate-400 bg-amber-50/40 flex items-center justify-center flex-wrap gap-1 p-1">
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                </div>
+                <span class="text-xs font-bold text-slate-600 mt-1">5개</span>
+              </div>
+
+              <!-- 접시 2 -->
+              <div class="flex flex-col items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="w-20 h-16 rounded-full border-2 border-slate-400 bg-amber-50/40 flex items-center justify-center flex-wrap gap-1 p-1">
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                </div>
+                <span class="text-xs font-bold text-slate-600 mt-1">5개</span>
+              </div>
+
+              <!-- 접시 3 -->
+              <div class="flex flex-col items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="w-20 h-16 rounded-full border-2 border-slate-400 bg-amber-50/40 flex items-center justify-center flex-wrap gap-1 p-1">
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                </div>
+                <span class="text-xs font-bold text-slate-600 mt-1">5개</span>
+              </div>
+
+              <!-- 접시 4 -->
+              <div class="flex flex-col items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="w-20 h-16 rounded-full border-2 border-slate-400 bg-amber-50/40 flex items-center justify-center flex-wrap gap-1 p-1">
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                  <span class="w-4 h-4 bg-slate-400 rounded-full inline-block shadow-inner"></span>
+                </div>
+                <span class="text-xs font-bold text-slate-600 mt-1">5개</span>
+              </div>
+            </div>
+
+            <!-- 수식 입력란 -->
+            <div class="flex flex-wrap items-center justify-center gap-2 text-xl md:text-2xl font-bold font-jua">
+              <span>5 + 5 + 5 + 5</span>
+              <span>=</span>
+              <span>5 ×</span>
+              <input type="number" id="q3_input1" class="input-box w-16 h-14 text-center text-2xl font-bold border-2 border-slate-800 rounded-xl focus:border-amber-500 focus:outline-none" placeholder="?">
+              <span>=</span>
+              <input type="number" id="q3_input2" class="input-box w-20 h-14 text-center text-2xl font-bold border-2 border-slate-800 rounded-xl focus:border-amber-500 focus:outline-none" placeholder="?">
+            </div>
+            <div id="q3_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 4 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">4</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3 flex flex-wrap items-center justify-between">
+              <span>1부터 9까지의 수 중에서 <span class="inline-block border-2 border-slate-700 w-5 h-5 align-middle mb-1 rounded-sm"></span> 안에 들어갈 수 있는 수를 <u class="underline decoration-wavy decoration-amber-500">모두</u> 고르세요.</span>
+              <span class="text-sm font-normal text-slate-500">( 정답 모두 선택 )</span>
+            </h3>
+
+            <!-- 부등식 박스 -->
+            <div class="border-2 border-slate-800 rounded-2xl p-4 bg-slate-50 flex justify-center items-center mb-5">
+              <div class="text-2xl md:text-3xl font-extrabold font-jua tracking-wider bg-white px-6 py-3 rounded-xl border border-slate-300 shadow-sm">
+                5 × <span class="inline-block border-2 border-slate-800 w-9 h-9 align-middle rounded-lg mx-1"></span> &gt; 36
+              </div>
+            </div>
+
+            <!-- 5지선다 선택지 -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <label class="q4-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="checkbox" name="q4" value="1" class="w-5 h-5 accent-amber-500 rounded">
+                <span class="font-bold text-lg font-jua">① 5</span>
+              </label>
+
+              <label class="q4-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="checkbox" name="q4" value="2" class="w-5 h-5 accent-amber-500 rounded">
+                <span class="font-bold text-lg font-jua">② 6</span>
+              </label>
+
+              <label class="q4-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="checkbox" name="q4" value="3" class="w-5 h-5 accent-amber-500 rounded">
+                <span class="font-bold text-lg font-jua">③ 7</span>
+              </label>
+
+              <label class="q4-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="checkbox" name="q4" value="4" class="w-5 h-5 accent-amber-500 rounded">
+                <span class="font-bold text-lg font-jua">④ 8</span>
+              </label>
+
+              <label class="q4-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="checkbox" name="q4" value="5" class="w-5 h-5 accent-amber-500 rounded">
+                <span class="font-bold text-lg font-jua">⑤ 9</span>
+              </label>
+            </div>
+            <div id="q4_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 5 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">5</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3">
+              구슬의 수를 구하는 방법을 바르게 말한 사람의 이름을 쓰세요.
+            </h3>
+
+            <!-- 구슬 시각 자료 (3개씩 4묶음이 위/아래 2줄 = 총 3개씩 8묶음) -->
+            <div class="border-2 border-slate-800 rounded-2xl p-4 bg-slate-50 mb-4">
+              <div class="flex flex-col items-center gap-3">
+                <!-- 윗줄: 4개 그룹 -->
+                <div class="flex flex-wrap justify-center gap-3 md:gap-5">
+                  <div class="flex gap-1 bg-white p-2 rounded-xl border border-slate-200 shadow-sm" title="3개 묶음">
+                    <span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span>
+                  </div>
+                  <div class="flex gap-1 bg-white p-2 rounded-xl border border-slate-200 shadow-sm" title="3개 묶음">
+                    <span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span>
+                  </div>
+                  <div class="flex gap-1 bg-white p-2 rounded-xl border border-slate-200 shadow-sm" title="3개 묶음">
+                    <span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span>
+                  </div>
+                  <div class="flex gap-1 bg-white p-2 rounded-xl border border-slate-200 shadow-sm" title="3개 묶음">
+                    <span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span>
+                  </div>
+                </div>
+
+                <!-- 아랫줄: 4개 그룹 -->
+                <div class="flex flex-wrap justify-center gap-3 md:gap-5">
+                  <div class="flex gap-1 bg-white p-2 rounded-xl border border-slate-200 shadow-sm" title="3개 묶음">
+                    <span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span>
+                  </div>
+                  <div class="flex gap-1 bg-white p-2 rounded-xl border border-slate-200 shadow-sm" title="3개 묶음">
+                    <span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span>
+                  </div>
+                  <div class="flex gap-1 bg-white p-2 rounded-xl border border-slate-200 shadow-sm" title="3개 묶음">
+                    <span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span>
+                  </div>
+                  <div class="flex gap-1 bg-white p-2 rounded-xl border border-slate-200 shadow-sm" title="3개 묶음">
+                    <span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span><span class="text-2xl select-none">⚪</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 대화문 박스 -->
+            <div class="border-2 border-slate-800 rounded-2xl p-4 bg-white mb-4 space-y-2 font-medium text-slate-800">
+              <div class="flex items-center gap-2">
+                <span class="inline-block w-2 h-2 bg-slate-800 rounded-full"></span>
+                <span><strong>민하:</strong> 6씩 6번 더해서 구할 수 있어.</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="inline-block w-2 h-2 bg-slate-800 rounded-full"></span>
+                <span><strong>우진:</strong> 3씩 8번 더해서 구할 수 있어.</span>
+              </div>
+            </div>
+
+            <!-- 정답 입력란 -->
+            <div class="flex items-center justify-center gap-3 text-lg font-bold font-jua">
+              <span>바르게 말한 사람:</span>
+              <input type="text" id="q5_input" class="input-box w-28 h-12 text-center text-xl font-bold border-2 border-slate-800 rounded-xl focus:border-amber-500 focus:outline-none" placeholder="이름">
+            </div>
+            <div id="q5_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 6 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">6</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3">
+              빈칸에 알맞은 수를 써넣으세요.
+            </h3>
+
+            <!-- 6단 곱셈표 -->
+            <div class="overflow-x-auto my-4">
+              <table class="w-full max-w-md mx-auto border-2 border-slate-800 border-collapse text-center">
+                <thead>
+                  <tr class="bg-slate-200 border-b-2 border-slate-800 font-jua text-xl text-slate-700">
+                    <th class="p-3 border-r-2 border-slate-800 w-1/5">×</th>
+                    <th class="p-3 border-r-2 border-slate-800 w-1/5">2</th>
+                    <th class="p-3 border-r-2 border-slate-800 w-1/5">7</th>
+                    <th class="p-3 border-r-2 border-slate-800 w-1/5">5</th>
+                    <th class="p-3 w-1/5">8</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="font-jua text-xl">
+                    <td class="p-3 border-r-2 border-slate-800 bg-amber-50/50 font-bold">6</td>
+                    <td class="p-2 border-r-2 border-slate-800">
+                      <input type="number" id="q6_1" class="input-box w-full h-12 text-center text-xl font-bold border border-slate-400 rounded-lg focus:border-amber-500 focus:outline-none" placeholder="?">
+                    </td>
+                    <td class="p-2 border-r-2 border-slate-800">
+                      <input type="number" id="q6_2" class="input-box w-full h-12 text-center text-xl font-bold border border-slate-400 rounded-lg focus:border-amber-500 focus:outline-none" placeholder="?">
+                    </td>
+                    <td class="p-2 border-r-2 border-slate-800">
+                      <input type="number" id="q6_3" class="input-box w-full h-12 text-center text-xl font-bold border border-slate-400 rounded-lg focus:border-amber-500 focus:outline-none" placeholder="?">
+                    </td>
+                    <td class="p-2">
+                      <input type="number" id="q6_4" class="input-box w-full h-12 text-center text-xl font-bold border border-slate-400 rounded-lg focus:border-amber-500 focus:outline-none" placeholder="?">
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="q6_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 7 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">7</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3 leading-relaxed">
+              연준이는 문구점에서 3권씩 묶여 있는 공책 9묶음을 샀습니다. 연준이가 산 공책은 모두 몇 권일까요?
+            </h3>
+
+            <!-- 5지선다 선택지 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 my-4">
+              <label class="q7-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q7" value="1" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">① 24권</span>
+              </label>
+
+              <label class="q7-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q7" value="2" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">② 27권</span>
+              </label>
+
+              <label class="q7-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q7" value="3" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">③ 30권</span>
+              </label>
+
+              <label class="q7-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q7" value="4" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">④ 33권</span>
+              </label>
+
+              <label class="q7-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q7" value="5" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">⑤ 36권</span>
+              </label>
+            </div>
+            <div id="q7_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 8 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">8</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3">
+              곱의 크기를 비교하여 <span class="inline-block border-2 border-slate-700 w-5 h-5 rounded-full align-middle mb-1"></span> 안에 &gt;, =, &lt;를 써넣으세요.
+            </h3>
+
+            <!-- 비교 서식 (1) & (2) -->
+            <div class="space-y-4 max-w-lg mx-auto my-4 bg-slate-50 p-5 rounded-2xl border-2 border-slate-800">
+              <!-- (1) -->
+              <div class="flex items-center justify-between gap-3 text-xl md:text-2xl font-bold font-jua bg-white p-3 rounded-xl border border-slate-200">
+                <span class="text-slate-600 shrink-0 text-base md:text-lg">(1)</span>
+                <span class="tracking-wide">4 × 9</span>
+                <select id="q8_1" class="input-box w-16 h-12 text-center text-xl font-extrabold border-2 border-slate-700 rounded-full bg-amber-50/50 focus:border-amber-500 focus:outline-none cursor-pointer">
+                  <option value="">○</option>
+                  <option value=">">&gt;</option>
+                  <option value="=">=</option>
+                  <option value="<">&lt;</option>
+                </select>
+                <span class="tracking-wide">8 × 5</span>
+              </div>
+
+              <!-- (2) -->
+              <div class="flex items-center justify-between gap-3 text-xl md:text-2xl font-bold font-jua bg-white p-3 rounded-xl border border-slate-200">
+                <span class="text-slate-600 shrink-0 text-base md:text-lg">(2)</span>
+                <span class="tracking-wide">8 × 2</span>
+                <select id="q8_2" class="input-box w-16 h-12 text-center text-xl font-extrabold border-2 border-slate-700 rounded-full bg-amber-50/50 focus:border-amber-500 focus:outline-none cursor-pointer">
+                  <option value="">○</option>
+                  <option value=">">&gt;</option>
+                  <option value="=">=</option>
+                  <option value="<">&lt;</option>
+                </select>
+                <span class="tracking-wide">4 × 4</span>
+              </div>
+            </div>
+            <div id="q8_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 12 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">12</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3">
+              어떤 수인지 답을 구하세요.
+            </h3>
+
+            <!-- 힌트 박스 -->
+            <div class="border-2 border-slate-800 rounded-2xl p-5 bg-white max-w-lg mx-auto mb-4 space-y-2.5">
+              <div class="flex items-center gap-2 text-slate-800 font-medium">
+                <span class="inline-block w-2 h-2 bg-slate-800 rounded-sm shrink-0"></span>
+                <span>7단 곱셈구구에 있는 수입니다.</span>
+              </div>
+              <div class="flex items-center gap-2 text-slate-800 font-medium">
+                <span class="inline-block w-2 h-2 bg-slate-800 rounded-sm shrink-0"></span>
+                <span>십의 자리 숫자는 40을 나타냅니다.</span>
+              </div>
+              <div class="flex items-center gap-2 text-slate-800 font-medium">
+                <span class="inline-block w-2 h-2 bg-slate-800 rounded-sm shrink-0"></span>
+                <span>홀수입니다.</span>
+              </div>
+            </div>
+
+            <!-- 정답 입력창 -->
+            <div class="flex items-center justify-center gap-3 text-xl font-bold font-jua">
+              <span>답:</span>
+              <input type="number" id="q12_input" class="input-box w-28 h-12 text-center text-2xl font-bold border-2 border-slate-800 rounded-xl focus:border-amber-500 focus:outline-none" placeholder="?">
+            </div>
+            <div id="q12_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 13 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">13</span>
+          <div class="w-full">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <h3 class="text-lg font-bold text-slate-800">
+                9단 곱셈구구의 값을 찾아 이어 보세요.
+              </h3>
+              <button type="button" onclick="clearMatchLines()" class="no-print text-xs px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-lg border border-slate-300 transition flex items-center gap-1">
+                <i class="fa-solid fa-eraser"></i> 선 모두 지우기
+              </button>
+            </div>
+            <p class="text-xs text-amber-700 font-semibold mb-3 no-print">
+              💡 왼쪽의 식이나 점(●)을 누른 뒤, 알맞은 오른쪽 값의 점(●)을 누르면 예쁜 SVG 선이 연결됩니다! (직접 드래그도 가능)
+            </p>
+
+            <!-- 매칭 영역 (SVG 오버레이 컨테이너) -->
+            <div id="matching_container" class="relative max-w-lg mx-auto my-4 bg-slate-50 p-6 rounded-2xl border-2 border-slate-800 select-none">
+              <!-- SVG 선 렌더링 레이어 -->
+              <svg id="match_svg" class="absolute inset-0 w-full h-full pointer-events-none z-10" style="overflow: visible;">
+                <!-- 임시 드래그 선 -->
+                <line id="temp_line" x1="0" y1="0" x2="0" y2="0" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" stroke-dasharray="6,4" class="hidden" />
+                <!-- 확정된 연결선들 -->
+                <line id="line_q13_1" x1="0" y1="0" x2="0" y2="0" stroke="#d97706" stroke-width="4" stroke-linecap="round" class="hidden transition-all duration-200" />
+                <line id="line_q13_2" x1="0" y1="0" x2="0" y2="0" stroke="#d97706" stroke-width="4" stroke-linecap="round" class="hidden transition-all duration-200" />
+                <line id="line_q13_3" x1="0" y1="0" x2="0" y2="0" stroke="#d97706" stroke-width="4" stroke-linecap="round" class="hidden transition-all duration-200" />
+              </svg>
+
+              <!-- 문항 카드 행들 -->
+              <div class="space-y-6 relative z-0">
+                <!-- 1행: 9 × 2  <->  36 -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <button type="button" data-left="1" class="match-left-item w-28 sm:w-32 py-3 bg-white text-center font-jua text-xl font-bold rounded-xl border-2 border-slate-700 hover:border-amber-500 shadow-sm transition">
+                      9 × 2
+                    </button>
+                    <div id="dot_l_1" data-left="1" class="match-dot-left w-5 h-5 bg-slate-800 rounded-full cursor-pointer hover:scale-125 hover:ring-4 hover:ring-amber-300 transition-all flex items-center justify-center">
+                      <div class="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <div id="dot_r_1" data-right="36" class="match-dot-right w-5 h-5 bg-slate-800 rounded-full cursor-pointer hover:scale-125 hover:ring-4 hover:ring-amber-300 transition-all flex items-center justify-center">
+                      <div class="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                    <button type="button" data-right="36" class="match-right-item w-28 sm:w-32 py-3 bg-white text-center font-jua text-xl font-bold rounded-xl border-2 border-slate-700 hover:border-amber-500 shadow-sm transition">
+                      36
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2행: 9 × 6  <->  18 -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <button type="button" data-left="2" class="match-left-item w-28 sm:w-32 py-3 bg-white text-center font-jua text-xl font-bold rounded-xl border-2 border-slate-700 hover:border-amber-500 shadow-sm transition">
+                      9 × 6
+                    </button>
+                    <div id="dot_l_2" data-left="2" class="match-dot-left w-5 h-5 bg-slate-800 rounded-full cursor-pointer hover:scale-125 hover:ring-4 hover:ring-amber-300 transition-all flex items-center justify-center">
+                      <div class="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <div id="dot_r_2" data-right="18" class="match-dot-right w-5 h-5 bg-slate-800 rounded-full cursor-pointer hover:scale-125 hover:ring-4 hover:ring-amber-300 transition-all flex items-center justify-center">
+                      <div class="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                    <button type="button" data-right="18" class="match-right-item w-28 sm:w-32 py-3 bg-white text-center font-jua text-xl font-bold rounded-xl border-2 border-slate-700 hover:border-amber-500 shadow-sm transition">
+                      18
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 3행: 9 × 4  <->  54 -->
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <button type="button" data-left="3" class="match-left-item w-28 sm:w-32 py-3 bg-white text-center font-jua text-xl font-bold rounded-xl border-2 border-slate-700 hover:border-amber-500 shadow-sm transition">
+                      9 × 4
+                    </button>
+                    <div id="dot_l_3" data-left="3" class="match-dot-left w-5 h-5 bg-slate-800 rounded-full cursor-pointer hover:scale-125 hover:ring-4 hover:ring-amber-300 transition-all flex items-center justify-center">
+                      <div class="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <div id="dot_r_3" data-right="54" class="match-dot-right w-5 h-5 bg-slate-800 rounded-full cursor-pointer hover:scale-125 hover:ring-4 hover:ring-amber-300 transition-all flex items-center justify-center">
+                      <div class="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                    <button type="button" data-right="54" class="match-right-item w-28 sm:w-32 py-3 bg-white text-center font-jua text-xl font-bold rounded-xl border-2 border-slate-700 hover:border-amber-500 shadow-sm transition">
+                      54
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="q13_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 14 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">14</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3 flex flex-wrap items-center justify-between">
+              <span>㉠과 ㉡에 알맞은 수를 바르게 짝지은 것은 어느 것인가요?</span>
+              <span class="text-sm font-normal text-slate-500">( 정답 1개 선택 )</span>
+            </h3>
+
+            <!-- 시각 자료 (9점 타일 5개 & 6개) -->
+            <div class="border-2 border-slate-800 rounded-2xl p-4 bg-slate-50 space-y-4 mb-5">
+              <!-- 첫 번째 줄: 9개 점 타일 5개 => 9 x 5 = ㉠ -->
+              <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                <div class="flex flex-wrap items-center gap-2">
+                  <!-- 타일 5개 (각 9점) -->
+                  <div class="w-12 h-12 bg-slate-300 rounded-lg p-1.5 grid grid-cols-3 gap-1 place-items-center shadow-inner">
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                  </div>
+                  <div class="w-12 h-12 bg-slate-300 rounded-lg p-1.5 grid grid-cols-3 gap-1 place-items-center shadow-inner">
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                  </div>
+                  <div class="w-12 h-12 bg-slate-300 rounded-lg p-1.5 grid grid-cols-3 gap-1 place-items-center shadow-inner">
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                  </div>
+                  <div class="w-12 h-12 bg-slate-300 rounded-lg p-1.5 grid grid-cols-3 gap-1 place-items-center shadow-inner">
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                  </div>
+                  <div class="w-12 h-12 bg-slate-300 rounded-lg p-1.5 grid grid-cols-3 gap-1 place-items-center shadow-inner">
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                  </div>
+                </div>
+                <div class="text-xl md:text-2xl font-bold font-jua text-amber-900">
+                  ⇨ 9 × 5 = <span class="inline-block bg-amber-100 border border-amber-400 rounded-lg px-2 py-0.5">㉠</span>
+                </div>
+              </div>
+
+              <!-- 두 번째 줄: 9개 점 타일 6개 => 9 x ㉡ = 54 -->
+              <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                <div class="flex flex-wrap items-center gap-2">
+                  <!-- 타일 6개 (각 9점) -->
+                  <div class="w-12 h-12 bg-slate-300 rounded-lg p-1.5 grid grid-cols-3 gap-1 place-items-center shadow-inner">
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                  </div>
+                  <div class="w-12 h-12 bg-slate-300 rounded-lg p-1.5 grid grid-cols-3 gap-1 place-items-center shadow-inner">
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                  </div>
+                  <div class="w-12 h-12 bg-slate-300 rounded-lg p-1.5 grid grid-cols-3 gap-1 place-items-center shadow-inner">
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                  </div>
+                  <div class="w-12 h-12 bg-slate-300 rounded-lg p-1.5 grid grid-cols-3 gap-1 place-items-center shadow-inner">
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                  </div>
+                  <div class="w-12 h-12 bg-slate-300 rounded-lg p-1.5 grid grid-cols-3 gap-1 place-items-center shadow-inner">
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                  </div>
+                  <div class="w-12 h-12 bg-slate-300 rounded-lg p-1.5 grid grid-cols-3 gap-1 place-items-center shadow-inner">
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                    <span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span><span class="w-2 h-2 rounded-full bg-slate-800"></span>
+                  </div>
+                </div>
+                <div class="text-xl md:text-2xl font-bold font-jua text-amber-900">
+                  ⇨ 9 × <span class="inline-block bg-amber-100 border border-amber-400 rounded-lg px-2 py-0.5">㉡</span> = 54
+                </div>
+              </div>
+            </div>
+
+            <!-- 5지선다 선택지 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <label class="q14-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q14" value="1" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">① ㉠: 45, ㉡: 6</span>
+              </label>
+
+              <label class="q14-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q14" value="2" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">② ㉠: 42, ㉡: 6</span>
+              </label>
+
+              <label class="q14-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q14" value="3" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">③ ㉠: 42, ㉡: 7</span>
+              </label>
+
+              <label class="q14-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q14" value="4" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">④ ㉠: 48, ㉡: 6</span>
+              </label>
+
+              <label class="q14-option flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q14" value="5" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">⑤ ㉠: 45, ㉡: 7</span>
+              </label>
+            </div>
+            <div id="q14_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 15 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">15</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3 flex flex-wrap items-center justify-between">
+              <span>다음과 같이 곱하는 수와 곱이 서로 같게 만드는 수는 얼마인가요?</span>
+              <span class="text-sm font-normal text-slate-500">( 정답 1개 선택 )</span>
+            </h3>
+
+            <!-- 조건 박스 -->
+            <div class="border-2 border-slate-800 rounded-2xl p-4 bg-slate-50 flex justify-center items-center mb-5">
+              <div class="text-xl md:text-2xl font-bold font-jua tracking-wider bg-white px-6 py-3 rounded-xl border border-slate-300 shadow-sm flex items-center gap-4">
+                <span><span class="inline-block border-2 border-slate-800 w-8 h-8 align-middle rounded-lg mr-1"></span>× 3 = 3,</span>
+                <span><span class="inline-block border-2 border-slate-800 w-8 h-8 align-middle rounded-lg mr-1"></span>× 6 = 6</span>
+              </div>
+            </div>
+
+            <!-- 5지선다 선택지 -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <label class="q15-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q15" value="1" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">① 0</span>
+              </label>
+
+              <label class="q15-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q15" value="2" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">② 10</span>
+              </label>
+
+              <label class="q15-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q15" value="3" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">③ 1</span>
+              </label>
+
+              <label class="q15-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q15" value="4" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">④ 5</span>
+              </label>
+
+              <label class="q15-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q15" value="5" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">⑤ 100</span>
+              </label>
+            </div>
+            <div id="q15_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 16 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">16</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3">
+              <span class="inline-block border-2 border-slate-700 w-5 h-5 align-middle mb-1 rounded-sm"></span> 안에 알맞은 수를 써넣으세요.
+            </h3>
+
+            <!-- (1), (2) 수식 입력 박스 -->
+            <div class="space-y-4 max-w-sm mx-auto my-4 bg-slate-50 p-5 rounded-2xl border-2 border-slate-800">
+              <!-- (1) 1 x 8 = [] -->
+              <div class="flex items-center justify-between gap-3 text-xl md:text-2xl font-bold font-jua bg-white p-3 rounded-xl border border-slate-200">
+                <span class="text-slate-600 shrink-0 text-base md:text-lg">(1)</span>
+                <span class="tracking-wide">1 × 8 =</span>
+                <input type="number" id="q16_1" class="input-box w-20 h-12 text-center text-2xl font-bold border-2 border-slate-800 rounded-xl focus:border-amber-500 focus:outline-none" placeholder="?">
+              </div>
+
+              <!-- (2) 0 x 9 = [] -->
+              <div class="flex items-center justify-between gap-3 text-xl md:text-2xl font-bold font-jua bg-white p-3 rounded-xl border border-slate-200">
+                <span class="text-slate-600 shrink-0 text-base md:text-lg">(2)</span>
+                <span class="tracking-wide">0 × 9 =</span>
+                <input type="number" id="q16_2" class="input-box w-20 h-12 text-center text-2xl font-bold border-2 border-slate-800 rounded-xl focus:border-amber-500 focus:outline-none" placeholder="?">
+              </div>
+            </div>
+            <div id="q16_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 17 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">17</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3">
+              빈칸에 알맞은 수를 써넣으세요.
+            </h3>
+
+            <!-- 8단 & 9단 곱셈표 -->
+            <div class="overflow-x-auto my-4">
+              <table class="w-full max-w-md mx-auto border-2 border-slate-800 border-collapse text-center">
+                <thead>
+                  <tr class="bg-slate-200 border-b-2 border-slate-800 font-jua text-xl text-slate-700">
+                    <th class="p-3 border-r-2 border-slate-800 w-1/5">×</th>
+                    <th class="p-3 border-r-2 border-slate-800 w-1/5">2</th>
+                    <th class="p-3 border-r-2 border-slate-800 w-1/5">4</th>
+                    <th class="p-3 border-r-2 border-slate-800 w-1/5">6</th>
+                    <th class="p-3 w-1/5">8</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- 8단 행 -->
+                  <tr class="font-jua text-xl border-b-2 border-slate-800">
+                    <td class="p-3 border-r-2 border-slate-800 bg-amber-50/50 font-bold">8</td>
+                    <td class="p-2 border-r-2 border-slate-800">
+                      <input type="number" id="q17_8_2" class="input-box w-full h-12 text-center text-xl font-bold border border-slate-400 rounded-lg focus:border-amber-500 focus:outline-none" placeholder="?">
+                    </td>
+                    <td class="p-2 border-r-2 border-slate-800">
+                      <input type="number" id="q17_8_4" class="input-box w-full h-12 text-center text-xl font-bold border border-slate-400 rounded-lg focus:border-amber-500 focus:outline-none" placeholder="?">
+                    </td>
+                    <td class="p-2 border-r-2 border-slate-800">
+                      <input type="number" id="q17_8_6" class="input-box w-full h-12 text-center text-xl font-bold border border-slate-400 rounded-lg focus:border-amber-500 focus:outline-none" placeholder="?">
+                    </td>
+                    <td class="p-2">
+                      <input type="number" id="q17_8_8" class="input-box w-full h-12 text-center text-xl font-bold border border-slate-400 rounded-lg focus:border-amber-500 focus:outline-none" placeholder="?">
+                    </td>
+                  </tr>
+                  <!-- 9단 행 -->
+                  <tr class="font-jua text-xl">
+                    <td class="p-3 border-r-2 border-slate-800 bg-amber-50/50 font-bold">9</td>
+                    <td class="p-2 border-r-2 border-slate-800">
+                      <input type="number" id="q17_9_2" class="input-box w-full h-12 text-center text-xl font-bold border border-slate-400 rounded-lg focus:border-amber-500 focus:outline-none" placeholder="?">
+                    </td>
+                    <td class="p-2 border-r-2 border-slate-800">
+                      <input type="number" id="q17_9_4" class="input-box w-full h-12 text-center text-xl font-bold border border-slate-400 rounded-lg focus:border-amber-500 focus:outline-none" placeholder="?">
+                    </td>
+                    <td class="p-2 border-r-2 border-slate-800">
+                      <input type="number" id="q17_9_6" class="input-box w-full h-12 text-center text-xl font-bold border border-slate-400 rounded-lg focus:border-amber-500 focus:outline-none" placeholder="?">
+                    </td>
+                    <td class="p-2">
+                      <input type="number" id="q17_9_8" class="input-box w-full h-12 text-center text-xl font-bold border border-slate-400 rounded-lg focus:border-amber-500 focus:outline-none" placeholder="?">
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="q17_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 18 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">18</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3 leading-relaxed">
+              시우의 나이는 8살입니다. 아버지의 나이는 시우의 나이의 4배보다 7살이 더 많습니다. 시우 아버지의 나이를 구하세요.
+            </h3>
+
+            <!-- 정답 입력창 -->
+            <div class="flex items-center justify-center gap-3 text-xl font-bold font-jua my-6">
+              <span>아버지의 나이:</span>
+              <input type="number" id="q18_input" class="input-box w-24 h-12 text-center text-2xl font-bold border-2 border-slate-800 rounded-xl focus:border-amber-500 focus:outline-none" placeholder="?">
+              <span>살</span>
+            </div>
+            <div id="q18_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 19 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">19</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3 flex flex-wrap items-center justify-between">
+              <span>㉠과 ㉡의 합은 얼마인가요?</span>
+              <span class="text-sm font-normal text-slate-500">( 정답 1개 선택 )</span>
+            </h3>
+
+            <!-- 수식 박스 -->
+            <div class="border-2 border-slate-800 rounded-2xl p-5 bg-white max-w-sm mx-auto mb-5 space-y-3 font-jua text-2xl text-center shadow-sm">
+              <div class="tracking-widest">5 × 8 = <span class="inline-block bg-amber-100 border border-amber-400 rounded-lg px-3 py-0.5">㉠</span></div>
+              <div class="tracking-widest">7 × 7 = <span class="inline-block bg-amber-100 border border-amber-400 rounded-lg px-3 py-0.5">㉡</span></div>
+            </div>
+
+            <!-- 5지선다 선택지 -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <label class="q19-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q19" value="1" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">① 89</span>
+              </label>
+
+              <label class="q19-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q19" value="2" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">② 90</span>
+              </label>
+
+              <label class="q19-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q19" value="3" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">③ 91</span>
+              </label>
+
+              <label class="q19-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q19" value="4" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">④ 92</span>
+              </label>
+
+              <label class="q19-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q19" value="5" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">⑤ 93</span>
+              </label>
+            </div>
+            <div id="q19_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 구분선 -->
+      <hr class="border-amber-200">
+
+      <!-- 문제 20 -->
+      <section class="problem-card">
+        <div class="flex items-start gap-3">
+          <span class="text-xl font-black text-white bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center shrink-0">20</span>
+          <div class="w-full">
+            <h3 class="text-lg font-bold text-slate-800 mb-3 leading-relaxed flex flex-wrap items-center justify-between">
+              <span>윤성이는 5점짜리 과녁을 2번, 2점짜리 과녁을 3번, 0점짜리 과녁을 3번 맞혔습니다. 윤성이가 얻은 점수는 모두 몇 점일까요?</span>
+              <span class="text-sm font-normal text-slate-500">( 정답 1개 선택 )</span>
+            </h3>
+
+            <!-- 5지선다 선택지 -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 my-4">
+              <label class="q20-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q20" value="1" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">① 13점</span>
+              </label>
+
+              <label class="q20-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q20" value="2" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">② 14점</span>
+              </label>
+
+              <label class="q20-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q20" value="3" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">③ 15점</span>
+              </label>
+
+              <label class="q20-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q20" value="4" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">④ 16점</span>
+              </label>
+
+              <label class="q20-option flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 hover:border-amber-400 hover:bg-amber-50/50 cursor-pointer transition select-none">
+                <input type="radio" name="q20" value="5" class="w-5 h-5 accent-amber-500">
+                <span class="font-bold text-lg font-jua">⑤ 17점</span>
+              </label>
+            </div>
+            <div id="q20_feedback" class="mt-2 text-center font-bold text-sm hidden"></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 하단 채점 및 해설 바 (화면 전용) -->
+    <div class="mt-10 pt-6 border-t-2 border-amber-200 text-center no-print">
+      <button onclick="checkAnswers()" class="px-8 py-3 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-extrabold text-lg rounded-2xl shadow-lg transition transform">
+        🎯 정답 채점하기!
+      </button>
+      <div id="total_score_banner" class="mt-4 hidden p-4 rounded-2xl bg-amber-100 border border-amber-300">
+        <h4 id="score_text" class="text-2xl font-black font-jua text-amber-900"></h4>
+        <p id="score_subtext" class="text-sm text-amber-800 mt-1"></p>
+        <!-- 통과 버튼 -->
+        <button id="next_page_btn" onclick="openPassModal()" class="hidden mt-4 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold font-jua text-base rounded-xl shadow transition animate-pulse">
+          다음 단계 설문으로 이동하기 ➔
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 다음 페이지 (모두 정답이거나 5658 입력 시 표시되는 구글 폼 화면) -->
+  <div id="success_page" class="hidden max-w-3xl mx-auto py-6">
+    <div class="bg-white rounded-3xl shadow-xl border-4 border-emerald-400 p-6 md:p-8 text-center mb-6">
+      <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 text-3xl">
+        🎉
+      </div>
+      <h2 class="text-2xl md:text-3xl font-black font-jua text-emerald-800 mb-2">
+        축하합니다! <span id="success_user_display" class="underline decoration-wavy decoration-emerald-500 text-emerald-600"></span> 학생!
+      </h2>
+      <p class="text-slate-600 font-semibold mb-6">
+        학습을 훌륭히 마쳤습니다. 아래 설문지를 작성하여 제출해 주세요.
+      </p>
+
+      <!-- 구글 폼 임베드 -->
+      <div class="w-full flex justify-center overflow-hidden rounded-2xl border-2 border-slate-200 shadow-inner bg-slate-50">
+        <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSdBXY7O-5XNN_hExe2b4jx1gyUKfKerrIJPTEO-mKufCVlAFQ/viewform?embedded=true" width="100%" height="1496" frameborder="0" marginheight="0" marginwidth="0" class="max-w-[640px] w-full">로드 중…</iframe>
+      </div>
+
+      <div class="mt-6">
+        <button onclick="backToWorksheet()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm transition">
+          <i class="fa-solid fa-arrow-left"></i> 학습지로 돌아가기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentUserName = '';
+
+    // 학습지 시작 함수 (이름 검증)
+    function startWorksheet() {
+      const inputEl = document.getElementById('user_name_input');
+      const errorEl = document.getElementById('name_input_error');
+      const val = inputEl.value.trim();
+
+      if (!val) {
+        errorEl.classList.remove('hidden');
+        inputEl.focus();
+        return;
+      }
+
+      currentUserName = val;
+      errorEl.classList.add('hidden');
+      document.getElementById('name_modal').classList.add('hidden');
+    }
+
+    // 통과 모달 열기
+    function openPassModal() {
+      const passModal = document.getElementById('pass_modal');
+      if (passModal) {
+        passModal.classList.remove('hidden');
+      }
+    }
+
+    // 모달에서 확인 후 설문 페이지로 실제 이동
+    function confirmPassAndProceed() {
+      const passModal = document.getElementById('pass_modal');
+      if (passModal) {
+        passModal.classList.add('hidden');
+      }
+      goToNextPage();
+    }
+
+    // 다음 페이지 이동 함수
+    function goToNextPage() {
+      const headerEl = document.getElementById('top_header');
+      if (headerEl) headerEl.classList.add('hidden');
+      document.querySelector('main').classList.add('hidden');
+      
+      const successPage = document.getElementById('success_page');
+      successPage.classList.remove('hidden');
+      
+      const displayName = document.getElementById('success_user_display');
+      if (displayName) {
+        displayName.innerText = (currentUserName === '5658') ? '선생님' : currentUserName;
+      }
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 학습지로 다시 돌아오기
+    function backToWorksheet() {
+      document.getElementById('success_page').classList.add('hidden');
+      const headerEl = document.getElementById('top_header');
+      if (headerEl) headerEl.classList.remove('hidden');
+      document.querySelector('main').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 13번 연결 상태 관리: { 1: "18", 2: "54", 3: "36" }
+    const matchConnections = {
+      1: null,
+      2: null,
+      3: null
+    };
+    let activeLeftSelected = null;
+    let isDragging = false;
+
+    // 점 위치 계산 헬퍼 함수
+    function getDotCenter(el) {
+      const container = document.getElementById('matching_container');
+      const cRect = container.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2 - cRect.left,
+        y: rect.top + rect.height / 2 - cRect.top
+      };
+    }
+
+    // 모든 연결선 다시 그리기 (리사이즈 및 연결 변경 시 호출)
+    function redrawLines() {
+      for (let leftId = 1; leftId <= 3; leftId++) {
+        const line = document.getElementById(`line_q13_${leftId}`);
+        const rightVal = matchConnections[leftId];
+        if (!rightVal) {
+          line.classList.add('hidden');
+          continue;
+        }
+
+        const leftDot = document.getElementById(`dot_l_${leftId}`);
+        const rightDot = document.querySelector(`.match-dot-right[data-right="${rightVal}"]`);
+        if (leftDot && rightDot) {
+          const p1 = getDotCenter(leftDot);
+          const p2 = getDotCenter(rightDot);
+          line.setAttribute('x1', p1.x);
+          line.setAttribute('y1', p1.y);
+          line.setAttribute('x2', p2.x);
+          line.setAttribute('y2', p2.y);
+          line.classList.remove('hidden');
+        }
+      }
+    }
+
+    // 왼쪽 선택 활성화 표시
+    function setActiveLeft(id) {
+      activeLeftSelected = id;
+      document.querySelectorAll('.match-left-item, .match-dot-left').forEach(el => {
+        const elId = el.getAttribute('data-left');
+        if (elId === String(id)) {
+          el.classList.add('ring-4', 'ring-amber-400', 'border-amber-500');
+        } else {
+          el.classList.remove('ring-4', 'ring-amber-400', 'border-amber-500');
+        }
+      });
+    }
+
+    // 선택 해제
+    function clearActiveLeft() {
+      activeLeftSelected = null;
+      document.querySelectorAll('.match-left-item, .match-dot-left').forEach(el => {
+        el.classList.remove('ring-4', 'ring-amber-400', 'border-amber-500');
+      });
+    }
+
+    // 선 연결 설정
+    function setConnection(leftId, rightVal) {
+      // 만약 다른 왼쪽 번호가 이미 이 값을 차지하고 있다면 해제
+      for (const k in matchConnections) {
+        if (matchConnections[k] === rightVal && Number(k) !== Number(leftId)) {
+          matchConnections[k] = null;
+        }
+      }
+      matchConnections[leftId] = rightVal;
+      redrawLines();
+      clearActiveLeft();
+    }
+
+    // 선 전체 지우기
+    function clearMatchLines() {
+      matchConnections[1] = null;
+      matchConnections[2] = null;
+      matchConnections[3] = null;
+      clearActiveLeft();
+      redrawLines();
+      const fb = document.getElementById('q13_feedback');
+      if (fb) fb.classList.add('hidden');
+    }
+
+    // 13번 클릭 및 터치 이벤트 리스너 바인딩
+    window.addEventListener('DOMContentLoaded', () => {
+      // 왼쪽 버튼 및 점 클릭
+      document.querySelectorAll('[data-left]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const leftId = parseInt(el.getAttribute('data-left'), 10);
+          if (activeLeftSelected === leftId) {
+            clearActiveLeft();
+          } else {
+            setActiveLeft(leftId);
+          }
+        });
+      });
+
+      // 오른쪽 버튼 및 점 클릭
+      document.querySelectorAll('[data-right]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const rightVal = el.getAttribute('data-right');
+          if (activeLeftSelected) {
+            setConnection(activeLeftSelected, rightVal);
+          }
+        });
+      });
+
+      // 터치/마우스 드래그 지원
+      const container = document.getElementById('matching_container');
+      const tempLine = document.getElementById('temp_line');
+
+      document.querySelectorAll('.match-dot-left').forEach(dot => {
+        const startDrag = (e) => {
+          const leftId = parseInt(dot.getAttribute('data-left'), 10);
+          setActiveLeft(leftId);
+          isDragging = true;
+          const p = getDotCenter(dot);
+          tempLine.setAttribute('x1', p.x);
+          tempLine.setAttribute('y1', p.y);
+          tempLine.setAttribute('x2', p.x);
+          tempLine.setAttribute('y2', p.y);
+          tempLine.classList.remove('hidden');
+        };
+        dot.addEventListener('mousedown', startDrag);
+        dot.addEventListener('touchstart', startDrag, { passive: true });
+      });
+
+      const moveDrag = (e) => {
+        if (!isDragging || !activeLeftSelected) return;
+        const cRect = container.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        tempLine.setAttribute('x2', clientX - cRect.left);
+        tempLine.setAttribute('y2', clientY - cRect.top);
+      };
+      window.addEventListener('mousemove', moveDrag);
+      window.addEventListener('touchmove', moveDrag, { passive: true });
+
+      const endDrag = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        tempLine.classList.add('hidden');
+
+        const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+        const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+        const targetEl = document.elementFromPoint(clientX, clientY);
+        if (targetEl) {
+          const rightEl = targetEl.closest('[data-right]');
+          if (rightEl && activeLeftSelected) {
+            setConnection(activeLeftSelected, rightEl.getAttribute('data-right'));
+            return;
+          }
+        }
+      };
+      window.addEventListener('mouseup', endDrag);
+      window.addEventListener('touchend', endDrag);
+
+      window.addEventListener('resize', redrawLines);
+    });
+
+    // 간단한 사운드 피드백 (Web Audio API)
+    function playSound(type) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === 'success') {
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+          osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.4);
+        } else {
+          osc.frequency.setValueAtTime(260, ctx.currentTime);
+          osc.frequency.setValueAtTime(200, ctx.currentTime + 0.15);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.35);
+        }
+      } catch (e) {
+        // 오디오 미지원 환경 무시
+      }
+    }
+
+    function checkAnswers() {
+      let score = 0;
+      const totalProblems = 17;
+
+      // 1번 검사 (2 * 6 = 12)
+      const q1_1 = document.getElementById('q1_input1').value.trim();
+      const q1_2 = document.getElementById('q1_input2').value.trim();
+      const q1_fb = document.getElementById('q1_feedback');
+      q1_fb.classList.remove('hidden');
+
+      if (q1_1 === '6' && q1_2 === '12') {
+        score++;
+        q1_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q1_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 풀어보세요.</span>';
+      }
+
+      // 2번 검사 (2, 5번 선택)
+      const selected2 = Array.from(document.querySelectorAll('input[name="q2"]:checked')).map(cb => cb.value).sort();
+      const q2_fb = document.getElementById('q2_feedback');
+      q2_fb.classList.remove('hidden');
+
+      if (selected2.length === 2 && selected2[0] === '2' && selected2[1] === '5') {
+        score++;
+        q2_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q2_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 골라보세요.</span>';
+      }
+
+      // 3번 검사 (5 * 4 = 20)
+      const q3_1 = document.getElementById('q3_input1').value.trim();
+      const q3_2 = document.getElementById('q3_input2').value.trim();
+      const q3_fb = document.getElementById('q3_feedback');
+      q3_fb.classList.remove('hidden');
+
+      if (q3_1 === '4' && q3_2 === '20') {
+        score++;
+        q3_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q3_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 풀어보세요.</span>';
+      }
+
+      // 4번 검사 (4, 5번 선택: 8, 9)
+      const selected4 = Array.from(document.querySelectorAll('input[name="q4"]:checked')).map(cb => cb.value).sort();
+      const q4_fb = document.getElementById('q4_feedback');
+      q4_fb.classList.remove('hidden');
+
+      if (selected4.length === 2 && selected4[0] === '4' && selected4[1] === '5') {
+        score++;
+        q4_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q4_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 골라보세요.</span>';
+      }
+
+      // 5번 검사 ('우진')
+      const q5_val = document.getElementById('q5_input').value.trim().replace(/\s+/g, '');
+      const q5_fb = document.getElementById('q5_feedback');
+      q5_fb.classList.remove('hidden');
+
+      if (q5_val === '우진' || q5_val === '우진이') {
+        score++;
+        q5_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q5_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 확인해 보세요.</span>';
+      }
+
+      // 6번 검사 (6단: 12, 42, 30, 48)
+      const q6_1 = document.getElementById('q6_1').value.trim();
+      const q6_2 = document.getElementById('q6_2').value.trim();
+      const q6_3 = document.getElementById('q6_3').value.trim();
+      const q6_4 = document.getElementById('q6_4').value.trim();
+      const q6_fb = document.getElementById('q6_feedback');
+      q6_fb.classList.remove('hidden');
+
+      if (q6_1 === '12' && q6_2 === '42' && q6_3 === '30' && q6_4 === '48') {
+        score++;
+        q6_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q6_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 곱셈표를 다시 계산해 보세요.</span>';
+      }
+
+      // 7번 검사 (3 * 9 = 27 -> ②번)
+      const selected7 = document.querySelector('input[name="q7"]:checked');
+      const q7_fb = document.getElementById('q7_feedback');
+      q7_fb.classList.remove('hidden');
+
+      if (selected7 && selected7.value === '2') {
+        score++;
+        q7_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q7_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 골라보세요.</span>';
+      }
+
+      // 8번 검사 ((1) <, (2) =)
+      const q8_1 = document.getElementById('q8_1').value;
+      const q8_2 = document.getElementById('q8_2').value;
+      const q8_fb = document.getElementById('q8_feedback');
+      q8_fb.classList.remove('hidden');
+
+      if (q8_1 === '<' && q8_2 === '=') {
+        score++;
+        q8_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q8_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 비교해 보세요.</span>';
+      }
+
+      // 12번 검사 (49)
+      const q12_val = document.getElementById('q12_input').value.trim();
+      const q12_fb = document.getElementById('q12_feedback');
+      q12_fb.classList.remove('hidden');
+
+      if (q12_val === '49') {
+        score++;
+        q12_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q12_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 생각해 보세요.</span>';
+      }
+
+      // 13번 검사 (9*2->18, 9*6->54, 9*4->36)
+      const q13_1 = matchConnections[1]; // 9 x 2
+      const q13_2 = matchConnections[2]; // 9 x 6
+      const q13_3 = matchConnections[3]; // 9 x 4
+      const q13_fb = document.getElementById('q13_feedback');
+      q13_fb.classList.remove('hidden');
+
+      if (q13_1 === '18' && q13_2 === '54' && q13_3 === '36') {
+        score++;
+        q13_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q13_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 올바른 짝으로 다시 이어보세요.</span>';
+      }
+
+      // 14번 검사 (①번 ㉠: 45, ㉡: 6)
+      const selected14 = document.querySelector('input[name="q14"]:checked');
+      const q14_fb = document.getElementById('q14_feedback');
+      q14_fb.classList.remove('hidden');
+
+      if (selected14 && selected14.value === '1') {
+        score++;
+        q14_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q14_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 골라보세요.</span>';
+      }
+
+      // 15번 검사 (③번 1)
+      const selected15 = document.querySelector('input[name="q15"]:checked');
+      const q15_fb = document.getElementById('q15_feedback');
+      q15_fb.classList.remove('hidden');
+
+      if (selected15 && selected15.value === '3') {
+        score++;
+        q15_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q15_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 골라보세요.</span>';
+      }
+
+      // 16번 검사 ((1) 8, (2) 0)
+      const q16_1 = document.getElementById('q16_1').value.trim();
+      const q16_2 = document.getElementById('q16_2').value.trim();
+      const q16_fb = document.getElementById('q16_feedback');
+      q16_fb.classList.remove('hidden');
+
+      if (q16_1 === '8' && q16_2 === '0') {
+        score++;
+        q16_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q16_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 계산해 보세요.</span>';
+      }
+
+      // 17번 검사 (8단: 16, 32, 48, 64 / 9단: 18, 36, 54, 72)
+      const q17_8_2 = document.getElementById('q17_8_2').value.trim();
+      const q17_8_4 = document.getElementById('q17_8_4').value.trim();
+      const q17_8_6 = document.getElementById('q17_8_6').value.trim();
+      const q17_8_8 = document.getElementById('q17_8_8').value.trim();
+      const q17_9_2 = document.getElementById('q17_9_2').value.trim();
+      const q17_9_4 = document.getElementById('q17_9_4').value.trim();
+      const q17_9_6 = document.getElementById('q17_9_6').value.trim();
+      const q17_9_8 = document.getElementById('q17_9_8').value.trim();
+      const q17_fb = document.getElementById('q17_feedback');
+      q17_fb.classList.remove('hidden');
+
+      const is8RowCorrect = (q17_8_2 === '16' && q17_8_4 === '32' && q17_8_6 === '48' && q17_8_8 === '64');
+      const is9RowCorrect = (q17_9_2 === '18' && q17_9_4 === '36' && q17_9_6 === '54' && q17_9_8 === '72');
+
+      if (is8RowCorrect && is9RowCorrect) {
+        score++;
+        q17_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q17_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 곱셈표를 다시 채워보세요.</span>';
+      }
+
+      // 18번 검사 (39)
+      const q18_val = document.getElementById('q18_input').value.trim();
+      const q18_fb = document.getElementById('q18_feedback');
+      q18_fb.classList.remove('hidden');
+
+      if (q18_val === '39') {
+        score++;
+        q18_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q18_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 계산해 보세요.</span>';
+      }
+
+      // 19번 검사 (①번 89)
+      const selected19 = document.querySelector('input[name="q19"]:checked');
+      const q19_fb = document.getElementById('q19_feedback');
+      q19_fb.classList.remove('hidden');
+
+      if (selected19 && selected19.value === '1') {
+        score++;
+        q19_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q19_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 골라보세요.</span>';
+      }
+
+      // 20번 검사 (④번 16점)
+      const selected20 = document.querySelector('input[name="q20"]:checked');
+      const q20_fb = document.getElementById('q20_feedback');
+      q20_fb.classList.remove('hidden');
+
+      if (selected20 && selected20.value === '4') {
+        score++;
+        q20_fb.innerHTML = '<span class="text-emerald-600">🎉 딩동댕! 정답입니다!</span>';
+      } else {
+        q20_fb.innerHTML = '<span class="text-rose-500">❌ 틀렸습니다. 다시 계산해 보세요.</span>';
+      }
+
+      // 총점 배너
+      const banner = document.getElementById('total_score_banner');
+      const scoreText = document.getElementById('score_text');
+      const scoreSub = document.getElementById('score_subtext');
+      const nextBtn = document.getElementById('next_page_btn');
+      banner.classList.remove('hidden');
+
+      // 마스터 키(5658) 이거나 만점인 경우 통과 모달 실행
+      const isMasterPass = (currentUserName === '5658');
+
+      if (score === totalProblems || isMasterPass) {
+        playSound('success');
+        if (isMasterPass && score !== totalProblems) {
+          scoreText.innerText = `🔓 마스터 키(5658)로 통과되었습니다! (점수: ${score}/${totalProblems})`;
+          scoreSub.innerText = '문제를 다 맞히지 않아도 설문 페이지로 이동할 수 있습니다.';
+        } else {
+          scoreText.innerText = '🌟 100점 만점! 참 잘했어요! 🌟';
+          scoreSub.innerText = '모든 문제를 완벽하게 맞혔습니다!';
+        }
+        nextBtn.classList.remove('hidden');
+        
+        // '통과입니다' 모달 띄우기
+        openPassModal();
+      } else {
+        playSound('fail');
+        scoreText.innerText = `총 ${totalProblems}문제 중 ${score}문제 맞음!`;
+        scoreSub.innerText = '틀린 문제는 다시 한 번 고민하고 풀어보세요!';
+        nextBtn.classList.add('hidden');
+      }
+    }
+
+    function resetAll() {
+      document.getElementById('q1_input1').value = '';
+      document.getElementById('q1_input2').value = '';
+      document.querySelectorAll('input[name="q2"]').forEach(cb => cb.checked = false);
+      document.getElementById('q3_input1').value = '';
+      document.getElementById('q3_input2').value = '';
+      document.querySelectorAll('input[name="q4"]').forEach(cb => cb.checked = false);
+      document.getElementById('q5_input').value = '';
+      document.getElementById('q6_1').value = '';
+      document.getElementById('q6_2').value = '';
+      document.getElementById('q6_3').value = '';
+      document.getElementById('q6_4').value = '';
+      document.querySelectorAll('input[name="q7"]').forEach(rb => rb.checked = false);
+      document.getElementById('q8_1').value = '';
+      document.getElementById('q8_2').value = '';
+      document.getElementById('q12_input').value = '';
+      clearMatchLines();
+      document.querySelectorAll('input[name="q14"]').forEach(rb => rb.checked = false);
+
+      document.querySelectorAll('input[name="q15"]').forEach(rb => rb.checked = false);
+      document.getElementById('q16_1').value = '';
+      document.getElementById('q16_2').value = '';
+      document.getElementById('q17_8_2').value = '';
+      document.getElementById('q17_8_4').value = '';
+      document.getElementById('q17_8_6').value = '';
+      document.getElementById('q17_8_8').value = '';
+      document.getElementById('q17_9_2').value = '';
+      document.getElementById('q17_9_4').value = '';
+      document.getElementById('q17_9_6').value = '';
+      document.getElementById('q17_9_8').value = '';
+
+      document.getElementById('q18_input').value = '';
+      document.querySelectorAll('input[name="q19"]').forEach(rb => rb.checked = false);
+      document.querySelectorAll('input[name="q20"]').forEach(rb => rb.checked = false);
+
+      ['q1_feedback', 'q2_feedback', 'q3_feedback', 'q4_feedback', 'q5_feedback', 'q6_feedback', 'q7_feedback', 'q8_feedback', 'q12_feedback', 'q13_feedback', 'q14_feedback', 'q15_feedback', 'q16_feedback', 'q17_feedback', 'q18_feedback', 'q19_feedback', 'q20_feedback', 'total_score_banner'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+    }
+  </script>
+</body>
+</html>
