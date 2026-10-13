@@ -1,0 +1,114 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우리 반 우표 전지 만들기</title><style>
+:root{font-family:'Malgun Gothic',system-ui,sans-serif;color:#172238;background:#f3f6fa}*{box-sizing:border-box}body{margin:0}.app{max-width:1120px;margin:30px auto;padding:0 18px}h1{margin:0 0 8px;font-size:27px}.hint{color:#64748b;margin:0 0 22px}.layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start}.panel,.preview{background:#fff;border-radius:16px;box-shadow:0 6px 22px #10223b12;padding:22px}.panel{display:grid;gap:17px}label{display:block;font-weight:700;font-size:14px;margin-bottom:7px}input[type=file],input[type=text]{width:100%;border:1px solid #d4dce7;border-radius:9px;padding:10px;background:#fff}input[type=range]{width:100%;accent-color:#2563eb}.value{float:right;font-weight:400;color:#64748b}.buttons{display:grid;gap:8px}button{border:0;background:#2563eb;color:#fff;border-radius:9px;padding:12px;font-weight:700;cursor:pointer;font-size:14px}button.secondary{background:#e8eef8;color:#20334f}button:disabled{opacity:.5;cursor:not-allowed}.note{font-size:12px;line-height:1.6;color:#64748b}.preview{min-width:0}.preview h2{font-size:17px;margin:0 0 14px}.sheet-wrap{background:#e5eaf1;padding:14px;overflow:auto;border-radius:10px}canvas{display:block;background:white;width:100%;max-width:620px;height:auto;margin:auto;box-shadow:0 3px 10px #0002}.status{font-size:13px;color:#64748b;margin-top:10px}.controlrow{display:flex;justify-content:space-between;align-items:center;gap:8px}.small{font-size:12px;color:#64748b}@media(max-width:750px){.layout{grid-template-columns:1fr}.app{margin:18px auto}.panel{gap:12px}}@media print{body{background:white}.app>h1,.hint,.panel,.preview h2,.status{display:none!important}.app,.layout,.preview,.sheet-wrap{display:block!important;margin:0!important;padding:0!important;box-shadow:none!important;border:0!important;background:white!important;max-width:none!important}.preview{border-radius:0!important}canvas{width:190mm!important;max-width:190mm!important;height:auto!important;box-shadow:none!important;margin:auto!important}@page{size:A4 portrait;margin:10mm}}
+#cropCanvas{touch-action:none;cursor:crosshair;box-shadow:none}#cropArea[hidden]{display:none}#cropArea{display:grid;gap:10px}.cropHint{font-size:13px;line-height:1.5;color:#475569}</style></head><body><main class="app"><h1>✉️ 우리 반 우표 전지 만들기</h1><p class="hint">학생이 그린 우표 사진 한 장으로 4열 × 5행, 총 20장의 우표 전지를 만듭니다.</p><div class="layout"><section class="panel"><div><label for="photo">1. 우표 사진 업로드</label><input id="photo" type="file" accept="image/*"></div><div id="cropArea" hidden><label>우표 부분만 선택하기</label><p class="cropHint">사진 위에서 우표의 왼쪽 위부터 오른쪽 아래까지 드래그하세요. 태블릿에서는 손가락이나 펜으로 선택할 수 있어요.</p><canvas id="cropCanvas" width="600" height="600"></canvas><button id="applyCrop" type="button">선택한 부분으로 자르기</button><button id="restoreCrop" type="button" class="secondary">원본 사진으로 되돌리기</button></div><div><label for="student">2. 학생 이름 (선택)</label><input id="student" type="text" placeholder="예: 김하늘" maxlength="30"></div><div><label for="zoom">3. 사진 확대 <span id="zoomVal" class="value">100%</span></label><input id="zoom" type="range" min="100" max="300" value="100"></div><div><label for="offsetX">사진 가로 위치 <span id="xVal" class="value">0</span></label><input id="offsetX" type="range" min="-100" max="100" value="0"></div><div><label for="offsetY">사진 세로 위치 <span id="yVal" class="value">0</span></label><input id="offsetY" type="range" min="-100" max="100" value="0"></div><div class="controlrow"><label for="perforation" style="margin:0">우표 톱니 테두리</label><input id="perforation" type="checkbox" checked></div><div class="buttons"><button id="send">선생님께 보내기 (PDF)</button><button id="deletePhoto" class="secondary">업로드한 사진 삭제</button><button id="reset" class="secondary">사진 조정 초기화</button></div><div class="note">사진을 고르고 이름을 입력한 뒤 ‘선생님께 보내기 (PDF)’를 누르면 우표 전지가 PDF로 선생님께 제출됩니다. 학생 기기에 별도 파일을 저장하지 않습니다. 제출 기능은 선생님이 배포한 Apps Script 웹앱에서 작동합니다.</div></section><section class="preview"><h2>우표 전지 미리보기 <span class="small">4 × 5 · A4 세로</span></h2><div class="sheet-wrap"><canvas id="sheet" width="2480" height="3508" aria-label="우표 전지 미리보기"></canvas></div><div id="status" class="status">사진을 선택하면 여기에 우표 20장이 표시됩니다.</div></section></div></main><script>
+// 배포 후 Apps Script의 /exec URL을 아래에 입력하세요.
+const SUBMIT_URL = "https://script.google.com/macros/s/AKfycbxdstwpfO564c-qBaPuUX0lNyLyY7ftgrLPg4Kcd_zi6Cht1oNvuq2L7KO0g00wHvx0/exec";
+
+(()=>{'use strict';const $=id=>document.getElementById(id),canvas=$('sheet'),ctx=canvas.getContext('2d'),W=2480,H=3508;let img=null,photoURL=null,loadVersion=0,original=null,selection=null,cropStart=null;const ids=['student','zoom','offsetX','offsetY','perforation'];function roundedRect(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}function perforatedPath(x,y,w,h,r=12){ctx.beginPath();let first=true;const add=(px,py)=>{if(first){ctx.moveTo(px,py);first=false}else ctx.lineTo(px,py)};for(let xx=x;xx<=x+w;xx+=r) add(xx,y+(Math.round((xx-x)/r)%2?5:0));for(let yy=y;yy<=y+h;yy+=r)add(x+w-(Math.round((yy-y)/r)%2?5:0),yy);for(let xx=x+w;xx>=x;xx-=r)add(xx,y+h-(Math.round((x+w-xx)/r)%2?5:0));for(let yy=y+h;yy>=y;yy-=r)add(x+(Math.round((y+h-yy)/r)%2?5:0),yy);ctx.closePath()}
+function draw(){ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);const marginX=125,marginTop=220,gapX=22,gapY=28,cols=4,rows=5,cellW=(W-2*marginX-gapX*(cols-1))/cols,cellH=560,contentW=cellW-32,contentH=cellH-32;const gridH=rows*cellH+(rows-1)*gapY,startY=Math.round((H-gridH)/2)+35;ctx.textAlign='center';ctx.fillStyle='#334155';ctx.font='bold 45px Malgun Gothic, sans-serif';ctx.fillText('나만의 우표 전지',W/2,126);const name=$('student').value.trim();ctx.font='29px Malgun Gothic, sans-serif';ctx.fillStyle='#64748b';if(name)ctx.fillText(name,W/2,177);for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){const x=marginX+col*(cellW+gapX),y=startY+row*(cellH+gapY);ctx.save();ctx.fillStyle='#fff';if($('perforation').checked){perforatedPath(x,y,cellW,cellH,12);ctx.fill();ctx.strokeStyle='#94a3b8';ctx.lineWidth=2;ctx.stroke()}else{ctx.fillRect(x,y,cellW,cellH);ctx.strokeStyle='#cbd5e1';ctx.lineWidth=2;ctx.strokeRect(x,y,cellW,cellH)}const ix=x+16,iy=y+16;ctx.beginPath();ctx.rect(ix,iy,contentW,contentH);ctx.clip();if(img){const zoom=Number($('zoom').value)/100,scale=Math.min(contentW/img.naturalWidth,contentH/img.naturalHeight)*zoom,iw=img.naturalWidth*scale,ih=img.naturalHeight*scale,dx=(Number($('offsetX').value)/100)*(iw-contentW)/2,dy=(Number($('offsetY').value)/100)*(ih-contentH)/2;ctx.drawImage(img,ix+(contentW-iw)/2+dx,iy+(contentH-ih)/2+dy,iw,ih)}else{ctx.fillStyle='#f0f5fa';ctx.fillRect(ix,iy,contentW,contentH);ctx.fillStyle='#94a3b8';ctx.font='bold 31px Malgun Gothic, sans-serif';ctx.fillText('우표 사진',x+cellW/2,y+cellH/2)}ctx.restore()}ctx.fillStyle='#94a3b8';ctx.font='23px Malgun Gothic, sans-serif';ctx.fillText('우리 반 우표 만들기 · 20장',W/2,H-115);$('zoomVal').textContent=$('zoom').value+'%';$('xVal').textContent=$('offsetX').value;$('yVal').textContent=$('offsetY').value}
+$('photo').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;if(!file.type.startsWith('image/')){alert('이미지 파일을 선택해 주세요.');return}const version=++loadVersion,url=URL.createObjectURL(file),newImg=new Image();newImg.onload=()=>{if(version!==loadVersion){URL.revokeObjectURL(url);return}if(photoURL)URL.revokeObjectURL(photoURL);photoURL=url;img=newImg;original=newImg;selection=null;$('cropArea').hidden=false;paintCrop();draw();$('status').textContent='사진을 적용했습니다. 20장의 우표가 완성되었습니다.'};newImg.onerror=()=>{URL.revokeObjectURL(url);alert('사진을 열지 못했습니다. JPG 또는 PNG 파일을 사용해 주세요.')};newImg.src=url});$('deletePhoto').addEventListener('click',()=>{loadVersion++;if(photoURL)URL.revokeObjectURL(photoURL);photoURL=null;img=null;original=null;selection=null;$('cropArea').hidden=true;$('photo').value='';$('zoom').value=100;$('offsetX').value=0;$('offsetY').value=0;draw();$('status').textContent='사진을 삭제했습니다. 새 사진을 업로드해 주세요.'});ids.forEach(id=>$(id).addEventListener('input',draw));$('reset').addEventListener('click',()=>{$('zoom').value=100;$('offsetX').value=0;$('offsetY').value=0;draw()});// A4 PDF: one high-resolution JPEG page, no external libraries.
+function makePDF(){
+ const small=document.createElement('canvas');small.width=1240;small.height=1754;small.getContext('2d').drawImage(canvas,0,0,1240,1754);
+ const jpg=Uint8Array.from(atob(small.toDataURL('image/jpeg',0.78).split(',')[1]),c=>c.charCodeAt(0));
+ const enc=new TextEncoder(),chunks=[],offsets=[0];let length=0;
+ const add=b=>{if(typeof b==='string')b=enc.encode(b);chunks.push(b);length+=b.length;};
+ const obj=(n,body)=>{offsets[n]=length;add(n+' 0 obj\n');add(body);add('\nendobj\n');};
+ add('%PDF-1.4\n');obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+ obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+ obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.276 841.89] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
+ offsets[4]=length;add('4 0 obj\n<< /Type /XObject /Subtype /Image /Width 1240 /Height 1754 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n');add(jpg);add('\nendstream\nendobj\n');
+ const stream='q\n595.276 0 0 841.89 0 0 cm\n/Im0 Do\nQ\n';obj(5,'<< /Length '+enc.encode(stream).length+' >>\nstream\n'+stream+'endstream');
+ const xref=length;add('xref\n0 6\n0000000000 65535 f \n');for(let i=1;i<=5;i++)add(String(offsets[i]).padStart(10,'0')+' 00000 n \n');
+ add('trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF');return new Blob(chunks,{type:'application/pdf'});
+}
+let sending=false;
+// GitHub Pages -> Apps Script: hidden form POST, iframe response via postMessage.
+// A regular cross-origin fetch cannot reliably read Apps Script's response.
+let activeSubmission=null;
+function sendToDrive(fields) {
+  return new Promise((resolve,reject)=>{
+    const iframe=document.createElement('iframe');
+    const frameName='stamp_reply_'+Math.random().toString(36).slice(2);
+    iframe.name=frameName;
+    iframe.title='제출 응답';
+    iframe.style.display='none';
+    const form=document.createElement('form');
+    form.method='POST';form.action=SUBMIT_URL;form.target=frameName;
+    form.acceptCharset='UTF-8';form.style.display='none';
+    for(const [key,value] of Object.entries(fields)){
+      const input=document.createElement('input');input.type='hidden';input.name=key;input.value=value;form.appendChild(input);
+    }
+    let done=false;
+    const cleanup=()=>{window.removeEventListener('message',onMessage);clearTimeout(timer);form.remove();iframe.remove();};
+    const onMessage=e=>{
+      // Apps Script HtmlService response is hosted by Google and sends back a one-time token.
+      if(!/^https:\/\/(?:script\.google\.com|[a-z0-9.-]*googleusercontent\.com)$/.test(e.origin))return;
+      const d=e.data;
+      if(!d||d.kind!=='STAMP_SUBMISSION_RESULT'||d.requestId!==fields.requestId)return;
+      if(done)return;done=true;cleanup();
+      if(d.ok)resolve(d);else reject(new Error(d.error||'제출에 실패했습니다.'));
+    };
+    const timer=setTimeout(()=>{if(done)return;done=true;cleanup();reject(new Error('서버 응답이 없습니다. 배포 주소와 접근 권한을 확인해 주세요.'));},90000);
+    window.addEventListener('message',onMessage);
+    document.body.append(iframe,form);
+    form.submit();
+  });
+}
+$('send').onclick=async()=>{
+  if(sending)return;
+  if(!img){alert('먼저 우표 사진을 업로드해 주세요.');return;}
+  const name=$('student').value.trim();
+  if(!name){alert('학생 이름을 입력해 주세요.');$('student').focus();return;}
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(SUBMIT_URL)){
+    alert('선생님이 Apps Script 제출 주소를 아직 설정하지 않았습니다.');return;
+  }
+  sending=true;
+  const controls=[...document.querySelectorAll('input,button')];
+  controls.forEach(e=>e.disabled=true);
+  $('status').textContent='PDF를 만들어 선생님께 보내는 중입니다. 기다려 주세요.';
+  const finish=()=>{sending=false;controls.forEach(e=>e.disabled=false);};
+  try{
+    // Smaller A4 PDF image makes tablet uploads more reliable.
+    const b64=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result).split(',')[1]);
+      reader.onerror=()=>reject(new Error('PDF를 읽지 못했습니다.'));
+      reader.readAsDataURL(makePDF());
+    });
+    if(!activeSubmission||activeSubmission.name!==name||activeSubmission.pdf!==b64){
+      activeSubmission={name,pdf:b64,requestId:crypto.randomUUID()};
+    }
+    const result=await sendToDrive(activeSubmission);
+    activeSubmission=null;
+    $('status').textContent=result.fileName+' 제출 완료!';
+    alert('선생님께 제출했습니다!');
+  }catch(error){
+    $('status').textContent='제출을 확인하지 못했습니다: '+error.message;
+    alert('제출 상태를 확인하지 못했습니다. 선생님께 폴더를 확인해 달라고 요청하세요.');
+  }finally{finish();}
+};
+
+const cropCanvas=$('cropCanvas'),cropCtx=cropCanvas.getContext('2d');
+function paintCrop(){
+ if(!original)return;
+ cropCanvas.width=600;cropCanvas.height=Math.max(1,Math.round(600*original.naturalHeight/original.naturalWidth));
+ cropCtx.drawImage(original,0,0,cropCanvas.width,cropCanvas.height);
+ if(selection){const {x,y,w,h}=selection;cropCtx.fillStyle='rgba(0,0,0,.48)';cropCtx.fillRect(0,0,600,y);cropCtx.fillRect(0,y+h,600,cropCanvas.height-y-h);cropCtx.fillRect(0,y,x,h);cropCtx.fillRect(x+w,y,600-x-w,h);cropCtx.strokeStyle='#22d3ee';cropCtx.lineWidth=3;cropCtx.strokeRect(x,y,w,h);}
+ $('applyCrop').disabled=!selection||selection.w<5||selection.h<5;
+}
+function cropPoint(e){const r=cropCanvas.getBoundingClientRect();return {x:Math.max(0,Math.min(cropCanvas.width,(e.clientX-r.left)*cropCanvas.width/r.width)),y:Math.max(0,Math.min(cropCanvas.height,(e.clientY-r.top)*cropCanvas.height/r.height))};}
+cropCanvas.onpointerdown=e=>{if(sending||!original)return;e.preventDefault();cropStart=cropPoint(e);selection=null;cropCanvas.setPointerCapture(e.pointerId);paintCrop();};
+cropCanvas.onpointermove=e=>{if(!cropStart)return;const p=cropPoint(e);selection={x:Math.min(p.x,cropStart.x),y:Math.min(p.y,cropStart.y),w:Math.abs(p.x-cropStart.x),h:Math.abs(p.y-cropStart.y)};paintCrop();};
+cropCanvas.onpointerup=e=>{if(!cropStart)return;cropCanvas.onpointermove(e);cropStart=null;};
+cropCanvas.onpointercancel=()=>{cropStart=null;};
+$('restoreCrop').onclick=()=>{if(!original)return;loadVersion++;img=original;selection=null;$('zoom').value=100;$('offsetX').value=0;$('offsetY').value=0;paintCrop();draw();};
+$('applyCrop').onclick=()=>{
+ if(!original||!selection||selection.w<5||selection.h<5)return;
+ const factor=original.naturalWidth/cropCanvas.width,c=document.createElement('canvas');
+ c.width=Math.max(1,Math.round(selection.w*factor));c.height=Math.max(1,Math.round(selection.h*factor));
+ c.getContext('2d').drawImage(original,selection.x*factor,selection.y*factor,selection.w*factor,selection.h*factor,0,0,c.width,c.height);
+ const cropped=new Image(),version=++loadVersion;cropped.onload=()=>{if(version!==loadVersion)return;img=cropped;$('zoom').value=100;$('offsetX').value=0;$('offsetY').value=0;draw();$('status').textContent='선택한 우표 부분만 전지에 적용했습니다.';};cropped.src=c.toDataURL('image/png');
+};
+
+draw()})();
+</script></body></html>
