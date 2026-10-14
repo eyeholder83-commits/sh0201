@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>테이프 어림하기 챌린지</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Pretendard', sans-serif; }
+        .jua-font { font-family: 'Jua', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header Navigation -->
+    <header class="bg-white border-b border-slate-200 p-4 shadow-sm flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <span class="text-3xl">📏</span>
+            <h1 class="jua-font text-2xl text-indigo-600 tracking-wide">테이프 어림하기 챌린지</h1>
+        </div>
+        <div id="nav-mode-selector" class="flex space-x-2">
+            <button onclick="switchView('management')" id="btn-view-management" class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-sm transition shadow-sm">교사 관리 뷰</button>
+            <button onclick="switchView('blackboard')" id="btn-view-blackboard" class="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-sm border border-slate-200 transition shadow-sm">칠판 뷰</button>
+            <button onclick="switchView('student')" id="btn-view-student" class="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-sm border border-slate-200 transition shadow-sm">학생 로그인/뷰</button>
+        </div>
+    </header>
+
+    <main class="flex-1 p-4 max-w-7xl mx-auto w-full">
+
+        <!-- 1. TEACHER MANAGEMENT VIEW -->
+        <section id="view-management" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Round Controls -->
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h2 class="jua-font text-xl text-indigo-600 mb-3 flex items-center space-x-2">
+                            <span>🎮 게임 라운드 설정</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mb-4">최소 4라운드 이상으로 설정하여 각 조별 주자를 지정할 수 있습니다.</p>
+                        <div class="flex items-center justify-between mb-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <span class="text-sm font-semibold text-slate-600">총 라운드 수:</span>
+                            <div class="flex items-center space-x-3">
+                                <button onclick="adjustRounds(-1)" class="w-10 h-10 rounded-xl bg-white hover:bg-slate-200 border border-slate-300 font-bold text-slate-700 flex items-center justify-center shadow-sm text-lg">-</button>
+                                <span id="total-rounds-display" class="jua-font text-2xl text-indigo-600 w-8 text-center">4</span>
+                                <button onclick="adjustRounds(1)" class="w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold flex items-center justify-center shadow-sm text-lg">+</button>
+                            </div>
+                        </div>
+                        <div class="text-sm text-slate-600">현재 선택된 라운드: <span id="current-round-mgmt" class="font-bold text-indigo-600 text-lg">1</span> 라운드</div>
+                    </div>
+                    <div class="flex space-x-2 mt-6">
+                        <button onclick="prevRound()" class="flex-1 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl text-sm font-bold text-slate-700 transition">◀ 이전 라운드</button>
+                        <button onclick="nextRound()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl text-sm font-bold text-white transition">다음 라운드 ▶</button>
+                    </div>
+                </div>
+
+                <!-- Team Management Summary -->
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h2 class="jua-font text-xl text-pink-600 mb-2">👥 5개 조 구성 현황 및 교사 편집</h2>
+                        <div class="text-xs text-slate-500 mb-3">교사가 직접 학생들의 조 편성을 관리할 수 있습니다. (변경 시 해당 학생 로그아웃됨)</div>
+                        <div id="mgmt-teams-summary" class="grid grid-cols-5 gap-1.5 text-center text-xs">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    <button onclick="openTeamModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl text-xs font-bold mt-4 transition">
+                        조 편성 및 명단 상세 관리
+                    </button>
+                </div>
+            </div>
+
+            <!-- Runners & Scoreboard Quick View in Management (Teacher Runner Configuration) -->
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="jua-font text-xl text-indigo-600">🏃‍♂️ 현재 라운드(<span id="mgmt-active-round-label">1</span>R) 조별 출전 선수 교사 설정</h2>
+                        <p class="text-xs text-slate-500">교사 선생님이 직접 각 조의 이번 라운드 출전 선수를 지정하거나 변경할 수 있습니다.</p>
+                    </div>
+                    <span class="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full font-semibold border border-indigo-100">교사/학생 동시 연동됨</span>
+                </div>
+                <div id="mgmt-runners-grid" class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                    <!-- Populated dynamically with select inputs for teacher -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. BLACKBOARD VIEW (칠판 뷰) -->
+        <section id="view-blackboard" class="hidden space-y-6">
+            <div class="bg-emerald-50 border-4 border-emerald-600 p-6 sm:p-8 rounded-3xl shadow-lg text-slate-800 space-y-6">
+                <!-- Blackboard Header -->
+                <div class="flex flex-col md:flex-row justify-between items-center border-b border-emerald-200 pb-4 gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-4xl">🏫</span>
+                        <div>
+                            <h2 class="jua-font text-3xl text-emerald-800 tracking-wide">테이프 어림하기 칠판</h2>
+                            <p class="text-xs text-emerald-600">규칙: 1등(3점), 2등(2점), 3등(1점)</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4 bg-white px-5 py-3 rounded-2xl border border-emerald-200 shadow-sm flex-wrap gap-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-slate-500 font-bold">라운드 조절:</span>
+                            <button onclick="adjustRounds(-1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 font-bold text-slate-700">-</button>
+                            <span id="bb-current-round-display" class="jua-font text-xl text-emerald-700 w-6 text-center">4</span>
+                            <button onclick="adjustRounds(1)" class="w-8 h-8 rounded-lg bg-emerald-600 text-white font-bold">+</button>
+                        </div>
+                        <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
+                        <div class="text-center">
+                            <span class="text-xs text-slate-500 block">현재 라운드</span>
+                            <span id="bb-current-round" class="jua-font text-2xl text-emerald-700">1</span>
+                        </div>
+                        <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
+                        <div class="text-center">
+                            <span class="text-xs text-slate-500 block">룰렛 결과</span>
+                            <span id="bb-roulette-display" class="jua-font text-2xl text-cyan-600">? 미터</span>
+                        </div>
+                        <button onclick="openRouletteModal()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-4 py-2 rounded-xl jua-font text-sm shadow transition">
+                            🎲 룰렛 돌리기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Baseball Scoreboard Table -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="jua-font text-2xl text-emerald-800">🏆 야구 스타일 점수판</h3>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="finishAllRounds()" class="text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1.5 rounded-lg transition shadow-sm jua-font">🏆 최종 순위 발표</button>
+                            <button onclick="resetScores()" class="text-xs bg-white hover:bg-red-50 text-slate-600 hover:text-red-600 px-3 py-1.5 rounded-lg border border-slate-200 transition shadow-sm">점수 초기화</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto bg-white p-4 rounded-2xl border border-emerald-200 shadow-sm">
+                        <table class="w-full text-center border-collapse">
+                            <thead>
+                                <tr id="bb-scoreboard-header" class="text-emerald-800 text-sm jua-font border-b border-emerald-100">
+                                    <th class="p-3 text-left">조 이름</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bb-scoreboard-tbody" class="divide-y divide-emerald-100 text-base">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Blackboard Current Runners -->
+                <div>
+                    <h3 class="jua-font text-xl text-emerald-800 mb-3">🏃‍♂️ 이번 라운드 조별 출전 선수</h3>
+                    <div id="bb-runners-grid" class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. STUDENT VIEW -->
+        <section id="view-student" class="hidden max-w-3xl mx-auto space-y-6">
+            <!-- Student Login Card -->
+            <div id="student-login-card" class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-center space-y-6">
+                <div class="inline-block p-4 bg-indigo-50 rounded-full text-indigo-600 text-4xl mb-1">🎓</div>
+                <h2 class="jua-font text-3xl text-slate-800">우리 조 공간 입장하기</h2>
+                <p class="text-sm text-slate-500">소속된 조를 선택하고 본인의 이름을 입력해주세요.</p>
+                
+                <div class="space-y-4 max-w-sm mx-auto text-left">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">소속 조 선택</label>
+                        <select id="login-team-select" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 font-bold focus:outline-none focus:border-indigo-500">
+                            <option value="1조">1조</option>
+                            <option value="2조">2조</option>
+                            <option value="3조">3조</option>
+                            <option value="4조">4조</option>
+                            <option value="5조">5조</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">이름 입력</label>
+                        <input type="text" id="login-name-input" placeholder="예: 김서아" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 font-bold focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <button onclick="studentLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl shadow transition jua-font text-lg">
+                        🚀 입장하기
+                    </button>
+                </div>
+            </div>
+
+            <!-- Student Workspace Dashboard -->
+            <div id="student-workspace" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex justify-between items-center">
+                    <div>
+                        <span id="student-badge-team" class="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full font-bold border border-indigo-100">1조</span>
+                        <h2 class="jua-font text-2xl text-slate-800 mt-2"><span id="student-display-name">홍길동</span> 님 환영합니다!</h2>
+                    </div>
+                    <button onclick="studentLogout()" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl text-slate-600 transition">로그아웃</button>
+                </div>
+
+                <!-- Current Roulette & Challenge Info -->
+                <div class="bg-gradient-to-br from-white to-slate-50 p-6 rounded-3xl border border-slate-200 shadow-sm text-center space-y-4">
+                    <div class="text-sm text-slate-500">현재 <span id="student-current-round" class="text-indigo-600 font-bold text-lg">1</span>라운드 진행 중</div>
+                    <div class="bg-indigo-50/60 p-6 rounded-2xl border border-indigo-100">
+                        <div class="text-xs text-cyan-600 mb-1 jua-font text-lg">🎯 룰렛 미터 미션 길이</div>
+                        <div id="student-roulette-val" class="jua-font text-5xl text-cyan-700 my-2">? 미터</div>
+                        <p class="text-xs text-slate-500">선생님이 룰렛을 돌리면 길이가 표시됩니다! 눈으로 어림하고 테이프를 붙여보세요.</p>
+                    </div>
+                </div>
+
+                <!-- Round Runner Pre-registration (N x 2 Grid) -->
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="jua-font text-xl text-amber-600">📋 라운드별 우리 조 주자 현황 (<span id="student-team-title">1조</span>)</h3>
+                        <span class="text-xs text-slate-400">교사 또는 조원들이 함께 등록한 주자 목록입니다</span>
+                    </div>
+                    
+                    <div id="student-rounds-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Populated dynamically as N x 2 grid cards -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Roulette Modal -->
+    <div id="roulette-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white border border-slate-200 w-full max-w-md rounded-3xl p-8 shadow-2xl text-center space-y-6">
+            <h3 class="jua-font text-3xl text-cyan-600">🎲 룰렛 미터 뽑기</h3>
+            <p class="text-xs text-slate-500">랜덤으로 뽑거나, 원하는 길이를 직접 입력할 수 있습니다!</p>
+            
+            <div class="my-4 relative w-36 h-36 mx-auto bg-cyan-50 border-8 border-cyan-400 rounded-full flex items-center justify-center shadow-inner overflow-hidden">
+                <div id="modal-roulette-number" class="jua-font text-4xl text-cyan-700">? 미터</div>
+            </div>
+
+            <!-- Custom Meter Input Section -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center space-x-2">
+                <span class="text-xs font-bold text-slate-600 whitespace-nowrap">직접 입력:</span>
+                <input type="number" id="custom-meter-input" min="1" max="10" placeholder="예: 3" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 text-center focus:outline-none focus:border-cyan-500">
+                <span class="text-xs font-bold text-slate-600">미터</span>
+                <button onclick="setCustomMeter()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs whitespace-nowrap transition">적용</button>
+            </div>
+
+            <div class="flex space-x-3 pt-2">
+                <button onclick="closeRouletteModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition">닫기</button>
+                <button id="modal-spin-btn" onclick="startSuspenseRoulette()" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-xl shadow transition jua-font text-lg">
+                    🎲 룰렛 돌리기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Management Modal (Teacher view) -->
+    <div id="team-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white border border-slate-200 w-full max-w-4xl rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div>
+                    <h3 class="jua-font text-2xl text-indigo-600">👥 교사 조 편성 및 명단 상세 관리</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">학생 카드를 드래그하여 원하는 조 상자로 이동시킬 수 있습니다. (조가 변경된 학생은 자동 로그아웃됩니다)</p>
+                </div>
+                <button onclick="closeTeamModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold">&times;</button>
+            </div>
+            
+            <div id="modal-teams-container" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                <!-- Populated dynamically -->
+            </div>
+
+            <div class="flex justify-end pt-3 border-t border-slate-100">
+                <button onclick="closeTeamModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition">저장 및 닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- General Alert Modal -->
+    <div id="alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white border border-slate-200 w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-4">
+            <div id="alert-modal-icon" class="text-4xl mb-1">🔔</div>
+            <h3 id="alert-modal-title" class="jua-font text-2xl text-slate-800">알림</h3>
+            <p id="alert-modal-desc" class="text-sm text-slate-600">내용입니다.</p>
+            <button onclick="closeAlertModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition jua-font">확인</button>
+        </div>
+    </div>
+
+    <!-- Final Rankings Modal -->
+    <div id="final-rankings-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white border border-amber-300 w-full max-w-lg rounded-3xl p-8 shadow-2xl text-center space-y-6">
+            <div class="inline-block p-4 bg-amber-50 rounded-full text-amber-500 text-5xl mb-1">🏆</div>
+            <h3 class="jua-font text-3xl text-amber-600">테이프 어림하기 최종 순위</h3>
+            <p class="text-xs text-slate-500">모든 라운드가 종료되었습니다! 각 조의 총점을 공개합니다.</p>
+            
+            <div id="final-rankings-list" class="space-y-3 text-left max-h-60 overflow-y-auto px-2">
+                <!-- Populated dynamically -->
+            </div>
+
+            <button onclick="closeFinalRankingsModal()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow transition jua-font text-lg">
+                축하합니다! 닫기
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Audio Synthesizer
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playClickSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.05);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playTickSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.04);
+        }
+
+        function playWinSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.setValueAtTime(659.25, now + 0.1);
+            osc.frequency.setValueAtTime(783.99, now + 0.2);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.5);
+        }
+
+        // Class Roster & Team State
+        const roster = [
+            "김서아", "김수현", "김윤아", "김태영", "김하랑", 
+            "나예린", "박민제", "박선우", "양수빈", "유소영", 
+            "이대운", "이새봄", "이서율", "이진서", "이채원", 
+            "이초은", "이태환", "이하린", "한규빈", "한유은", 
+            "현지우", "황지우"
+        ];
+
+        let teams = {
+            "1조": ["김서아", "김수현", "김윤아", "김태영"],
+            "2조": ["김하랑", "나예린", "박민제", "박선우"],
+            "3조": ["양수빈", "유소영", "이대운", "이새봄"],
+            "4조": ["이서율", "이진서", "이채원", "이초은"],
+            "5조": ["이태환", "이하린", "한규빈", "한유은", "현지우", "황지우"]
+        };
+
+        let gameState = {
+            totalRounds: 4,
+            currentRound: 1,
+            rouletteValues: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null, 7: null },
+            runners: {
+                1: { "1조": "", "2조": "", "3조": "", "4조": "", "5조": "" },
+                2: { "1조": "", "2조": "", "3조": "", "4조": "", "5조": "" },
+                3: { "1조": "", "2조": "", "3조": "", "4조": "", "5조": "" },
+                4: { "1조": "", "2조": "", "3조": "", "4조": "", "5조": "" },
+                5: { "1조": "", "2조": "", "3조": "", "4조": "", "5조": "" },
+                6: { "1조": "", "2조": "", "3조": "", "4조": "", "5조": "" },
+                7: { "1조": "", "2조": "", "3조": "", "4조": "", "5조": "" }
+            },
+            scores: {
+                "1조": { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 },
+                "2조": { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 },
+                "3조": { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 },
+                "4조": { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 },
+                "5조": { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 }
+            },
+            roundFinished: { 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false }
+        };
+
+        let currentStudent = null;
+
+        function showAlertModal(title, desc, icon = "🔔") {
+            document.getElementById('alert-modal-title').innerText = title;
+            document.getElementById('alert-modal-desc').innerText = desc;
+            document.getElementById('alert-modal-icon').innerText = icon;
+            document.getElementById('alert-modal').classList.remove('hidden');
+            document.getElementById('alert-modal').classList.add('flex');
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alert-modal').classList.remove('flex');
+            document.getElementById('alert-modal').classList.add('hidden');
+        }
+
+        function switchView(view) {
+            const mgmtView = document.getElementById('view-management');
+            const bbView = document.getElementById('view-blackboard');
+            const studentView = document.getElementById('view-student');
+            
+            const btnMgmt = document.getElementById('btn-view-management');
+            const btnBb = document.getElementById('btn-view-blackboard');
+            const btnStudent = document.getElementById('btn-view-student');
+
+            [btnMgmt, btnBb, btnStudent].forEach(btn => {
+                btn.className = "px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-sm border border-slate-200 transition shadow-sm";
+            });
+
+            mgmtView.classList.add('hidden');
+            bbView.classList.add('hidden');
+            studentView.classList.add('hidden');
+
+            if (view === 'management') {
+                mgmtView.classList.remove('hidden');
+                btnMgmt.className = "px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-sm transition shadow-sm";
+                renderManagementView();
+            } else if (view === 'blackboard') {
+                bbView.classList.remove('hidden');
+                btnBb.className = "px-4 py-2 rounded-xl bg-emerald-700 text-white font-bold text-sm transition shadow-sm";
+                renderBlackboardView();
+            } else {
+                studentView.classList.remove('hidden');
+                btnStudent.className = "px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-sm transition shadow-sm";
+                renderStudentView();
+            }
+        }
+
+        function adjustRounds(change) {
+            playClickSound();
+            let newTotal = gameState.totalRounds + change;
+            if (newTotal >= 4 && newTotal <= 7) {
+                gameState.totalRounds = newTotal;
+                if (gameState.currentRound > newTotal) {
+                    gameState.currentRound = newTotal;
+                }
+                renderManagementView();
+                renderBlackboardView();
+                if (currentStudent) renderStudentView();
+            }
+        }
+
+        function nextRound() {
+            playClickSound();
+            if (gameState.currentRound < gameState.totalRounds) {
+                gameState.currentRound++;
+                renderManagementView();
+                renderBlackboardView();
+            }
+        }
+
+        function prevRound() {
+            playClickSound();
+            if (gameState.currentRound > 1) {
+                gameState.currentRound--;
+                renderManagementView();
+                renderBlackboardView();
+            }
+        }
+
+        function openRouletteModal() {
+            playClickSound();
+            let currentVal = gameState.rouletteValues[gameState.currentRound];
+            document.getElementById('modal-roulette-number').innerText = currentVal !== null ? currentVal + " 미터" : "? 미터";
+            document.getElementById('custom-meter-input').value = currentVal !== null ? currentVal : '';
+            document.getElementById('roulette-modal').classList.remove('hidden');
+            document.getElementById('roulette-modal').classList.add('flex');
+        }
+
+        function closeRouletteModal() {
+            document.getElementById('roulette-modal').classList.remove('flex');
+            document.getElementById('roulette-modal').classList.add('hidden');
+        }
+
+        function setCustomMeter() {
+            playClickSound();
+            const valInput = document.getElementById('custom-meter-input');
+            const val = parseInt(valInput.value);
+            if (isNaN(val) || val < 1) {
+                showAlertModal("입력 오류", "1 이상의 유효한 숫자를 입력해주세요.", "⚠️");
+                return;
+            }
+            gameState.rouletteValues[gameState.currentRound] = val;
+            document.getElementById('modal-roulette-number').innerText = val + " 미터";
+            document.getElementById('bb-roulette-display').innerText = val + " 미터";
+            playWinSound();
+
+            setTimeout(() => {
+                closeRouletteModal();
+                renderManagementView();
+                renderBlackboardView();
+                if(currentStudent) renderStudentView();
+            }, 600);
+        }
+
+        function startSuspenseRoulette() {
+            const numDisplay = document.getElementById('modal-roulette-number');
+            const spinBtn = document.getElementById('modal-spin-btn');
+            spinBtn.disabled = true;
+
+            let speed = 50;
+            let counter = 0;
+            let totalSteps = 25;
+
+            function step() {
+                const randVal = Math.floor(Math.random() * 6) + 1;
+                numDisplay.innerText = randVal + " 미터";
+                playTickSound();
+                counter++;
+
+                if (counter < totalSteps) {
+                    speed += 15;
+                    setTimeout(step, speed);
+                } else {
+                    const finalVal = Math.floor(Math.random() * 6) + 1;
+                    numDisplay.innerText = finalVal + " 미터";
+                    gameState.rouletteValues[gameState.currentRound] = finalVal;
+                    
+                    document.getElementById('bb-roulette-display').innerText = finalVal + " 미터";
+                    playWinSound();
+                    spinBtn.disabled = false;
+
+                    setTimeout(() => {
+                        closeRouletteModal();
+                        renderManagementView();
+                        renderBlackboardView();
+                        if(currentStudent) renderStudentView();
+                    }, 1200);
+                }
+            }
+            step();
+        }
+
+        function cycleRank(teamName, roundNum) {
+            playClickSound();
+            if (gameState.roundFinished[roundNum]) {
+                showAlertModal("마감된 라운드", `${roundNum}라운드는 이미 종료(마감)되어 순위 수정이 불가합니다.`, "🔒");
+                return;
+            }
+            let currentRank = gameState.scores[teamName][roundNum] || 0;
+            let nextRank = 0;
+            if (currentRank === 0) nextRank = 1;
+            else if (currentRank === 1) nextRank = 2;
+            else if (currentRank === 2) nextRank = 3;
+            else if (currentRank === 3) nextRank = 0;
+
+            gameState.scores[teamName][roundNum] = nextRank;
+            renderBlackboardView();
+        }
+
+        function toggleRoundFinish(roundNum) {
+            playClickSound();
+            gameState.roundFinished[roundNum] = !gameState.roundFinished[roundNum];
+            renderBlackboardView();
+            if (currentStudent) renderStudentView();
+        }
+
+        function getPointsFromRank(rank) {
+            if (rank === 1) return 3;
+            if (rank === 2) return 2;
+            if (rank === 3) return 1;
+            return 0;
+        }
+
+        function resetScores() {
+            playClickSound();
+            Object.keys(gameState.scores).forEach(team => {
+                for (let r = 1; r <= 7; r++) {
+                    gameState.scores[team][r] = 0;
+                    gameState.roundFinished[r] = false;
+                }
+            });
+            renderBlackboardView();
+        }
+
+        function finishAllRounds() {
+            playClickSound();
+            let teamTotals = [];
+            Object.keys(teams).forEach(tName => {
+                let total = 0;
+                for (let r = 1; r <= gameState.totalRounds; r++) {
+                    total += getPointsFromRank(gameState.scores[tName][r] || 0);
+                }
+                teamTotals.push({ name: tName, score: total });
+            });
+
+            teamTotals.sort((a, b) => b.score - a.score);
+
+            const rankingsList = document.getElementById('final-rankings-list');
+            rankingsList.innerHTML = '';
+
+            teamTotals.forEach((item, index) => {
+                let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '👏';
+                rankingsList.innerHTML += `
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">${medal}</span>
+                            <span class="jua-font text-lg text-slate-800">${index + 1}위 : ${item.name}</span>
+                        </div>
+                        <span class="jua-font text-xl text-amber-600">${item.score}점</span>
+                    </div>
+                `;
+            });
+
+            document.getElementById('final-rankings-modal').classList.remove('hidden');
+            document.getElementById('final-rankings-modal').classList.add('flex');
+        }
+
+        function closeFinalRankingsModal() {
+            document.getElementById('final-rankings-modal').classList.remove('flex');
+            document.getElementById('final-rankings-modal').classList.add('hidden');
+        }
+
+        function teacherUpdateRunner(teamName, runnerName) {
+            playClickSound();
+            if (gameState.roundFinished[gameState.currentRound]) {
+                showAlertModal("마감", "이미 마감된 라운드는 출전 선수를 변경할 수 없습니다.", "🔒");
+                renderManagementView();
+                return;
+            }
+            gameState.runners[gameState.currentRound][teamName] = runnerName;
+            renderManagementView();
+            renderBlackboardView();
+            if (currentStudent) renderStudentView();
+        }
+
+        function renderManagementView() {
+            document.getElementById('total-rounds-display').innerText = gameState.totalRounds;
+            document.getElementById('current-round-mgmt').innerText = gameState.currentRound;
+            document.getElementById('mgmt-active-round-label').innerText = gameState.currentRound;
+
+            // Teams summary chips
+            const summaryContainer = document.getElementById('mgmt-teams-summary');
+            summaryContainer.innerHTML = '';
+            Object.keys(teams).forEach(tName => {
+                summaryContainer.innerHTML += `
+                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <div class="font-bold text-indigo-600">${tName}</div>
+                        <div class="text-slate-500 text-[10px] mt-0.5">${teams[tName].length}명</div>
+                    </div>
+                `;
+            });
+
+            // Runners grid with Teacher Select inputs
+            const runnersGrid = document.getElementById('mgmt-runners-grid');
+            runnersGrid.innerHTML = '';
+            let isFinished = gameState.roundFinished[gameState.currentRound];
+            let disabledAttr = isFinished ? 'disabled bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-50 text-slate-800';
+
+            Object.keys(teams).forEach(tName => {
+                let currentAssignedRunner = gameState.runners[gameState.currentRound][tName] || '';
+                let optionsHtml = `<option value="">선수 선택...</option>`;
+                teams[tName].forEach(member => {
+                    let selected = (member === currentAssignedRunner) ? 'selected' : '';
+                    optionsHtml += `<option value="${member}" ${selected}>${member}</option>`;
+                });
+
+                let statusBadge = isFinished ? '<span class="text-[9px] bg-red-50 text-red-600 px-2 py-0.5 rounded font-bold border border-red-100">마감됨</span>' : '<span class="text-[9px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-bold border border-indigo-100">지정 가능</span>';
+
+                runnersGrid.innerHTML += `
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between space-y-3">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs text-slate-500 font-bold">${tName}</span>
+                                ${statusBadge}
+                            </div>
+                            <select onchange="teacherUpdateRunner('${tName}', this.value)" ${disabledAttr} class="w-full border border-slate-200 rounded-xl p-2.5 text-sm font-bold focus:outline-none focus:border-indigo-500 ${disabledAttr}">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderBlackboardView() {
+            document.getElementById('bb-current-round').innerText = gameState.currentRound;
+            document.getElementById('bb-current-round-display').innerText = gameState.totalRounds;
+            const rVal = gameState.rouletteValues[gameState.currentRound];
+            document.getElementById('bb-roulette-display').innerText = rVal !== null ? rVal + " 미터" : "? 미터";
+
+            // Scoreboard dynamic header
+            const headerTr = document.getElementById('bb-scoreboard-header');
+            let headerHtml = `<th class="p-3 text-left">조 이름</th>`;
+            for (let r = 1; r <= gameState.totalRounds; r++) {
+                let isFinished = gameState.roundFinished[r];
+                let finishBtnText = isFinished ? '🔒 마감됨' : '🏁 끝';
+                let finishBtnClass = isFinished ? 'bg-slate-200 text-slate-600' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800';
+                headerHtml += `
+                    <th class="p-3">
+                        <div>${r}R</div>
+                        <button onclick="toggleRoundFinish(${r})" class="mt-1 text-[10px] px-2 py-0.5 rounded-md font-semibold transition ${finishBtnClass}">${finishBtnText}</button>
+                    </th>
+                `;
+            }
+            headerTr.innerHTML = headerHtml;
+
+            // Scoreboard table
+            const tbody = document.getElementById('bb-scoreboard-tbody');
+            tbody.innerHTML = '';
+
+            Object.keys(teams).forEach(tName => {
+                let rowHtml = `<tr class="hover:bg-emerald-50/60 transition"><td class="p-3 text-left font-bold text-emerald-800">${tName}</td>`;
+                
+                for (let r = 1; r <= gameState.totalRounds; r++) {
+                    let rank = gameState.scores[tName][r] || 0;
+                    let badgeClass = rank === 1 ? 'bg-amber-400 text-slate-900 font-bold border border-amber-300' : 
+                                     rank === 2 ? 'bg-slate-200 text-slate-800 font-bold border border-slate-300' : 
+                                     rank === 3 ? 'bg-amber-700/60 text-amber-100 font-bold border border-amber-600' : 'text-slate-400 bg-slate-50';
+                    
+                    let displayText = rank > 0 ? `${rank}등` : '-';
+                    rowHtml += `<td class="p-3"><button onclick="cycleRank('${tName}', ${r})" class="w-12 h-10 rounded-xl text-xs ${badgeClass} transition shadow-sm jua-font text-sm">${displayText}</button></td>`;
+                }
+
+                rowHtml += `</tr>`;
+                tbody.innerHTML += rowHtml;
+            });
+
+            // Runners grid for blackboard
+            const bbRunnersGrid = document.getElementById('bb-runners-grid');
+            bbRunnersGrid.innerHTML = '';
+            Object.keys(teams).forEach(tName => {
+                let runner = gameState.runners[gameState.currentRound][tName] || '미정';
+                bbRunnersGrid.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl border border-emerald-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="text-xs text-emerald-600 mb-1 font-bold">${tName} 출전 선수</div>
+                            <div class="jua-font text-lg text-emerald-900">${runner}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function studentLogin() {
+            playClickSound();
+            const tSelect = document.getElementById('login-team-select').value;
+            const nameInput = document.getElementById('login-name-input').value.trim();
+
+            if (!nameInput) {
+                showAlertModal("입력 오류", "이름을 입력해주세요.");
+                return;
+            }
+
+            if (!roster.includes(nameInput)) {
+                showAlertModal("명단 확인", "우리반 학생 명단에 없는 이름입니다. 올바른 이름을 입력해주세요.");
+                return;
+            }
+
+            let assignedTeam = getStudentTeam(nameInput);
+            if (assignedTeam && assignedTeam !== tSelect) {
+                tSelect = assignedTeam;
+            }
+
+            currentStudent = { name: nameInput, team: tSelect };
+            renderStudentView();
+        }
+
+        function getStudentTeam(studentName) {
+            for (let t in teams) {
+                if (teams[t].includes(studentName)) return t;
+            }
+            return null;
+        }
+
+        function studentLogout() {
+            playClickSound();
+            currentStudent = null;
+            renderStudentView();
+        }
+
+        function renderStudentView() {
+            if (currentStudent) {
+                let actualTeam = getStudentTeam(currentStudent.name);
+                if (actualTeam && actualTeam !== currentStudent.team) {
+                    let oldTeam = currentStudent.team;
+                    currentStudent = null;
+                    showAlertModal("조 편성 변경 안내", `소속 조가 [${oldTeam}]에서 [${actualTeam}](으)로 변경되었습니다. 다시 로그인해주세요!`, "🔄");
+                }
+            }
+
+            const loginCard = document.getElementById('student-login-card');
+            const workspace = document.getElementById('student-workspace');
+
+            if (!currentStudent) {
+                loginCard.classList.remove('hidden');
+                workspace.classList.add('hidden');
+            } else {
+                loginCard.classList.add('hidden');
+                workspace.classList.remove('hidden');
+
+                document.getElementById('student-display-name').innerText = currentStudent.name;
+                document.getElementById('student-badge-team').innerText = currentStudent.team;
+                document.getElementById('student-team-title').innerText = currentStudent.team;
+                document.getElementById('student-current-round').innerText = gameState.currentRound;
+
+                const rVal = gameState.rouletteValues[gameState.currentRound];
+                document.getElementById('student-roulette-val').innerText = rVal !== null ? rVal + " 미터" : "? 미터";
+
+                // Render N x 2 grid for Round Pre-registration / viewing
+                const roundsGrid = document.getElementById('student-rounds-grid');
+                roundsGrid.innerHTML = '';
+
+                for (let r = 1; r <= gameState.totalRounds; r++) {
+                    let currentAssignedRunner = gameState.runners[r][currentStudent.team] || '미정';
+                    let isFinished = gameState.roundFinished[r];
+                    let statusBadge = isFinished ? '<span class="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded font-bold border border-red-100">마감됨</span>' : '<span class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-bold border border-indigo-100">진행중</span>';
+
+                    let optionsHtml = `<option value="">선수 선택...</option>`;
+                    teams[currentStudent.team].forEach(member => {
+                        let selected = (member === currentAssignedRunner) ? 'selected' : '';
+                        optionsHtml += `<option value="${member}" ${selected}>${member}</option>`;
+                    });
+
+                    roundsGrid.innerHTML += `
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="jua-font text-base text-indigo-600">${r}라운드</span>
+                                ${statusBadge}
+                            </div>
+                            <select onchange="updateTeamRunner(${r}, this.value)" ${isFinished ? 'disabled' : ''} class="w-full border border-slate-200 rounded-xl p-2.5 text-sm font-bold focus:outline-none focus:border-indigo-500 bg-white ${isFinished ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'text-slate-800'}">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function updateTeamRunner(roundNum, runnerName) {
+            playClickSound();
+            if (!currentStudent) return;
+            if (gameState.roundFinished[roundNum]) {
+                showAlertModal("마감", "이미 마감된 라운드는 주자를 변경할 수 없습니다.", "🔒");
+                renderStudentView();
+                return;
+            }
+            gameState.runners[roundNum][currentStudent.team] = runnerName;
+            renderManagementView();
+            renderBlackboardView();
+        }
+
+        function openTeamModal() {
+            playClickSound();
+            const container = document.getElementById('modal-teams-container');
+            container.innerHTML = '';
+            
+            Object.keys(teams).forEach(tName => {
+                let membersList = teams[tName].map(m => `
+                    <div id="student-drag-${m}" 
+                         draggable="true" 
+                         ondragstart="handleDragStart(event, '${m}', '${tName}')"
+                         ondragend="handleDragEnd(event)"
+                         class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200 text-xs shadow-sm cursor-grab active:cursor-grabbing hover:border-indigo-400 hover:shadow transition select-none">
+                        <span class="font-bold text-slate-700 flex items-center space-x-1.5">
+                            <span class="text-slate-400 text-xs">⋮⋮</span>
+                            <span>${m}</span>
+                        </span>
+                        <select onchange="moveStudentTeam('${m}', '${tName}', this.value)" class="bg-slate-50 border border-slate-200 rounded-lg p-1 text-[11px] font-semibold text-indigo-600 focus:outline-none">
+                            <option value="1조" ${tName==='1조'?'selected':''}>1조</option>
+                            <option value="2조" ${tName==='2조'?'selected':''}>2조</option>
+                            <option value="3조" ${tName==='3조'?'selected':''}>3조</option>
+                            <option value="4조" ${tName==='4조'?'selected':''}>4조</option>
+                            <option value="5조" ${tName==='5조'?'selected':''}>5조</option>
+                        </select>
+                    </div>
+                `).join('');
+
+                container.innerHTML += `
+                    <div ondragover="handleDragOver(event)" 
+                         ondragleave="handleDragLeave(event)" 
+                         ondrop="handleDrop(event, '${tName}')" 
+                         class="team-drop-zone bg-slate-50 p-4 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col justify-between transition min-h-[220px]">
+                        <div>
+                            <h4 class="jua-font text-indigo-600 text-base mb-2 border-b border-slate-200 pb-1 flex justify-between items-center">
+                                <span>${tName}</span>
+                                <span class="text-xs font-normal text-slate-500 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">${teams[tName].length}명</span>
+                            </h4>
+                            <div class="space-y-1.5 mt-2 min-h-[140px]">${membersList || '<div class="text-xs text-slate-400 text-center py-8">여기로 드래그하세요</div>'}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('team-modal').classList.remove('hidden');
+            document.getElementById('team-modal').classList.add('flex');
+        }
+
+        // Drag & Drop Handlers
+        let draggedStudent = null;
+        let draggedFromTeam = null;
+
+        function handleDragStart(event, studentName, fromTeam) {
+            draggedStudent = studentName;
+            draggedFromTeam = fromTeam;
+            event.dataTransfer.setData('text/plain', JSON.stringify({ studentName, fromTeam }));
+            event.dataTransfer.effectAllowed = 'move';
+            
+            // Add visual cue to dragged element
+            setTimeout(() => {
+                if (event.target) event.target.classList.add('opacity-40', 'scale-95');
+            }, 0);
+        }
+
+        function handleDragEnd(event) {
+            if (event.target) event.target.classList.remove('opacity-40', 'scale-95');
+            draggedStudent = null;
+            draggedFromTeam = null;
+            
+            // Remove highlight from all drop zones
+            document.querySelectorAll('.team-drop-zone').forEach(zone => {
+                zone.classList.remove('border-indigo-400', 'bg-indigo-50/50');
+            });
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            const dropZone = event.currentTarget;
+            dropZone.classList.add('border-indigo-400', 'bg-indigo-50/50');
+        }
+
+        function handleDragLeave(event) {
+            const dropZone = event.currentTarget;
+            dropZone.classList.remove('border-indigo-400', 'bg-indigo-50/50');
+        }
+
+        function handleDrop(event, targetTeam) {
+            event.preventDefault();
+            const dropZone = event.currentTarget;
+            dropZone.classList.remove('border-indigo-400', 'bg-indigo-50/50');
+
+            if (!draggedStudent || !draggedFromTeam) return;
+            
+            if (draggedFromTeam !== targetTeam) {
+                moveStudentTeam(draggedStudent, draggedFromTeam, targetTeam);
+            }
+        }
+
+        function moveStudentTeam(studentName, oldTeam, newTeam) {
+            playClickSound();
+            if (oldTeam === newTeam) return;
+
+            teams[oldTeam] = teams[oldTeam].filter(s => s !== studentName);
+            teams[newTeam].push(studentName);
+
+            if (currentStudent && currentStudent.name === studentName) {
+                currentStudent = null;
+                showAlertModal("조 변경 알림", `교사 선생님에 의해 [${newTeam}](으)로 조가 변경되었습니다. 다시 로그인해주세요!`, "🔄");
+            }
+
+            openTeamModal();
+            renderManagementView();
+            renderBlackboardView();
+        }
+
+        function closeTeamModal() {
+            document.getElementById('team-modal').classList.remove('flex');
+            document.getElementById('team-modal').classList.add('hidden');
+            renderManagementView();
+        }
+
+        window.onload = function() {
+            renderManagementView();
+        }
+    </script>
+</body>
+</html>
