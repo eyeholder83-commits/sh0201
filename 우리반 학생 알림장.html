@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>학급 공지사항 시스템</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col antialiased">
+
+  <!-- 상단 헤더 -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xl shadow-sm">
+          🏫
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-900 text-base sm:text-lg leading-tight">우리 반 알림장</h1>
+          <p class="text-xs text-slate-500 hidden sm:block">학생 맞춤형 학급 공지사항 관리 시스템</p><p id="firebase-connection-status" class="text-xs text-slate-500">Firebase 연결 중...</p>
+        </div>
+      </div>
+
+      <!-- 모드 전환 버튼 -->
+      <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium">
+        <button 
+          id="btn-mode-student" 
+          onclick="switchMode('student')" 
+          class="px-3 py-1.5 rounded-lg transition-all font-semibold bg-white text-emerald-600 shadow-sm">
+          👨‍🎓 학생 모드
+        </button>
+        <button 
+          id="btn-mode-teacher" 
+          onclick="requestTeacherAccess()" 
+          class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1">
+          👩‍🏫 선생님 관리 모드
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 토스트 알림 컨테이너 -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4"></div>
+
+  <!-- 메인 컨텐츠 영역 -->
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 w-full">
+
+    <!-- ==================== 1. 학생 모드 뷰 ==================== -->
+    <section id="view-student" class="space-y-6">
+      
+      <!-- 학생 로그인 이전 화면 -->
+      <div id="student-login-box" class="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm max-w-md mx-auto my-8 text-center space-y-6">
+        <div class="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto text-3xl">
+          🔑
+        </div>
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">학생 로그인</h2>
+          <p class="text-slate-500 text-xs sm:text-sm mt-1">부여받은 고유번호를 입력하여 본인의 공지를 확인하세요.</p>
+        </div>
+
+        <form id="student-login-form" onsubmit="handleStudentLogin(event)" class="space-y-4">
+          <div>
+            <label for="pin-input" class="block text-xs font-semibold text-slate-600 mb-1 text-left">학생 고유번호</label>
+            <div class="relative">
+              <input 
+                type="password" 
+                inputmode="numeric" 
+                maxlength="10" 
+                id="pin-input" 
+                placeholder="고유번호 입력" 
+                class="w-full px-4 py-3 text-center text-lg tracking-widest font-mono rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                required
+              />
+              <button 
+                type="button" 
+                onclick="togglePinVisibility()" 
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm p-1">
+                👁️
+              </button>
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold rounded-xl transition-colors shadow-sm shadow-emerald-200 flex items-center justify-center gap-2">
+            공지사항 열람하기
+          </button>
+        </form>
+      </div>
+
+      <!-- 로그인 후 학생 대시보드 화면 -->
+      <div id="student-dashboard" class="hidden space-y-6">
+        <!-- 환영 메시지 카운터 카드 -->
+        <div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <span class="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-medium text-emerald-100 mb-1">학생 모드 접속 중</span>
+            <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">
+              반갑습니다, <span id="student-name-display" class="underline decoration-emerald-300 underline-offset-4">학생</span>님!
+            </h2>
+            <p class="text-emerald-100 text-xs sm:text-sm">오늘 도착한 학급 소식과 전달 사항을 확인해보세요.</p>
+          </div>
+          <button 
+            onclick="logoutStudent()" 
+            class="self-start sm:self-center px-4 py-2 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-xs sm:text-sm font-semibold rounded-xl border border-white/20 transition-colors">
+            로그아웃 🔒
+          </button>
+        </div>
+
+        <!-- 공지 필터 탭 -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex items-center gap-1">
+            <button 
+              id="filter-all" 
+              onclick="setStudentFilter('all')" 
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white">
+              전체 공지 (<span id="count-all">0</span>)
+            </button>
+            <button 
+              id="filter-public" 
+              onclick="setStudentFilter('public')" 
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200">
+              📢 학급 전체 (<span id="count-public">0</span>)
+            </button>
+            <button 
+              id="filter-personal" 
+              onclick="setStudentFilter('personal')" 
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200">
+              🔒 나만 보는 개별 알림 (<span id="count-personal">0</span>)
+            </button>
+          </div>
+          <span id="current-date-badge" class="text-xs text-slate-400 font-mono px-2"></span>
+        </div>
+
+        <!-- 학생 공지사항 피드 리스트 -->
+        <div id="student-notice-list" class="space-y-4">
+          <!-- JS로 개별/전체 공지가 동적 출력됨 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 2. 선생님 관리 모드 뷰 ==================== -->
+    <section id="view-teacher" class="hidden space-y-6">
+      <!-- 교사 서브 서브 탭 메뉴 -->
+      <div class="border-b border-slate-200 flex gap-6 text-sm font-semibold">
+        <button id="tab-btn-create" onclick="switchTeacherTab('create')" class="pb-3 border-b-2 border-emerald-600 text-emerald-600">
+          ✏️ 새 학급 공지사항 작성
+        </button>
+        <button id="tab-btn-list" onclick="switchTeacherTab('list')" class="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800">
+          📋 등록된 공지목록 (<span id="teacher-notice-count">0</span>)
+        </button>
+        <button id="tab-btn-students" onclick="switchTeacherTab('students')" class="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800">
+          👥 학생 명단 및 고유번호 관리
+        </button>
+      </div>
+
+      <!-- 탭 1: 새 공지사항 등록 / 수정 폼 -->
+      <div id="teacher-tab-create" class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div>
+            <h3 id="form-title" class="text-lg font-bold text-slate-900">새 학급 공지사항 등록</h3>
+            <p id="form-desc" class="text-xs text-slate-500">학급 전체 또는 지정된 학생에게만 전달되는 공지를 작성합니다.</p>
+          </div>
+          <span id="editing-badge" class="hidden px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">
+            수정 모드 작동 중
+          </span>
+        </div>
+
+        <form id="create-notice-form" onsubmit="handleCreateNotice(event)" class="space-y-5">
+          <!-- 제목 & 분류 직접 입력 -->
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div class="sm:col-span-1">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">분류 (직접 입력)</label>
+              <input 
+                type="text" 
+                id="notice-category" 
+                placeholder="예: 일반, 준비물, 과제, 행사..." 
+                list="category-suggestions"
+                class="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                required
+              />
+              <datalist id="category-suggestions">
+                <option value="일반">
+                <option value="준비물">
+                <option value="행사">
+                <option value="링크">
+                <option value="개별안내">
+                <option value="과제">
+                <option value="급식">
+              </datalist>
+            </div>
+            <div class="sm:col-span-3">
+              <label class="block text-xs font-semibold text-slate-600 mb-1">공지 제목</label>
+              <input 
+                type="text" 
+                id="notice-title" 
+                placeholder="공지 제목을 입력하세요 (예: 클래스툴 바로가기 안내)" 
+                class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                required
+              />
+            </div>
+          </div>
+
+          <!-- 수신 대상 선택 (라디오) -->
+          <div class="space-y-2">
+            <label class="block text-xs font-semibold text-slate-600">수신 대상 선택</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="flex items-center gap-3 p-3.5 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 transition-colors">
+                <input 
+                  type="radio" 
+                  name="targetType" 
+                  value="all" 
+                  id="target-all-radio"
+                  checked 
+                  onchange="toggleTargetSelector(false)" 
+                  class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" 
+                />
+                <div>
+                  <span class="text-sm font-bold text-slate-900 block">📢 전체 학생 공지</span>
+                  <span class="text-xs text-slate-500">모든 학생의 알림장에 공지가 공개됩니다.</span>
+                </div>
+              </label>
+
+              <label class="flex items-center gap-3 p-3.5 border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 transition-colors">
+                <input 
+                  type="radio" 
+                  name="targetType" 
+                  value="specific" 
+                  id="target-specific-radio"
+                  onchange="toggleTargetSelector(true)" 
+                  class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" 
+                />
+                <div>
+                  <span class="text-sm font-bold text-amber-800 block">🔒 특정 학생 개별 지정</span>
+                  <span class="text-xs text-slate-500">지정한 특정 학생(들)의 알림장에만 개별 전송됩니다.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- 특정 학생 선택용 그리드 (숨김/표시 처리) -->
+          <div id="target-students-wrapper" class="hidden p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-700">수신 대상 학생 지정 (<span id="selected-students-count">0</span>명 선택됨)</span>
+              <div class="flex gap-2">
+                <button type="button" onclick="selectAllStudents(true)" class="text-xs bg-white border border-slate-300 hover:bg-slate-100 px-2.5 py-1 rounded-lg text-slate-700">전체 선택</button>
+                <button type="button" onclick="selectAllStudents(false)" class="text-xs bg-white border border-slate-300 hover:bg-slate-100 px-2.5 py-1 rounded-lg text-slate-700">선택 해제</button>
+              </div>
+            </div>
+
+            <!-- 학생 22명 체크박스 목록 (12번 전학) -->
+            <div id="student-checkbox-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 pt-2">
+              <!-- JS로 체크박스 동적 생성 -->
+            </div>
+          </div>
+
+          <!-- 공지 내용 -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">공지 본문 내용</label>
+            <textarea 
+              id="notice-content" 
+              rows="6" 
+              placeholder="전달할 내용을 자세히 작성하세요. URL 링크를 포함하면 클릭할 수 있는 바로가기로 자동 변환됩니다." 
+              class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              required></textarea>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-2">
+            <button 
+              type="button" 
+              id="btn-cancel-edit" 
+              onclick="cancelEditNotice()" 
+              class="hidden px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors">
+              수정 취소
+            </button>
+            <button 
+              type="submit" 
+              id="btn-submit-notice" 
+              class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors">
+              🚀 공지사항 등록 및 전송
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- 탭 2: 등록된 공지목록 -->
+      <div id="teacher-tab-list" class="hidden space-y-4">
+        <div id="teacher-notice-cards" class="space-y-4">
+          <!-- JS에서 공지 목록 카드 생성 -->
+        </div>
+      </div>
+
+      <!-- 탭 3: 학생 명단 및 고유번호 관리 -->
+      <div id="teacher-tab-students" class="hidden bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">우리 반 학생 고유번호(PIN) 직접 관리</h3>
+            <p class="text-xs text-slate-500">교사가 학생 개별 고유번호를 수정할 수 있습니다. 최초 1회 ‘새 출석번호 Firebase에 적용’을 눌러 기존 명단을 변경하세요. 12번은 없습니다.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="migrateOfficialRoster()" class="px-3 py-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl">📋 새 출석번호 Firebase에 적용</button>
+            <button 
+              onclick="resetStudentPinsToDefault()" 
+              class="px-3 py-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl border border-slate-200 transition-colors">
+              🔄 초기 고유번호로 일괄 재설정
+            </button>
+          </div>
+        </div>
+
+        <!-- 검색 필터 -->
+        <div class="flex items-center justify-between max-w-sm">
+          <input 
+            type="text" 
+            id="search-student-input" 
+            placeholder="학생 이름 또는 번호 검색..." 
+            oninput="filterRosterTable()" 
+            class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          />
+        </div>
+
+        <!-- 학생 테이블 -->
+        <div class="overflow-x-auto rounded-2xl border border-slate-200">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+              <tr>
+                <th class="py-3.5 px-4">번호</th>
+                <th class="py-3.5 px-4">이름</th>
+                <th class="py-3.5 px-4">할당된 고유번호 (교사 직접 변경 가능)</th>
+                <th class="py-3.5 px-4 text-right">관리</th>
+              </tr>
+            </thead>
+            <tbody id="roster-table-body" class="divide-y divide-slate-100">
+              <!-- JS 로 생성 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 푸터 -->
+  <footer class="mt-auto py-6 border-t border-slate-200 text-center text-xs text-slate-400">
+    <p>우리 반 알림장 시스템 • 학생 22명 등록 완료</p>
+  </footer>
+
+  <!-- 모달: 선생님 관리자 비밀번호 확인 -->
+  <div id="teacher-auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden p-6 space-y-4">
+      <div class="text-center">
+        <div class="inline-flex p-3 bg-slate-100 rounded-2xl text-2xl mb-2">
+          🔐
+        </div>
+        <h4 class="text-lg font-bold text-slate-900">선생님 관리 모드 인증</h4>
+        <p class="text-xs text-slate-500 mt-1">관리자 비밀번호를 입력해주세요.</p>
+      </div>
+
+      <form id="teacher-auth-form" onsubmit="verifyTeacherPassword(event)" class="space-y-4">
+        <div class="relative">
+          <input 
+            type="password" 
+            id="teacher-password-input" 
+            inputmode="numeric" 
+            maxlength="10" 
+            placeholder="비밀번호 입력" 
+            class="w-full px-4 py-3 text-center text-lg tracking-widest font-mono rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+            required
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="flex gap-2">
+          <button 
+            type="button" 
+            onclick="closeTeacherAuthModal()" 
+            class="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors">
+            취소
+          </button>
+          <button 
+            type="submit" 
+            class="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors">
+            확인
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, remove, update } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCP6OtRU66DvqbkLZ6NHJKngcNUPhjmoJc",
+      authDomain: "class-notice-2026.firebaseapp.com",
+      databaseURL: "https://class-notice-2026-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "class-notice-2026",
+      storageBucket: "class-notice-2026.firebasestorage.app",
+      messagingSenderId: "565842914676",
+      appId: "1:565842914676:web:18ddbc9fffc8fed45b5021"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    // This path belongs only to the notice application, not to other class systems.
+    const studentsRef = ref(db, 'classNotice/students');
+    const noticesRef = ref(db, 'classNotice/notices');
+    let studentsLoaded = false;
+    let noticesLoaded = false;
+    let studentWritePending = false;
+    let noticeWritePending = false;
+    let studentRevision = 0;
+    let noticeRevision = 0;
+
+    function refreshViews() {
+      window.renderStudentCheckboxes();
+      window.renderRosterTable();
+      window.updateTeacherNoticeList();
+      if (window.currentStudent) {
+        window.currentStudent = window.students.find(s => s.id === window.currentStudent.id) || null;
+        if (window.currentStudent) window.renderStudentNotices();
+        else window.logoutStudent();
+      }
+    }
+    function connectionStatus(message, error = false) {
+      const el = document.getElementById('firebase-connection-status');
+      if (el) {
+        el.textContent = message;
+        el.className = error ? 'text-xs text-rose-600 font-semibold' : 'text-xs text-emerald-700 font-semibold';
+      }
+    }
+    // Write only the changed record. Never overwrite a shared collection from one device.
+    async function saveRecord(path, value, label) {
+      try {
+        if (value === null) await remove(ref(db, path));
+        else await set(ref(db, path), value);
+        connectionStatus('Firebase 연결됨 · 실시간 동기화');
+      } catch (err) {
+        console.error(label + ' 저장 실패', err);
+        connectionStatus('Firebase 저장 실패 · 규칙을 확인하세요', true);
+        window.showToast(label + ' Firebase 저장에 실패했습니다.', 'error');
+        throw err;
+      }
+    }
+    window.firebaseSaveStudent = function(student) {
+      if (!studentsLoaded) { window.showToast('학생 명단 로딩 중입니다.', 'error'); return; }
+      return saveRecord('classNotice/students/' + student.id, student, '학생 정보');
+    };
+    window.firebaseSaveNotice = function(notice) {
+      if (!noticesLoaded) { throw new Error('공지사항 로딩 중입니다. 잠시 후 다시 시도하세요.'); }
+      return saveRecord('classNotice/notices/' + notice.id, notice, '공지사항');
+    };
+    window.firebaseDeleteNotice = function(id) {
+      if (!noticesLoaded) { throw new Error('공지사항 로딩 중입니다. 잠시 후 다시 시도하세요.'); }
+      return saveRecord('classNotice/notices/' + id, null, '공지사항 삭제');
+    };
+    window.firebaseResetStudents = async function(data) {
+      if (!studentsLoaded) return;
+      try {
+        await Promise.all(data.map(student => saveRecord('classNotice/students/' + student.id, student, '학생 정보')));
+      } catch (err) { console.error(err); }
+    };
+    window.migrateOfficialRoster = async function() {
+      if (!studentsLoaded || !noticesLoaded) { window.showToast('Firebase 데이터 로딩이 끝난 후 다시 시도하세요.', 'error'); return; }
+      if (!confirm('출석번호를 새 명단으로 변경할까요? 기존 학생별 PIN과 개별 공지 수신 대상도 이름을 기준으로 함께 이전합니다.')) return;
+      const oldStudents = [...window.students];
+      const newStudents = window.getInitialStudents().map(s => ({...s, pin: String(oldStudents.find(o => o.name === s.name)?.pin || s.pin)}));
+      const oldIdToNewId = new Map(oldStudents.map(s => [Number(s.id), newStudents.find(n => n.name === s.name)?.id]));
+      const patches = {};
+      for (const old of oldStudents) patches['classNotice/students/' + old.id] = null;
+      for (const student of newStudents) patches['classNotice/students/' + student.id] = student;
+      for (const notice of window.notices) {
+        if (notice.targetType !== 'specific') continue;
+        const newIds = [...new Set((notice.targetStudentIds || []).map(id => oldIdToNewId.get(Number(id))).filter(id => id !== undefined))];
+        patches['classNotice/notices/' + notice.id + '/targetStudentIds'] = newIds;
+      }
+      try {
+        await update(ref(db), patches);
+        window.showToast('새 출석번호가 Firebase에 적용되었습니다.', 'success');
+      } catch (err) {
+        console.error('출석번호 변경 실패', err);
+        window.showToast('출석번호 저장에 실패했습니다. 다시 확인하세요.', 'error');
+      }
+    };
+    onValue(studentsRef, snapshot => {
+      studentsLoaded = true;
+      const data = snapshot.val();
+      if (Array.isArray(data) && data.length) window.students = data;
+      else if (data && typeof data === 'object') window.students = Object.values(data).filter(x => x && x.id);
+      else window.students = window.getInitialStudents();
+      localStorage.setItem('class_notice_students_v1', JSON.stringify(window.students));
+      // Existing database records remain untouched until teacher explicitly migrates them.
+      refreshViews();
+      connectionStatus('Firebase 연결됨 · 실시간 동기화');
+    }, error => { studentsLoaded = false; connectionStatus('학생 명단 읽기 실패 · 데이터베이스 규칙 확인', true); console.error(error); });
+    onValue(noticesRef, snapshot => {
+      noticesLoaded = true;
+      const data = snapshot.val();
+      if (Array.isArray(data)) window.notices = data.filter(Boolean);
+      else if (data && typeof data === 'object') window.notices = Object.values(data).filter(Boolean);
+      else window.notices = []; // New database: do not auto-publish demo notices.
+      localStorage.setItem('class_notice_data_v1', JSON.stringify(window.notices));
+      refreshViews();
+      connectionStatus('Firebase 연결됨 · 실시간 동기화');
+    }, error => { noticesLoaded = false; connectionStatus('공지사항 읽기 실패 · 데이터베이스 규칙 확인', true); console.error(error); });
+  </script>
+  <script>
+    // 1. 학생 명단 및 데이터 모델
+    const officialRoster = [
+      [1,"김서아"],[2,"김수현"],[3,"김윤아"],[4,"김태영"],
+      [5,"김하랑"],[6,"나예린"],[7,"박민제"],[8,"박선우"],
+      [9,"양수빈"],[10,"유소영"],[11,"이대운"],
+      [13,"이새봄"],[14,"이서율"],[15,"이진서"],[16,"이채원"],
+      [17,"이초은"],[18,"이태환"],[19,"이하린"],[20,"한규빈"],
+      [21,"한유은"],[22,"현지우"],[23,"황지우"]
+    ];
+    const initialStudentNames = officialRoster.map(([,name]) => name);
+
+    const STORAGE_KEY_STUDENTS = 'class_notice_students_v1';
+    const STORAGE_KEY_NOTICES = 'class_notice_data_v1';
+    const TEACHER_PASSWORD = "5658"; // 선생님 관리 모드 비밀번호
+
+    function getInitialStudents() {
+      return officialRoster.map(([id, name]) => ({ id, name, pin: String(1000 + id) }));
+    }
+
+    function loadStudents() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_STUDENTS);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length === initialStudentNames.length) {
+            return officialRoster.map(([id,name]) => ({ id, name, pin: String(parsed.find(s => s.name === name)?.pin || (1000 + id)) }));
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load students", e);
+      }
+      return getInitialStudents();
+    }
+
+    function loadNotices() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_NOTICES);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load notices", e);
+      }
+      return [
+        {
+          id: 1,
+          title: "클래스툴",
+          content: "https://ctool.co.kr/student/신흥21",
+          category: "링크",
+          targetType: "all",
+          targetStudentIds: [],
+          date: "2026-09-14"
+        },
+        {
+          id: 2,
+          title: "🌿 다음 주 금요일 학급 봄 현장체험학습(소풍) 안내",
+          content: "다음 주 금요일 국립생태원으로 봄 현장체험학습을 떠납니다.\n- 준비물: 편한 복장, 운동화, 개인 물병, 필기도구\n- 집결 시간: 오전 8시 40분까지 각자 교실로 등교\n가정통신문 확인 후 학부모 동의서를 수요일까지 제출해 주세요!",
+          category: "행사",
+          targetType: "all",
+          targetStudentIds: [],
+          date: "2026-09-07"
+        },
+        {
+          id: 3,
+          title: "📚 학급 도서 도우미 회의 및 정리 안내",
+          content: "이번 주 학급 도서정리 도우미 학생들에게 안내합니다.\n오늘 점심시간 12시 40분에 학급문고 앞에서 간단한 도서 정리 회의가 있으니 늦지 않게 모여주세요.",
+          category: "개별안내",
+          targetType: "specific",
+          targetStudentIds: [1, 13], // 김서아(1), 박민제(13)
+          date: "2026-09-07"
+        }
+      ];
+    }
+
+    let students = loadStudents();
+    let notices = loadNotices();
+    // Expose shared state to the Firebase module while retaining existing handlers.
+    Object.defineProperty(window, "students", {get: () => students, set: v => { students = v; }});
+    Object.defineProperty(window, "notices", {get: () => notices, set: v => { notices = v; }});
+    Object.defineProperty(window, "currentStudent", {get: () => currentStudent, set: v => { currentStudent = v; }});
+
+    function saveStudents() {
+      // Student records are saved individually by their edit handlers.
+      try {
+        localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(students));
+      } catch (e) {
+        console.error("Failed to save students", e);
+      }
+    }
+
+    function saveNotices() {
+      // Notice records are saved individually by their edit handlers.
+      try {
+        localStorage.setItem(STORAGE_KEY_NOTICES, JSON.stringify(notices));
+      } catch (e) {
+        console.error("Failed to save notices", e);
+      }
+    }
+
+    let currentMode = 'student'; // 'student' | 'teacher'
+    const STUDENT_SESSION_KEY = 'class_notice_student_session_id';
+    let currentStudent = null;   // 로그인한 학생 객체
+    let studentNoticeFilter = 'all'; // 'all' | 'public' | 'personal'
+    let isTeacherAuthenticated = false; // 선생님 관리자 인증 여부
+    let editingNoticeId = null; // 수정 중인 공지 ID
+
+    window.onload = function() {
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+      const dateBadge = document.getElementById('current-date-badge');
+      if (dateBadge) dateBadge.textContent = `기준일: ${dateStr}`;
+
+      renderStudentCheckboxes();
+      renderRosterTable();
+      updateTeacherNoticeList();
+      restoreStudentSession();
+    };
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      
+      const colors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-rose-600 text-white',
+        info: 'bg-slate-800 text-white'
+      };
+
+      toast.className = `${colors[type] || colors.info} px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all transform duration-300 opacity-0 translate-y-2 pointer-events-auto flex items-center gap-2`;
+      toast.innerHTML = `<span>${message}</span>`;
+      
+      container.appendChild(toast);
+      
+      requestAnimationFrame(() => {
+        toast.classList.remove('opacity-0', 'translate-y-2');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function requestTeacherAccess() {
+      if (isTeacherAuthenticated) {
+        switchMode('teacher');
+      } else {
+        const modal = document.getElementById('teacher-auth-modal');
+        const input = document.getElementById('teacher-password-input');
+        if (modal && input) {
+          input.value = '';
+          modal.classList.remove('hidden');
+          setTimeout(() => input.focus(), 100);
+        }
+      }
+    }
+
+    function closeTeacherAuthModal() {
+      const modal = document.getElementById('teacher-auth-modal');
+      const input = document.getElementById('teacher-password-input');
+      if (modal) modal.classList.add('hidden');
+      if (input) input.value = '';
+    }
+
+    function verifyTeacherPassword(event) {
+      if (event) event.preventDefault();
+      const input = document.getElementById('teacher-password-input');
+      if (input && input.value === TEACHER_PASSWORD) {
+        isTeacherAuthenticated = true;
+        closeTeacherAuthModal();
+        switchMode('teacher');
+        showToast('선생님 관리 모드로 전환되었습니다.', 'success');
+      } else {
+        showToast('비밀번호가 올바르지 않습니다. 다시 입력해주세요.', 'error');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+      }
+    }
+
+    function switchMode(mode) {
+      currentMode = mode;
+      const btnStudent = document.getElementById('btn-mode-student');
+      const btnTeacher = document.getElementById('btn-mode-teacher');
+      const viewStudent = document.getElementById('view-student');
+      const viewTeacher = document.getElementById('view-teacher');
+
+      if (mode === 'student') {
+        if (btnStudent) btnStudent.className = "px-3 py-1.5 rounded-lg transition-all font-semibold bg-white text-emerald-600 shadow-sm";
+        if (btnTeacher) btnTeacher.className = "px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1";
+        if (viewStudent) viewStudent.classList.remove('hidden');
+        if (viewTeacher) viewTeacher.classList.add('hidden');
+      } else {
+        if (btnTeacher) btnTeacher.className = "px-3 py-1.5 rounded-lg transition-all font-semibold bg-white text-emerald-600 shadow-sm flex items-center gap-1";
+        if (btnStudent) btnStudent.className = "px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900";
+        if (viewTeacher) viewTeacher.classList.remove('hidden');
+        if (viewStudent) viewStudent.classList.add('hidden');
+        updateTeacherNoticeList();
+      }
+    }
+
+    function togglePinVisibility() {
+      const pinInput = document.getElementById('pin-input');
+      if (pinInput) {
+        pinInput.type = pinInput.type === 'password' ? 'text' : 'password';
+      }
+    }
+
+    function restoreStudentSession() {
+      // sessionStorage is isolated by browser tab and normally cleared when the tab/window closes.
+      const storedId = sessionStorage.getItem(STUDENT_SESSION_KEY);
+      if (!storedId) return;
+      const student = students.find(s => String(s.id) === storedId);
+      if (!student) {
+        sessionStorage.removeItem(STUDENT_SESSION_KEY);
+        return;
+      }
+      currentStudent = student;
+      document.getElementById('student-login-box')?.classList.add('hidden');
+      document.getElementById('student-dashboard')?.classList.remove('hidden');
+      const nameDisplay = document.getElementById('student-name-display');
+      if (nameDisplay) nameDisplay.textContent = `${student.name} 학생`;
+      renderStudentNotices();
+    }
+
+    function handleStudentLogin(e) {
+      if (e) e.preventDefault();
+      const pinInput = document.getElementById('pin-input');
+      if (!pinInput) return;
+      const pin = pinInput.value.trim();
+      
+      const foundStudent = students.find(s => s.pin === pin);
+      if (!foundStudent) {
+        showToast('일치하는 학생 고유번호를 찾을 수 없습니다.', 'error');
+        return;
+      }
+
+      currentStudent = foundStudent;
+      sessionStorage.setItem(STUDENT_SESSION_KEY, String(foundStudent.id));
+      pinInput.value = '';
+      
+      document.getElementById('student-login-box')?.classList.add('hidden');
+      document.getElementById('student-dashboard')?.classList.remove('hidden');
+      const nameDisplay = document.getElementById('student-name-display');
+      if (nameDisplay) nameDisplay.textContent = `${foundStudent.name} 학생`;
+      
+      renderStudentNotices();
+    }
+
+    function logoutStudent() {
+      sessionStorage.removeItem(STUDENT_SESSION_KEY);
+      currentStudent = null;
+      document.getElementById('student-login-box')?.classList.remove('hidden');
+      document.getElementById('student-dashboard')?.classList.add('hidden');
+    }
+
+    function setStudentFilter(filter) {
+      studentNoticeFilter = filter;
+      
+      const filterBtns = {
+        all: document.getElementById('filter-all'),
+        public: document.getElementById('filter-public'),
+        personal: document.getElementById('filter-personal')
+      };
+
+      Object.keys(filterBtns).forEach(key => {
+        if (filterBtns[key]) {
+          if (key === filter) {
+            filterBtns[key].className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white";
+          } else {
+            filterBtns[key].className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200";
+          }
+        }
+      });
+
+      renderStudentNotices();
+    }
+
+    function renderStudentNotices() {
+      if (!currentStudent) return;
+      const listContainer = document.getElementById('student-notice-list');
+      if (!listContainer) return;
+      listContainer.innerHTML = '';
+
+      const studentNotices = notices.filter(n => {
+        if (n.targetType === 'all') return true;
+        if (n.targetType === 'specific' && n.targetStudentIds && n.targetStudentIds.includes(currentStudent.id)) return true;
+        return false;
+      });
+
+      const publicCount = studentNotices.filter(n => n.targetType === 'all').length;
+      const personalCount = studentNotices.filter(n => n.targetType === 'specific').length;
+
+      const countAll = document.getElementById('count-all');
+      const countPublic = document.getElementById('count-public');
+      const countPersonal = document.getElementById('count-personal');
+
+      if (countAll) countAll.textContent = studentNotices.length;
+      if (countPublic) countPublic.textContent = publicCount;
+      if (countPersonal) countPersonal.textContent = personalCount;
+
+      let displayNotices = studentNotices;
+      if (studentNoticeFilter === 'public') {
+        displayNotices = studentNotices.filter(n => n.targetType === 'all');
+      } else if (studentNoticeFilter === 'personal') {
+        displayNotices = studentNotices.filter(n => n.targetType === 'specific');
+      }
+
+      displayNotices.sort((a, b) => {
+        const dateDiff = new Date(b.date) - new Date(a.date);
+        if (dateDiff !== 0) return dateDiff;
+        return b.id - a.id;
+      });
+
+      if (displayNotices.length === 0) {
+        listContainer.innerHTML = `
+          <div class="bg-white rounded-2xl p-12 text-center border border-slate-200">
+            <div class="text-4xl mb-3">📬</div>
+            <p class="text-slate-600 font-semibold">확인할 공지사항이 없습니다.</p>
+            <p class="text-slate-400 text-xs mt-1">새로운 공지가 등록되면 이곳에 표시됩니다.</p>
+          </div>
+        `;
+        return;
+      }
+
+      displayNotices.forEach(notice => {
+        const isPersonal = notice.targetType === 'specific';
+        const card = document.createElement('div');
+        card.className = `rounded-2xl p-5 sm:p-6 transition-all border ${
+          isPersonal 
+            ? 'bg-amber-50/40 border-amber-200 shadow-sm shadow-amber-50' 
+            : 'bg-white border-slate-200 shadow-sm'
+        }`;
+
+        const badgeHtml = isPersonal
+          ? `<span class="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-md">🔒 ${currentStudent.name} 학생 개별 알림</span>`
+          : `<span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-md">📢 학급 전체 공지</span>`;
+
+        card.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              ${badgeHtml}
+              <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">${escapeHtml(notice.category)}</span>
+            </div>
+            <span class="text-xs text-slate-400">${notice.date}</span>
+          </div>
+          <h3 class="text-base sm:text-lg font-bold text-slate-900 mb-2 leading-snug">${escapeHtml(notice.title)}</h3>
+          <div class="text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-white/80 p-4 rounded-xl border border-slate-100">${formatNoticeContent(notice.content)}</div>
+        `;
+        listContainer.appendChild(card);
+      });
+    }
+
+    function switchTeacherTab(tab) {
+      const tabs = ['create', 'list', 'students'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const content = document.getElementById(`teacher-tab-${t}`);
+        if (btn && content) {
+          if (t === tab) {
+            btn.className = "pb-3 border-b-2 border-emerald-600 text-emerald-600";
+            content.classList.remove('hidden');
+          } else {
+            btn.className = "pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800";
+            content.classList.add('hidden');
+          }
+        }
+      });
+
+      if (tab === 'list') {
+        updateTeacherNoticeList();
+      }
+    }
+
+    function toggleTargetSelector(showSpecific) {
+      const wrapper = document.getElementById('target-students-wrapper');
+      if (wrapper) {
+        if (showSpecific) {
+          wrapper.classList.remove('hidden');
+        } else {
+          wrapper.classList.add('hidden');
+        }
+      }
+    }
+
+    function renderStudentCheckboxes() {
+      const grid = document.getElementById('student-checkbox-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      students.forEach(student => {
+        const label = document.createElement('label');
+        label.className = "flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 cursor-pointer text-xs transition-colors";
+        label.innerHTML = `
+          <input 
+            type="checkbox" 
+            name="selectedStudents" 
+            value="${student.id}" 
+            onchange="updateSelectedCount()" 
+            class="w-3.5 h-3.5 text-emerald-600 rounded focus:ring-emerald-500"
+          />
+          <span class="font-medium text-slate-800 truncate">${student.name}</span>
+        `;
+        grid.appendChild(label);
+      });
+    }
+
+    function updateSelectedCount() {
+      const checkedBoxes = document.querySelectorAll('input[name="selectedStudents"]:checked');
+      const countEl = document.getElementById('selected-students-count');
+      if (countEl) countEl.textContent = checkedBoxes.length;
+    }
+
+    function selectAllStudents(select) {
+      const checkboxes = document.querySelectorAll('input[name="selectedStudents"]');
+      checkboxes.forEach(cb => cb.checked = select);
+      updateSelectedCount();
+    }
+
+    function resetCreateForm() {
+      cancelEditNotice();
+    }
+
+    async function handleCreateNotice(e) {
+      e.preventDefault();
+
+      const titleInput = document.getElementById('notice-title');
+      const contentInput = document.getElementById('notice-content');
+      const categoryInput = document.getElementById('notice-category');
+      const targetRadio = document.querySelector('input[name="targetType"]:checked');
+
+      if (!titleInput || !contentInput || !categoryInput || !targetRadio) return;
+
+      const title = titleInput.value.trim();
+      const content = contentInput.value.trim();
+      const category = categoryInput.value.trim() || '일반';
+      const targetType = targetRadio.value;
+
+      let targetStudentIds = [];
+      if (targetType === 'specific') {
+        const checkedBoxes = document.querySelectorAll('input[name="selectedStudents"]:checked');
+        if (checkedBoxes.length === 0) {
+          showToast('공지를 수신할 학생을 1명 이상 선택해주세요!', 'error');
+          return;
+        }
+        targetStudentIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+      }
+
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+      const isEditing = editingNoticeId !== null;
+      const previous = isEditing ? notices.find(n => n.id === editingNoticeId) : null;
+      if (isEditing && !previous) {
+        showToast('수정할 공지사항을 찾지 못했습니다.', 'error');
+        return;
+      }
+      const record = {
+        id: isEditing ? editingNoticeId : Date.now(),
+        title, content, category, targetType, targetStudentIds, date: dateStr
+      };
+      const submitBtn = document.getElementById('btn-submit-notice');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '저장 중...'; }
+      try {
+        if (typeof window.firebaseSaveNotice !== 'function') {
+          throw new Error('Firebase 저장 기능이 아직 준비되지 않았습니다.');
+        }
+        await window.firebaseSaveNotice(record);
+        // Firebase is the source of truth. onValue refreshes all clients.
+        showToast(isEditing ? '공지사항이 수정되었습니다!' : '공지사항이 등록되었습니다!', 'success');
+        cancelEditNotice();
+        switchTeacherTab('list');
+      } catch (error) {
+        console.error('공지사항 등록 오류:', error);
+        showToast('등록 실패: Firebase 연결 및 규칙을 확인하세요.', 'error');
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    }
+
+    function startEditNotice(id) {
+      const notice = notices.find(n => n.id === id);
+      if (!notice) return;
+
+      editingNoticeId = id;
+
+      document.getElementById('form-title').textContent = '공지사항 수정하기';
+      document.getElementById('form-desc').textContent = '등록된 공지 내용을 변경한 후 수정을 완료하세요.';
+      document.getElementById('editing-badge')?.classList.remove('hidden');
+      document.getElementById('btn-cancel-edit')?.classList.remove('hidden');
+      
+      const submitBtn = document.getElementById('btn-submit-notice');
+      if (submitBtn) submitBtn.innerHTML = '💾 수정 사항 저장';
+
+      document.getElementById('notice-title').value = notice.title;
+      document.getElementById('notice-content').value = notice.content;
+      document.getElementById('notice-category').value = notice.category;
+
+      if (notice.targetType === 'specific') {
+        const specificRadio = document.getElementById('target-specific-radio');
+        if (specificRadio) specificRadio.checked = true;
+        toggleTargetSelector(true);
+        const checkboxes = document.querySelectorAll('input[name="selectedStudents"]');
+        checkboxes.forEach(cb => {
+          cb.checked = notice.targetStudentIds.includes(parseInt(cb.value));
+        });
+      } else {
+        const allRadio = document.getElementById('target-all-radio');
+        if (allRadio) allRadio.checked = true;
+        toggleTargetSelector(false);
+        selectAllStudents(false);
+      }
+      updateSelectedCount();
+
+      switchTeacherTab('create');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelEditNotice() {
+      editingNoticeId = null;
+      const form = document.getElementById('create-notice-form');
+      if (form) form.reset();
+      
+      const titleEl = document.getElementById('form-title');
+      const descEl = document.getElementById('form-desc');
+      if (titleEl) titleEl.textContent = '새 학급 공지사항 등록';
+      if (descEl) descEl.textContent = '학급 전체 또는 지정된 학생에게만 전달되는 공지를 작성합니다.';
+      
+      document.getElementById('editing-badge')?.classList.add('hidden');
+      document.getElementById('btn-cancel-edit')?.classList.add('hidden');
+      
+      const submitBtn = document.getElementById('btn-submit-notice');
+      if (submitBtn) submitBtn.innerHTML = '🚀 공지사항 등록 및 전송';
+      
+      const allRadio = document.getElementById('target-all-radio');
+      if (allRadio) allRadio.checked = true;
+      toggleTargetSelector(false);
+      selectAllStudents(false);
+    }
+
+    function updateTeacherNoticeList() {
+      const container = document.getElementById('teacher-notice-cards');
+      const countEl = document.getElementById('teacher-notice-count');
+      if (countEl) countEl.textContent = notices.length;
+
+      if (!container) return;
+      container.innerHTML = '';
+
+      let filteredNotices = [...notices].sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        if (dateA !== dateB) return dateB - dateA;
+        return b.id - a.id;
+      });
+
+      if (filteredNotices.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-12 text-center border border-slate-200">
+            <p class="text-slate-500 font-medium">등록된 공지사항이 없습니다.</p>
+          </div>
+        `;
+        return;
+      }
+
+      filteredNotices.forEach(notice => {
+        const isPersonal = notice.targetType === 'specific';
+        let audienceBadge = '';
+
+        if (isPersonal) {
+          const names = notice.targetStudentIds
+            .map(id => students.find(s => s.id === id)?.name)
+            .filter(Boolean)
+            .join(', ');
+          audienceBadge = `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-md font-bold">🔒 개별 지정 (${notice.targetStudentIds.length}명: ${escapeHtml(names)})</span>`;
+        } else {
+          audienceBadge = `<span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-md font-bold">📢 학급 전체 (22명)</span>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = "bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-start justify-between gap-4";
+        card.innerHTML = `
+          <div class="space-y-2 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              ${audienceBadge}
+              <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">${escapeHtml(notice.category)}</span>
+              <span class="text-xs text-slate-400 ml-1">${notice.date}</span>
+            </div>
+            <h4 class="font-bold text-slate-900 text-base">${escapeHtml(notice.title)}</h4>
+            <div class="text-xs sm:text-sm text-slate-600 whitespace-pre-line line-clamp-3 bg-slate-50 p-3 rounded-xl">${formatNoticeContent(notice.content)}</div>
+          </div>
+          <div class="flex sm:flex-col gap-2 self-end sm:self-start">
+            <button 
+              type="button"
+              onclick="startEditNotice(${notice.id})" 
+              class="px-3 py-1.5 text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 font-semibold transition-colors flex items-center gap-1">
+              ✏️ 수정
+            </button>
+            <button 
+              type="button"
+              onclick="deleteNotice(${notice.id})" 
+              class="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 font-medium transition-colors">
+              삭제
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function deleteNotice(id) {
+      notices = notices.filter(n => n.id !== id);
+      if (window.firebaseDeleteNotice) window.firebaseDeleteNotice(id);
+      saveNotices();
+      showToast('공지사항이 삭제되었습니다.', 'info');
+      updateTeacherNoticeList();
+      if (currentStudent) {
+        renderStudentNotices();
+      }
+    }
+
+    function renderRosterTable(query = '') {
+      const tbody = document.getElementById('roster-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const filtered = students.filter(s => s.name.includes(query) || s.pin.includes(query));
+
+      filtered.forEach(student => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-colors";
+        tr.innerHTML = `
+          <td class="py-3 px-4 text-slate-500 font-medium">${student.id}</td>
+          <td class="py-3 px-4 font-bold text-slate-900">${escapeHtml(student.name)}</td>
+          <td class="py-3 px-4">
+            <div class="flex items-center gap-2">
+              <input 
+                type="text" 
+                inputmode="numeric" 
+                maxlength="10" 
+                id="pin-edit-input-${student.id}" 
+                value="${escapeHtml(student.pin)}" 
+                class="w-32 px-2.5 py-1 text-sm font-mono font-semibold text-slate-800 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center"
+                placeholder="고유번호"
+              />
+              <button 
+                type="button" 
+                onclick="updateStudentPin(${student.id})" 
+                class="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors shadow-sm">
+                저장
+              </button>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-right">
+            <span class="text-xs text-slate-400">교사 수정 가능</span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateStudentPin(studentId) {
+      const input = document.getElementById(`pin-edit-input-${studentId}`);
+      if (!input) return;
+
+      const newPin = input.value.trim();
+      if (!newPin) {
+        showToast('고유번호를 입력해주세요.', 'error');
+        return;
+      }
+
+      const isDuplicate = students.some(s => s.id !== studentId && s.pin === newPin);
+      if (isDuplicate) {
+        showToast('이미 다른 학생에게 할당된 고유번호입니다.', 'error');
+        return;
+      }
+
+      const targetStudent = students.find(s => s.id === studentId);
+      if (targetStudent) {
+        targetStudent.pin = newPin;
+        if (window.firebaseSaveStudent) window.firebaseSaveStudent(targetStudent);
+        saveStudents();
+        showToast(`${targetStudent.name} 학생의 고유번호가 [${newPin}] (으)로 변경되었습니다!`, 'success');
+      }
+    }
+
+    function resetStudentPinsToDefault() {
+      students = getInitialStudents();
+      if (window.firebaseResetStudents) window.firebaseResetStudents(students);
+      saveStudents();
+      renderRosterTable();
+      showToast('모든 학생의 고유번호가 초기값(1001~1023, 1012 제외)으로 재설정되었습니다.', 'info');
+    }
+
+    function filterRosterTable() {
+      const searchInput = document.getElementById('search-student-input');
+      const query = searchInput ? searchInput.value.trim() : '';
+      renderRosterTable(query);
+    }
+
+    function escapeHtml(string) {
+      if (!string) return '';
+      return String(string)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatNoticeContent(text) {
+      const escaped = escapeHtml(text);
+      const urlPattern = /(https?:\/\/[^\s]+)/g;
+      return escaped.replace(urlPattern, url => {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-emerald-600 hover:text-emerald-800 underline font-semibold inline-flex items-center gap-0.5 break-all hover:bg-emerald-50 px-1 rounded transition-colors">${url} <span class="text-xs font-normal">↗</span></a>`;
+      });
+    }
+  </script>
+</body>
+</html>
