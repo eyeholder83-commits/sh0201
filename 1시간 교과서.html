@@ -1,0 +1,243 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>1시간을 알아볼까요 - 시각 학습</title><style>body{font-family:'Malgun Gothic',sans-serif;background:#f5f8ff;margin:0;color:#17243b}.wrap{max-width:780px;margin:25px auto;padding:22px;background:white;border-radius:22px;box-shadow:0 8px 30px #dce4f2}h1{text-align:center;font-size:27px}.story{font-size:21px;line-height:1.8;background:#edf5ff;border-radius:15px;padding:17px}.task{text-align:center;font-size:23px;font-weight:bold;margin:22px 0 8px}svg{display:block;width:min(94vw,430px);height:auto;margin:auto;touch-action:none;user-select:none}.controls{display:flex;justify-content:center;gap:15px;flex-wrap:wrap;margin:16px}.control{background:#f4f6fa;padding:12px 16px;border-radius:14px;text-align:center}.control strong{display:block;margin-bottom:8px}button{border:0;border-radius:12px;padding:12px 18px;font-size:19px;font-weight:bold;cursor:pointer;background:#e0e9f8}button:active{transform:scale(.97)}.check{background:#2563eb;color:white}.reset{background:#e8edf4}#result{text-align:center;min-height:34px;font-size:23px;font-weight:bold}.hint{text-align:center;color:#64748b;font-size:16px} .minute{fill:#ffedc6;stroke:#ffbb3e;stroke-width:1.3}.minute-choice{cursor:pointer;touch-action:manipulation}.minute-choice.selected .minute{stroke:#e11d48;stroke-width:4.5}.hand{cursor:grab}.hand:active{cursor:grabbing}.timebar{max-width:410px;margin:12px auto 8px;padding:5px 12px 9px}.timebar-labels{display:flex;justify-content:space-between;align-items:end;font-size:17px;color:#152238;margin-bottom:2px}.timebar-track{height:18px;background:#d5effb;border:1.5px solid #344256;display:grid;grid-template-columns:repeat(6,1fr);position:relative}.timebar-track>span:not(:last-child){border-right:1.5px dotted #334155}.timebar-progress{position:absolute;left:0;top:0;bottom:0;width:0;background:#2696e8;pointer-events:none;transition:width .15s}.timebar-now{position:absolute;top:-4px;bottom:-4px;width:3px;background:#e11d48;left:0;pointer-events:none;transition:left .15s}</style><style>.pages{display:flex;gap:10px;justify-content:center;margin-bottom:20px}.pages button.active{background:#2563eb;color:#fff}.plane-title{font-size:24px;font-weight:700}.flight{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:22px 0}.flight-clock{width:145px;flex-shrink:0}.flight-clock svg{width:100%;touch-action:auto}.flight-clock p{text-align:center;font-weight:bold;margin:5px 0}.flight-middle{flex:1;text-align:center;font-size:18px}.flight-line{border-top:2px solid #e983b3;margin:12px 0}.flight-time{display:flex;justify-content:space-between;font-size:17px}.plane-bar{display:grid;grid-template-columns:repeat(var(--cells,24),minmax(0,1fr));border:2px solid #555;height:48px;margin:4px 0 18px}.plane-cell{background:#fff;border:0;border-radius:0;padding:0;min-width:0;cursor:pointer;touch-action:manipulation;appearance:none;box-shadow:none;transform:none!important}.plane-cell.hour-end{border-right:2px solid #555}.plane-cell.ten-end{border-right:1px dashed #666}.plane-cell:last-child{border-right:0}.plane-cell.filled{background:#77c9ee}.plane-bar{position:relative;overflow:hidden;box-sizing:border-box;touch-action:none;user-select:none}.plane-grid-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:block}.plane-labels{display:grid;grid-template-columns:repeat(var(--cells,24),minmax(0,1fr));font-size:14px;text-align:center;position:relative;margin-top:28px}.plane-labels span{position:relative;white-space:nowrap;transform:translateX(-50%);font-size:12px}.plane-labels span:first-child{font-size:18px;font-weight:bold}.plane-labels .hour-label{font-size:18px;font-weight:bold}.answer-line{display:flex;align-items:center;justify-content:flex-end;gap:7px;font-size:22px;flex-wrap:wrap}.answer-line input{width:70px;height:46px;border:2px solid #74c7f5;border-radius:6px;font-size:23px;text-align:center}.plane-note{font-size:19px;line-height:1.6;margin:22px 0}.flight-caption{color:#667085;font-size:15px}@media(max-width:530px){.flight-clock{width:95px}.flight-middle{font-size:13px}.plane-labels{font-size:10px}.plane-labels .hour-label,.plane-labels span:first-child{font-size:13px}.answer-line input{width:55px}.plane-title{font-size:20px}}</style><style>.performance-clocks{display:flex;align-items:center;justify-content:center;gap:35px;margin:50px auto 30px;flex-wrap:wrap}.clock-label{text-align:center;font-size:24px;margin-bottom:14px}.digital-clock{font-family:Consolas,monospace;font-size:45px;letter-spacing:-3px;color:#222;background:#fff;border:6px solid #ffca4c;border-radius:13px;padding:8px 16px;box-shadow:0 5px 0 #f5a74a}.time-arrow{font-size:38px;color:#9399a4;margin-top:36px}@media(max-width:530px){.performance-clocks{gap:10px}.digital-clock{font-size:29px;padding:6px 8px}.clock-label{font-size:18px}.time-arrow{font-size:24px}}</style><style>.performance-analog-wrap{max-width:400px;margin:12px auto 25px;text-align:center}.performance-analog-wrap svg{width:min(90vw,370px);max-width:100%;touch-action:none;cursor:grab}.performance-analog-wrap svg:active{cursor:grabbing}.pages button[hidden]{display:none!important}</style></head><body><main class="wrap"><nav class="pages"><button id="nav0" type="button" class="active">표지</button><button id="nav1" type="button">1페이지</button><button id="nav2" type="button">2페이지</button><button id="nav3" type="button">3페이지</button><button id="nav4" type="button">4페이지</button><button id="nav5" type="button" hidden>5페이지</button></nav><section id="page0"><h1>1시간을 알아볼까요</h1><p class="task">1시간은 몇 분일까요?</p><div class="story" style="text-align:center">시계의 긴바늘이 한 바퀴 움직이면 <strong>1시간</strong>이 지납니다.<br>다음 페이지부터 시계를 움직이며 알아봅시다.</div><div class="controls"><button class="check" type="button" id="introNext">다음 페이지 →</button></div></section><section id="page1" hidden><h1>몇 시 몇 분 전일까요?</h1><p class="task">모형 시계를 보고 몇 시 몇 분 전인지 써 보세요.</p><div class="performance-analog-wrap"><svg id="beforeClock" viewBox="0 0 300 300" aria-label="35분부터 55분까지의 시각을 나타내는 모형 시계"></svg></div><div class="answer-line" style="justify-content:center;margin:25px 0"><input id="beforeAnswer" type="text" autocomplete="off" aria-label="몇 시 몇 분 전인지 전체 문장 입력" placeholder="예: 3시 5분 전" style="width:min(85vw,290px);height:48px;border:2px solid #74c7f5;border-radius:8px;text-align:center;font-size:23px"></div><div class="controls"><button class="check" id="beforeCheck">정답 확인</button><button class="reset" id="beforeOther">다른문제</button><button class="reset" id="beforeReset">처음부터</button></div><div id="beforeResult" role="status" style="text-align:center;min-height:32px;font-size:21px;font-weight:bold"></div></section><section id="page2" hidden><h1>🚲 자전거를 탄 시간 알아보기</h1><div class="story">자전거를 타고 출발한 시각은 <b id="rideDeparture">5:00</b>입니다.<br>도착한 시각은 <b id="rideArrival">6:00</b>입니다.<br>자전거를 타는 데 걸린 시간을 구해 봅시다.</div><div class="task">① 출발한 시각을 모형 시계에 나타내 보세요.</div><p class="hint">바깥쪽 분 숫자 12개에 모두 동그라미를 표시하고, 시계를 1시간 움직여 막대를 완성한 뒤 빈칸을 채우세요.</p><svg id="clock" viewBox="0 0 400 400" aria-label="시침과 분침을 움직일 수 있는 모형 시계"><defs><linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe986"/><stop offset="1" stop-color="#f6a52b"/></linearGradient></defs><circle cx="200" cy="200" r="147" fill="url(#rim)" stroke="#efad36" stroke-width="4"/><circle cx="200" cy="200" r="132" fill="#fff" stroke="#e4e7eb" stroke-width="4"/><g id="ticks"></g><g id="numbers"></g><g id="minutes"></g><g class="hand" id="minuteHand"><line x1="200" y1="200" x2="200" y2="88" stroke="#eb159b" stroke-width="7" stroke-linecap="round"/><path d="M 192 101 L 200 86 L 208 101" fill="none" stroke="#eb159b" stroke-width="5" stroke-linecap="round"/></g><g class="hand" id="hourHand"><line x1="200" y1="200" x2="200" y2="126" stroke="#28a64a" stroke-width="9" stroke-linecap="round"/><path d="M 191 139 L 200 122 L 209 139" fill="none" stroke="#28a64a" stroke-width="6" stroke-linecap="round"/></g><circle cx="200" cy="200" r="8" fill="#ffcd5a" stroke="#eaa63c" stroke-width="2"/></svg><div class="controls"><div class="control"><strong>초록색 시침</strong><button id="hminus">−</button> <span id="hval">12시</span> <button id="hplus">+</button></div><div class="control"><strong>분홍색 분침</strong><button id="mminus">−</button> <span id="mval">0분</span> <button id="mplus">+</button></div></div><div class="timebar" aria-label="모형 시계와 연동되는 10분 간격 시간 띠"><div class="timebar-labels"><span id="barStart">12시</span><span>10분</span><span>20분</span><span>30분</span><span>40분</span><span>50분</span><span id="barEnd">1시</span></div><div class="timebar-track"><span></span><span></span><span></span><span></span><span></span><span></span><div class="timebar-progress" id="timeProgress"></div><div class="timebar-now" id="timeNow"></div></div></div><div class="hour-question" style="text-align:center;font-size:23px;font-weight:bold;margin:18px auto 10px">1시간 = <input id="hourMinutes" type="text" inputmode="numeric" autocomplete="off" aria-label="1시간은 몇 분인지 입력" style="width:76px;height:43px;border:2px solid #74c7f5;border-radius:8px;text-align:center;font-size:23px"> 분</div><div class="controls"><button class="check" id="check">정답 확인</button><button class="reset" id="restart">처음부터</button><button class="reset" id="reset">↻ 새로고침</button></div><div id="result" aria-live="polite"></div></section><section id="page3" hidden><div class="plane-title">✈️ 비행기를 타고 이동하는 데 걸린 시간을 구해 봅시다.</div><div class="flight"><div class="flight-clock"><svg id="departClock" viewBox="0 0 200 200" aria-label="10시 30분 시계"></svg><p>출발한 시각<br>10시 30분</p></div><div class="flight-middle"><div>✈️ 10:30</div><div class="flight-line"></div><div>비행기로 이동한 시간</div><div class="flight-line"></div><div>✈️ 11:30</div></div><div class="flight-clock"><svg id="arriveClock" viewBox="0 0 200 200" aria-label="11시 30분 시계"></svg><p>도착한 시각<br>11시 30분</p></div></div><p class="plane-note">① 비행기를 타고 이동하는 데 걸린 시간을 <b>시간 띠에 색칠</b>해 보세요.</p><p class="flight-caption">5분 칸을 누르거나 손가락으로 밀면 색칠되고, 색칠된 칸에서 시작하면 지워집니다. 굵은 선은 정각, 점선은 10분 간격입니다.</p><div class="plane-labels" id="planeLabels"></div><div class="plane-bar" id="planeBar" aria-label="10시부터 12시까지의 시간 띠"></div><p class="plane-note">② 비행기를 타고 이동하는 데 걸린 시간을 구해 보세요.</p><div class="answer-line"><input id="answerMinutes" type="text" inputmode="numeric" autocomplete="off" aria-label="걸린 전체 시간 분"> 분 = <input id="answerHours" type="text" inputmode="numeric" autocomplete="off" aria-label="걸린 시간 시간"> 시간 <input id="answerRemainder" type="text" inputmode="numeric" autocomplete="off" aria-label="남은 분"> 분</div><div class="controls"><button class="check" id="planeCheck">정답 확인</button><button class="reset" id="planeOther">다른문제</button><button class="reset" id="planeClear">처음부터</button></div><div id="planeResult" role="status" style="text-align:center;min-height:30px;font-size:20px;font-weight:bold"></div></section><section id="page4" hidden>
+<h1 style="text-align:left">공연을 보는 데 걸린 시간을 구해 봅시다.</h1>
+<div class="performance-clocks"><div><div class="clock-label">시작된 시각</div><div class="digital-clock" id="performanceStartDigital">9:00</div></div><div class="time-arrow">➜</div><div><div class="clock-label">끝난 시각</div><div class="digital-clock" id="performanceEndDigital">11:00</div></div></div>
+<div class="performance-analog-wrap"><svg id="performanceAnalog" viewBox="0 0 300 300" aria-label="분침을 움직이면 시침도 함께 움직이는 모형 시계"></svg><p class="hint">분홍색 분침을 돌리면 초록색 시침도 함께 움직입니다.</p></div>
+
+<div class="answer-line" style="margin-top:22px"><input id="performanceHours" type="text" inputmode="numeric" autocomplete="off" aria-label="걸린 시간"/> 시간 = <input id="performanceMinutes" type="text" inputmode="numeric" autocomplete="off" aria-label="걸린 분"/> 분</div>
+<div class="controls"><button class="check" id="performanceCheck">정답 확인</button><button class="reset" id="performanceOther">다른문제</button><button class="reset" id="performanceClear">처음부터</button></div><div id="performanceResult" role="status" style="text-align:center;min-height:35px;font-size:21px;font-weight:bold"></div>
+</section><section id="page5" hidden><h1>1시간을 알아볼까요 — 자동평가</h1><div id="auto-evaluation-act-1793141573636" hidden style="margin:24px auto;max-width:1050px;"><iframe title="과제 참여 여부 확인하기" src="https://eyeholder83-commits.github.io/sh0201/%ED%95%99%EA%B8%89%ED%86%B5%ED%95%A9%EA%B4%80%EB%A6%AC.html?autoActivity=act-1793141573636" loading="lazy" style="display:block;width:100%;height:650px;border:0;border-radius:16px;background:#f8fafc;" referrerpolicy="strict-origin-when-cross-origin"></iframe></div></section></main><script>const ns='http://www.w3.org/2000/svg',ticks=document.getElementById('ticks'),numbers=document.getElementById('numbers'),minutes=document.getElementById('minutes');function node(parent,tag,attrs,txt){let e=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));if(txt!==undefined)e.textContent=txt;parent.appendChild(e);return e}function pos(deg,r){let a=(deg-90)*Math.PI/180;return [200+Math.cos(a)*r,200+Math.sin(a)*r]}for(let i=0;i<60;i++){let a=pos(i*6,i%5===0?119:125),b=pos(i*6,131);node(ticks,'line',{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:'#334155','stroke-width':i%5===0?2.2:1})}for(let i=1;i<=12;i++){let [x,y]=pos(i*30,105);node(numbers,'text',{x,y:y+8,'text-anchor':'middle','font-size':26,fill:'#142238'},String(i))}for(let i=0;i<12;i++){let [x,y]=pos(i*30,174);let g=node(minutes,'g',{class:'minute-choice','data-minute':i*5,role:'button',tabindex:'0','aria-label':(i*5)+'분 선택'});node(g,'circle',{cx:x,cy:y,r:19,class:'minute'});node(g,'text',{x,y:y+8,'text-anchor':'middle','font-size':24,fill:'#17243b','pointer-events':'none',...(i===0?{id:'minuteZeroLabel'}:{})},String(i*5))}let total=0,drag=null,previousAngle=0,dragRemainder=0,selectedMinute=null;let rideStartHour=5,rideCompleted=false,rideStartObserved=false;function updateRideStory(){document.getElementById("rideDeparture").textContent=rideStartHour+":00";document.getElementById("rideArrival").textContent=(rideStartHour%12+1)+":00";}
+function updateSixtyLabel(){const allMarked=[...minutes.querySelectorAll('.minute-choice')].every(g=>g.classList.contains('selected'));const fullTurn=rideCompleted && total>=rideStartHour*60+60 && mod(total,60)===0;const label=document.getElementById('minuteZeroLabel');label.textContent=allMarked&&fullTurn?'60':'0';label.setAttribute('font-size',allMarked&&fullTurn?'21':'24');}
+function selectMinute(min){
+ const g=minutes.querySelector('[data-minute="'+min+'"]');
+ g.classList.toggle('selected');
+ let diff=min-mod(total,60);
+ if(diff>30)diff-=60;
+ if(diff< -30)diff+=60;
+ const before=total;
+ total+=diff;
+ draw(before);
+ updateSixtyLabel();
+}
+minutes.addEventListener('click',e=>{const g=e.target.closest('.minute-choice');if(g)selectMinute(Number(g.dataset.minute))});minutes.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const g=e.target.closest('.minute-choice');if(g){e.preventDefault();selectMinute(Number(g.dataset.minute))}}});
+const hh=document.getElementById('hourHand'),mh=document.getElementById('minuteHand'),clock=document.getElementById('clock');
+function mod(n,d){return ((n%d)+d)%d}
+function draw(previousTotal=null){
+ const h= Math.floor(mod(total,720)/60),m=mod(total,60);
+ hh.setAttribute('transform',`rotate(${mod(total,720)/2} 200 200)`);
+ mh.setAttribute('transform',`rotate(${m*6} 200 200)`);
+ document.getElementById('hval').textContent=(h||12)+'시';
+ document.getElementById('mval').textContent=m+'분';
+ document.getElementById('result').textContent='';
+ // 정각 도달 순간에는 이전 한 시간 구간을 100% 채워 보여 준다.
+ // 다음 분으로 진행하면 새로운 시간 구간으로 넘어간다.
+ const justCompleted = previousTotal!==null && total>previousTotal && m===0 && mod(previousTotal,60)!==0;
+ if(previousTotal!==null && total>previousTotal && total>=rideStartHour*60+60 && previousTotal<rideStartHour*60+60)rideCompleted=true;
+ const displayHour=justCompleted?mod(h+11,12):h;
+ const startHour=displayHour||12, endHour=(displayHour+1)%12||12;
+ document.getElementById('barStart').textContent=startHour+'시';
+ document.getElementById('barEnd').textContent=endHour+'시';
+ const completedTens=justCompleted?6:Math.floor(m/10);
+ document.getElementById('timeProgress').style.width=(completedTens/6*100)+'%';
+ document.getElementById('timeNow').style.left=`calc(${justCompleted?100:m/60*100}% - 1px)`;
+ updateSixtyLabel();
+}
+function advance(minutes){const before=total;total+=minutes;draw(before)}
+document.getElementById('hminus').onclick=()=>advance(-60);
+document.getElementById('hplus').onclick=()=>advance(60);
+document.getElementById('mminus').onclick=()=>advance(-5);
+document.getElementById('mplus').onclick=()=>advance(5);
+function angle(e){let p=clock.createSVGPoint();p.x=e.clientX;p.y=e.clientY;let t=p.matrixTransform(clock.getScreenCTM().inverse());return mod(Math.atan2(t.y-200,t.x-200)*180/Math.PI+90,360)}
+function move(e){
+ if(!drag)return;
+ const current=angle(e);
+ let delta=mod(current-previousAngle+180,360)-180;
+ previousAngle=current;
+ if(drag==='m'){
+   dragRemainder+=delta/6;
+   const step=Math.trunc(dragRemainder);
+   if(step){const before=total;total+=step;dragRemainder-=step;draw(before)}
+ }else{
+   dragRemainder+=delta/0.5;
+   const step=Math.trunc(dragRemainder);
+   if(step){const before=total;total+=step;dragRemainder-=step;draw(before)}
+ }
+}
+[hh,mh].forEach(el=>{
+ el.addEventListener('pointerdown',e=>{
+   drag=el===hh?'h':'m';previousAngle=angle(e);dragRemainder=0;
+   el.setPointerCapture(e.pointerId);e.preventDefault();
+ });
+ el.addEventListener('pointermove',move);
+ el.addEventListener('pointerup',()=>drag=null);
+ el.addEventListener('pointercancel',()=>drag=null);
+});
+document.getElementById('check').onclick=()=>{
+ if(awaitingNext[2]&&!donePages.has(2)){document.getElementById('result').textContent='새로고침을 눌러 다음 문제로 넘어가세요.';return;}
+ if(donePages.has(2))return;
+ const r=document.getElementById('result');
+ const marks=[...minutes.querySelectorAll('.minute-choice')].every(g=>g.classList.contains('selected'));
+ const numberOk=document.getElementById('hourMinutes').value.trim()==='60';
+ const timeOk=mod(total,720)===mod((rideStartHour+1)*60,720);
+ const ok=marks&&numberOk&&rideCompleted&&timeOk;
+ r.textContent=ok?'⭕ 정답입니다! 모든 활동을 완료했어요.':'❌ '+[!marks?'분 숫자 12개에 동그라미를 표시하세요.':'',!rideCompleted||!timeOk?'시계를 출발 시각부터 도착 시각까지 1시간 움직여 막대를 완성하세요.':'',!numberOk?'빈칸을 다시 확인하세요.':''].filter(Boolean).join(' ');
+ r.style.color=ok?'#16803d':'#dc2626';
+ recordAttempt(2,ok,r);
+};
+function clearMinuteMarks(){selectedMinute=null;minutes.querySelectorAll('.minute-choice').forEach(g=>g.classList.remove('selected'));updateSixtyLabel()}
+function setClock(hour){resetAttempt(2);total=hour*60;rideCompleted=false;clearMinuteMarks();draw();document.getElementById('hourMinutes').value='';}
+document.getElementById('restart').onclick=()=>setClock(rideStartHour);
+document.getElementById('reset').onclick=()=>{const old=rideStartHour;do{rideStartHour=1+Math.floor(Math.random()*12)}while(rideStartHour===old);updateRideStory();setClock(rideStartHour%12)};
+updateRideStory();setClock(rideStartHour);</script><script>
+// 각 페이지는 새로운 문제 5개를 연속 정답으로 맞혀야 완료됩니다.
+const donePages=new Set();
+const streaks={1:0,2:0,3:0,4:0};
+const awaitingNext={1:false,2:false,3:false,4:false};
+function resetAttempt(n){awaitingNext[n]=false;}
+function recordAttempt(n,ok,output){
+ if(donePages.has(n))return;
+ if(awaitingNext[n]){output.textContent='다른문제를 눌러 다음 문제로 넘어가세요.';output.style.color='#b45309';return;}
+ if(ok){streaks[n]++;awaitingNext[n]=true;}
+ else{streaks[n]=0;}
+ if(ok&&streaks[n]>=5){
+  donePages.add(n);
+  const nav=document.getElementById('nav'+n);
+  nav.textContent=n+'페이지 ✓';nav.style.border='2px solid #16a34a';
+  output.textContent='🎉 연속 5문제 정답! '+n+'페이지 완료!';output.style.color='#16803d';
+  if(donePages.size===4){
+   const cover=document.getElementById('nav0');cover.textContent='표지 ✓';cover.style.border='2px solid #16a34a';
+   document.getElementById('nav5').hidden=false;
+  }
+ }else if(ok){output.textContent='⭕ 정답입니다! 연속 '+streaks[n]+'/5문제. 다른문제를 눌러 계속하세요.';output.style.color='#16803d';}
+ else{output.textContent+=' (연속 정답 0/5)';}
+}
+function markDone(n){recordAttempt(n,true,document.getElementById(({1:'beforeResult',2:'result',3:'planeResult',4:'performanceResult'})[n]));}
+const pageZero=document.getElementById('page1'),pageOne=document.getElementById('page2'),pageTwo=document.getElementById('page3'),pageThree=document.getElementById('page4');
+function showPage(n){if(n===5&&donePages.size!==4)return;for(let i=0;i<=5;i++){document.getElementById('page'+i).hidden=n!==i;document.getElementById('nav'+i).classList.toggle('active',n===i)}if(n===5)showAutoEvaluation();}
+function showAutoEvaluation(){if(donePages.size!==4)return;const area=document.getElementById('auto-evaluation-act-1793141573636');if(area){area.hidden=false;area.scrollIntoView({behavior:'smooth',block:'start'});}}
+for(let i=0;i<=5;i++)document.getElementById('nav'+i).onclick=()=>showPage(i);
+document.getElementById('introNext').onclick=()=>showPage(1);
+function smallClock(id,h,m){let s=document.getElementById(id);s.replaceChildren();let N='http://www.w3.org/2000/svg';function add(tag,attrs,t){let el=document.createElementNS(N,tag);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));if(t!==undefined)el.textContent=t;s.appendChild(el)}add('circle',{cx:100,cy:100,r:94,fill:'#ffcf50',stroke:'#e7a828','stroke-width':3});add('circle',{cx:100,cy:100,r:84,fill:'white'});for(let i=1;i<=12;i++){let a=(i*30-90)*Math.PI/180;add('text',{x:100+Math.cos(a)*66,y:106+Math.sin(a)*66,'text-anchor':'middle','font-size':17,fill:'#17243b'},i)}for(let i=0;i<60;i++){let a=(i*6-90)*Math.PI/180,r=i%5===0?78:81;add('line',{x1:100+Math.cos(a)*r,y1:100+Math.sin(a)*r,x2:100+Math.cos(a)*84,y2:100+Math.sin(a)*84,stroke:'#555','stroke-width':i%5===0?1.5:.6})}function hand(deg,len,color,width){let a=(deg-90)*Math.PI/180;add('line',{x1:100,y1:100,x2:100+Math.cos(a)*len,y2:100+Math.sin(a)*len,stroke:color,'stroke-width':width,'stroke-linecap':'round'})}hand(h*30+m*.5,48,'#28a64a',6);hand(m*6,70,'#eb159b',4);add('circle',{cx:100,cy:100,r:5,fill:'#ffcd5a'})}
+const labels=document.getElementById('planeLabels'),bar=document.getElementById('planeBar');
+const answerM=document.getElementById('answerMinutes'),answerH=document.getElementById('answerHours'),answerR=document.getElementById('answerRemainder'),planeResult=document.getElementById('planeResult');
+let flightStart=630,flightEnd=690,barStart=600,stepCount=24;
+function displayTime(t){let h=Math.floor(t/60)%12||12;return `${h}시 ${String(t%60).padStart(2,'0')}분`}
+function renderFlight(){
+ const startHour=Math.floor(flightStart/60)*60;
+ const endHour=Math.ceil(flightEnd/60)*60;
+ barStart=startHour;stepCount=(endHour-startHour)/5;
+ labels.replaceChildren();bar.replaceChildren();
+ labels.style.setProperty('--cells',stepCount);bar.style.setProperty('--cells',stepCount);
+ for(let i=0;i<stepCount;i++){
+   const t=barStart+i*5, min=t%60;
+   if(min%10===0){let lab=document.createElement('span');lab.textContent=min===0?`${Math.floor(t/60)%12||12}시`:`${min}분`;if(min===0)lab.className='hour-label';lab.style.gridColumn=`${i+1} / span 1`;labels.appendChild(lab)}
+   let cell=document.createElement('button');cell.type='button';cell.className='plane-cell'+((i+1)%12===0?' hour-end':(i+1)%2===0?' ten-end':'');
+   cell.setAttribute('aria-label',`${displayTime(t)}부터 5분 칸`);cell.setAttribute('aria-pressed','false');
+   cell.addEventListener('click',e=>{if(e.detail!==0)return;cell.classList.toggle('filled');cell.setAttribute('aria-pressed',String(cell.classList.contains('filled')));planeResult.textContent='';});
+   bar.appendChild(cell);
+ }
+ // 모든 구분선은 하나의 SVG에 그려 높이와 위치를 정확하게 맞춥니다.
+ const overlay=document.createElementNS('http://www.w3.org/2000/svg','svg');
+ overlay.setAttribute('viewBox',`0 0 ${stepCount*10} 100`);
+ overlay.setAttribute('preserveAspectRatio','none');
+ overlay.setAttribute('class','plane-grid-overlay');
+ overlay.setAttribute('aria-hidden','true');
+ for(let i=1;i<stepCount;i++){
+   const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+   const x=i*10;
+   line.setAttribute('x1',x);line.setAttribute('x2',x);
+   line.setAttribute('y1','0');line.setAttribute('y2','100');
+   const isHour=i%12===0, isTen=i%2===0;
+   line.setAttribute('stroke',isHour?'#344054':isTen?'#475569':'#94a3b8');
+   line.setAttribute('stroke-width',isHour?'1.7':isTen?'1.1':'0.65');
+   if(!isHour)line.setAttribute('stroke-dasharray',isTen?'5 4':'2 5');
+   line.setAttribute('vector-effect','non-scaling-stroke');
+   overlay.appendChild(line);
+ }
+ bar.appendChild(overlay);
+ // 손가락 또는 마우스로 문지르면 지나간 5분 칸을 연속 색칠합니다.
+ // 처음 누른 칸이 이미 색칠돼 있다면 드래그로 지울 수도 있습니다.
+ let painting=false,paintValue=true,lastPaintIndex=-1;
+ const cellAt=(x,y)=>{const rect=bar.getBoundingClientRect();if(x<rect.left||x>rect.right||y<rect.top||y>rect.bottom)return null;const index=Math.min(stepCount-1,Math.max(0,Math.floor((x-rect.left)/rect.width*stepCount)));return bar.querySelectorAll('.plane-cell')[index];};
+ const paintCell=c=>{if(!c)return;c.classList.toggle('filled',paintValue);c.setAttribute('aria-pressed',String(paintValue));planeResult.textContent='';};
+ const paintTo=c=>{if(!c)return;const cells=[...bar.querySelectorAll('.plane-cell')],idx=cells.indexOf(c);if(idx<0)return;if(lastPaintIndex<0){paintCell(c)}else{for(let i=Math.min(idx,lastPaintIndex);i<=Math.max(idx,lastPaintIndex);i++)paintCell(cells[i]);}lastPaintIndex=idx;};
+ bar.onpointerdown=e=>{if(e.pointerType==='mouse'&&e.button!==0)return;const c=cellAt(e.clientX,e.clientY);if(!c)return;painting=true;lastPaintIndex=-1;paintValue=!c.classList.contains('filled');paintTo(c);bar.setPointerCapture(e.pointerId);e.preventDefault();};
+ bar.onpointermove=e=>{if(!painting)return;paintTo(cellAt(e.clientX,e.clientY));e.preventDefault();};
+ bar.onpointerup=bar.onpointercancel=()=>{painting=false;lastPaintIndex=-1;};
+ let last=document.createElement('span');last.textContent=`${Math.floor(endHour/60)%12||12}시`;last.className='hour-label';last.style.position='absolute';last.style.right='0';last.style.transform='translateX(50%)';labels.appendChild(last);
+ const sh=Math.floor(flightStart/60)%12||12,eh=Math.floor(flightEnd/60)%12||12;
+ smallClock('departClock',sh,flightStart%60);smallClock('arriveClock',eh,flightEnd%60);
+ document.querySelector('#departClock + p').textContent=`출발한 시각: ${displayTime(flightStart)}`;
+ document.querySelector('#arriveClock + p').textContent=`도착한 시각: ${displayTime(flightEnd)}`;
+ const mid=document.querySelector('.flight-middle');mid.children[0].textContent=`✈️ ${displayTime(flightStart)}`;mid.children[4].textContent=`✈️ ${displayTime(flightEnd)}`;
+ bar.setAttribute('aria-label',`${displayTime(barStart)}부터 ${displayTime(endHour)}까지 5분 간격 시간 띠`);
+ clearFlight();
+}
+function clearFlight(){resetAttempt(3);[...bar.querySelectorAll('.plane-cell')].forEach(c=>{c.classList.remove('filled');c.setAttribute('aria-pressed','false')});answerM.value='';answerH.value='';answerR.value='';planeResult.textContent=''}
+document.getElementById('planeCheck').onclick=()=>{
+ if(donePages.has(3))return;
+ if(awaitingNext[3]){planeResult.textContent='다른문제를 눌러 다음 문제로 넘어가세요.';return;}
+ const elapsed=flightEnd-flightStart;
+ const correct=answerM.value!==''&&answerH.value!==''&&answerR.value!==''&&Number(answerM.value)===elapsed&&Number(answerH.value)===Math.floor(elapsed/60)&&Number(answerR.value)===elapsed%60;
+ const colored=[...bar.querySelectorAll('.plane-cell')].every((c,i)=>c.classList.contains('filled')===(barStart+i*5>=flightStart&&barStart+i*5<flightEnd));
+ planeResult.textContent=correct&&colored?'⭕ 정답입니다!':'❌ 색칠한 시간 띠와 답을 다시 확인해 보세요.';
+ planeResult.style.color=correct&&colored?'#16803d':'#dc2626';recordAttempt(3,correct&&colored,planeResult);
+};
+document.getElementById('planeClear').onclick=clearFlight;
+document.getElementById('planeOther').onclick=()=>{
+ let nextStart,nextEnd;
+ do{
+   nextStart=(1+Math.floor(Math.random()*11))*60+(1+Math.floor(Math.random()*11))*5;
+   const duration=(1+Math.floor(Math.random()*48))*5;
+   nextEnd=nextStart+duration;
+ }while(nextStart===flightStart&&nextEnd===flightEnd);
+ flightStart=nextStart;flightEnd=nextEnd;renderFlight();
+};
+renderFlight();
+showPage(0);
+document.getElementById('hourMinutes').addEventListener('input',()=>{document.getElementById('hourMinutes').style.borderColor='#74c7f5'});
+for(const id of ['restart','reset'])document.getElementById(id).addEventListener('click',()=>{document.getElementById('hourMinutes').value='';document.getElementById('hourMinutes').style.borderColor='#74c7f5'});
+document.getElementById('check').addEventListener('click',()=>{const el=document.getElementById('hourMinutes');el.style.borderColor=el.value.trim()==='60'?'#16a34a':'#ef4444'});
+</script><script>
+const ph=document.getElementById('performanceHours'),pm=document.getElementById('performanceMinutes'),pr=document.getElementById('performanceResult');
+let performanceStart=9,performanceDuration=2,analogTotal=9*60;
+const analog=document.getElementById('performanceAnalog');
+const svgNS='http://www.w3.org/2000/svg';
+function addClockEl(parent,tag,attributes,content){const el=document.createElementNS(svgNS,tag);for(const [key,value] of Object.entries(attributes))el.setAttribute(key,value);if(content!==undefined)el.textContent=content;parent.appendChild(el);return el;}
+addClockEl(analog,'circle',{cx:150,cy:150,r:141,fill:'#ffd956',stroke:'#edb838','stroke-width':4});
+addClockEl(analog,'circle',{cx:150,cy:150,r:128,fill:'#fff',stroke:'#e5e7eb','stroke-width':3});
+for(let i=0;i<60;i++){const a=(i*6-90)*Math.PI/180,r1=i%5===0?109:117;addClockEl(analog,'line',{x1:150+Math.cos(a)*r1,y1:150+Math.sin(a)*r1,x2:150+Math.cos(a)*123,y2:150+Math.sin(a)*123,stroke:'#475569','stroke-width':i%5===0?2.5:1});}
+for(let i=1;i<=12;i++){const a=(i*30-90)*Math.PI/180;addClockEl(analog,'text',{x:150+Math.cos(a)*94,y:150+Math.sin(a)*94+7,'text-anchor':'middle','font-size':25,fill:'#1e293b'},String(i));}
+const analogHour=addClockEl(analog,'line',{x1:150,y1:150,x2:150,y2:78,stroke:'#28a64a','stroke-width':9,'stroke-linecap':'round'});
+const analogMinute=addClockEl(analog,'line',{x1:150,y1:150,x2:150,y2:47,stroke:'#eb159b','stroke-width':6,'stroke-linecap':'round'});
+addClockEl(analog,'circle',{cx:150,cy:150,r:7,fill:'#ffce58'});
+function paintAnalog(){const ma=(analogTotal%60)*Math.PI/30-Math.PI/2,ha=(analogTotal/60%12)*Math.PI/6-Math.PI/2;analogHour.setAttribute('x2',150+Math.cos(ha)*73);analogHour.setAttribute('y2',150+Math.sin(ha)*73);analogMinute.setAttribute('x2',150+Math.cos(ma)*103);analogMinute.setAttribute('y2',150+Math.sin(ma)*103);}
+function renderPerformance(){resetAttempt(4);document.getElementById('performanceStartDigital').textContent=performanceStart+':00';document.getElementById('performanceEndDigital').textContent=(performanceStart+performanceDuration)+':00';analogTotal=performanceStart*60;paintAnalog();ph.value='';pm.value='';pr.textContent='';}
+let analogDragging=false,prevAngle=0;
+function pointerAngle(e){const r=analog.getBoundingClientRect();const x=(e.clientX-r.left)*300/r.width-150,y=(e.clientY-r.top)*300/r.height-150;return Math.atan2(y,x)*180/Math.PI+90;}
+analog.addEventListener('pointerdown',e=>{analogDragging=true;prevAngle=pointerAngle(e);analog.setPointerCapture(e.pointerId);});
+analog.addEventListener('pointermove',e=>{if(!analogDragging)return;const angle=pointerAngle(e);let delta=angle-prevAngle;if(delta>180)delta-=360;if(delta< -180)delta+=360;analogTotal+=delta/6;prevAngle=angle;paintAnalog();});
+analog.addEventListener('pointerup',()=>analogDragging=false);
+analog.addEventListener('pointercancel',()=>analogDragging=false);
+document.getElementById('performanceCheck').onclick=()=>{if(donePages.has(4))return;if(awaitingNext[4]){pr.textContent='다른문제를 눌러 다음 문제로 넘어가세요.';return;}const correct=ph.value.trim()===String(performanceDuration)&&pm.value.trim()===String(performanceDuration*60);const clockOk=Math.abs(analogTotal-(performanceStart+performanceDuration)*60)<1.5;const ok=correct&&clockOk;pr.textContent=ok?'⭕ 정답입니다!':'❌ '+(!clockOk?'시계바늘을 공연이 끝난 시각에 맞춰 보세요. ':'')+(!correct?'시간과 분을 다시 확인하세요.':'');pr.style.color=ok?'#16803d':'#dc2626';recordAttempt(4,ok,pr);};
+document.getElementById('performanceClear').onclick=()=>{ph.value='';pm.value='';pr.textContent='';analogTotal=performanceStart*60;paintAnalog();};
+document.getElementById('performanceOther').onclick=()=>{let newStart,newDuration;do{newStart=1+Math.floor(Math.random()*8);newDuration=1+Math.floor(Math.random()*4);}while(newStart===performanceStart&&newDuration===performanceDuration);performanceStart=newStart;performanceDuration=newDuration;renderPerformance();};
+renderPerformance();
+</script><script>
+(function(){
+const svg=document.getElementById('beforeClock'),ns='http://www.w3.org/2000/svg';
+function el(tag,attr,txt){let x=document.createElementNS(ns,tag);Object.entries(attr).forEach(([k,v])=>x.setAttribute(k,v));if(txt!==undefined)x.textContent=txt;svg.appendChild(x);return x;}
+el('circle',{cx:150,cy:150,r:141,fill:'#ffdb59',stroke:'#e9ae31','stroke-width':4});el('circle',{cx:150,cy:150,r:128,fill:'white',stroke:'#e5e7eb','stroke-width':3});
+for(let i=0;i<60;i++){let a=(i*6-90)*Math.PI/180,r=i%5===0?109:117;el('line',{x1:150+Math.cos(a)*r,y1:150+Math.sin(a)*r,x2:150+Math.cos(a)*123,y2:150+Math.sin(a)*123,stroke:'#475569','stroke-width':i%5===0?2.5:1});}
+for(let i=1;i<=12;i++){let a=(i*30-90)*Math.PI/180;el('text',{x:150+Math.cos(a)*94,y:150+Math.sin(a)*94+7,'text-anchor':'middle','font-size':25,fill:'#1e293b'},i);}
+let h=el('line',{x1:150,y1:150,x2:150,y2:80,stroke:'#28a64a','stroke-width':9,'stroke-linecap':'round'}),m=el('line',{x1:150,y1:150,x2:150,y2:47,stroke:'#eb159b','stroke-width':6,'stroke-linecap':'round'});el('circle',{cx:150,cy:150,r:7,fill:'#ffce58'});
+let hour=4,minute=35;
+const beforeAnswer=document.getElementById('beforeAnswer'),result=document.getElementById('beforeResult');
+function draw(){let ma=minute*Math.PI/30-Math.PI/2,ha=(hour+minute/60)*Math.PI/6-Math.PI/2;h.setAttribute('x2',150+Math.cos(ha)*73);h.setAttribute('y2',150+Math.sin(ha)*73);m.setAttribute('x2',150+Math.cos(ma)*103);m.setAttribute('y2',150+Math.sin(ma)*103);}
+function clear(){beforeAnswer.value='';result.textContent='';}
+function other(){resetAttempt(1);let old=hour*60+minute;do{hour=1+Math.floor(Math.random()*11);minute=35+5*Math.floor(Math.random()*5)}while(hour*60+minute===old);clear();draw();}
+document.getElementById('beforeCheck').onclick=()=>{if(donePages.has(1))return;if(awaitingNext[1]){result.textContent='다른문제를 눌러 다음 문제로 넘어가세요.';return;}let expected=`${hour%12+1}시${60-minute}분전`;let typed=beforeAnswer.value.replace(/\s+/g,'');let ok=typed===expected;result.textContent=ok?'⭕ 정답입니다!':'❌ 다시 생각해 보세요.';result.style.color=ok?'#16803d':'#dc2626';recordAttempt(1,ok,result);};
+document.getElementById('beforeOther').onclick=other;
+document.getElementById('beforeReset').onclick=()=>{clear();draw();};
+draw();
+})();
+</script></body></html>
