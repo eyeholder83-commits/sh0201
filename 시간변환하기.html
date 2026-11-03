@@ -1,0 +1,206 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>시간을 분으로 바꾸기</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f1f5fb;color:#17243b;font-family:'Malgun Gothic',Arial,sans-serif}.card{max-width:1100px;margin:30px auto;padding:28px;background:#fff;border-radius:20px;box-shadow:0 8px 25px #dce4ef}h1{text-align:center;font-size:29px}.hint{text-align:center;color:#64748b}.scroll{overflow-x:auto;max-width:100%;padding:20px 0 30px}.equations{display:table;width:max-content;margin:0 auto;border-spacing:0 18px}.line{display:table-row;white-space:nowrap}.label,.equals,.formula{display:table-cell;vertical-align:middle;white-space:nowrap;font-size:25px}.label{min-width:155px;text-align:right;padding-right:16px}.equals{width:35px;text-align:center;padding-right:10px}.formula{white-space:nowrap}.term{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;vertical-align:middle}.term input{width:66px;height:55px;border:2px solid #60b5f5;border-radius:7px;font-size:25px;text-align:center;background:#fff}.term input.bad{border-color:#e5484d;background:#fff1f2}.term input.good{border-color:#16a34a}.plus{display:inline-block;margin:0 12px}.buttons{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}button{border:0;border-radius:10px;background:#2563eb;color:white;font-size:18px;padding:12px 24px;cursor:pointer}button.secondary{background:#64748b}#result0,#result{text-align:center;min-height:32px;font-size:20px;font-weight:bold}@media(max-width:650px){.card{margin:10px;padding:15px}.label,.equals,.formula{font-size:20px}.label{min-width:115px;padding-right:10px}.term input{width:52px;height:48px;font-size:20px}.plus{margin:0 7px}}
+
+.tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:2px solid #dbe5f1;margin:20px 0}.tab{background:#e8eef8;color:#334155;border-radius:10px 10px 0 0}.tab.active{background:#2563eb;color:white}.builder{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:12px 0}.builder button{background:#0f766e}.builder button.remove{background:#b45309}.page{display:none}.page.active{display:block}.formula .placeholder{color:#94a3b8;font-size:19px}.formula .unit-button{background:#0f766e}.mini-remove{border:0;background:#fee2e2;color:#991b1b;font-size:16px;padding:4px 7px;border-radius:5px;margin-left:3px}.label{min-width:155px}.scroll{scrollbar-gutter:stable}
+.builder strong{align-self:center;font-size:18px;margin-right:8px}.built-number{display:inline-block;min-width:28px;text-align:center;font-weight:700;color:#1d4ed8}.formula{min-width:310px}.control-panel{padding:14px;background:#f8fafc;border-radius:14px}.selected-label{text-align:center;font-size:19px;font-weight:700;color:#1d4ed8;margin-bottom:8px}.builder .append{background:#2563eb}.builder .increase{background:#15803d}.builder button:disabled{background:#cbd5e1;color:#64748b;cursor:not-allowed}.selectable .equals,.selectable .formula{padding-top:12px;padding-bottom:12px}.selectable{cursor:pointer}.selectable.chosen .equals,.selectable.chosen .formula{background:#eaf3ff;border-top:2px solid #2563eb;border-bottom:2px solid #2563eb}.selectable.chosen .equals{border-left:2px solid #2563eb;border-radius:10px 0 0 10px}.selectable.chosen .formula{border-right:2px solid #2563eb;border-radius:0 10px 10px 0;padding-right:18px}.selectable:focus-visible{outline:3px solid #2563eb}.formula{min-width:330px}#equations2{border-spacing:0 13px}@media(max-width:650px){.builder button{font-size:16px;padding:11px 14px}}
+#equations2 .formula{white-space:nowrap;min-width:330px}#equations2 .plus{display:inline-block;margin:0 13px}#equations2 .term{display:inline-flex;white-space:nowrap;gap:5px}#page3 .scroll{overflow-x:auto;overflow-y:hidden;max-width:100%;overscroll-behavior-x:contain}#equations2{width:max-content;min-width:max-content}#result2{text-align:center;min-height:30px;font-size:20px;font-weight:bold}
+#page4 .quick-grid{display:grid;grid-template-columns:1fr;gap:12px;max-width:650px;margin:18px auto}#page4 .quick-item{display:flex;align-items:center;justify-content:center;gap:12px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:12px;padding:13px;white-space:nowrap;font-size:24px}#page4 .quick-item input{width:105px;height:52px;border:2px solid #60b5f5;border-radius:8px;font-size:24px;text-align:center}#page4 .quick-item input.bad{border-color:#e5484d;background:#fff1f2}#page4 .quick-item input.good{border-color:#16a34a}#result4{text-align:center;min-height:32px;font-size:20px;font-weight:bold}@media(max-width:650px){#page4 .quick-item{font-size:19px;gap:8px}#page4 .quick-item input{width:85px;font-size:20px}}
+#page5 .quick-grid{display:grid;grid-template-columns:1fr;gap:12px;max-width:740px;margin:18px auto}#page5 .quick-item{display:flex;align-items:center;justify-content:center;gap:10px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:12px;padding:13px;white-space:nowrap;font-size:23px;overflow-x:auto}#page5 .quick-item input{width:105px;height:52px;border:2px solid #60b5f5;border-radius:8px;font-size:24px;text-align:center}#page5 .quick-item input.bad{border-color:#e5484d;background:#fff1f2}#page5 .quick-item input.good{border-color:#16a34a}#result5{text-align:center;min-height:32px;font-size:20px;font-weight:bold}@media(max-width:650px){#page5 .quick-item{font-size:18px;gap:6px}#page5 .quick-item input{width:85px;font-size:20px}}
+
+.tabs{flex-wrap:nowrap;gap:5px;overflow-x:auto;scrollbar-width:thin}.tab{flex:1 0 auto;min-width:0;padding:11px 9px;font-size:15px;white-space:nowrap}.card{max-width:1200px}.reverse-quick{display:grid;gap:12px;max-width:760px;margin:20px auto}.reverse-quick .quick-item{display:flex;justify-content:center;align-items:center;gap:10px;padding:14px;background:#f8fafc;border:1px solid #dbe5f1;border-radius:12px;white-space:nowrap;font-size:23px;overflow-x:auto}.reverse-quick input{width:96px;height:52px;font-size:23px;text-align:center;border:2px solid #60b5f5;border-radius:8px}.reverse-quick input.bad{border-color:#e5484d;background:#fff1f2}.reverse-quick input.good{border-color:#16a34a}.reverse-result{text-align:center;min-height:32px;font-size:20px;font-weight:bold}.reverse-builder{max-width:1050px;margin:0 auto}.reverse-builder .scroll{overflow-x:auto}.reverse-builder .selectable{cursor:pointer}.reverse-builder .selected-label{padding:8px}.reverse-builder .formula{min-width:360px}.reverse-builder .control-panel{margin:12px auto}.reverse-builder .term input{width:72px}.reverse-builder .plus{margin:0 12px}@media(max-width:700px){.tabs{gap:3px}.tab{font-size:12px;padding:9px 5px}.reverse-quick .quick-item{font-size:18px;gap:6px}.reverse-quick input{width:73px;font-size:19px}.card{padding:14px}}
+</style><style>
+.teacher-corner{position:absolute;right:22px;top:18px}.teacher-corner button{font-size:13px;padding:8px 12px;background:#475569}.card{position:relative}.tab.done{background:#dcfce7;color:#166534}.tab.done.active{background:#15803d;color:white}.progress-note{text-align:center;color:#475569;font-weight:700;margin:8px}.modal-shade{position:fixed;inset:0;background:#0f172a99;display:none;align-items:center;justify-content:center;z-index:1000}.modal-shade.show{display:flex}.modal-panel{background:white;border-radius:18px;padding:30px;max-width:400px;width:90%;text-align:center;box-shadow:0 15px 45px #0003}.modal-panel input{font-size:20px;padding:12px;width:100%;margin:12px 0;border:1px solid #94a3b8;border-radius:8px}.modal-panel button{margin:4px}#tab11{background:#7c3aed;color:white}#tab11.active{background:#5b21b6}@media(max-width:650px){.teacher-corner{position:static;text-align:right}.teacher-corner button{font-size:12px}}
+</style></head><body><main class="card"><div class="teacher-corner"><button id="teacherButton" onclick="openTeacherLogin()">교사 로그인</button></div><h1>시간을 분으로 바꾸기</h1><nav class="tabs" aria-label="학습 페이지"><button class="tab active" id="tab1" onclick="switchPage(1)">1페이지</button><button class="tab" id="tab2" onclick="switchPage(2)">2페이지</button><button class="tab" id="tab3" onclick="switchPage(3)">3페이지</button><button class="tab" id="tab4" onclick="switchPage(4)">4페이지</button><button class="tab" id="tab5" onclick="switchPage(5)">5페이지</button><button class="tab" id="tab6" onclick="switchPage(6)">6페이지</button><button class="tab" id="tab7" onclick="switchPage(7)">7페이지</button><button class="tab" id="tab8" onclick="switchPage(8)">8페이지</button><button class="tab" id="tab9" onclick="switchPage(9)">9페이지</button><button class="tab" id="tab10" onclick="switchPage(10)">10페이지</button><button class="tab" id="tab11" onclick="switchPage(11)" hidden>자동평가</button></nav><div id="progressNote" class="progress-note">1페이지 · 연속 정답 0/6</div>
+<section class="page active" id="page1"><p class="hint">몇 시간을 분으로 바꾸어 보세요. 빈칸에 숫자를 입력하세요.</p><div class="scroll"><div class="equations" id="equations0"></div></div><p id="result0" aria-live="polite"></p><div class="buttons"><button onclick="check0()">정답 확인</button><button class="secondary" onclick="newProblem0()">다른 문제</button></div></section>
+<section class="page" id="page2"><p class="hint">빈칸에 숫자를 쓰고 정답 확인을 누르세요. 수식은 줄바꿈되지 않습니다.</p><div class="scroll"><div class="equations" id="equations"></div></div><p id="result" aria-live="polite"></p><div class="buttons"><button onclick="check()">정답 확인</button><button class="secondary" onclick="newProblem()">다른 문제</button></div></section>
+<section class="page" id="page3"><p class="hint">등호가 있는 줄을 선택하고 버튼을 눌러 수식을 만드세요. 정답 여부는 정답 확인을 누를 때만 알 수 있습니다. 수식이 길어지면 가로로 스크롤하세요.</p>
+<div class="scroll"><div class="equations" id="equations2"></div></div>
+<div class="control-panel"><div id="selectedLabel" class="selected-label" aria-live="polite">첫째 줄 선택 중</div><div class="builder"><button id="appendButton" class="append" onclick="appendUnit()">1시간 붙이기</button><button id="increaseButton" class="increase" onclick="increaseTen()">10분 늘리기</button><button class="remove" onclick="undoSelected()">↶ 되돌리기</button><button class="secondary" onclick="reset2()">처음부터</button></div></div>
+<p id="result2" aria-live="polite"></p><div class="buttons"><button onclick="check2()">정답 확인</button><button class="secondary" onclick="newProblem2()">다른 문제</button></div></section><section class="page" id="page4"><p class="hint">몇 시간을 몇 분으로 바꾸는지 계산해 보세요. 한 번에 5문제가 나옵니다.</p><div class="quick-grid" id="quickQuestions"></div><p id="result4" aria-live="polite"></p><div class="buttons"><button onclick="check4()">정답 확인</button><button class="secondary" onclick="newProblems4()">새로운 5문제</button></div></section><section class="page" id="page5"><p class="hint">시간과 분을 모두 분으로 바꾸어 보세요. 한 번에 5문제가 나옵니다.</p><div class="quick-grid" id="quickQuestions5"></div><p id="result5" aria-live="polite"></p><div class="buttons"><button onclick="check5()">정답 확인</button><button class="secondary" onclick="newProblems5()">새로운 5문제</button></div></section>
+<section class="page" id="page6"><p class="hint">분을 시간으로 바꾸는 과정을 빈칸에 써 보세요.</p><div class="scroll"><div class="equations" id="equations6"></div></div><p class="reverse-result" id="result6"></p><div class="buttons"><button onclick="checkReverse(6)">정답 확인</button><button class="secondary" onclick="newReverse(6)">다른 문제</button></div></section>
+<section class="page" id="page7"><p class="hint">분을 시간과 분으로 바꾸는 과정을 빈칸에 써 보세요.</p><div class="scroll"><div class="equations" id="equations7"></div></div><p class="reverse-result" id="result7"></p><div class="buttons"><button onclick="checkReverse(7)">정답 확인</button><button class="secondary" onclick="newReverse(7)">다른 문제</button></div></section>
+<section class="page" id="page8"><p class="hint">등호가 있는 줄을 선택하고 버튼으로 수식을 만드세요. 정답은 확인 버튼을 누를 때만 표시됩니다.</p><div class="reverse-builder"><div class="scroll"><div class="equations" id="equations8"></div></div><div class="control-panel"><div class="selected-label" id="selected8">첫째 줄 선택 중</div><div class="builder"><button class="append" id="append8" onclick="append8()">60분 붙이기</button><button class="increase" id="minute8" onclick="minute8()">10분 늘리기</button><button class="remove" onclick="undo8()">↶ 되돌리기</button><button class="secondary" onclick="reset8()">처음부터</button></div></div></div><p class="reverse-result" id="result8"></p><div class="buttons"><button onclick="check8()">정답 확인</button><button class="secondary" onclick="newProblem8()">다른 문제</button></div></section>
+<section class="page" id="page9"><p class="hint">분을 시간으로 바꾸세요. 한 번에 5문제입니다.</p><div class="reverse-quick" id="questions9"></div><p class="reverse-result" id="result9"></p><div class="buttons"><button onclick="checkQuickReverse(9)">정답 확인</button><button class="secondary" onclick="newQuickReverse(9)">새로운 5문제</button></div></section>
+<section class="page" id="page10"><p class="hint">분을 시간과 분으로 바꾸세요. 한 번에 5문제입니다.</p><div class="reverse-quick" id="questions10"></div><p class="reverse-result" id="result10"></p><div class="buttons"><button onclick="checkQuickReverse(10)">정답 확인</button><button class="secondary" onclick="newQuickReverse(10)">새로운 5문제</button></div></section>
+<section class="page" id="page11"><div id="auto-evaluation-act-1793747973842" style="margin:24px auto;max-width:1050px;"><iframe title="과제 참여 여부 확인하기" src="https://eyeholder83-commits.github.io/sh0201/%ED%95%99%EA%B8%89%ED%86%B5%ED%95%A9%EA%B4%80%EB%A6%AC.html?autoActivity=act-1793747973842" loading="lazy" style="display:block;width:100%;height:650px;border:0;border-radius:16px;background:#f8fafc;" referrerpolicy="strict-origin-when-cross-origin"></iframe></div></section></main><div class="modal-shade" id="teacherModal"><div class="modal-panel"><h2>교사 로그인</h2><input type="password" id="teacherPassword" placeholder="비밀번호" autocomplete="off" onkeydown="if(event.key==='Enter')verifyTeacher()"><div id="teacherError" style="color:#dc2626"></div><button onclick="verifyTeacher()">로그인</button><button class="secondary" onclick="closeTeacherLogin()">취소</button></div></div><div class="modal-shade" id="evaluationModal"><div class="modal-panel"><h2>학습 완료!</h2><p>모든 페이지를 완료했습니다.<br>자동평가 페이지가 열렸습니다.</p></div></div>
+<script>
+
+let hours0=2,expected0=[];
+function term0(value,unit){const idx=expected0.length;expected0.push(value);return `<span class="term"><input type="text" inputmode="numeric" aria-label="${idx+1}번째 빈칸" data-zero="${idx}" autocomplete="off"><span>${unit}</span></span>`}
+function line0(label,values,units){return `<div class="line"><span class="label">${label}</span><span class="equals">=</span><span class="formula">${values.map((v,i)=>(i?'<span class="plus">+</span>':'')+term0(v,units[i])).join('')}</span></div>`}
+function render0(){expected0=[];const h=hours0;document.getElementById('equations0').innerHTML=h===1?line0('1시간',[60],['분']):line0(`${h}시간`,Array(h).fill(1),Array(h).fill('시간'))+line0('',Array(h).fill(60),Array(h).fill('분'))+line0('',[h*60],['분']);document.getElementById('result0').textContent=''}
+function check0(){let ok=true;document.querySelectorAll('[data-zero]').forEach(el=>{const good=el.value.trim()!==''&&Number(el.value)===expected0[Number(el.dataset.zero)];el.classList.toggle('good',good);el.classList.toggle('bad',!good);if(!good)ok=false});const r=document.getElementById('result0');r.textContent=ok?'모두 정답입니다!':'틀린 빈칸을 다시 확인하세요.';r.style.color=ok?'#15803d':'#dc2626'}
+function newProblem0(){const choices=[1,2,3,4].filter(x=>x!==hours0);hours0=choices[Math.floor(Math.random()*choices.length)];render0()}
+
+let total=130,expected=[];
+function term(value,unit){const idx=expected.length;expected.push(value);return `<span class="term"><input type="text" inputmode="numeric" aria-label="${idx+1}번째 빈칸" data-idx="${idx}" autocomplete="off"><span>${unit}</span></span>`}
+function line(label,values,units){return `<div class="line"><span class="label">${label}</span><span class="equals">=</span><span class="formula">${values.map((v,i)=>(i?'<span class="plus">+</span>':'')+term(v,units[i])).join('')}</span></div>`}
+function render(){expected=[];const h=Math.floor(total/60),m=total%60;const hours=Array(h).fill(1).concat(m),minutes=Array(h).fill(60).concat(m);document.getElementById('equations').innerHTML=line(`${h}시간 ${m}분`,hours,Array(h).fill('시간').concat('분'))+line('',minutes,minutes.map(()=>'분'))+line('',[total],['분']);document.getElementById('result').textContent=''}
+function check(){let ok=true;document.querySelectorAll('[data-idx]').forEach(el=>{const good=el.value.trim()!==''&&Number(el.value)===expected[Number(el.dataset.idx)];el.classList.toggle('good',good);el.classList.toggle('bad',!good);if(!good)ok=false});const r=document.getElementById('result');r.textContent=ok?'모두 정답입니다!':'틀린 빈칸을 다시 확인하세요.';r.style.color=ok?'#15803d':'#dc2626'}
+function newProblem(){const choices=[];for(let n=70;n<240;n+=10)if(n%60!==0)choices.push(n);total=choices[Math.floor(Math.random()*choices.length)];render()}
+
+let page=1,total2=130,selectedRow=1,rows2=[null,{units:0,minutes:0},{units:0,minutes:0}],history2={1:[],2:[]},answer2='';
+function switchPage(n){page=n;for(let i=1;i<=11;i++){document.getElementById('page'+i).classList.toggle('active',i===n);document.getElementById('tab'+i).classList.toggle('active',i===n)}updateProgress()}
+function selectRow(n){selectedRow=n;render2();if(n===3){document.getElementById('totalAnswer')?.focus()}}
+function saveHistory(){history2[selectedRow].push({...rows2[selectedRow]})}
+function appendUnit(){if(selectedRow===3)return;const h=Math.floor(total2/60);saveHistory();rows2[selectedRow].units++;afterEdit()}
+function increaseTen(){if(selectedRow===3)return;saveHistory();rows2[selectedRow].minutes=(rows2[selectedRow].minutes+10)%60;afterEdit()}
+function undoSelected(){if(selectedRow===3){answer2='';render2();return}const prev=history2[selectedRow].pop();if(!prev)return;rows2[selectedRow]=prev;render2()}
+function afterEdit(){render2()}
+function reset2(){selectedRow=1;rows2=[null,{units:0,minutes:0},{units:0,minutes:0}];history2={1:[],2:[]};answer2='';render2()}
+function newProblem2(){const choices=[];for(let n=70;n<240;n+=10)if(n%60!==0)choices.push(n);total2=choices[Math.floor(Math.random()*choices.length)];reset2()}
+function term2(n,unit){return `<span class="term"><span class="built-number">${n}</span><span>${unit}</span></span>`}
+function rowParts(n){const r=rows2[n],a=Array(r.units).fill(null).map(()=>term2(n===1?1:60,n===1?'시간':'분'));if(r.minutes>0)a.push(term2(r.minutes,'분'));return a.length?a.join('<span class="plus">+</span>'):'<span class="placeholder">이 줄을 선택하고 버튼을 누르세요</span>'}
+function render2(){const h=Math.floor(total2/60),m=total2%60;
+const eq=document.getElementById('equations2');eq.innerHTML=`<div class="line selectable ${selectedRow===1?'chosen':''}" onclick="selectRow(1)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRow(1)}"><span class="label">${h}시간 ${m}분</span><span class="equals">=</span><span class="formula">${rowParts(1)}</span></div><div class="line selectable ${selectedRow===2?'chosen':''}" onclick="selectRow(2)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRow(2)}"><span class="label"></span><span class="equals">=</span><span class="formula">${rowParts(2)}</span></div><div class="line selectable ${selectedRow===3?'chosen':''}" onclick="selectRow(3)" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRow(3)}"><span class="label"></span><span class="equals">=</span><span class="formula"><span class="term"><input type="text" inputmode="numeric" id="totalAnswer" aria-label="전체 분 입력" value="${answer2}" onclick="event.stopPropagation();selectedRow=3;updateControls();" oninput="answer2=this.value;document.getElementById('result2').textContent=''"><span>분</span></span></span></div>`;
+updateControls();document.getElementById('result2').textContent=''}
+function updateControls(){const h=Math.floor(total2/60),m=total2%60;document.getElementById('selectedLabel').textContent=selectedRow===3?'셋째 줄 · 마지막 답 직접 입력':`${selectedRow===1?'첫째':'둘째'} 줄 선택 중`;
+const a=document.getElementById('appendButton'),b=document.getElementById('increaseButton');a.textContent=selectedRow===2?'60분 붙이기':'1시간 붙이기';b.textContent='10분 늘리기';a.disabled=b.disabled=selectedRow===3;
+document.querySelectorAll('#equations2 .selectable').forEach((el,i)=>el.classList.toggle('chosen',i+1===selectedRow))}
+function check2(){const h=Math.floor(total2/60),m=total2%60;const valid=[1,2].every(n=>rows2[n].units===h&&rows2[n].minutes===m)&&answer2.trim()!==''&&Number(answer2)===total2;const r=document.getElementById('result2');r.textContent=valid?'모두 정답입니다!':'수식이나 마지막 답을 다시 확인하세요.';r.style.color=valid?'#15803d':'#dc2626';document.getElementById('totalAnswer').classList.toggle('good',valid);document.getElementById('totalAnswer').classList.toggle('bad',!valid)}
+let questions4=[];
+function newProblems4(){const pool=[1,2,3,4,5,6,7,8,9,10];for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}questions4=pool.slice(0,5);document.getElementById('quickQuestions').innerHTML=questions4.map((h,i)=>`<div class="quick-item"><span>${i+1}.</span><span>${h}시간</span><span>=</span><input type="text" inputmode="numeric" autocomplete="off" data-four="${i}" aria-label="${i+1}번 문제 답"><span>분</span></div>`).join('');document.getElementById('result4').textContent=''}
+function check4(){let count=0;document.querySelectorAll('[data-four]').forEach(el=>{const h=questions4[Number(el.dataset.four)],ok=el.value.trim()!==''&&Number(el.value)===h*60;el.classList.toggle('good',ok);el.classList.toggle('bad',!ok);if(ok)count++});const r=document.getElementById('result4');r.textContent=count===5?'5문제 모두 정답입니다!':`${count}/5문제 정답입니다. 틀린 칸을 다시 확인하세요.`;r.style.color=count===5?'#15803d':'#dc2626'}
+let questions5=[];
+function newProblems5(){
+ const pool=[];for(let h=1;h<=5;h++)for(let m=10;m<=50;m+=10)pool.push({h,m});
+ for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+ questions5=pool.slice(0,5);
+ document.getElementById('quickQuestions5').innerHTML=questions5.map((q,i)=>`<div class="quick-item"><span>${i+1}.</span><span>${q.h}시간 ${q.m}분</span><span>=</span><input type="text" inputmode="numeric" autocomplete="off" data-five="${i}" aria-label="${i+1}번 문제 답"><span>분</span></div>`).join('');
+ document.getElementById('result5').textContent='';
+}
+function check5(){let count=0;document.querySelectorAll('[data-five]').forEach(el=>{const q=questions5[Number(el.dataset.five)],ok=el.value.trim()!==''&&Number(el.value)===q.h*60+q.m;el.classList.toggle('good',ok);el.classList.toggle('bad',!ok);if(ok)count++});const r=document.getElementById('result5');r.textContent=count===5?'5문제 모두 정답입니다!':`${count}/5문제 정답입니다. 틀린 칸을 다시 확인하세요.`;r.style.color=count===5?'#15803d':'#dc2626'}
+render0();render();render2();newProblems4();newProblems5();
+
+// 6~7페이지: 단계별 역변환
+const reverse={6:{h:2,m:0,answers:[]},7:{h:2,m:20,answers:[]}};
+function reverseInput(page,value,unit){const a=reverse[page].answers,idx=a.length;a.push(value);return `<span class="term"><input type="text" inputmode="numeric" autocomplete="off" data-reverse="${page}" data-i="${idx}" aria-label="${idx+1}번째 빈칸"><span>${unit}</span></span>`}
+function reverseLine(page,label,values,units,sep='+'){return `<div class="line"><span class="label">${label}</span><span class="equals">=</span><span class="formula">${values.map((v,i)=>(i?`<span class="plus">${sep}</span>`:'')+reverseInput(page,v,units[i])).join('')}</span></div>`}
+function renderReverse(page){const q=reverse[page];q.answers=[];const h=q.h,m=q.m,total=h*60+m;let html='';
+ if(page===6){html+=reverseLine(page,`${total}분`,Array(h).fill(60),Array(h).fill('분'));html+=reverseLine(page,'',Array(h).fill(1),Array(h).fill('시간'));html+=reverseLine(page,'',[h],['시간'])}
+ else{html+=reverseLine(page,`${total}분`,[...Array(h).fill(60),m],[...Array(h).fill('분'),'분']);html+=reverseLine(page,'',[...Array(h).fill(1),m],[...Array(h).fill('시간'),'분']);if(h>=2)html+=reverseLine(page,'',[h,m],['시간','분']);html+=reverseLine(page,'',[h,m],['시간','분'],'')}
+ document.getElementById('equations'+page).innerHTML=html;document.getElementById('result'+page).textContent='';}
+function checkReverse(page){let count=0;document.querySelectorAll(`[data-reverse="${page}"]`).forEach(el=>{const ok=el.value.trim()!==''&&Number(el.value)===reverse[page].answers[+el.dataset.i];el.classList.toggle('good',ok);el.classList.toggle('bad',!ok);if(ok)count++});const ok=count===reverse[page].answers.length;const r=document.getElementById('result'+page);r.textContent=ok?'모두 정답입니다!':'틀린 빈칸을 다시 확인하세요.';r.style.color=ok?'#15803d':'#dc2626'}
+function newReverse(page){const q=reverse[page];let h,m;do{h=page===6?2+Math.floor(Math.random()*3):1+Math.floor(Math.random()*3);m=page===6?0:10*(1+Math.floor(Math.random()*5))}while(h===q.h&&m===q.m);q.h=h;q.m=m;renderReverse(page)}
+// 8페이지: 줄 선택 후 단위별 붙이기와 분 늘리기, 정답 힌트 없음
+let q8={h:2,m:30},selected8=1,rows8={1:{units:0,minutes:0},2:{units:0,minutes:0}},history8={1:[],2:[]},answer8={h:'',m:'',sumH:'',sumM:''};
+function select8(n){selected8=n;render8();if(n>=3)document.getElementById(n===3&&q8.h>=2?'answer8sumH':'answer8h')?.focus()}
+function snapshot8(){if(selected8===1||selected8===2)history8[selected8].push({...rows8[selected8]})}
+function append8(){if(selected8>=3)return;snapshot8();rows8[selected8].units++;render8()}
+function minute8(){if(selected8>=3)return;snapshot8();rows8[selected8].minutes=(rows8[selected8].minutes+10)%60;render8()}
+function undo8(){if(selected8>=3){answer8={h:'',m:'',sumH:'',sumM:''};render8();return}const prev=history8[selected8].pop();if(prev){rows8[selected8]=prev;render8()}}
+function reset8(){selected8=1;rows8={1:{units:0,minutes:0},2:{units:0,minutes:0}};history8={1:[],2:[]};answer8={h:'',m:'',sumH:'',sumM:''};render8()}
+function newProblem8(){let h,m;do{h=1+Math.floor(Math.random()*3);m=10*(1+Math.floor(Math.random()*5))}while(h===q8.h&&m===q8.m);q8={h,m};reset8()}
+function parts8(n){const r=rows8[n],pieces=Array.from({length:r.units},()=>`<span class="term"><span class="built-number">${n===1?60:1}</span><span>${n===1?'분':'시간'}</span></span>`);if(r.minutes)pieces.push(`<span class="term"><span class="built-number">${r.minutes}</span><span>분</span></span>`);return pieces.length?pieces.join('<span class="plus">+</span>'):'<span class="placeholder">이 줄을 선택하고 버튼을 누르세요</span>'}
+function render8(){const t=q8.h*60+q8.m;const line=(n,label,formula)=>`<div class="line selectable ${selected8===n?'chosen':''}" onclick="select8(${n})" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();select8(${n})}"><span class="label">${label}</span><span class="equals">=</span><span class="formula">${formula}</span></div>`;
+ document.getElementById('equations8').innerHTML=line(1,`${t}분`,parts8(1))+line(2,'',parts8(2))+(q8.h>=2?line(3,'',`<span class="term"><input id="answer8sumH" type="text" inputmode="numeric" value="${answer8.sumH}" onclick="event.stopPropagation();selected8=3;update8()" oninput="answer8.sumH=this.value;document.getElementById('result8').textContent=''"><span>시간</span></span><span class="plus">+</span><span class="term"><input id="answer8sumM" type="text" inputmode="numeric" value="${answer8.sumM}" onclick="event.stopPropagation();selected8=3;update8()" oninput="answer8.sumM=this.value;document.getElementById('result8').textContent=''"><span>분</span></span>`):'')+line(q8.h>=2?4:3,'',`<span class="term"><input id="answer8h" type="text" inputmode="numeric" value="${answer8.h}" onclick="event.stopPropagation();selected8=3;update8()" oninput="answer8.h=this.value;document.getElementById('result8').textContent=''"><span>시간</span></span><span class="term" style="margin-left:14px"><input id="answer8m" type="text" inputmode="numeric" value="${answer8.m}" onclick="event.stopPropagation();selected8=3;update8()" oninput="answer8.m=this.value;document.getElementById('result8').textContent=''"><span>분</span></span>`);
+ update8();document.getElementById('result8').textContent=''}
+function update8(){document.getElementById('selected8').textContent=selected8>=3?(q8.h>=2?'셋째·넷째 줄 · 답 직접 입력':'셋째 줄 · 답 직접 입력'):selected8===1?'첫째 줄 선택 중':'둘째 줄 선택 중';document.getElementById('append8').textContent=selected8===2?'1시간 붙이기':'60분 붙이기';document.getElementById('append8').disabled=document.getElementById('minute8').disabled=selected8>=3;document.querySelectorAll('#equations8 .selectable').forEach((e,i)=>e.classList.toggle('chosen',i+1===selected8))}
+function check8(){const ok=rows8[1].units===q8.h&&rows8[1].minutes===q8.m&&rows8[2].units===q8.h&&rows8[2].minutes===q8.m&&answer8.h.trim()!==''&&answer8.m.trim()!==''&&+answer8.h===q8.h&&+answer8.m===q8.m&&(q8.h<2||(answer8.sumH.trim()!==''&&answer8.sumM.trim()!==''&&+answer8.sumH===q8.h&&+answer8.sumM===q8.m));const r=document.getElementById('result8');r.textContent=ok?'모두 정답입니다!':'수식이나 마지막 답을 다시 확인하세요.';r.style.color=ok?'#15803d':'#dc2626'}
+// 9~10페이지: 다섯 문제
+const quickReverse={9:[],10:[]};
+function newQuickReverse(page){let pool=[];if(page===9){for(let h=1;h<=10;h++)pool.push({h,m:0})}else{for(let h=1;h<=5;h++)for(let m=10;m<=50;m+=10)pool.push({h,m})}for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}quickReverse[page]=pool.slice(0,5);document.getElementById('questions'+page).innerHTML=quickReverse[page].map((q,i)=>`<div class="quick-item"><span>${i+1}.</span><span>${q.h*60+q.m}분</span><span>=</span><input type="text" inputmode="numeric" autocomplete="off" data-quick="${page}" data-index="${i}" data-part="h" aria-label="${i+1}번 시간"><span>시간</span>${page===10?`<input type="text" inputmode="numeric" autocomplete="off" data-quick="${page}" data-index="${i}" data-part="m" aria-label="${i+1}번 분"><span>분</span>`:''}</div>`).join('');document.getElementById('result'+page).textContent=''}
+function checkQuickReverse(page){let correct=0;for(let i=0;i<5;i++){const q=quickReverse[page][i];const inputs=[...document.querySelectorAll(`[data-quick="${page}"][data-index="${i}"]`)];let all=true;inputs.forEach(el=>{const expected=el.dataset.part==='h'?q.h:q.m;const ok=el.value.trim()!==''&&+el.value===expected;el.classList.toggle('good',ok);el.classList.toggle('bad',!ok);if(!ok)all=false});if(all)correct++}const r=document.getElementById('result'+page);r.textContent=correct===5?'5문제 모두 정답입니다!':`${correct}/5문제 정답입니다. 틀린 칸을 다시 확인하세요.`;r.style.color=correct===5?'#15803d':'#dc2626'}
+renderReverse(6);renderReverse(7);render8();newQuickReverse(9);newQuickReverse(10);
+
+// 학습 진도와 교사용 정답 입력
+const streaks=Array(11).fill(0),completed=Array(11).fill(false);
+let teacherMode=false, evaluationAnnounced=false;
+const baseCheckReverse=checkReverse, baseCheckQuickReverse=checkQuickReverse;
+const originalChecks={1:check0,2:check,3:check2,4:check4,5:check5,6:()=>baseCheckReverse(6),7:()=>baseCheckReverse(7),8:check8,9:()=>baseCheckQuickReverse(9),10:()=>baseCheckQuickReverse(10)};
+const originalNew={1:newProblem0,2:newProblem,3:newProblem2,4:newProblems4,5:newProblems5,6:()=>newReverse(6),7:()=>newReverse(7),8:newProblem8,9:()=>newQuickReverse(9),10:()=>newQuickReverse(10)};
+function updateProgress(){if(page===11){document.getElementById('progressNote').textContent='모든 학습 완료 · 자동평가';return}document.getElementById('progressNote').textContent=`${page}페이지 · ${completed[page]?'✓ 완료':`연속 정답 ${streaks[page]}/6${[4,5,9,10].includes(page)?"세트":"문제"}`}`;}
+function showAutoEvaluation(){const tab=document.getElementById('tab11');tab.hidden=false;if(!evaluationAnnounced){evaluationAnnounced=true;document.getElementById('evaluationModal').classList.add('show');setTimeout(()=>document.getElementById('evaluationModal').classList.remove('show'),2000)}}
+function recordAnswer(n,successes){if(completed[n])return;for(const ok of successes){streaks[n]=ok?streaks[n]+1:0;if(streaks[n]>=6){completed[n]=true;document.getElementById('tab'+n).classList.add('done');document.getElementById('tab'+n).textContent=n+'페이지 ✓ 완료';break}}updateProgress();if(completed.slice(1).every(Boolean))showAutoEvaluation();}
+function getCorrectness(n){
+ if(n===1)return [[...document.querySelectorAll('[data-zero]')].every(e=>e.value.trim()!==''&&+e.value===expected0[+e.dataset.zero])];
+ if(n===2)return [[...document.querySelectorAll('[data-idx]')].every(e=>e.value.trim()!==''&&+e.value===expected[+e.dataset.idx])];
+ if(n===3){const h=Math.floor(total2/60),m=total2%60;return [[1,2].every(i=>rows2[i].units===h&&rows2[i].minutes===m)&&answer2.trim()!==''&&+answer2===total2]}
+ if(n===4)return [questions4.every((h,i)=>{const e=document.querySelector(`[data-four="${i}"]`);return e.value.trim()!==''&&+e.value===h*60})];
+ if(n===5)return [questions5.every((q,i)=>{const e=document.querySelector(`[data-five="${i}"]`);return e.value.trim()!==''&&+e.value===q.h*60+q.m})];
+ if(n===6||n===7)return [[...document.querySelectorAll(`[data-reverse="${n}"]`)].every(e=>e.value.trim()!==''&&+e.value===reverse[n].answers[+e.dataset.i])];
+ if(n===8)return [rows8[1].units===q8.h&&rows8[1].minutes===q8.m&&rows8[2].units===q8.h&&rows8[2].minutes===q8.m&&answer8.h.trim()!==''&&answer8.m.trim()!==''&&+answer8.h===q8.h&&+answer8.m===q8.m&&(q8.h<2||(answer8.sumH.trim()!==''&&answer8.sumM.trim()!==''&&+answer8.sumH===q8.h&&+answer8.sumM===q8.m))];
+ return [quickReverse[n].every((q,i)=>[...document.querySelectorAll(`[data-quick="${n}"][data-index="${i}"]`)].every(e=>e.value.trim()!==''&&+e.value===(e.dataset.part==='h'?q.h:q.m)))];
+}
+function checkWithProgress(n){const result=getCorrectness(n);originalChecks[n]();recordAnswer(n,result);if(!completed[n]&&result.every(Boolean)){setTimeout(()=>{if(!completed[n]){originalNew[n]();fillTeacherAnswers(n);}},550)}}
+// 페이지별 기존 확인 동작을 보존하며 진도 계산을 연결
+check0=()=>checkWithProgress(1);check=()=>checkWithProgress(2);check2=()=>checkWithProgress(3);check4=()=>checkWithProgress(4);check5=()=>checkWithProgress(5);
+checkReverse=n=>checkWithProgress(n);check8=()=>checkWithProgress(8);checkQuickReverse=n=>checkWithProgress(n);
+function openTeacherLogin(){if(teacherMode){teacherMode=false;document.getElementById('teacherButton').textContent='교사 로그인';return}document.getElementById('teacherPassword').value='';document.getElementById('teacherError').textContent='';document.getElementById('teacherModal').classList.add('show');document.getElementById('teacherPassword').focus()}
+function closeTeacherLogin(){document.getElementById('teacherModal').classList.remove('show')}
+function verifyTeacher(){if(document.getElementById('teacherPassword').value===String.fromCharCode(53,54,53,56)){teacherMode=true;closeTeacherLogin();document.getElementById('teacherButton').textContent='교사 모드 종료';fillAllTeacherAnswers()}else document.getElementById('teacherError').textContent='비밀번호가 올바르지 않습니다.'}
+function fillTeacherAnswers(n=page){if(!teacherMode||n===11)return;
+ if(n===1)document.querySelectorAll('[data-zero]').forEach(e=>e.value=expected0[+e.dataset.zero]);
+ if(n===2)document.querySelectorAll('[data-idx]').forEach(e=>e.value=expected[+e.dataset.idx]);
+ if(n===3){const h=Math.floor(total2/60),m=total2%60;rows2=[null,{units:h,minutes:m},{units:h,minutes:m}];answer2=String(total2);render2()}
+ if(n===4)document.querySelectorAll('[data-four]').forEach(e=>e.value=questions4[+e.dataset.four]*60);
+ if(n===5)document.querySelectorAll('[data-five]').forEach(e=>{const q=questions5[+e.dataset.five];e.value=q.h*60+q.m});
+ if(n===6||n===7)document.querySelectorAll(`[data-reverse="${n}"]`).forEach(e=>e.value=reverse[n].answers[+e.dataset.i]);
+ if(n===8){rows8={1:{units:q8.h,minutes:q8.m},2:{units:q8.h,minutes:q8.m}};answer8={h:String(q8.h),m:String(q8.m),sumH:String(q8.h),sumM:String(q8.m)};render8()}
+ if(n===9||n===10)document.querySelectorAll(`[data-quick="${n}"]`).forEach(e=>{const q=quickReverse[n][+e.dataset.index];e.value=e.dataset.part==='h'?q.h:q.m});
+}
+function fillAllTeacherAnswers(){
+ if(!teacherMode)return;
+ for(let n=1;n<=10;n++)fillTeacherAnswers(n);
+}
+const baseSwitchPage=switchPage;switchPage=function(n){if(n===11&&!completed.slice(1).every(Boolean))return;baseSwitchPage(n);fillTeacherAnswers()};
+for(const name of ['newProblem0','newProblem','newProblem2','newProblems4','newProblems5','newProblem8']){const fn=globalThis[name];globalThis[name]=function(...args){const r=fn(...args);fillTeacherAnswers();return r}}
+const baseNewReverse=newReverse;newReverse=function(n){baseNewReverse(n);fillTeacherAnswers()};
+const baseNewQuickReverse=newQuickReverse;newQuickReverse=function(n){baseNewQuickReverse(n);fillTeacherAnswers()};
+updateProgress();
+
+// 중복 출제 최소화: 페이지별 최근 6회(세트) 동안 문제를 순환 배정합니다.
+const recentQuestions=Array.from({length:11},()=>[]);
+const questionPools={
+ 1:[1,2,3,4],
+ 2:Array.from({length:17},(_,i)=>70+i*10).filter(x=>x%60!==0),
+ 3:Array.from({length:17},(_,i)=>70+i*10).filter(x=>x%60!==0),
+ 6:[2,3,4],
+ 7:Array.from({length:15},(_,i)=>({h:1+Math.floor(i/5),m:10*(i%5+1)})),
+ 8:Array.from({length:15},(_,i)=>({h:1+Math.floor(i/5),m:10*(i%5+1)}))
+};
+function questionKey(q){return typeof q==='object'?`${q.h}:${q.m}`:String(q)}
+function pickDistinct(n,pool,count){
+ const history=recentQuestions[n],used=new Set(history);
+ const available=pool.filter(q=>!used.has(questionKey(q)));
+ const remaining=pool.filter(q=>used.has(questionKey(q)));
+ const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+ // 가능하면 지난 문제를 제외하고, 부족할 때만 오래된 문제부터 재사용
+ const ordered=shuffle(available).concat(remaining.sort((a,b)=>history.indexOf(questionKey(a))-history.indexOf(questionKey(b))));
+ const chosen=ordered.slice(0,count);
+ chosen.forEach(q=>{const k=questionKey(q);const pos=history.indexOf(k);if(pos>=0)history.splice(pos,1);history.push(k)});
+ return chosen;
+}
+function generateDistinct(n){
+ if([1,2,3,6,7,8].includes(n)){
+   const q=pickDistinct(n,questionPools[n],1)[0];
+   if(n===1){hours0=q;render0()}
+   if(n===2){total=q;render()}
+   if(n===3){total2=q;reset2()}
+   if(n===6||n===7){reverse[n].h=typeof q==='number'?q:q.h;reverse[n].m=typeof q==='number'?0:q.m;renderReverse(n)}
+   if(n===8){q8={...q};reset8()}
+ }else{
+   let pool;
+   if(n===4)pool=Array.from({length:10},(_,i)=>i+1);
+   if(n===5||n===10)pool=Array.from({length:25},(_,i)=>({h:1+Math.floor(i/5),m:10*(i%5+1)}));
+   if(n===9)pool=Array.from({length:10},(_,i)=>({h:i+1,m:0}));
+   const chosen=pickDistinct(n,pool,5);
+   if(n===4){questions4=chosen;document.getElementById('quickQuestions').innerHTML=chosen.map((h,i)=>`<div class="quick-item"><span>${i+1}.</span><span>${h}시간</span><span>=</span><input type="text" inputmode="numeric" autocomplete="off" data-four="${i}" aria-label="${i+1}번 문제 답"><span>분</span></div>`).join('')}
+   if(n===5){questions5=chosen;document.getElementById('quickQuestions5').innerHTML=chosen.map((q,i)=>`<div class="quick-item"><span>${i+1}.</span><span>${q.h}시간 ${q.m}분</span><span>=</span><input type="text" inputmode="numeric" autocomplete="off" data-five="${i}" aria-label="${i+1}번 문제 답"><span>분</span></div>`).join('')}
+   if(n===9||n===10){quickReverse[n]=chosen;document.getElementById('questions'+n).innerHTML=chosen.map((q,i)=>`<div class="quick-item"><span>${i+1}.</span><span>${q.h*60+q.m}분</span><span>=</span><input type="text" inputmode="numeric" autocomplete="off" data-quick="${n}" data-index="${i}" data-part="h" aria-label="${i+1}번 시간"><span>시간</span>${n===10?`<input type="text" inputmode="numeric" autocomplete="off" data-quick="${n}" data-index="${i}" data-part="m" aria-label="${i+1}번 분"><span>분</span>`:''}</div>`).join('')}
+   document.getElementById('result'+(n===4?4:n===5?5:n)).textContent='';
+ }
+ if(teacherMode)fillTeacherAnswers(n);
+}
+// 최초 표시된 문제도 이력에 반영하고, 이후 문제 생성은 중복 방지 생성기를 사용합니다.
+for(let n=1;n<=10;n++){
+ const initial=n===1?[hours0]:n===2?[total]:n===3?[total2]:n===4?questions4:n===5?questions5:n===6||n===7?[{h:reverse[n].h,m:reverse[n].m}]:n===8?[q8]:quickReverse[n];
+ recentQuestions[n].push(...initial.map(questionKey));
+ originalNew[n]=()=>generateDistinct(n);
+}
+// '다른 문제' 버튼을 직접 누를 때도 같은 중복 방지 로직을 사용합니다.
+newProblem0=()=>generateDistinct(1);newProblem=()=>generateDistinct(2);newProblem2=()=>generateDistinct(3);
+newProblems4=()=>generateDistinct(4);newProblems5=()=>generateDistinct(5);
+newReverse=n=>generateDistinct(n);newProblem8=()=>generateDistinct(8);newQuickReverse=n=>generateDistinct(n);
+
+</script></body></html>
