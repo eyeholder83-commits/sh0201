@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>걸린 시간 알아보기</title><style>
+*{box-sizing:border-box}body{margin:0;font-family:'Malgun Gothic',sans-serif;background:#f1f5f9}.nav{display:flex;justify-content:center;gap:10px;align-items:center;flex-wrap:wrap;background:#fff;border-bottom:1px solid #dce4ed;padding:12px;min-height:76px}.nav button{border:0;border-radius:12px;background:#e9eff7;color:#334155;font-weight:700;font-size:18px;padding:12px 18px;cursor:pointer}.nav button.active{background:#2563eb;color:white}.nav button.done:not(.active){background:#dcfce7;color:#166534}.page{display:none;width:100%;height:calc(100dvh - 82px);border:0;background:white}.page.active{display:block}.evaluation{display:none;margin:24px auto;max-width:1050px;padding:12px}.evaluation.active{display:block}.evaluation iframe{display:block;width:100%;height:650px;border:0;border-radius:16px;background:#f8fafc}.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0005;z-index:100}.modal.show{display:flex}.modal>div{background:white;padding:35px 45px;border-radius:20px;font-size:25px;font-weight:700;text-align:center;box-shadow:0 12px 40px #0003}.count{font-size:13px;display:block;margin-top:4px;opacity:.85}@media(max-width:600px){.nav{gap:5px;padding:8px}.nav button{padding:10px;font-size:15px}.page{height:calc(100dvh - 76px)}}
+</style><style>#teacherLogin{position:fixed;right:10px;top:10px;z-index:20;background:#475569;color:white;border:0;border-radius:9px;padding:8px 12px;cursor:pointer;font-size:13px}#teacherLogin.on{background:#047857}.nav{padding-right:130px}</style></head><body><nav class="nav" id="nav"></nav><button id="teacherLogin" type="button">교사용 로그인</button><iframe class="page" id="page1" srcdoc="&lt;!DOCTYPE html&gt;
+
+&lt;html lang=&quot;ko&quot;&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;/&gt;&lt;meta content=&quot;width=device-width,initial-scale=1&quot; name=&quot;viewport&quot;/&gt;&lt;title&gt;등산하는 데 걸린 시간&lt;/title&gt;&lt;style&gt;*{box-sizing:border-box}body{margin:0;background:#f3f7fc;font-family:'Malgun Gothic',sans-serif;color:#203047}.wrap{max-width:1050px;margin:25px auto;background:white;border-radius:22px;padding:25px;box-shadow:0 8px 30px #19365a18}h1{font-size:27px;margin:0 0 12px}.hint{color:#50657d;font-size:17px}.clocks{display:grid;grid-template-columns:1fr 35px 1fr 35px 1fr;align-items:center;gap:8px;margin-top:20px}.clockbox{text-align:center}.clockbox h2{font-size:18px}.clock{width:100%;max-width:210px;touch-action:none;cursor:pointer}.arrow{font-size:30px;color:#96a3b5;text-align:center}.time{font-size:20px;font-weight:bold;margin-top:5px}.timeline{margin-top:30px}.ticks{position:relative;height:30px;margin:14px 0 0}.ticks span{position:absolute;bottom:2px;transform:translateX(-50%);font-size:14px;white-space:nowrap;line-height:1}.ticks span:first-child{transform:none}.ticks span:last-child{transform:translateX(-100%)}.bar{height:43px;border:1.5px solid #334155;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));margin:0;position:relative}.bar{touch-action:none;user-select:none}.cell{touch-action:none;user-select:none;cursor:crosshair;border-right:1px dashed #8290a1;background:#fff}.cell:nth-child(6){border-right:3px solid #334155}.cell:last-child{border-right:0}.cell.filled{background:#ffdd82}.cell.yellow{background:#ffe16b}.cell.pink{background:#f9a8c5}.controls{text-align:center;margin:24px 0}.controls button,.actions button{padding:12px 20px;margin:5px;border:0;border-radius:12px;background:#2563eb;color:white;font-weight:bold;font-size:17px;cursor:pointer}.controls button{background:#0d9488}.answer{text-align:center;background:#f0f7ff;padding:22px;border-radius:16px;font-size:20px}.answer input{width:70px;padding:10px;text-align:center;font-size:22px;border:2px solid #8da6c8;border-radius:10px}.actions{text-align:center;margin-top:15px}.actions button:last-child{background:#64748b}#feedback{text-align:center;font-size:20px;font-weight:bold;min-height:30px;margin-top:12px}@media(max-width:650px){.wrap{padding:14px;margin:8px}.clocks{gap:1px;grid-template-columns:1fr 16px 1fr 16px 1fr}.clockbox h2{font-size:13px}.arrow{font-size:18px}.time{font-size:13px}.ticks span{font-size:10px}h1{font-size:21px}} .clocks{display:block;text-align:center}.oneclock{width:100%}.time-info{font-size:19px;line-height:2;margin-bottom:10px}.clock-choose{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.clock-choose button{border:0;border-radius:10px;padding:10px 18px;background:#e2e8f0;color:#334155;font-size:17px;font-weight:bold;cursor:pointer}.clock-choose button.chosen{background:#2563eb;color:white}.clockbox{margin:12px auto}.clockbox .clock{max-width:240px}.clockbox h2{margin:8px 0}
+/* 시간띠 세로선 선택 표시 */
+.bar{overflow:visible}
+.bar .boundary-hit{position:absolute;top:0;height:100%;width:18px;transform:translateX(-50%);cursor:pointer;z-index:4;background:transparent;touch-action:manipulation}
+.bar .boundary-hit::after{content:&quot;&quot;;position:absolute;left:50%;top:0;height:100%;border-left:2px solid transparent;transform:translateX(-50%)}
+.bar .boundary-hit.selected::before{content:&quot;&quot;;position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:12px solid #2563eb}
+.bar .boundary-hit.selected::after{border-left:3px solid #2563eb}
+&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;main class=&quot;wrap&quot;&gt;&lt;h1&gt;⏱️ 등산하는 데 걸린 시간을 구해 봅시다.&lt;/h1&gt;&lt;p class=&quot;hint&quot;&gt;출발한 시각과 도착한 시각을 보고 시계 바늘을 움직여 보세요. 시간 띠가 노란색과 분홍색으로 채워집니다.&lt;/p&gt;&lt;section class=&quot;clocks&quot;&gt;&lt;div class=&quot;oneclock&quot;&gt;&lt;div class=&quot;time-info&quot;&gt;출발한 시각 &lt;strong id=&quot;startLabel&quot;&gt;&lt;/strong&gt;　→　도착한 시각 &lt;strong id=&quot;endLabel&quot;&gt;&lt;/strong&gt;&lt;strong id=&quot;middleLabel&quot; hidden&gt;&lt;/strong&gt;&lt;/div&gt;&lt;div class=&quot;clockbox&quot;&gt;&lt;h2 id=&quot;clockTitle&quot;&gt;시계 바늘을 움직여 보세요.&lt;/h2&gt;&lt;svg class=&quot;clock&quot; id=&quot;oneClock&quot; viewbox=&quot;0 0 220 220&quot;&gt;&lt;/svg&gt;&lt;/div&gt;&lt;/div&gt;&lt;/section&gt;&lt;div class=&quot;controls&quot;&gt;&lt;button onclick=&quot;move(-10)&quot;&gt;◀ 10분 전&lt;/button&gt;&lt;button onclick=&quot;move(10)&quot;&gt;10분 후 ▶&lt;/button&gt;&lt;/div&gt;&lt;section class=&quot;timeline&quot;&gt;&lt;p class=&quot;hint&quot;&gt;출발 시각부터 시계를 움직여 보세요. 처음 1시간은 노란색, 그다음은 분홍색으로 표시됩니다.&lt;/p&gt;&lt;div class=&quot;ticks&quot; id=&quot;ticks&quot;&gt;&lt;/div&gt;&lt;div class=&quot;bar&quot; id=&quot;bar&quot;&gt;&lt;/div&gt;&lt;/section&gt;&lt;div class=&quot;answer&quot;&gt;등산하는 데 걸린 시간은 &lt;input aria-label=&quot;시간&quot; id=&quot;hours&quot; inputmode=&quot;numeric&quot; maxlength=&quot;2&quot; type=&quot;text&quot;/&gt; 시간 &lt;input aria-label=&quot;분&quot; id=&quot;minutes&quot; inputmode=&quot;numeric&quot; maxlength=&quot;2&quot; type=&quot;text&quot;/&gt; 분입니다.&lt;/div&gt;&lt;div class=&quot;actions&quot;&gt;&lt;button onclick=&quot;check()&quot;&gt;정답확인&lt;/button&gt;&lt;button onclick=&quot;newProblem()&quot;&gt;다른문제&lt;/button&gt;&lt;/div&gt;&lt;div aria-live=&quot;polite&quot; id=&quot;feedback&quot;&gt;&lt;/div&gt;&lt;/main&gt;&lt;script&gt;
+const $=id=&gt;document.getElementById(id);
+let start=540,target=80,middleOffset=0,endOffset=0;
+const fmt=t=&gt;`${Math.floor(((t%720)+720)%720/60)||12}시 ${String(((t%60)+60)%60).padStart(2,'0')}분`;
+function clock(id,t,editable){
+ const svg=$(id),h=t/60%12,m=t%60;
+ let out='&lt;circle cx=&quot;110&quot; cy=&quot;110&quot; r=&quot;98&quot; fill=&quot;#fff9e9&quot; stroke=&quot;#f5ae37&quot; stroke-width=&quot;9&quot;/&gt;&lt;circle cx=&quot;110&quot; cy=&quot;110&quot; r=&quot;88&quot; fill=&quot;white&quot; stroke=&quot;#cbd5e1&quot; stroke-width=&quot;2&quot;/&gt;';
+ for(let i=0;i&lt;60;i++){let a=i*Math.PI/30,r=i%5===0?76:81;out+=`&lt;line x1=&quot;${110+Math.sin(a)*r}&quot; y1=&quot;${110-Math.cos(a)*r}&quot; x2=&quot;${110+Math.sin(a)*85}&quot; y2=&quot;${110-Math.cos(a)*85}&quot; stroke=&quot;#64748b&quot; stroke-width=&quot;${i%5===0?2:1}&quot;/&gt;`;}
+ for(let i=1;i&lt;=12;i++){let a=i*Math.PI/6;out+=`&lt;text x=&quot;${110+Math.sin(a)*65}&quot; y=&quot;${115-Math.cos(a)*65}&quot; text-anchor=&quot;middle&quot; font-size=&quot;15&quot; font-weight=&quot;bold&quot; fill=&quot;#334155&quot;&gt;${i}&lt;/text&gt;`;}
+ let ha=h*Math.PI/6,ma=m*Math.PI/30;
+ out+=`&lt;line x1=&quot;110&quot; y1=&quot;110&quot; x2=&quot;${110+Math.sin(ha)*45}&quot; y2=&quot;${110-Math.cos(ha)*45}&quot; stroke=&quot;#f06474&quot; stroke-width=&quot;7&quot; stroke-linecap=&quot;round&quot;/&gt;&lt;line x1=&quot;110&quot; y1=&quot;110&quot; x2=&quot;${110+Math.sin(ma)*69}&quot; y2=&quot;${110-Math.cos(ma)*69}&quot; stroke=&quot;#12a66c&quot; stroke-width=&quot;5&quot; stroke-linecap=&quot;round&quot;/&gt;&lt;circle cx=&quot;110&quot; cy=&quot;110&quot; r=&quot;5&quot; fill=&quot;#334155&quot;/&gt;`;
+ svg.innerHTML=out;svg.style.cursor=editable?'grab':'default';
+}
+let clockTime=0;
+let selectedBoundaries=new Set();
+function render(){
+ clock('oneClock',clockTime,true);
+ $('startLabel').textContent=fmt(start);$('endLabel').textContent=fmt(start+target);
+ const ticks=$('ticks'),bar=$('bar');ticks.innerHTML='';bar.innerHTML='';
+ for(let i=0;i&lt;=12;i++){let el=document.createElement('span'),t=start+i*10;el.textContent=i%6===0?`${Math.floor(t/60)%12||12}시`:`${i%6*10}분`;el.style.left=`${i/12*100}%`;ticks.appendChild(el);}
+ const elapsed=Math.max(0,Math.min(120,clockTime-start));
+ for(let i=0;i&lt;12;i++){let c=document.createElement('div');c.className='cell';
+ if(i*10&lt;elapsed &amp;&amp; i*10&lt;60)c.classList.add('yellow');
+ if(i*10&lt;elapsed &amp;&amp; i*10&gt;=60)c.classList.add('pink');
+ bar.appendChild(c);}
+ for(let i=0;i&lt;=12;i++){
+  const hit=document.createElement('div');
+  hit.className='boundary-hit'+(selectedBoundaries.has(i)?' selected':'');
+  hit.style.left=`${i/12*100}%`;
+  hit.style.transform='translateX(-50%)';
+  hit.setAttribute('role','button');hit.setAttribute('tabindex','0');
+  hit.setAttribute('aria-label',`${i*10}분 눈금선 선택`);
+  hit.addEventListener('click',()=&gt;{toggleBoundary(i);});
+  hit.addEventListener('keydown',e=&gt;{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleBoundary(i);}});
+  bar.appendChild(hit);
+ }
+}
+function toggleBoundary(i){if(selectedBoundaries.has(i))selectedBoundaries.delete(i);else selectedBoundaries.add(i);render();}
+function move(n){clockTime=Math.max(start-60,Math.min(start+120,clockTime+n));render();$('feedback').textContent='';}
+function check(){
+ const h=$('hours').value.trim(),m=$('minutes').value.trim(),f=$('feedback');
+ const ok=h!==''&amp;&amp;m!==''&amp;&amp;Number(h)*60+Number(m)===target&amp;&amp;clockTime===start+target;
+ if(ok){f.style.color='#059669';f.textContent='정답입니다! 🎉';parent.postMessage({kind:'quiz',page:1,correct:true},'*');setTimeout(newProblem,900);}
+ else{f.style.color='#dc2626';f.textContent='✗ 틀렸습니다. 다시 확인해 보세요.';parent.postMessage({kind:'quiz',page:1,correct:false},'*');}
+}
+function newProblem(){
+ selectedBoundaries.clear();
+ let old=start*100+target;
+ do{start=(Math.floor(Math.random()*12)+1)*60;target=[70,80,90,100,110][Math.floor(Math.random()*5)];}while(start*100+target===old);
+ clockTime=start-30;$('hours').value='';$('minutes').value='';$('feedback').textContent='';render();
+}
+function clockMinute(e,el){
+ const r=el.getBoundingClientRect(),x=(e.clientX-r.left)*220/r.width-110,y=(e.clientY-r.top)*220/r.height-110;
+ return (Math.round(((Math.atan2(x,-y)+2*Math.PI)%(2*Math.PI))/(Math.PI/3))*10)%60;
+}
+function attachClock(id){
+ const el=$(id);let down=false,last=null;
+ el.addEventListener('pointerdown',e=&gt;{down=true;last=clockMinute(e,el);el.setPointerCapture(e.pointerId);e.preventDefault();});
+ el.addEventListener('pointermove',e=&gt;{
+  if(!down)return;
+  const now=clockMinute(e,el);let d=now-last;if(d&gt;30)d-=60;if(d&lt; -30)d+=60;
+  if(d===0)return;
+  clockTime=Math.max(start-60,Math.min(start+120,clockTime+d));last=now;render();$('feedback').textContent='';
+ });
+ el.addEventListener('pointerup',()=&gt;down=false);el.addEventListener('pointercancel',()=&gt;down=false);
+}
+attachClock('oneClock');
+newProblem();
+&lt;/script&gt;&lt;script&gt;
+let teacherMode=false;
+function teacherFill(){if(!teacherMode)return;clockTime=start+target;render();$('hours').value=Math.floor(target/60);$('minutes').value=target%60;}
+const originalGenerate=newProblem;
+newProblem=function(...args){const result=originalGenerate.apply(this,args);teacherFill();return result;};
+window.addEventListener('message',event=&gt;{if(event.source!==parent)return;if(event.data?.kind==='teacher-mode'){teacherMode=event.data.enabled===true;teacherFill();}});
+parent.postMessage({kind:'teacher-ready',page:1},'*');
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" title="1페이지"></iframe><iframe class="page" id="page2" srcdoc="&lt;!DOCTYPE html&gt;
+
+&lt;html lang=&quot;ko&quot;&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;/&gt;&lt;meta content=&quot;width=device-width,initial-scale=1&quot; name=&quot;viewport&quot;/&gt;&lt;title&gt;자전거 타는 데 걸린 시간&lt;/title&gt;&lt;style&gt;*{box-sizing:border-box}body{margin:0;background:#f3f7fc;font-family:'Malgun Gothic',sans-serif;color:#203047}.wrap{max-width:1050px;margin:25px auto;background:white;border-radius:22px;padding:25px;box-shadow:0 8px 30px #19365a18}h1{font-size:27px;margin:0 0 12px}.hint{color:#50657d;font-size:17px}.clocks{display:grid;grid-template-columns:1fr 35px 1fr 35px 1fr;align-items:center;gap:8px;margin-top:20px}.clockbox{text-align:center}.clockbox h2{font-size:18px}.clock{width:100%;max-width:210px;touch-action:none;cursor:pointer}.arrow{font-size:30px;color:#96a3b5;text-align:center}.time{font-size:20px;font-weight:bold;margin-top:5px}.timeline{margin-top:30px}.ticks{position:relative;height:30px;margin:14px 0 0}.ticks span{position:absolute;bottom:2px;transform:translateX(-50%);font-size:14px;white-space:nowrap;line-height:1}.ticks span:first-child{transform:none}.ticks span:last-child{transform:translateX(-100%)}.bar{height:43px;border:1.5px solid #334155;display:grid;grid-template-columns:repeat(18,minmax(0,1fr));margin:0;position:relative}.bar{touch-action:none;user-select:none}.cell{touch-action:none;user-select:none;cursor:crosshair;border-right:1px dashed #8290a1;background:#fff}.cell:nth-child(6),.cell:nth-child(12){border-right:3px solid #334155}.cell:last-child{border-right:0}.cell.filled{background:#ffdd82}.cell.yellow{background:#ffe16b}.cell.pink{background:#f9a8c5}.cell.lightgreen{background:#b9ed91}.controls{text-align:center;margin:24px 0}.controls button,.actions button{padding:12px 20px;margin:5px;border:0;border-radius:12px;background:#2563eb;color:white;font-weight:bold;font-size:17px;cursor:pointer}.controls button{background:#0d9488}.answer{text-align:center;background:#f0f7ff;padding:22px;border-radius:16px;font-size:20px}.answer input{width:70px;padding:10px;text-align:center;font-size:22px;border:2px solid #8da6c8;border-radius:10px}.actions{text-align:center;margin-top:15px}.actions button:last-child{background:#64748b}#feedback{text-align:center;font-size:20px;font-weight:bold;min-height:30px;margin-top:12px}@media(max-width:650px){.wrap{padding:14px;margin:8px}.clocks{gap:1px;grid-template-columns:1fr 16px 1fr 16px 1fr}.clockbox h2{font-size:13px}.arrow{font-size:18px}.time{font-size:13px}.ticks span{font-size:10px}h1{font-size:21px}} .clocks{display:block;text-align:center}.oneclock{width:100%}.time-info{font-size:19px;line-height:2;margin-bottom:10px}.clock-choose{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.clock-choose button{border:0;border-radius:10px;padding:10px 18px;background:#e2e8f0;color:#334155;font-size:17px;font-weight:bold;cursor:pointer}.clock-choose button.chosen{background:#2563eb;color:white}.clockbox{margin:12px auto}.clockbox .clock{max-width:240px}.clockbox h2{margin:8px 0}
+/* 시간띠 세로선 선택 표시 */
+.bar{overflow:visible}
+.bar .boundary-hit{position:absolute;top:0;height:100%;width:18px;transform:translateX(-50%);cursor:pointer;z-index:4;background:transparent;touch-action:manipulation}
+.bar .boundary-hit::after{content:&quot;&quot;;position:absolute;left:50%;top:0;height:100%;border-left:2px solid transparent;transform:translateX(-50%)}
+.bar .boundary-hit.selected::before{content:&quot;&quot;;position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:12px solid #2563eb}
+.bar .boundary-hit.selected::after{border-left:3px solid #2563eb}
+&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;main class=&quot;wrap&quot;&gt;&lt;h1&gt;⏱️ 자전거 타는 데 걸린 시간을 구해 봅시다.&lt;/h1&gt;&lt;p class=&quot;hint&quot;&gt;출발한 시각과 도착한 시각을 보고 시계 바늘을 움직여 보세요. 시간 띠가 노란색과 분홍색으로 채워집니다.&lt;/p&gt;&lt;section class=&quot;clocks&quot;&gt;&lt;div class=&quot;oneclock&quot;&gt;&lt;div class=&quot;time-info&quot;&gt;출발한 시각 &lt;strong id=&quot;startLabel&quot;&gt;&lt;/strong&gt;　→　도착한 시각 &lt;strong id=&quot;endLabel&quot;&gt;&lt;/strong&gt;&lt;strong id=&quot;middleLabel&quot; hidden&gt;&lt;/strong&gt;&lt;/div&gt;&lt;div class=&quot;clockbox&quot;&gt;&lt;h2 id=&quot;clockTitle&quot;&gt;시계 바늘을 움직여 보세요.&lt;/h2&gt;&lt;svg class=&quot;clock&quot; id=&quot;oneClock&quot; viewbox=&quot;0 0 220 220&quot;&gt;&lt;/svg&gt;&lt;/div&gt;&lt;/div&gt;&lt;/section&gt;&lt;div class=&quot;controls&quot;&gt;&lt;button onclick=&quot;move(-10)&quot;&gt;◀ 10분 전&lt;/button&gt;&lt;button onclick=&quot;move(10)&quot;&gt;10분 후 ▶&lt;/button&gt;&lt;/div&gt;&lt;section class=&quot;timeline&quot;&gt;&lt;p class=&quot;hint&quot;&gt;출발 시각부터 시계를 움직여 보세요. 처음 2시간은 노란색, 그다음은 분홍색으로 표시됩니다.&lt;/p&gt;&lt;div class=&quot;ticks&quot; id=&quot;ticks&quot;&gt;&lt;/div&gt;&lt;div class=&quot;bar&quot; id=&quot;bar&quot;&gt;&lt;/div&gt;&lt;/section&gt;&lt;div class=&quot;answer&quot;&gt;자전거 타는 데 걸린 시간은 &lt;input aria-label=&quot;시간&quot; id=&quot;hours&quot; inputmode=&quot;numeric&quot; maxlength=&quot;2&quot; type=&quot;text&quot;/&gt; 시간 &lt;input aria-label=&quot;분&quot; id=&quot;minutes&quot; inputmode=&quot;numeric&quot; maxlength=&quot;2&quot; type=&quot;text&quot;/&gt; 분입니다.&lt;/div&gt;&lt;div class=&quot;actions&quot;&gt;&lt;button onclick=&quot;check()&quot;&gt;정답확인&lt;/button&gt;&lt;button onclick=&quot;newProblem()&quot;&gt;다른문제&lt;/button&gt;&lt;/div&gt;&lt;div aria-live=&quot;polite&quot; id=&quot;feedback&quot;&gt;&lt;/div&gt;&lt;/main&gt;&lt;script&gt;
+const $=id=&gt;document.getElementById(id);
+let start=540,target=130;
+const fmt=t=&gt;`${Math.floor(((t%720)+720)%720/60)||12}시 ${String(((t%60)+60)%60).padStart(2,'0')}분`;
+function clock(id,t,editable){
+ const svg=$(id),h=t/60%12,m=t%60;
+ let out='&lt;circle cx=&quot;110&quot; cy=&quot;110&quot; r=&quot;98&quot; fill=&quot;#fff9e9&quot; stroke=&quot;#f5ae37&quot; stroke-width=&quot;9&quot;/&gt;&lt;circle cx=&quot;110&quot; cy=&quot;110&quot; r=&quot;88&quot; fill=&quot;white&quot; stroke=&quot;#cbd5e1&quot; stroke-width=&quot;2&quot;/&gt;';
+ for(let i=0;i&lt;60;i++){let a=i*Math.PI/30,r=i%5===0?76:81;out+=`&lt;line x1=&quot;${110+Math.sin(a)*r}&quot; y1=&quot;${110-Math.cos(a)*r}&quot; x2=&quot;${110+Math.sin(a)*85}&quot; y2=&quot;${110-Math.cos(a)*85}&quot; stroke=&quot;#64748b&quot; stroke-width=&quot;${i%5===0?2:1}&quot;/&gt;`;}
+ for(let i=1;i&lt;=12;i++){let a=i*Math.PI/6;out+=`&lt;text x=&quot;${110+Math.sin(a)*65}&quot; y=&quot;${115-Math.cos(a)*65}&quot; text-anchor=&quot;middle&quot; font-size=&quot;15&quot; font-weight=&quot;bold&quot; fill=&quot;#334155&quot;&gt;${i}&lt;/text&gt;`;}
+ let ha=h*Math.PI/6,ma=m*Math.PI/30;
+ out+=`&lt;line x1=&quot;110&quot; y1=&quot;110&quot; x2=&quot;${110+Math.sin(ha)*45}&quot; y2=&quot;${110-Math.cos(ha)*45}&quot; stroke=&quot;#f06474&quot; stroke-width=&quot;7&quot; stroke-linecap=&quot;round&quot;/&gt;&lt;line x1=&quot;110&quot; y1=&quot;110&quot; x2=&quot;${110+Math.sin(ma)*69}&quot; y2=&quot;${110-Math.cos(ma)*69}&quot; stroke=&quot;#12a66c&quot; stroke-width=&quot;5&quot; stroke-linecap=&quot;round&quot;/&gt;&lt;circle cx=&quot;110&quot; cy=&quot;110&quot; r=&quot;5&quot; fill=&quot;#334155&quot;/&gt;`;
+ svg.innerHTML=out;svg.style.cursor=editable?'grab':'default';
+}
+let clockTime=0;
+let selectedBoundaries=new Set();
+function render(){
+ clock('oneClock',clockTime,true);
+ $('startLabel').textContent=fmt(start);$('endLabel').textContent=fmt(start+target);
+ const ticks=$('ticks'),bar=$('bar');ticks.innerHTML='';bar.innerHTML='';
+ for(let i=0;i&lt;=18;i++){let el=document.createElement('span'),t=start+i*10;el.textContent=i%6===0?`${Math.floor(t/60)%12||12}시`:`${i%6*10}분`;el.style.left=`${i/18*100}%`;ticks.appendChild(el);}
+ const elapsed=Math.max(0,Math.min(180,clockTime-start));
+ for(let i=0;i&lt;18;i++){let c=document.createElement('div');c.className='cell';
+ if(i*10&lt;elapsed &amp;&amp; i*10&lt;60)c.classList.add('yellow');
+ if(i*10&lt;elapsed &amp;&amp; i*10&gt;=60 &amp;&amp; i*10&lt;120)c.classList.add('pink');
+ if(i*10&lt;elapsed &amp;&amp; i*10&gt;=120)c.classList.add('lightgreen');
+ bar.appendChild(c);}
+ for(let i=0;i&lt;=18;i++){
+  const hit=document.createElement('div');
+  hit.className='boundary-hit'+(selectedBoundaries.has(i)?' selected':'');
+  hit.style.left=`${i/18*100}%`;
+  hit.style.transform='translateX(-50%)';
+  hit.setAttribute('role','button');hit.setAttribute('tabindex','0');
+  hit.setAttribute('aria-label',`${i*10}분 눈금선 선택`);
+  hit.addEventListener('click',()=&gt;{toggleBoundary(i);});
+  hit.addEventListener('keydown',e=&gt;{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleBoundary(i);}});
+  bar.appendChild(hit);
+ }
+}
+function toggleBoundary(i){if(selectedBoundaries.has(i))selectedBoundaries.delete(i);else selectedBoundaries.add(i);render();}
+function move(n){clockTime=Math.max(start-60,Math.min(start+180,clockTime+n));render();$('feedback').textContent='';}
+function check(){
+ const h=$('hours').value.trim(),m=$('minutes').value.trim(),f=$('feedback');
+ const ok=h!==''&amp;&amp;m!==''&amp;&amp;Number(h)*60+Number(m)===target&amp;&amp;clockTime===start+target;
+ if(ok){f.style.color='#059669';f.textContent='정답입니다! 🎉';parent.postMessage({kind:'quiz',page:2,correct:true},'*');setTimeout(newProblem,900);}
+ else{f.style.color='#dc2626';f.textContent='✗ 틀렸습니다. 다시 확인해 보세요.';parent.postMessage({kind:'quiz',page:2,correct:false},'*');}
+}
+function newProblem(){
+ selectedBoundaries.clear();
+ let old=start*100+target;
+ do{start=(Math.floor(Math.random()*12)+1)*60;target=[130,140,150,160,170][Math.floor(Math.random()*5)];}while(start*100+target===old);
+ clockTime=start-30;$('hours').value='';$('minutes').value='';$('feedback').textContent='';render();
+}
+function clockMinute(e,el){
+ const r=el.getBoundingClientRect(),x=(e.clientX-r.left)*220/r.width-110,y=(e.clientY-r.top)*220/r.height-110;
+ return (Math.round(((Math.atan2(x,-y)+2*Math.PI)%(2*Math.PI))/(Math.PI/3))*10)%60;
+}
+function attachClock(id){
+ const el=$(id);let down=false,last=null;
+ el.addEventListener('pointerdown',e=&gt;{down=true;last=clockMinute(e,el);el.setPointerCapture(e.pointerId);e.preventDefault();});
+ el.addEventListener('pointermove',e=&gt;{
+  if(!down)return;
+  const now=clockMinute(e,el);let d=now-last;if(d&gt;30)d-=60;if(d&lt; -30)d+=60;
+  if(d===0)return;
+  clockTime=Math.max(start-60,Math.min(start+180,clockTime+d));last=now;render();$('feedback').textContent='';
+ });
+ el.addEventListener('pointerup',()=&gt;down=false);el.addEventListener('pointercancel',()=&gt;down=false);
+}
+attachClock('oneClock');
+newProblem();
+&lt;/script&gt;&lt;script&gt;
+let teacherMode=false;
+function teacherFill(){if(!teacherMode)return;clockTime=start+target;render();$('hours').value=Math.floor(target/60);$('minutes').value=target%60;}
+const originalGenerate=newProblem;
+newProblem=function(...args){const result=originalGenerate.apply(this,args);teacherFill();return result;};
+window.addEventListener('message',event=&gt;{if(event.source!==parent)return;if(event.data?.kind==='teacher-mode'){teacherMode=event.data.enabled===true;teacherFill();}});
+parent.postMessage({kind:'teacher-ready',page:2},'*');
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" title="2페이지"></iframe><iframe class="page" id="page3" srcdoc="&lt;!DOCTYPE html&gt;
+
+&lt;html lang=&quot;ko&quot;&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;/&gt;&lt;meta content=&quot;width=device-width,initial-scale=1&quot; name=&quot;viewport&quot;/&gt;&lt;title&gt;자동차 타는 데 걸린 시간&lt;/title&gt;&lt;style&gt;*{box-sizing:border-box}body{margin:0;background:#f3f7fc;font-family:'Malgun Gothic',sans-serif;color:#203047}.wrap{max-width:1050px;margin:25px auto;background:white;border-radius:22px;padding:25px;box-shadow:0 8px 30px #19365a18}h1{font-size:27px;margin:0 0 12px}.hint{color:#50657d;font-size:17px}.clocks{display:grid;grid-template-columns:1fr 35px 1fr 35px 1fr;align-items:center;gap:8px;margin-top:20px}.clockbox{text-align:center}.clockbox h2{font-size:18px}.clock{width:100%;max-width:210px;touch-action:none;cursor:pointer}.arrow{font-size:30px;color:#96a3b5;text-align:center}.time{font-size:20px;font-weight:bold;margin-top:5px}.timeline{margin-top:30px}.ticks{position:relative;height:30px;margin:14px 0 0}.ticks span{position:absolute;bottom:2px;transform:translateX(-50%);font-size:14px;white-space:nowrap;line-height:1}.ticks span:first-child{transform:none}.ticks span:last-child{transform:translateX(-100%)}.bar{height:43px;border:1.5px solid #334155;display:grid;grid-template-columns:repeat(18,minmax(0,1fr));margin:0;position:relative}.bar{touch-action:none;user-select:none}.cell{touch-action:none;user-select:none;cursor:crosshair;border-right:1px dashed #8290a1;background:#fff}.cell:nth-child(6),.cell:nth-child(12){border-right:3px solid #334155}.cell:last-child{border-right:0}.cell.filled{background:#ffdd82}.cell.yellow{background:#ffe16b}.cell.pink{background:#f9a8c5}.cell.lightgreen{background:#b9ed91}.controls{text-align:center;margin:24px 0}.controls button,.actions button{padding:12px 20px;margin:5px;border:0;border-radius:12px;background:#2563eb;color:white;font-weight:bold;font-size:17px;cursor:pointer}.controls button{background:#0d9488}.answer{text-align:center;background:#f0f7ff;padding:22px;border-radius:16px;font-size:20px}.answer input{width:70px;padding:10px;text-align:center;font-size:22px;border:2px solid #8da6c8;border-radius:10px}.actions{text-align:center;margin-top:15px}.actions button:last-child{background:#64748b}#feedback{text-align:center;font-size:20px;font-weight:bold;min-height:30px;margin-top:12px}@media(max-width:650px){.wrap{padding:14px;margin:8px}.clocks{gap:1px;grid-template-columns:1fr 16px 1fr 16px 1fr}.clockbox h2{font-size:13px}.arrow{font-size:18px}.time{font-size:13px}.ticks span{font-size:10px}h1{font-size:21px}} .clocks{display:block;text-align:center}.oneclock{width:100%}.time-info{font-size:19px;line-height:2;margin-bottom:10px}.clock-choose{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.clock-choose button{border:0;border-radius:10px;padding:10px 18px;background:#e2e8f0;color:#334155;font-size:17px;font-weight:bold;cursor:pointer}.clock-choose button.chosen{background:#2563eb;color:white}.clockbox{margin:12px auto}.clockbox .clock{max-width:240px}.clockbox h2{margin:8px 0}
+/* 시간띠 세로선 선택 표시 */
+.bar{overflow:visible}
+.bar .boundary-hit{position:absolute;top:0;height:100%;width:8px;transform:translateX(-50%);cursor:pointer;z-index:4;background:transparent;touch-action:manipulation}
+.bar .boundary-hit::after{content:&quot;&quot;;position:absolute;left:50%;top:0;height:100%;border-left:2px solid transparent;transform:translateX(-50%)}
+.bar .boundary-hit.selected::before{content:&quot;&quot;;position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:12px solid #2563eb}
+.bar .boundary-hit.selected::after{border-left:3px solid #2563eb}
+.color-palette{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:15px 0 20px}.color-choice{padding:10px 17px;border:2px solid #cbd5e1;border-radius:12px;background:#fff;font-size:16px;font-weight:bold;cursor:pointer}.color-choice.active{border-color:#2563eb;box-shadow:0 0 0 3px #bfdbfe}.color-choice[data-color=&quot;yellow&quot;].active{background:#fff4c5}.color-choice[data-color=&quot;pink&quot;].active{background:#ffe0ea}.color-choice[data-color=&quot;lightgreen&quot;].active{background:#e0f6cb}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;main class=&quot;wrap&quot;&gt;&lt;h1&gt;⏱️ 자동차 타는 데 걸린 시간을 구해 봅시다.&lt;/h1&gt;&lt;p class=&quot;hint&quot;&gt;출발한 시각과 도착한 시각을 보고 시계를 움직여 보세요. 시간띠는 칸을 직접 클릭하여 색칠합니다.&lt;/p&gt;&lt;section class=&quot;clocks&quot;&gt;&lt;div class=&quot;oneclock&quot;&gt;&lt;div class=&quot;time-info&quot;&gt;출발한 시각 &lt;strong id=&quot;startLabel&quot;&gt;&lt;/strong&gt;　→　도착한 시각 &lt;strong id=&quot;endLabel&quot;&gt;&lt;/strong&gt;&lt;strong id=&quot;middleLabel&quot; hidden&gt;&lt;/strong&gt;&lt;/div&gt;&lt;div class=&quot;clockbox&quot;&gt;&lt;h2 id=&quot;clockTitle&quot;&gt;시계 바늘을 움직여 보세요.&lt;/h2&gt;&lt;svg class=&quot;clock&quot; id=&quot;oneClock&quot; viewbox=&quot;0 0 220 220&quot;&gt;&lt;/svg&gt;&lt;/div&gt;&lt;/div&gt;&lt;/section&gt;&lt;div class=&quot;controls&quot;&gt;&lt;button onclick=&quot;move(-10)&quot;&gt;◀ 10분 전&lt;/button&gt;&lt;button onclick=&quot;move(10)&quot;&gt;10분 후 ▶&lt;/button&gt;&lt;/div&gt;&lt;section class=&quot;timeline&quot;&gt;&lt;p class=&quot;hint&quot;&gt;색깔을 선택한 뒤 시간띠의 칸을 클릭하여 색칠하세요. 같은 색으로 칠한 칸을 다시 클릭하면 색이 사라집니다.&lt;/p&gt;&lt;div class=&quot;color-palette&quot; role=&quot;group&quot; aria-label=&quot;시간띠 색깔 선택&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;color-choice active&quot; data-color=&quot;yellow&quot; onclick=&quot;chooseColor('yellow')&quot;&gt;🟡 노란색&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;color-choice&quot; data-color=&quot;pink&quot; onclick=&quot;chooseColor('pink')&quot;&gt;🩷 분홍색&lt;/button&gt;&lt;button type=&quot;button&quot; class=&quot;color-choice&quot; data-color=&quot;lightgreen&quot; onclick=&quot;chooseColor('lightgreen')&quot;&gt;🟢 연두색&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;ticks&quot; id=&quot;ticks&quot;&gt;&lt;/div&gt;&lt;div class=&quot;bar&quot; id=&quot;bar&quot;&gt;&lt;/div&gt;&lt;/section&gt;&lt;div class=&quot;answer&quot;&gt;자동차 타는 데 걸린 시간은 &lt;input aria-label=&quot;시간&quot; id=&quot;hours&quot; inputmode=&quot;numeric&quot; maxlength=&quot;2&quot; type=&quot;text&quot;/&gt; 시간 &lt;input aria-label=&quot;분&quot; id=&quot;minutes&quot; inputmode=&quot;numeric&quot; maxlength=&quot;2&quot; type=&quot;text&quot;/&gt; 분입니다.&lt;/div&gt;&lt;div class=&quot;actions&quot;&gt;&lt;button onclick=&quot;check()&quot;&gt;정답확인&lt;/button&gt;&lt;button onclick=&quot;newProblem()&quot;&gt;다른문제&lt;/button&gt;&lt;/div&gt;&lt;div aria-live=&quot;polite&quot; id=&quot;feedback&quot;&gt;&lt;/div&gt;&lt;/main&gt;&lt;script&gt;
+const $=id=&gt;document.getElementById(id);
+let start=540,target=130;
+const fmt=t=&gt;`${Math.floor(((t%720)+720)%720/60)||12}시 ${String(((t%60)+60)%60).padStart(2,'0')}분`;
+function clock(id,t,editable){
+ const svg=$(id),h=t/60%12,m=t%60;
+ let out='&lt;circle cx=&quot;110&quot; cy=&quot;110&quot; r=&quot;98&quot; fill=&quot;#fff9e9&quot; stroke=&quot;#f5ae37&quot; stroke-width=&quot;9&quot;/&gt;&lt;circle cx=&quot;110&quot; cy=&quot;110&quot; r=&quot;88&quot; fill=&quot;white&quot; stroke=&quot;#cbd5e1&quot; stroke-width=&quot;2&quot;/&gt;';
+ for(let i=0;i&lt;60;i++){let a=i*Math.PI/30,r=i%5===0?76:81;out+=`&lt;line x1=&quot;${110+Math.sin(a)*r}&quot; y1=&quot;${110-Math.cos(a)*r}&quot; x2=&quot;${110+Math.sin(a)*85}&quot; y2=&quot;${110-Math.cos(a)*85}&quot; stroke=&quot;#64748b&quot; stroke-width=&quot;${i%5===0?2:1}&quot;/&gt;`;}
+ for(let i=1;i&lt;=12;i++){let a=i*Math.PI/6;out+=`&lt;text x=&quot;${110+Math.sin(a)*65}&quot; y=&quot;${115-Math.cos(a)*65}&quot; text-anchor=&quot;middle&quot; font-size=&quot;15&quot; font-weight=&quot;bold&quot; fill=&quot;#334155&quot;&gt;${i}&lt;/text&gt;`;}
+ let ha=h*Math.PI/6,ma=m*Math.PI/30;
+ out+=`&lt;line x1=&quot;110&quot; y1=&quot;110&quot; x2=&quot;${110+Math.sin(ha)*45}&quot; y2=&quot;${110-Math.cos(ha)*45}&quot; stroke=&quot;#f06474&quot; stroke-width=&quot;7&quot; stroke-linecap=&quot;round&quot;/&gt;&lt;line x1=&quot;110&quot; y1=&quot;110&quot; x2=&quot;${110+Math.sin(ma)*69}&quot; y2=&quot;${110-Math.cos(ma)*69}&quot; stroke=&quot;#12a66c&quot; stroke-width=&quot;5&quot; stroke-linecap=&quot;round&quot;/&gt;&lt;circle cx=&quot;110&quot; cy=&quot;110&quot; r=&quot;5&quot; fill=&quot;#334155&quot;/&gt;`;
+ svg.innerHTML=out;svg.style.cursor=editable?'grab':'default';
+}
+let clockTime=0;
+let selectedBoundaries=new Set();
+let coloredCells=new Map();
+let selectedColor='yellow';
+function chooseColor(color){selectedColor=color;document.querySelectorAll('.color-choice').forEach(b=&gt;{const on=b.dataset.color===color;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});}
+function render(){
+ clock('oneClock',clockTime,true);
+ $('startLabel').textContent=fmt(start);$('endLabel').textContent=fmt(start+target);
+ const ticks=$('ticks'),bar=$('bar');ticks.innerHTML='';bar.innerHTML='';
+ const timelineStart=Math.floor(start/60)*60;
+ for(let i=0;i&lt;=18;i++){let el=document.createElement('span'),t=timelineStart+i*10;el.textContent=i%6===0?`${Math.floor(t/60)%12||12}시`:`${i%6*10}분`;el.style.left=`${i/18*100}%`;ticks.appendChild(el);}
+ for(let i=0;i&lt;18;i++){
+  let c=document.createElement('div');c.className='cell';
+  if(coloredCells.has(i))c.classList.add(coloredCells.get(i));
+  c.setAttribute('role','button');c.setAttribute('tabindex','0');
+  c.setAttribute('aria-label',`${i*10}분부터 ${(i+1)*10}분까지 색칠`);
+  c.addEventListener('click',()=&gt;toggleCell(i));
+  c.addEventListener('keydown',e=&gt;{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleCell(i);}});
+  bar.appendChild(c);
+ }
+ for(let i=0;i&lt;=18;i++){
+  const hit=document.createElement('div');
+  hit.className='boundary-hit'+(selectedBoundaries.has(i)?' selected':'');
+  hit.style.left=`${i/18*100}%`;
+  hit.style.transform='translateX(-50%)';
+  hit.setAttribute('role','button');hit.setAttribute('tabindex','0');
+  hit.setAttribute('aria-label',`${i*10}분 눈금선 선택`);
+  hit.addEventListener('click',()=&gt;{toggleBoundary(i);});
+  hit.addEventListener('keydown',e=&gt;{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleBoundary(i);}});
+  bar.appendChild(hit);
+ }
+}
+function toggleCell(i){if(coloredCells.get(i)===selectedColor)coloredCells.delete(i);else coloredCells.set(i,selectedColor);render();}
+function toggleBoundary(i){if(selectedBoundaries.has(i))selectedBoundaries.delete(i);else selectedBoundaries.add(i);render();}
+function move(n){clockTime=Math.max(start-60,Math.min(Math.floor(start/60)*60+180,clockTime+n));render();$('feedback').textContent='';}
+function check(){
+ const h=$('hours').value.trim(),m=$('minutes').value.trim(),f=$('feedback');
+ const offset=(start%60)/10, count=target/10;
+ const expected=new Set(Array.from({length:count},(_,i)=&gt;offset+i));
+ const exactCells=coloredCells.size===count&amp;&amp;[...coloredCells.keys()].every(i=&gt;expected.has(i));
+ let validColors=exactCells;
+ if(validColors){
+   const groups=[];
+   for(let k=0;k&lt;count;k++){
+     const c=coloredCells.get(offset+k);
+     if(!c){validColors=false;break;}
+     const group=Math.floor(k/6);
+     if(groups[group]===undefined)groups[group]=c;
+     else if(groups[group]!==c){validColors=false;break;}
+   }
+   if(validColors)for(let i=1;i&lt;groups.length;i++)if(groups[i]===groups[i-1]){validColors=false;break;}
+ }
+ const ok=h!==''&amp;&amp;m!==''&amp;&amp;Number(h)===Math.floor(target/60)&amp;&amp;Number(m)===target%60&amp;&amp;clockTime===start+target&amp;&amp;validColors;
+ if(ok){f.style.color='#059669';f.textContent='정답입니다! 🎉';parent.postMessage({kind:'quiz',page:3,correct:true},'*');setTimeout(newProblem,900);}
+ else{f.style.color='#dc2626';f.textContent='✗ 틀렸습니다. 숫자, 시계, 시간띠 색칠을 다시 확인해 보세요.';parent.postMessage({kind:'quiz',page:3,correct:false},'*');}
+}
+function newProblem(){
+ selectedBoundaries.clear();coloredCells.clear();chooseColor('yellow');
+ let old=start*100+target;
+ do{start=(Math.floor(Math.random()*12)+1)*60+[0,10,20,30,40,50][Math.floor(Math.random()*6)];target=[130,140,150,160,170][Math.floor(Math.random()*5)];}while(start*100+target===old || start+target&gt;Math.floor(start/60)*60+180);
+ clockTime=start-30;$('hours').value='';$('minutes').value='';$('feedback').textContent='';render();
+}
+function clockMinute(e,el){
+ const r=el.getBoundingClientRect(),x=(e.clientX-r.left)*220/r.width-110,y=(e.clientY-r.top)*220/r.height-110;
+ return (Math.round(((Math.atan2(x,-y)+2*Math.PI)%(2*Math.PI))/(Math.PI/3))*10)%60;
+}
+function attachClock(id){
+ const el=$(id);let down=false,last=null;
+ el.addEventListener('pointerdown',e=&gt;{down=true;last=clockMinute(e,el);el.setPointerCapture(e.pointerId);e.preventDefault();});
+ el.addEventListener('pointermove',e=&gt;{
+  if(!down)return;
+  const now=clockMinute(e,el);let d=now-last;if(d&gt;30)d-=60;if(d&lt; -30)d+=60;
+  if(d===0)return;
+  clockTime=Math.max(start-60,Math.min(Math.floor(start/60)*60+180,clockTime+d));last=now;render();$('feedback').textContent='';
+ });
+ el.addEventListener('pointerup',()=&gt;down=false);el.addEventListener('pointercancel',()=&gt;down=false);
+}
+attachClock('oneClock');
+newProblem();
+&lt;/script&gt;&lt;script&gt;
+let teacherMode=false;
+function teacherFill(){if(!teacherMode)return;clockTime=start+target;coloredCells=new Map(Array.from({length:target/10},(_,i)=&gt;{const index=(start%60)/10+i;return [index,i&lt;6?'yellow':i&lt;12?'pink':'lightgreen'];}));render();$('hours').value=Math.floor(target/60);$('minutes').value=target%60;}
+const originalGenerate=newProblem;
+newProblem=function(...args){const result=originalGenerate.apply(this,args);teacherFill();return result;};
+window.addEventListener('message',event=&gt;{if(event.source!==parent)return;if(event.data?.kind==='teacher-mode'){teacherMode=event.data.enabled===true;teacherFill();}});
+parent.postMessage({kind:'teacher-ready',page:3},'*');
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" title="3페이지"></iframe>
+<iframe class="page" id="page4" srcdoc="&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;ko&quot;&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;/&gt;&lt;meta content=&quot;width=device-width,initial-scale=1&quot; name=&quot;viewport&quot;/&gt;&lt;title&gt;기차를 타고 가는 데 걸린 시간&lt;/title&gt;&lt;style&gt;*{box-sizing:border-box}body{margin:0;background:#fff3f8;font-family:'Malgun Gothic',sans-serif;color:#273448}.wrap{max-width:1150px;margin:24px auto;padding:24px;background:white;border-radius:22px;box-shadow:0 8px 30px #2333}.title{font-size:clamp(21px,3vw,32px);font-weight:800;margin:0 0 25px}.stations{display:flex;justify-content:space-between;align-items:end;margin:0 0 12px}.station{text-align:center;font-size:21px;font-weight:700}.train{font-size:48px;display:block;transform:scaleX(-1)}.time{background:white;border:2px solid #b9d9f2;border-radius:10px;padding:5px 12px;margin-top:8px;display:inline-block;color:#152d48}.track{position:relative;height:75px;border-top:4px solid #6e7784;margin:30px 10px 8px}.ticks{display:grid;grid-template-columns:repeat(18,1fr);height:43px;border:2px solid #555;border-right:0}.cell{border-right:2px dotted #8d939e;background:#fff}.cell.last{border-right:2px solid #555}.cell.hour-line{border-left:4px solid #344054}.cell.active1{background:#ffe48b}.cell.active2{background:#ffc7d9}.ticks{touch-action:none;user-select:none;cursor:crosshair}.cell{touch-action:none;user-select:none}.cell.wrong{box-shadow:inset 0 0 0 3px #e44c57}.paint-tools{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}.paint-tools button{padding:10px 16px;font-size:16px}.paint-tools button.selected{outline:4px solid #263e63;outline-offset:2px}.paint-tools .yellow{background:#f4bd32;color:#292929}.paint-tools .pink{background:#ef85b5;color:#292929}.paint-tools .eraser{background:#64748b}.paint-help{text-align:center;color:#596579;font-size:14px}.labels{position:relative;display:block;width:100%;height:30px;font-size:13px;white-space:nowrap}.labels span{position:absolute;top:3px;transform:translateX(-50%);text-align:center;white-space:nowrap}.labels b{font-size:18px}.question{background:#f6f9ff;border-radius:16px;padding:18px;margin-top:20px;font-size:20px;line-height:2.3}.question input{width:65px;height:48px;text-align:center;border:2px solid #75c8ec;border-radius:8px;font-size:22px}.question input.total{width:90px}.actions{display:flex;gap:12px;justify-content:center;margin:25px 0 8px;flex-wrap:wrap}button{border:0;border-radius:12px;padding:14px 25px;background:#257bd4;color:white;font-size:19px;font-weight:700;cursor:pointer}button.secondary{background:#5e718a}#feedback{text-align:center;min-height:32px;font-size:20px;font-weight:700}.hint{text-align:center;color:#5e6675;font-size:15px}@media(max-width:650px){.wrap{margin:8px;padding:12px}.station{font-size:15px}.train{font-size:32px}.time{font-size:15px;padding:4px}.track{margin:20px 0 8px;height:62px}.ticks{height:33px}.labels{font-size:9px}.labels b{font-size:12px}.question{font-size:17px;padding:12px}.question input{width:50px;height:40px;font-size:18px}.question input.total{width:65px}}
+.clock-open{background:#7c54cc}.clock-overlay{position:fixed;inset:0;background:transparent;pointer-events:none;display:none;align-items:center;justify-content:center;z-index:1000;padding:16px}.clock-overlay.visible{display:flex}.clock-dialog{pointer-events:auto;position:relative;background:white;border-radius:18px;padding:18px; width:420px;height:540px;min-width:290px;min-height:390px;max-width:96vw;max-height:94vh;resize:both;overflow:auto;box-shadow:0 16px 50px #0005;display:flex;flex-direction:column;align-items:center;gap:8px}.clock-header{cursor:move;touch-action:none;user-select:none;display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px}.clock-header h2{font-size:22px;margin:0}.clock-close{padding:5px 12px;background:#68758b}.clock-face{width:min(100%,360px);flex:1;min-height:190px;touch-action:none;user-select:none}.clock-controls{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}.clock-controls button{font-size:15px;padding:8px 12px}.clock-display{font-size:24px;font-weight:bold;color:#244f85}.clock-help{font-size:13px;color:#596579;text-align:center;margin:0}.resize-help{font-size:12px;color:#778296;text-align:right;width:100%}
+
+/* 두 작업 영역은 어둡게 하지 않고, 클릭으로 활성 영역을 바꿉니다. */
+.wrap,.clock-dialog{transition:outline-color .15s}
+.clock-dialog{outline:3px solid transparent}
+.clock-dialog.active-area{outline-color:#7c54cc}
+.clock-dialog:not(.active-area) .clock-header{cursor:default}
+
+/* 4페이지 구분선과 누적 분 표시 */
+.track{overflow:visible}.ticks{position:relative;overflow:visible}
+.boundary-layer{position:absolute;inset:0;pointer-events:none;z-index:5}
+.boundary-hit{position:absolute;top:-22px;height:65px;width:18px;transform:translateX(-50%);padding:0;border:0;border-radius:0;background:transparent;pointer-events:auto;cursor:pointer;z-index:8;touch-action:manipulation}
+.boundary-hit::after{content:&quot;&quot;;position:absolute;left:50%;top:22px;width:2px;height:43px;transform:translateX(-50%);background:#64748b;opacity:.15}
+.boundary-hit.chosen::before{content:&quot;&quot;;position:absolute;left:50%;top:2px;transform:translateX(-50%);border-left:9px solid transparent;border-right:9px solid transparent;border-top:0;border-bottom:15px solid #2563eb}
+.boundary-hit.chosen::after{display:block;background:#2563eb;opacity:1;width:3px;height:43px;z-index:2}
+.cell{display:flex;align-items:center;justify-content:center;min-width:0;position:relative}
+.cell .minute-label{font-size:clamp(9px,1.25vw,16px);font-weight:800;color:#1e293b;pointer-events:none}
+&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;main class=&quot;wrap&quot;&gt;&lt;h1 class=&quot;title&quot;&gt;🚄 기차를 타고 가는 데 걸린 시간을 구해 봅시다.&lt;/h1&gt;&lt;div class=&quot;stations&quot;&gt;&lt;div class=&quot;station&quot;&gt;&lt;span class=&quot;train&quot;&gt;🚄&lt;/span&gt;서울&lt;br/&gt;&lt;span class=&quot;time&quot; id=&quot;seoul&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;station&quot;&gt;&lt;span class=&quot;train&quot;&gt;🚄&lt;/span&gt;대전&lt;br/&gt;&lt;span class=&quot;time&quot; id=&quot;daejeon&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;station&quot;&gt;&lt;span class=&quot;train&quot;&gt;🚄&lt;/span&gt;부산&lt;br/&gt;&lt;span class=&quot;time&quot; id=&quot;busan&quot;&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;track&quot;&gt;&lt;div class=&quot;ticks&quot; id=&quot;ticks&quot;&gt;&lt;/div&gt;&lt;div class=&quot;labels&quot; id=&quot;labels&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;div class=&quot;paint-tools&quot;&gt;&lt;button class=&quot;yellow selected&quot; id=&quot;paintYellow&quot; onclick=&quot;selectPaint('yellow')&quot; type=&quot;button&quot;&gt;🟨 서울 → 대전&lt;/button&gt;&lt;button class=&quot;pink&quot; id=&quot;paintPink&quot; onclick=&quot;selectPaint('pink')&quot; type=&quot;button&quot;&gt;🩷 대전 → 부산&lt;/button&gt;&lt;button class=&quot;eraser&quot; id=&quot;paintErase&quot; onclick=&quot;selectPaint('erase')&quot; type=&quot;button&quot;&gt;지우개&lt;/button&gt;&lt;button class=&quot;secondary&quot; onclick=&quot;clearPaint()&quot; type=&quot;button&quot;&gt;색칠 초기화&lt;/button&gt;&lt;/div&gt;&lt;p class=&quot;paint-help&quot;&gt;색을 고르고 시간띠를 마우스 또는 손가락으로 드래그하여 칠하세요. 정각은 굵은 실선입니다. 색칠된 칸을 클릭하면 10, 20, 30…분이 차례로 나타납니다. 시간띠의 세로 구분선을 누르면 파란 삼각형이 표시됩니다.&lt;/p&gt;&lt;section class=&quot;question&quot;&gt;🚉 서울에서 대전까지 걸린 시간: &lt;input aria-label=&quot;대전까지 시간&quot; id=&quot;h1&quot; inputmode=&quot;numeric&quot;/&gt; 시간 &lt;input aria-label=&quot;대전까지 분&quot; id=&quot;m1&quot; inputmode=&quot;numeric&quot;/&gt; 분 = &lt;input aria-label=&quot;대전까지 총 분&quot; class=&quot;total&quot; id=&quot;t1&quot; inputmode=&quot;numeric&quot;/&gt; 분&lt;/section&gt;&lt;section class=&quot;question&quot;&gt;🚄 서울에서 부산까지 걸린 시간: &lt;input aria-label=&quot;부산까지 시간&quot; id=&quot;h2&quot; inputmode=&quot;numeric&quot;/&gt; 시간 &lt;input aria-label=&quot;부산까지 분&quot; id=&quot;m2&quot; inputmode=&quot;numeric&quot;/&gt; 분 = &lt;input aria-label=&quot;부산까지 총 분&quot; class=&quot;total&quot; id=&quot;t2&quot; inputmode=&quot;numeric&quot;/&gt; 분&lt;/section&gt;&lt;div class=&quot;actions&quot;&gt;&lt;button class=&quot;clock-open&quot; onclick=&quot;openClock()&quot;&gt;🕒 시계보기&lt;/button&gt;&lt;button onclick=&quot;check()&quot;&gt;정답확인&lt;/button&gt;&lt;button class=&quot;secondary&quot; onclick=&quot;newProblem()&quot;&gt;다른문제&lt;/button&gt;&lt;/div&gt;&lt;div aria-live=&quot;polite&quot; id=&quot;feedback&quot;&gt;&lt;/div&gt;&lt;/main&gt;&lt;div class=&quot;clock-overlay&quot; id=&quot;clockOverlay&quot;&gt;&lt;div aria-label=&quot;조작할 수 있는 시계&quot; aria-modal=&quot;true&quot; class=&quot;clock-dialog&quot; role=&quot;dialog&quot;&gt;&lt;div class=&quot;clock-header&quot;&gt;&lt;h2&gt;🕒 시계보기&lt;/h2&gt;&lt;button aria-label=&quot;닫기&quot; class=&quot;clock-close&quot; onclick=&quot;closeClock()&quot;&gt;✕&lt;/button&gt;&lt;/div&gt;&lt;p class=&quot;clock-help&quot;&gt;시침(파랑)과 분침(빨강)을 손가락이나 마우스로 움직여 보세요.&lt;/p&gt;&lt;svg aria-label=&quot;조작 가능한 아날로그 시계&quot; class=&quot;clock-face&quot; id=&quot;clockFace&quot; viewbox=&quot;0 0 320 320&quot;&gt;&lt;circle cx=&quot;160&quot; cy=&quot;160&quot; fill=&quot;#fff&quot; r=&quot;145&quot; stroke=&quot;#334155&quot; stroke-width=&quot;6&quot;&gt;&lt;/circle&gt;&lt;g id=&quot;clockMarks&quot;&gt;&lt;/g&gt;&lt;line id=&quot;hourHand&quot; stroke=&quot;#2563eb&quot; stroke-linecap=&quot;round&quot; stroke-width=&quot;11&quot; x1=&quot;160&quot; x2=&quot;160&quot; y1=&quot;160&quot; y2=&quot;84&quot;&gt;&lt;/line&gt;&lt;line id=&quot;minuteHand&quot; stroke=&quot;#e24b5c&quot; stroke-linecap=&quot;round&quot; stroke-width=&quot;7&quot; x1=&quot;160&quot; x2=&quot;160&quot; y1=&quot;160&quot; y2=&quot;43&quot;&gt;&lt;/line&gt;&lt;circle cx=&quot;160&quot; cy=&quot;160&quot; fill=&quot;#334155&quot; r=&quot;9&quot;&gt;&lt;/circle&gt;&lt;/svg&gt;&lt;div class=&quot;clock-display&quot; id=&quot;clockDisplay&quot;&gt;9시 00분&lt;/div&gt;&lt;div class=&quot;clock-controls&quot;&gt;&lt;button onclick=&quot;adjustHour(-1)&quot;&gt;시침 -1시간&lt;/button&gt;&lt;button onclick=&quot;adjustHour(1)&quot;&gt;시침 +1시간&lt;/button&gt;&lt;button onclick=&quot;adjustMinute(-5)&quot;&gt;분침 -5분&lt;/button&gt;&lt;button onclick=&quot;adjustMinute(5)&quot;&gt;분침 +5분&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;resize-help&quot;&gt;↘ 오른쪽 아래 모서리를 끌어 창 크기를 조절하세요.&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;script&gt;let a=540,b=610,c=700;let painted=Array(18).fill(''),paintMode='yellow',isPainting=false,lastPaintIndex=-1;let chosenBoundaries=new Set(), numberedCells=[];const fmt=n=&gt;`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;function draw(){document.getElementById('seoul').textContent=fmt(a);document.getElementById('daejeon').textContent=fmt(b);document.getElementById('busan').textContent=fmt(c);let start=Math.floor(a/60)*60,end=start+180;let ticks=document.getElementById('ticks'),labels=document.getElementById('labels');ticks.innerHTML='';labels.innerHTML='';let count=(end-start)/10;ticks.style.gridTemplateColumns=`repeat(${count},1fr)`;for(let i=0;i&lt;count;i++){let v=start+i*10,d=document.createElement('div');d.className='cell'+(painted[i]==='yellow'?' active1':painted[i]==='pink'?' active2':'')+(i===count-1?' last':'')+(i&gt;0&amp;&amp;v%60===0?' hour-line':'');d.dataset.index=i;if(painted[i]&amp;&amp;numberedCells.includes(i)){let label=document.createElement('span');label.className='minute-label';label.textContent=(numberedCells.indexOf(i)+1)*10;d.appendChild(label)}ticks.appendChild(d)}const layer=document.createElement('div');layer.className='boundary-layer';for(let k=0;k&lt;=count;k++){const marker=document.createElement('button');marker.type='button';marker.className='boundary-hit'+(chosenBoundaries.has(k)?' chosen':'');marker.style.left=`calc(2px + (100% - 4px) * ${k/count})`;marker.setAttribute('aria-label',k===0?'시작선':k===count?'종료선':k+'번째 구분선');marker.addEventListener('pointerdown',e=&gt;{e.stopPropagation()});marker.onclick=(e)=&gt;{e.stopPropagation();if(chosenBoundaries.has(k))chosenBoundaries.delete(k);else chosenBoundaries.add(k);marker.classList.toggle('chosen',chosenBoundaries.has(k))};layer.appendChild(marker)}ticks.appendChild(layer);for(let i=0;i&lt;=count;i++){let n=start+i*10,el=document.createElement('span');el.innerHTML=n%60===0?`&lt;b&gt;${Math.floor(n/60)}시&lt;/b&gt;`:`${n%60}분`;el.style.left=`calc(2px + (100% - 4px) * ${i/count})`;labels.appendChild(el)}}function check(){let d=b-a,e=c-a;let answers=[Math.floor(d/60),d%60,d,Math.floor(e/60),e%60,e];let ids=['h1','m1','t1','h2','m2','t2'];let ok=ids.map((id,i)=&gt;{let el=document.getElementById(id);let valid=el.value.trim()!==''&amp;&amp;Number(el.value)===answers[i];el.style.borderColor=valid?'#35b779':'#e55b68';return valid}).every(Boolean);let start=Math.floor(a/60)*60;let paintOk=true;document.querySelectorAll('#ticks .cell').forEach((el,i)=&gt;{let t=start+i*10,expected=t&gt;=a&amp;&amp;t&lt;b?'yellow':t&gt;=b&amp;&amp;t&lt;c?'pink':'';let correct=painted[i]===expected;el.classList.toggle('wrong',!correct);if(!correct)paintOk=false});let f=document.getElementById('feedback');f.textContent=ok&amp;&amp;paintOk?'🎉 모두 정답입니다! 참 잘했어요!':'✗ 틀렸습니다. 표시된 부분을 다시 확인하세요.';f.style.color=ok&amp;&amp;paintOk?'#18864d':'#c23b4b';parent.postMessage({kind:'quiz',page:4,correct:ok&amp;&amp;paintOk},'*');if(ok&amp;&amp;paintOk){newProblem();}}function newProblem(){
+  // 시간띠의 왼쪽은 정각, 오른쪽은 정확히 3시간 후.
+  // 서울 출발은 10분 단위로 정각이 아닐 수도 있음.
+  const hour=7+Math.floor(Math.random()*5);
+  const offset=10*Math.floor(Math.random()*6);
+  const maxFirst=120-offset; // 부산까지 최소 60분을 남김
+  const firstOptions=[];
+  for(let n=70;n&lt;=maxFirst;n+=10)firstOptions.push(n);
+  const first=firstOptions[Math.floor(Math.random()*firstOptions.length)];
+  const maxSecond=180-offset-first;
+  const second=60+10*Math.floor(Math.random()*(Math.floor((maxSecond-60)/10)+1));
+  a=hour*60+offset;b=a+first;c=b+second;
+  ['h1','m1','t1','h2','m2','t2'].forEach(id=&gt;{let el=document.getElementById(id);el.value='';el.style.borderColor='#75c8ec'});
+  document.getElementById('feedback').textContent='';painted=Array(18).fill('');numberedCells=[];chosenBoundaries.clear();draw()
+}draw();
+function selectPaint(mode){paintMode=mode;for(const [id,m] of [['paintYellow','yellow'],['paintPink','pink'],['paintErase','erase']])document.getElementById(id).classList.toggle('selected',mode===m)}
+function clearPaint(){painted.fill('');numberedCells=[];draw();document.getElementById('feedback').textContent=''}
+function applyPaint(index){if(index&lt;0||index&gt;=18)return;painted[index]=paintMode==='erase'?'':paintMode;if(!painted[index])numberedCells=numberedCells.filter(n=&gt;n!==index);draw()}
+const tickStrip=document.getElementById('ticks');
+function indexFromPointer(e){const rect=tickStrip.getBoundingClientRect();return Math.max(0,Math.min(17,Math.floor((e.clientX-rect.left)/rect.width*18)))}
+let pointerStartIndex=-1,pointerMoved=false;
+function toggleNumber(index){if(!painted[index])return;let pos=numberedCells.indexOf(index);if(pos&gt;=0)numberedCells.splice(pos,1);else numberedCells.push(index);draw()}
+tickStrip.addEventListener('pointerdown',e=&gt;{if(e.target.closest('.boundary-hit'))return;if(clockOverlay.classList.contains('visible')&amp;&amp;activeArea!=='page')return;isPainting=true;pointerMoved=false;pointerStartIndex=indexFromPointer(e);lastPaintIndex=pointerStartIndex;tickStrip.setPointerCapture(e.pointerId);e.preventDefault()});
+tickStrip.addEventListener('pointermove',e=&gt;{if(!isPainting)return;let index=indexFromPointer(e);if(index!==pointerStartIndex||pointerMoved){if(!pointerMoved){applyPaint(pointerStartIndex);pointerMoved=true}let low=Math.min(index,lastPaintIndex),high=Math.max(index,lastPaintIndex);for(let j=low;j&lt;=high;j++)applyPaint(j);lastPaintIndex=index}});
+tickStrip.addEventListener('pointerup',e=&gt;{if(!isPainting)return;let index=indexFromPointer(e);if(!pointerMoved){if(painted[index])toggleNumber(index);else applyPaint(index)}isPainting=false;lastPaintIndex=-1});
+for(const ev of ['pointercancel','lostpointercapture'])tickStrip.addEventListener(ev,()=&gt;{isPainting=false;lastPaintIndex=-1});
+let clockMinutes=540, dragging=null;
+const clockOverlay=document.getElementById('clockOverlay'),clockFace=document.getElementById('clockFace');
+function openClock(){clockOverlay.classList.add('visible');clockMinutes=a;renderClock();setActiveArea('clock')}
+function closeClock(){clockOverlay.classList.remove('visible');dragging=null;setActiveArea('page')}
+function adjustHour(n){clockMinutes=(clockMinutes+n*60+1440)%1440;renderClock()}
+function adjustMinute(n){clockMinutes=(clockMinutes+n+1440)%1440;renderClock()}
+function renderClock(){let minute=clockMinutes%60,hour=(clockMinutes/60)%12;for(const [id,angle,len] of [['hourHand',(hour*30+minute*.5)*Math.PI/180,76],['minuteHand',minute*6*Math.PI/180,117]]){let hand=document.getElementById(id);hand.setAttribute('x2',160+Math.sin(angle)*len);hand.setAttribute('y2',160-Math.cos(angle)*len)}document.getElementById('clockDisplay').textContent=`${Math.floor(clockMinutes/60)%12||12}시 ${String(minute).padStart(2,'0')}분`}
+const marks=document.getElementById('clockMarks');for(let i=0;i&lt;60;i++){let t=i*Math.PI/30,major=i%5===0;let line=document.createElementNS('http://www.w3.org/2000/svg','line');for(const [k,v] of Object.entries({x1:160+Math.sin(t)*(major?124:134),y1:160-Math.cos(t)*(major?124:134),x2:160+Math.sin(t)*139,y2:160-Math.cos(t)*139,stroke:'#475569','stroke-width':major?3:1.5}))line.setAttribute(k,v);marks.appendChild(line)}for(let n=1;n&lt;=12;n++){let t=n*Math.PI/6,txt=document.createElementNS('http://www.w3.org/2000/svg','text');txt.setAttribute('x',160+Math.sin(t)*105);txt.setAttribute('y',160-Math.cos(t)*105+7);txt.setAttribute('font-size','23');txt.setAttribute('font-weight','bold');txt.setAttribute('text-anchor','middle');txt.setAttribute('fill','#25354b');txt.textContent=n;marks.appendChild(txt)}
+function pointerAngle(e){let rect=clockFace.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*320-160,y=(e.clientY-rect.top)/rect.height*320-160;return {angle:(Math.atan2(x,-y)*180/Math.PI+360)%360,r:Math.hypot(x,y)}}
+clockFace.addEventListener('pointerdown',e=&gt;{let {angle,r}=pointerAngle(e);if(r&lt;16||r&gt;148)return;let minuteAngle=clockMinutes%60*6,hourAngle=(clockMinutes/60%12)*30;let dist=(x,y)=&gt;Math.abs((x-y+540)%360-180);dragging=r&gt;95?'minute':dist(angle,minuteAngle)&lt;dist(angle,hourAngle)?'minute':'hour';clockFace.setPointerCapture(e.pointerId);moveHand(e)});
+function moveHand(e){if(!dragging)return;let angle=pointerAngle(e).angle;if(dragging==='minute'){let m=Math.round(angle/6)%60;let h=Math.floor(clockMinutes/60);let old=clockMinutes%60;if(old&gt;45&amp;&amp;m&lt;15)h++;if(old&lt;15&amp;&amp;m&gt;45)h--;clockMinutes=((h*60+m)%1440+1440)%1440}else{let h=Math.round(angle/30)%12;let oldH=Math.floor(clockMinutes/60)%12;let diff=((h-oldH+18)%12)-6;clockMinutes=(clockMinutes+diff*60+1440)%1440}renderClock()}
+clockFace.addEventListener('pointermove',moveHand);clockFace.addEventListener('pointerup',()=&gt;dragging=null);clockFace.addEventListener('pointercancel',()=&gt;dragging=null);const dialog=document.querySelector('.clock-dialog');
+const header=document.querySelector('.clock-header');
+let moving=false, moveX=0, moveY=0;
+header.addEventListener('pointerdown',e=&gt;{
+ if(e.target.closest('button'))return;
+ const r=dialog.getBoundingClientRect();
+ dialog.style.position='fixed';dialog.style.left=r.left+'px';dialog.style.top=r.top+'px';
+ dialog.style.margin='0';moving=true;moveX=e.clientX-r.left;moveY=e.clientY-r.top;
+ header.setPointerCapture(e.pointerId);e.preventDefault();
+});
+header.addEventListener('pointermove',e=&gt;{
+ if(!moving)return;
+ const x=Math.max(0,Math.min(window.innerWidth-dialog.offsetWidth,e.clientX-moveX));
+ const y=Math.max(0,Math.min(window.innerHeight-dialog.offsetHeight,e.clientY-moveY));
+ dialog.style.left=x+'px';dialog.style.top=y+'px';
+});
+header.addEventListener('pointerup',()=&gt;moving=false);
+header.addEventListener('pointercancel',()=&gt;moving=false);
+// 시계가 열려 있어도 배경은 밝고, 양쪽을 클릭해 작업 대상을 전환합니다.
+// 비활성 영역의 첫 클릭은 활성화만 수행하고 버튼 실행이나 입력은 막습니다.
+let activeArea='page';
+let suppressClick=null;
+const pageArea=document.querySelector('main.wrap');
+function setActiveArea(area){
+ activeArea=area;
+ dialog.classList.toggle('active-area',area==='clock');
+ pageArea.classList.toggle('active-area',area==='page');
+}
+function guardArea(area,root){
+ root.addEventListener('pointerdown',e=&gt;{
+   if(!clockOverlay.classList.contains('visible')||activeArea===area)return;
+   e.preventDefault();e.stopPropagation();
+   setActiveArea(area);suppressClick=area;
+ },true);
+ root.addEventListener('click',e=&gt;{
+   if(suppressClick===area){suppressClick=null;e.preventDefault();e.stopPropagation();return;}
+   if(!clockOverlay.classList.contains('visible')||activeArea===area)return;
+   e.preventDefault();e.stopPropagation();setActiveArea(area);
+ },true);
+ root.addEventListener('focusin',e=&gt;{
+   if(clockOverlay.classList.contains('visible')&amp;&amp;activeArea!==area){
+     e.target.blur?.();
+   }
+ },true);
+}
+guardArea('page',pageArea);
+guardArea('clock',dialog);
+// 다른 영역을 클릭해 활성화할 때 첫 클릭은 입력칸에 바로 포커스하지 않습니다.
+renderClock();
+&lt;/script&gt;&lt;script&gt;
+let teacherMode=false;
+function teacherFill(){if(!teacherMode)return;const ids=['h1','m1','t1','h2','m2','t2'];const d=b-a,e=c-a;const vals=[Math.floor(d/60),d%60,d,Math.floor(e/60),e%60,e];ids.forEach((id,i)=&gt;document.getElementById(id).value=vals[i]);const start=Math.floor(a/60)*60;painted=painted.map((_,i)=&gt;{const t=start+i*10;return t&gt;=a&amp;&amp;t&lt;b?'yellow':t&gt;=b&amp;&amp;t&lt;c?'pink':''});numberedCells=[];draw();}
+const originalGenerate=newProblem;
+newProblem=function(...args){const result=originalGenerate.apply(this,args);teacherFill();return result;};
+window.addEventListener('message',event=&gt;{if(event.source!==parent)return;if(event.data?.kind==='teacher-mode'){teacherMode=event.data.enabled===true;teacherFill();}});
+parent.postMessage({kind:'teacher-ready',page:4},'*');
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;
+" title="4페이지"></iframe>
+<iframe class="page" id="page5" srcdoc="&lt;!DOCTYPE html&gt;
+
+&lt;html lang=&quot;ko&quot;&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;/&gt;&lt;meta content=&quot;width=device-width,initial-scale=1&quot; name=&quot;viewport&quot;/&gt;
+&lt;title&gt;체험학습 시간 구하기&lt;/title&gt;
+&lt;style&gt;
+*{box-sizing:border-box}body{margin:0;background:#f6f8ff;font-family:&quot;Malgun Gothic&quot;,sans-serif;color:#26334b}.wrap{max-width:920px;margin:24px auto;padding:25px;background:white;border-radius:20px;box-shadow:0 8px 30px #dce2f0}h1{font-size:25px;margin:0 0 20px}table{border-collapse:collapse;width:100%;text-align:center;font-size:20px}th,td{border:2px solid #dfc8df;padding:15px 8px}th{background:#f0e2f0}td:first-child{background:#fff6e9;font-weight:bold}tbody td:nth-child(2){background:#fff}tbody tr:not(:first-child) td:first-child{background:#fff;font-weight:normal}.question{padding:18px 0;border-bottom:1px solid #e4e8f0;font-size:20px}.question p{margin:0 0 12px}.answer{display:flex;gap:8px;align-items:center;flex-wrap:wrap}input{width:65px;height:46px;border:2px solid #80cfff;border-radius:6px;font-size:23px;text-align:center}input.short{width:125px}select{font-size:18px;padding:10px;border:2px solid #80cfff;border-radius:7px;max-width:100%}button{border:0;background:#327be8;color:white;padding:12px 19px;border-radius:10px;font-size:17px;cursor:pointer;margin-top:12px}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;justify-content:center;align-items:center}.feedback{font-weight:bold;margin-left:12px}.ok{color:#16834c}.no{color:#d34444}.hint{font-size:15px;color:#667085} .choice{display:flex;gap:10px;flex-wrap:wrap;align-items:center} @media(max-width:600px){.wrap{margin:0;padding:14px;border-radius:0}h1{font-size:21px}table{font-size:15px}th,td{padding:10px 3px}.question{font-size:17px}input{width:52px}}
+.inline-answer{display:flex;align-items:center;justify-content:flex-start;gap:8px;flex-wrap:wrap}.inline-answer select,.inline-answer input,.inline-answer span{vertical-align:middle}.inline-answer input{flex:0 0 65px}@media(max-width:600px){.inline-answer input{flex-basis:52px}}
+&lt;/style&gt;&lt;style&gt;
+.heading-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.heading-row h1{margin:0;flex:1}
+.big-clock-button{margin:0;flex-shrink:0;background:#0c948b;font-weight:700}
+.clock-modal{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:18px;background:transparent}
+.clock-modal.open{display:flex;pointer-events:none}
+.clock-modal.open .clock-panel{pointer-events:auto}
+.clock-panel.inactive{outline:2px solid #94a3b8;opacity:1}
+.clock-panel{resize:both;min-width:280px;min-height:320px;max-width:98vw;max-height:96dvh}
+.clock-panel-header{cursor:grab;touch-action:none;user-select:none}.clock-panel-header:active{cursor:grabbing}
+.clock-panel{position:relative;width:min(520px,90vw);height:min(620px,85dvh);background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px #0005;display:flex;flex-direction:column}
+.clock-panel-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#f1f5f9;font-size:20px;font-weight:800}
+.clock-close{margin:0;padding:7px 14px;background:#64748b}
+.clock-frame{width:100%;flex:1;border:0;min-height:0}
+@media(max-width:600px){.heading-row{align-items:flex-start;gap:8px}.big-clock-button{font-size:14px;padding:9px 10px}.clock-panel{height:min(720px,94dvh)}}
+&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;main class=&quot;wrap&quot;&gt;&lt;div class=&quot;heading-row&quot;&gt;&lt;h1&gt;체험학습 시간표를 보고 활동하는 데 걸린 시간을 구해 봅시다.&lt;/h1&gt;&lt;button class=&quot;big-clock-button&quot; onclick=&quot;openBigClock()&quot; type=&quot;button&quot;&gt;🕒 시계보기&lt;/button&gt;&lt;/div&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;가을 체험학습&lt;/th&gt;&lt;th&gt;시간&lt;/th&gt;&lt;th&gt;활동&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody id=&quot;schedule&quot;&gt;&lt;/tbody&gt;&lt;/table&gt;
+&lt;section class=&quot;question&quot;&gt;&lt;p id=&quot;questionText1&quot;&gt;① 1번째 활동을 몇 시간 몇 분 동안 했는지 구해 보세요.&lt;/p&gt;&lt;div class=&quot;answer&quot;&gt;&lt;input aria-label=&quot;1번 시간&quot; id=&quot;q1h&quot; inputmode=&quot;numeric&quot;/&gt; 시간 &lt;input aria-label=&quot;1번 분&quot; id=&quot;q1m&quot; inputmode=&quot;numeric&quot;/&gt; 분 &lt;/div&gt;&lt;span class=&quot;feedback&quot; id=&quot;f1&quot;&gt;&lt;/span&gt;&lt;/section&gt;
+&lt;section class=&quot;question&quot;&gt;&lt;p id=&quot;questionText2&quot;&gt;② 2번째 활동을 몇 시간 몇 분 동안 했는지 구해 보세요.&lt;/p&gt;&lt;div class=&quot;answer&quot;&gt;&lt;input aria-label=&quot;2번 시간&quot; id=&quot;q2h&quot; inputmode=&quot;numeric&quot;/&gt; 시간 &lt;input aria-label=&quot;2번 분&quot; id=&quot;q2m&quot; inputmode=&quot;numeric&quot;/&gt; 분 &lt;/div&gt;&lt;span class=&quot;feedback&quot; id=&quot;f2&quot;&gt;&lt;/span&gt;&lt;/section&gt;
+&lt;section class=&quot;question&quot;&gt;&lt;p id=&quot;questionText3&quot;&gt;③ 3번째 활동을 몇 시간 몇 분 동안 했는지 구해 보세요.&lt;/p&gt;&lt;div class=&quot;answer&quot;&gt;&lt;input aria-label=&quot;3번 시간&quot; id=&quot;q3h&quot; inputmode=&quot;numeric&quot;/&gt; 시간 &lt;input aria-label=&quot;3번 분&quot; id=&quot;q3m&quot; inputmode=&quot;numeric&quot;/&gt; 분 &lt;/div&gt;&lt;span class=&quot;feedback&quot; id=&quot;f3&quot;&gt;&lt;/span&gt;&lt;/section&gt;
+&lt;section class=&quot;question&quot;&gt;&lt;p id=&quot;questionText4&quot;&gt;④ 4번째 활동을 몇 시간 몇 분 동안 했는지 구해 보세요.&lt;/p&gt;&lt;div class=&quot;answer&quot;&gt;&lt;input aria-label=&quot;4번 시간&quot; id=&quot;q4h&quot; inputmode=&quot;numeric&quot;/&gt; 시간 &lt;input aria-label=&quot;4번 분&quot; id=&quot;q4m&quot; inputmode=&quot;numeric&quot;/&gt; 분 &lt;/div&gt;&lt;span class=&quot;feedback&quot; id=&quot;f4&quot;&gt;&lt;/span&gt;&lt;/section&gt;&lt;div class=&quot;actions&quot;&gt;&lt;button onclick=&quot;checkAll()&quot; type=&quot;button&quot;&gt;정답확인&lt;/button&gt;&lt;button onclick=&quot;newProblem()&quot; style=&quot;background:#e46a35&quot; type=&quot;button&quot;&gt;🔄 다른문제&lt;/button&gt;&lt;/div&gt;&lt;p class=&quot;hint&quot;&gt;틀린 문제만 표시하며 정답은 공개하지 않습니다.&lt;/p&gt;&lt;/main&gt;
+&lt;script&gt;
+const pool=['안전 체험하기','열매 줍기','음식 만들어 먹기','자연물로 작품 만들기','단풍 구경하기','도시락 먹기','보물찾기','낙엽 관찰하기','도토리 줍기','숲길 걷기','벼 베기','고구마 캐기','허수아비 만들기','공연 관람하기','전통놀이하기','사과 따기','배 따기','과일 포장하기','준비 운동하기','달리기','공놀이','이어달리기','줄다리기','낙엽 꾸미기','단풍 그림 그리기','작품 전시하기','텐트 치기','야외 요리하기','숲 탐험하기','등산하기','동물 관찰하기','동물 먹이 주기','풍경 그리기','가을 색칠하기','씨앗 심기','가을꽃 관찰하기','밤 줍기','코스모스 구경하기','낙엽 책갈피 만들기','가을 곤충 관찰하기'];
+let names=[],mins=[],firstScheduleStart=0;
+function fmt(t){return `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`}
+function shuffled(arr){return [...arr].sort(()=&gt;Math.random()-.5)}
+function newProblem(){
+ names=shuffled(pool).slice(0,4);
+ const start=(8+Math.floor(Math.random()*4))*60;
+ firstScheduleStart=start;
+ const endMinute=[0,10,20,30,40,50][Math.floor(Math.random()*6)];
+ const total=(Math.random()&lt;.5?180:240)+endMinute;
+ mins=[20,20,20,20];
+ const longActivityIndex=Math.floor(Math.random()*4);
+ mins[longActivityIndex]=70;
+ const remainingUnits=(total-130)/10;
+ for(let i=0;i&lt;remainingUnits;i++)mins[Math.floor(Math.random()*4)]+=10;
+ let t=start;
+ document.getElementById('schedule').innerHTML=names.map((name,i)=&gt;{
+  let begin=t;t+=mins[i];
+  return `&lt;tr&gt;${i===0?'&lt;td rowspan=&quot;4&quot; style=&quot;font-size:45px&quot;&gt;🍁&lt;br&gt;🧺&lt;br&gt;🌰&lt;/td&gt;':''}&lt;td&gt;${fmt(begin)}~${fmt(t)}&lt;/td&gt;&lt;td&gt;${name}&lt;/td&gt;&lt;/tr&gt;`;
+ }).join('');
+ for(let i=1;i&lt;=4;i++){
+  document.getElementById('questionText'+i).textContent=`${'①②③④'[i-1]} ${names[i-1]} 활동을 몇 시간 몇 분 동안 했는지 구해 보세요.`;
+  document.getElementById('q'+i+'h').value='';
+  document.getElementById('q'+i+'m').value='';
+  const f=document.getElementById('f'+i);f.textContent='';f.className='feedback';
+  document.querySelectorAll('.question')[i-1].style.borderLeft='';
+ }
+}
+function val(id){const s=document.getElementById(id).value.trim();return s===''?NaN:Number(s)}
+function checkAll(){
+ const correct=mins.map((duration,i)=&gt;val('q'+(i+1)+'h')===Math.floor(duration/60)&amp;&amp;val('q'+(i+1)+'m')===duration%60);
+ parent.postMessage({kind:'quiz',page:5,correct:correct.every(Boolean)},'*');
+ if(correct.every(Boolean)){newProblem();teacherFill();return;}
+ correct.forEach((ok,i)=&gt;{
+  const f=document.getElementById('f'+(i+1));
+  f.textContent=ok?'':'✗ 틀렸습니다.';
+  f.className='feedback '+(ok?'':'no');
+  document.querySelectorAll('.question')[i].style.borderLeft=ok?'':'5px solid #e34b4b';
+ });
+}
+newProblem();
+&lt;/script&gt;&lt;script&gt;let teacherMode=false;
+function teacherFill(){
+ if(!teacherMode)return;
+ for(let i=0;i&lt;4;i++){
+  document.getElementById('q'+(i+1)+'h').value=Math.floor(mins[i]/60);
+  document.getElementById('q'+(i+1)+'m').value=mins[i]%60;
+ }
+}
+const originalGenerate=newProblem;
+newProblem=function(...args){const result=originalGenerate.apply(this,args);teacherFill();return result;};
+window.addEventListener('message',event=&gt;{if(event.source!==parent)return;if(event.data?.kind==='teacher-mode'){teacherMode=event.data.enabled===true;teacherFill();}});
+parent.postMessage({kind:'teacher-ready',page:5},'*');&lt;/script&gt;&lt;div aria-label=&quot;시계보기&quot; aria-modal=&quot;true&quot; class=&quot;clock-modal&quot; id=&quot;bigClockModal&quot; role=&quot;dialog&quot;&gt;&lt;div class=&quot;clock-panel&quot; id=&quot;clockPanel&quot;&gt;&lt;div class=&quot;clock-panel-header&quot;&gt;&lt;span&gt;🕒 시계보기&lt;/span&gt;&lt;button aria-label=&quot;큰시계 닫기&quot; class=&quot;clock-close&quot; onclick=&quot;closeBigClock()&quot; type=&quot;button&quot;&gt;✕ 닫기&lt;/button&gt;&lt;/div&gt;&lt;iframe class=&quot;clock-frame&quot; onload=&quot;if(document.getElementById('bigClockModal').classList.contains('open'))syncClockToFirstRow()&quot; srcdoc='&amp;lt;!doctype html&amp;gt;
+&amp;lt;html lang=&quot;ko&quot;&amp;gt;&amp;lt;head&amp;gt;&amp;lt;meta charset=&quot;utf-8&quot;&amp;gt;&amp;lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1&quot;&amp;gt;
+&amp;lt;title&amp;gt;10분씩 움직이는 큰 시계&amp;lt;/title&amp;gt;
+&amp;lt;style&amp;gt;
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:&quot;Malgun Gothic&quot;,sans-serif;background:white;gap:25px}
+svg{width:min(88vw,650px);height:auto;touch-action:none}
+.controls{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
+button{border:0;border-radius:14px;background:#0c948b;color:white;font-size:clamp(20px,3vw,30px);font-weight:bold;padding:20px 30px;cursor:pointer}
+button:hover{background:#08786f}
+body{min-height:100dvh;padding:18px;gap:14px}svg{width:min(80vw,520px);max-height:calc(100dvh - 145px)}button{font-size:clamp(16px,2.5vw,23px);padding:12px 18px}.controls{gap:12px}&amp;lt;/style&amp;gt;&amp;lt;/head&amp;gt;&amp;lt;body&amp;gt;
+&amp;lt;svg viewBox=&quot;0 0 500 500&quot; aria-label=&quot;큰 아날로그 시계&quot;&amp;gt;
+&amp;lt;circle cx=&quot;250&quot; cy=&quot;250&quot; r=&quot;235&quot; fill=&quot;#ffb12f&quot;/&amp;gt;
+&amp;lt;circle cx=&quot;250&quot; cy=&quot;250&quot; r=&quot;214&quot; fill=&quot;white&quot;/&amp;gt;
+&amp;lt;g id=&quot;ticks&quot;&amp;gt;&amp;lt;/g&amp;gt;&amp;lt;g id=&quot;numbers&quot;&amp;gt;&amp;lt;/g&amp;gt;
+&amp;lt;line id=&quot;hour&quot; x1=&quot;250&quot; y1=&quot;250&quot; x2=&quot;250&quot; y2=&quot;142&quot; stroke=&quot;#ed6278&quot; stroke-width=&quot;14&quot; stroke-linecap=&quot;round&quot;/&amp;gt;
+&amp;lt;line id=&quot;minute&quot; x1=&quot;250&quot; y1=&quot;250&quot; x2=&quot;250&quot; y2=&quot;90&quot; stroke=&quot;#0eac77&quot; stroke-width=&quot;10&quot; stroke-linecap=&quot;round&quot;/&amp;gt;
+&amp;lt;circle cx=&quot;250&quot; cy=&quot;250&quot; r=&quot;12&quot; fill=&quot;#334155&quot;/&amp;gt;
+&amp;lt;/svg&amp;gt;
+&amp;lt;div class=&quot;controls&quot;&amp;gt;&amp;lt;button id=&quot;prev&quot;&amp;gt;◀ 10분 전&amp;lt;/button&amp;gt;&amp;lt;button id=&quot;next&quot;&amp;gt;10분 후 ▶&amp;lt;/button&amp;gt;&amp;lt;/div&amp;gt;
+&amp;lt;script&amp;gt;
+const NS=&quot;http://www.w3.org/2000/svg&quot;,ticks=document.getElementById(&quot;ticks&quot;),nums=document.getElementById(&quot;numbers&quot;);
+function el(tag,attrs,parent,text){let e=document.createElementNS(NS,tag);for(let k in attrs)e.setAttribute(k,attrs[k]);if(text)e.textContent=text;parent.appendChild(e)}
+for(let i=0;i&amp;lt;60;i++){let a=i*Math.PI/30,r1=i%5===0?193:202,r2=207;
+el(&quot;line&quot;,{x1:250+Math.sin(a)*r1,y1:250-Math.cos(a)*r1,x2:250+Math.sin(a)*r2,y2:250-Math.cos(a)*r2,stroke:&quot;#6684a1&quot;,&quot;stroke-width&quot;:i%5===0?3:1.6},ticks)}
+for(let i=1;i&amp;lt;=12;i++){let a=i*Math.PI/6;el(&quot;text&quot;,{x:250+Math.sin(a)*163,y:250-Math.cos(a)*163+7,&quot;text-anchor&quot;:&quot;middle&quot;,&quot;font-size&quot;:30,&quot;font-weight&quot;:&quot;bold&quot;,fill:&quot;#1b304b&quot;},nums,String(i))}
+let minutes=6*60+30;
+window.addEventListener(&quot;message&quot;,e=&gt;{if(e.data &amp;amp;&amp;amp; e.data.kind===&quot;set-clock-time&quot; &amp;amp;&amp;amp; Number.isFinite(e.data.minutes)){minutes=((e.data.minutes%1440)+1440)%1440;draw()}});
+function draw(){document.getElementById(&quot;minute&quot;).setAttribute(&quot;transform&quot;,`rotate(${minutes%60*6} 250 250)`);document.getElementById(&quot;hour&quot;).setAttribute(&quot;transform&quot;,`rotate(${minutes/2} 250 250)`)}
+document.getElementById(&quot;prev&quot;).onclick=()=&amp;gt;{minutes=(minutes-10+1440)%1440;draw()};
+document.getElementById(&quot;next&quot;).onclick=()=&amp;gt;{minutes=(minutes+10)%1440;draw()};
+draw();
+&amp;lt;/script&amp;gt;&amp;lt;/body&amp;gt;&amp;lt;/html&amp;gt;' title=&quot;10분씩 움직이는 큰 시계&quot;&gt;&lt;/iframe&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;script&gt;function syncClockToFirstRow(){const frame=document.querySelector('.clock-frame');if(frame&amp;&amp;frame.contentWindow)frame.contentWindow.postMessage({kind:'set-clock-time',minutes:firstScheduleStart-10},'*')}function openBigClock(){document.getElementById('bigClockModal').classList.add('open');document.getElementById('clockPanel').classList.remove('inactive');syncClockToFirstRow()}function closeBigClock(){document.getElementById('bigClockModal').classList.remove('open')}document.addEventListener('pointerdown',e=&gt;{const modal=document.getElementById('bigClockModal');if(modal.classList.contains('open'))document.getElementById('clockPanel').classList.toggle('inactive',!document.getElementById('clockPanel').contains(e.target)&amp;&amp;!e.target.closest('.big-clock-button'))});document.addEventListener('keydown',e=&gt;{if(e.key==='Escape')document.getElementById('clockPanel').classList.add('inactive')});
+(function(){const panel=document.getElementById('clockPanel'),header=panel.querySelector('.clock-panel-header');let drag=null;header.addEventListener('pointerdown',e=&gt;{if(e.target.closest('button'))return;const r=panel.getBoundingClientRect();panel.style.position='fixed';panel.style.left=r.left+'px';panel.style.top=r.top+'px';panel.style.margin='0';drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top};header.setPointerCapture(e.pointerId);panel.classList.remove('inactive');e.preventDefault()});header.addEventListener('pointermove',e=&gt;{if(!drag||e.pointerId!==drag.id)return;const left=Math.max(0,Math.min(innerWidth-panel.offsetWidth,drag.left+e.clientX-drag.x));const top=Math.max(0,Math.min(innerHeight-panel.offsetHeight,drag.top+e.clientY-drag.y));panel.style.left=left+'px';panel.style.top=top+'px'});function stop(e){if(drag&amp;&amp;e.pointerId===drag.id)drag=null}header.addEventListener('pointerup',stop);header.addEventListener('pointercancel',stop)})();&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" title="5페이지"></iframe>
+<iframe class="page" id="page6" srcdoc="&lt;!DOCTYPE html&gt;
+
+&lt;html lang=&quot;ko&quot;&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;/&gt;&lt;meta content=&quot;width=device-width,initial-scale=1&quot; name=&quot;viewport&quot;/&gt;&lt;title&gt;시간 단위 바꾸기&lt;/title&gt;&lt;style&gt;*{box-sizing:border-box}body{margin:0;font-family:'Malgun Gothic',sans-serif;background:white;color:#171717;min-height:100vh;display:grid;place-items:center}.wrap{width:min(760px,96vw);padding:24px}.heading{font-size:clamp(22px,3vw,30px);font-weight:700;margin-bottom:38px}.square{display:inline-block;width:30px;height:30px;border:2px solid #63c7ff;border-radius:3px;vertical-align:middle;margin-right:9px}.problem{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;font-size:clamp(24px,3.5vw,34px);margin:30px auto}.dot{color:#587db9}input{width:76px;height:57px;border:2px solid #65c9ff;border-radius:5px;font-size:29px;text-align:center;outline:none}input.wrong{border-color:#e54b4b;background:#fff0f0}button{font-size:20px;padding:13px 23px;border-radius:10px;border:0;cursor:pointer;background:#2779e8;color:white}button.alt{background:#e8eff9;color:#234}.buttons{display:flex;justify-content:center;gap:12px;margin-top:35px}.msg{text-align:center;min-height:30px;margin-top:17px;font-size:19px;font-weight:bold}@media(max-width:480px){.problem{gap:5px}input{width:60px;height:49px;font-size:24px}.heading{margin-bottom:26px}}&lt;/style&gt;&lt;style&gt;
+.clock-open{background:#7c54cc}.clock-overlay{position:fixed;inset:0;background:transparent;pointer-events:none;display:none;align-items:center;justify-content:center;z-index:1000;padding:16px}.clock-overlay.visible{display:flex}.clock-dialog{pointer-events:auto;position:relative;background:white;border-radius:18px;padding:18px;width:420px;height:540px;min-width:290px;min-height:390px;max-width:96vw;max-height:94vh;resize:both;overflow:auto;box-shadow:0 16px 50px #0005;display:flex;flex-direction:column;align-items:center;gap:8px}.clock-header{cursor:move;touch-action:none;user-select:none;display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px}.clock-header h2{font-size:22px;margin:0}.clock-close{padding:5px 12px;background:#68758b}.clock-face{width:min(100%,360px);flex:1;min-height:190px;touch-action:none;user-select:none}.clock-controls{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}.clock-controls button{font-size:15px;padding:8px 12px}.clock-display{font-size:24px;font-weight:bold;color:#244f85}.clock-help{font-size:13px;color:#596579;text-align:center;margin:0}.resize-help{font-size:12px;color:#778296;text-align:right;width:100%}.clock-dialog.active-area{outline:3px solid #7c54cc}
+&lt;/style&gt;&lt;style&gt;
+.timeline-wrap{margin:30px auto 16px;width:100%;max-width:1000px}
+.timeline-title{font-size:17px;font-weight:700;margin-bottom:12px}
+.palette{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.palette button{font-size:15px;padding:9px 13px;border-radius:9px;color:#263044;border:2px solid #aab5c5}
+.palette button.active{outline:3px solid #2563eb;outline-offset:2px}
+.time-strip{display:grid;grid-template-columns:repeat(25,minmax(0,1fr));width:100%;height:54px;border:2px solid #334155;user-select:none;touch-action:pan-y}
+.time-strip button{min-width:0;width:100%;height:100%;border:0;border-right:1px solid #64748b;background:#fff;border-radius:0;padding:0;cursor:pointer;touch-action:pan-y}
+.time-strip button:last-child{border-right:0}
+.strip-tools{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+.strip-tools .clear{font-size:14px;padding:7px 12px;background:#64748b}
+@media(max-width:700px){.wrap{width:98vw;padding:12px}.time-strip{height:42px}.palette button{font-size:13px;padding:8px}}
+/* 6페이지: 넓은 콘텐츠와 반응형 시간띠 */
+.wrap{width:96%;max-width:1150px;margin:0 auto;padding:24px 18px}
+.timeline-wrap{width:100%;max-width:none;overflow-x:hidden;padding:6px 0 12px;box-sizing:border-box}
+.time-strip{width:100%;min-width:0;max-width:100%;height:76px;grid-template-columns:repeat(25,minmax(0,1fr));box-sizing:border-box}
+.time-strip button{min-width:0;min-height:64px}
+@media(max-width:700px){.time-strip{height:62px}.time-strip button{min-height:58px}}
+&lt;/style&gt;&lt;style&gt;
+.problem{margin:22px auto 16px}.timeline-wrap{margin:8px auto 26px}.timeline-title{font-size:17px}.palette{margin:12px auto 18px}.time-strip{height:76px}.time-strip button{min-height:60px}.strip-tools{margin-top:8px}.buttons{margin-top:24px}
+@media(max-width:700px){.wrap{width:98%;padding:12px 8px}.time-strip{height:62px}.time-strip button{min-height:52px}}
+&lt;/style&gt;&lt;style&gt;.time-strip.strip-wrong{outline:3px solid #e54b4b;outline-offset:2px}&lt;/style&gt;&lt;style&gt;
+/* 25칸의 구분선: 칸 색칠 후에도 뚜렷하게 유지 */
+.time-strip{border:2px solid #334155;overflow:hidden}
+.time-strip button{box-sizing:border-box;border:0!important;border-right:1.5px solid #475569!important;border-radius:0!important;box-shadow:none!important;appearance:none;-webkit-appearance:none;min-width:0}
+.time-strip button:nth-child(6n){border-right:3px solid #1e293b!important}
+.time-strip button:last-child{border-right:0!important}
+&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;main class=&quot;wrap&quot;&gt;&lt;div class=&quot;heading&quot;&gt;&lt;span class=&quot;square&quot;&gt;&lt;/span&gt;안에 알맞은 수를 써넣으세요.&lt;/div&gt;&lt;div class=&quot;problem&quot;&gt;&lt;span class=&quot;dot&quot;&gt;•&lt;/span&gt;&lt;span id=&quot;first&quot;&gt;70분 =&lt;/span&gt;&lt;input aria-label=&quot;1번 시간&quot; id=&quot;h&quot; inputmode=&quot;numeric&quot; maxlength=&quot;2&quot; type=&quot;text&quot;/&gt;&lt;span&gt;시간&lt;/span&gt;&lt;input aria-label=&quot;1번 분&quot; id=&quot;m&quot; inputmode=&quot;numeric&quot; maxlength=&quot;2&quot; type=&quot;text&quot;/&gt;&lt;span&gt;분&lt;/span&gt;&lt;/div&gt;&lt;div aria-label=&quot;두 시간띠 공통 색깔 선택&quot; class=&quot;palette&quot; id=&quot;colorPalette&quot;&gt;&lt;/div&gt;&lt;section aria-label=&quot;1번 문제 시간띠&quot; class=&quot;timeline-wrap&quot;&gt;&lt;div class=&quot;timeline-title&quot;&gt;1번 문제의 시간을 색칠해 보세요.&lt;/div&gt;&lt;div aria-label=&quot;1번 문제 25칸 시간띠&quot; class=&quot;time-strip&quot; id=&quot;timeStrip1&quot;&gt;&lt;/div&gt;&lt;div class=&quot;strip-tools&quot;&gt;&lt;span&gt;한 칸은 10분 · 모두 25칸&lt;/span&gt;&lt;button class=&quot;clear&quot; id=&quot;clearStrip1&quot; type=&quot;button&quot;&gt;1번 색칠 초기화&lt;/button&gt;&lt;/div&gt;&lt;/section&gt;&lt;div class=&quot;problem&quot;&gt;&lt;span class=&quot;dot&quot;&gt;•&lt;/span&gt;&lt;span id=&quot;second&quot;&gt;1시간 20분 =&lt;/span&gt;&lt;input aria-label=&quot;2번 분&quot; id=&quot;total&quot; inputmode=&quot;numeric&quot; maxlength=&quot;3&quot; type=&quot;text&quot;/&gt;&lt;span&gt;분&lt;/span&gt;&lt;/div&gt;&lt;section aria-label=&quot;2번 문제 시간띠&quot; class=&quot;timeline-wrap&quot;&gt;&lt;div class=&quot;timeline-title&quot;&gt;2번 문제의 시간을 색칠해 보세요.&lt;/div&gt;&lt;div aria-label=&quot;2번 문제 25칸 시간띠&quot; class=&quot;time-strip&quot; id=&quot;timeStrip2&quot;&gt;&lt;/div&gt;&lt;div class=&quot;strip-tools&quot;&gt;&lt;span&gt;한 칸은 10분 · 모두 25칸&lt;/span&gt;&lt;button class=&quot;clear&quot; id=&quot;clearStrip2&quot; type=&quot;button&quot;&gt;2번 색칠 초기화&lt;/button&gt;&lt;/div&gt;&lt;/section&gt;&lt;div class=&quot;buttons&quot;&gt;&lt;button class=&quot;clock-open&quot; onclick=&quot;openClock()&quot; type=&quot;button&quot;&gt;🕒 시계보기&lt;/button&gt;&lt;button id=&quot;check&quot;&gt;정답확인&lt;/button&gt;&lt;button class=&quot;alt&quot; id=&quot;next&quot;&gt;다른문제&lt;/button&gt;&lt;/div&gt;&lt;div aria-live=&quot;polite&quot; class=&quot;msg&quot; id=&quot;msg&quot;&gt;&lt;/div&gt;&lt;/main&gt;&lt;script&gt;let a=70,b=80;const $=id=&gt;document.getElementById(id);const inputs=[$('h'),$('m'),$('total')];function render(){ $('first').textContent=a+'분 =';let hr=Math.floor(b/60),mn=b%60;$('second').textContent=hr+'시간'+(mn?' '+mn+'분':'')+' =';inputs.forEach(x=&gt;{x.value='';x.classList.remove('wrong')});$('msg').textContent='';}function random(){let oldA=a,oldB=b;do{a=(2+Math.floor(Math.random()*24))*10;b=(6+Math.floor(Math.random()*20))*10;}while(a===oldA&amp;&amp;b===oldB);render();}let checking=false;
+function check(){
+ if(checking)return;
+ let expected=[Math.floor(a/60),a%60,b],ok=true;
+ inputs.forEach((x,i)=&gt;{const valid=x.value.trim()!==''&amp;&amp;Number(x.value)===expected[i];x.classList.toggle('wrong',!valid);if(!valid)ok=false});
+ const strip1ok=validStrip(0,a),strip2ok=validStrip(1,b);
+ document.getElementById('timeStrip1').classList.toggle('strip-wrong',!strip1ok);
+ document.getElementById('timeStrip2').classList.toggle('strip-wrong',!strip2ok);
+ ok=ok&amp;&amp;strip1ok&amp;&amp;strip2ok;
+ parent.postMessage({kind:'quiz',page:6,correct:ok},'*');
+ if(ok){checking=true;$('msg').textContent='정답입니다!';setTimeout(()=&gt;{random();checking=false},450)}
+ else{$('msg').textContent='✗ 틀린 숫자 입력칸 또는 시간띠를 다시 확인하세요.'}
+}
+$('check').addEventListener('click',check);$('next').addEventListener('click',random);inputs.forEach(x=&gt;{x.addEventListener('keydown',e=&gt;{if(e.key==='Enter')check()});x.addEventListener('input',()=&gt;x.classList.remove('wrong'))});render();&lt;/script&gt;&lt;script&gt;
+const stripColors=['#fde047','#f9a8d4','#bef264','#7dd3fc','#c4b5fd'];
+const stripNames=['노란색','분홍색','연두색','하늘색','보라색'];
+let selectedStripColor=0;
+const stripCells=[Array(25).fill(-1),Array(25).fill(-1)];
+function renderPalette(){
+ const palette=document.getElementById('colorPalette');
+ palette.replaceChildren();
+ stripColors.forEach((color,i)=&gt;{
+  const btn=document.createElement('button');btn.type='button';
+  btn.textContent=stripNames[i];btn.style.backgroundColor=color;
+  btn.classList.toggle('active',i===selectedStripColor);
+  btn.setAttribute('aria-pressed',String(i===selectedStripColor));
+  btn.addEventListener('click',()=&gt;{selectedStripColor=i;renderPalette()});
+  palette.appendChild(btn);
+ });
+}
+function renderStrip(){
+ for(let n=0;n&lt;2;n++){
+  const root=document.getElementById('timeStrip'+(n+1));
+  root.replaceChildren();
+  stripCells[n].forEach((value,i)=&gt;{
+   const btn=document.createElement('button');btn.type='button';
+   btn.style.backgroundColor=value&lt;0?'#ffffff':stripColors[value];
+   btn.setAttribute('aria-label',(i+1)+'번째 칸 '+(value&lt;0?'색칠 안 됨':stripNames[value]));
+   btn.addEventListener('click',()=&gt;{
+    stripCells[n][i]=stripCells[n][i]===selectedStripColor?-1:selectedStripColor;
+    root.classList.remove('strip-wrong');renderStrip();
+   });
+   root.appendChild(btn);
+  });
+ }
+}
+function validStrip(n,minutes){
+ const count=minutes/10;
+ if(!Number.isInteger(count)||count&lt;0||count&gt;25)return false;
+ for(let i=0;i&lt;25;i++){
+  const v=stripCells[n][i];
+  if(i&gt;=count){if(v!==-1)return false;continue;}
+  if(v&lt;0||v&gt;=5)return false;
+  const block=Math.floor(i/6);
+  const start=block*6;
+  if(i&gt;start&amp;&amp;v!==stripCells[n][start])return false;
+  if(start&gt;0&amp;&amp;i===start&amp;&amp;v===stripCells[n][start-1])return false;
+ }
+ return true;
+}
+for(let n=0;n&lt;2;n++){
+ document.getElementById('clearStrip'+(n+1)).addEventListener('click',()=&gt;{
+  stripCells[n].fill(-1);document.getElementById('timeStrip'+(n+1)).classList.remove('strip-wrong');renderStrip();
+ });
+}
+const originalRandomForStrips=random;
+random=function(...args){
+ stripCells.forEach(c=&gt;c.fill(-1));selectedStripColor=0;
+ document.querySelectorAll('.time-strip').forEach(x=&gt;x.classList.remove('strip-wrong'));
+ renderPalette();renderStrip();
+ return originalRandomForStrips.apply(this,args);
+};
+renderPalette();renderStrip();
+&lt;/script&gt;&lt;script&gt;
+let teacherMode=false;
+function teacherFill(){if(!teacherMode)return;inputs[0].value=Math.floor(a/60);inputs[1].value=a%60;inputs[2].value=b;[a,b].forEach((mins,n)=&gt;{for(let i=0;i&lt;25;i++)stripCells[n][i]=i&lt;mins/10?Math.floor(i/6):-1});renderStrip();}
+const originalGenerate=random;
+random=function(...args){const result=originalGenerate.apply(this,args);teacherFill();return result;};
+window.addEventListener('message',event=&gt;{if(event.source!==parent)return;if(event.data?.kind==='teacher-mode'){teacherMode=event.data.enabled===true;teacherFill();}});
+parent.postMessage({kind:'teacher-ready',page:6},'*');
+&lt;/script&gt;&lt;div class=&quot;clock-overlay&quot; id=&quot;clockOverlay&quot;&gt;&lt;div aria-label=&quot;조작할 수 있는 시계&quot; aria-modal=&quot;true&quot; class=&quot;clock-dialog&quot; role=&quot;dialog&quot;&gt;&lt;div class=&quot;clock-header&quot;&gt;&lt;h2&gt;🕒 시계보기&lt;/h2&gt;&lt;button aria-label=&quot;닫기&quot; class=&quot;clock-close&quot; onclick=&quot;closeClock()&quot;&gt;✕&lt;/button&gt;&lt;/div&gt;&lt;p class=&quot;clock-help&quot;&gt;시침(파랑)과 분침(빨강)을 손가락이나 마우스로 움직여 보세요.&lt;/p&gt;&lt;svg aria-label=&quot;조작 가능한 아날로그 시계&quot; class=&quot;clock-face&quot; id=&quot;clockFace&quot; viewbox=&quot;0 0 320 320&quot;&gt;&lt;circle cx=&quot;160&quot; cy=&quot;160&quot; fill=&quot;#fff&quot; r=&quot;145&quot; stroke=&quot;#334155&quot; stroke-width=&quot;6&quot;&gt;&lt;/circle&gt;&lt;g id=&quot;clockMarks&quot;&gt;&lt;/g&gt;&lt;line id=&quot;hourHand&quot; stroke=&quot;#2563eb&quot; stroke-linecap=&quot;round&quot; stroke-width=&quot;11&quot; x1=&quot;160&quot; x2=&quot;160&quot; y1=&quot;160&quot; y2=&quot;84&quot;&gt;&lt;/line&gt;&lt;line id=&quot;minuteHand&quot; stroke=&quot;#e24b5c&quot; stroke-linecap=&quot;round&quot; stroke-width=&quot;7&quot; x1=&quot;160&quot; x2=&quot;160&quot; y1=&quot;160&quot; y2=&quot;43&quot;&gt;&lt;/line&gt;&lt;circle cx=&quot;160&quot; cy=&quot;160&quot; fill=&quot;#334155&quot; r=&quot;9&quot;&gt;&lt;/circle&gt;&lt;/svg&gt;&lt;div class=&quot;clock-display&quot; id=&quot;clockDisplay&quot;&gt;9시 00분&lt;/div&gt;&lt;div class=&quot;clock-controls&quot;&gt;&lt;button onclick=&quot;adjustHour(-1)&quot;&gt;시침 -1시간&lt;/button&gt;&lt;button onclick=&quot;adjustHour(1)&quot;&gt;시침 +1시간&lt;/button&gt;&lt;button onclick=&quot;adjustMinute(-5)&quot;&gt;분침 -5분&lt;/button&gt;&lt;button onclick=&quot;adjustMinute(5)&quot;&gt;분침 +5분&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;resize-help&quot;&gt;↘ 오른쪽 아래 모서리를 끌어 창 크기를 조절하세요.&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;script&gt;let clockMinutes=540, dragging=null;
+const clockOverlay=document.getElementById('clockOverlay'),clockFace=document.getElementById('clockFace');
+function openClock(){clockOverlay.classList.add('visible');clockMinutes=540;renderClock()}
+function closeClock(){clockOverlay.classList.remove('visible');dragging=null}
+function adjustHour(n){clockMinutes=(clockMinutes+n*60+1440)%1440;renderClock()}
+function adjustMinute(n){clockMinutes=(clockMinutes+n+1440)%1440;renderClock()}
+function renderClock(){let minute=clockMinutes%60,hour=(clockMinutes/60)%12;for(const [id,angle,len] of [['hourHand',(hour*30+minute*.5)*Math.PI/180,76],['minuteHand',minute*6*Math.PI/180,117]]){let hand=document.getElementById(id);hand.setAttribute('x2',160+Math.sin(angle)*len);hand.setAttribute('y2',160-Math.cos(angle)*len)}document.getElementById('clockDisplay').textContent=`${Math.floor(clockMinutes/60)%12||12}시 ${String(minute).padStart(2,'0')}분`}
+const marks=document.getElementById('clockMarks');for(let i=0;i&lt;60;i++){let t=i*Math.PI/30,major=i%5===0;let line=document.createElementNS('http://www.w3.org/2000/svg','line');for(const [k,v] of Object.entries({x1:160+Math.sin(t)*(major?124:134),y1:160-Math.cos(t)*(major?124:134),x2:160+Math.sin(t)*139,y2:160-Math.cos(t)*139,stroke:'#475569','stroke-width':major?3:1.5}))line.setAttribute(k,v);marks.appendChild(line)}for(let n=1;n&lt;=12;n++){let t=n*Math.PI/6,txt=document.createElementNS('http://www.w3.org/2000/svg','text');txt.setAttribute('x',160+Math.sin(t)*105);txt.setAttribute('y',160-Math.cos(t)*105+7);txt.setAttribute('font-size','23');txt.setAttribute('font-weight','bold');txt.setAttribute('text-anchor','middle');txt.setAttribute('fill','#25354b');txt.textContent=n;marks.appendChild(txt)}
+function pointerAngle(e){let rect=clockFace.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*320-160,y=(e.clientY-rect.top)/rect.height*320-160;return {angle:(Math.atan2(x,-y)*180/Math.PI+360)%360,r:Math.hypot(x,y)}}
+clockFace.addEventListener('pointerdown',e=&gt;{let {angle,r}=pointerAngle(e);if(r&lt;16||r&gt;148)return;let minuteAngle=clockMinutes%60*6,hourAngle=(clockMinutes/60%12)*30;let dist=(x,y)=&gt;Math.abs((x-y+540)%360-180);dragging=r&gt;95?'minute':dist(angle,minuteAngle)&lt;dist(angle,hourAngle)?'minute':'hour';clockFace.setPointerCapture(e.pointerId);moveHand(e)});
+function moveHand(e){if(!dragging)return;let angle=pointerAngle(e).angle;if(dragging==='minute'){let m=Math.round(angle/6)%60;let h=Math.floor(clockMinutes/60);let old=clockMinutes%60;if(old&gt;45&amp;&amp;m&lt;15)h++;if(old&lt;15&amp;&amp;m&gt;45)h--;clockMinutes=((h*60+m)%1440+1440)%1440}else{let h=Math.round(angle/30)%12;let oldH=Math.floor(clockMinutes/60)%12;let diff=((h-oldH+18)%12)-6;clockMinutes=(clockMinutes+diff*60+1440)%1440}renderClock()}
+clockFace.addEventListener('pointermove',moveHand);clockFace.addEventListener('pointerup',()=&gt;dragging=null);clockFace.addEventListener('pointercancel',()=&gt;dragging=null);const dialog=document.querySelector('.clock-dialog');
+const header=document.querySelector('.clock-header');
+let moving=false, moveX=0, moveY=0;
+header.addEventListener('pointerdown',e=&gt;{
+ if(e.target.closest('button'))return;
+ const r=dialog.getBoundingClientRect();
+ dialog.style.position='fixed';dialog.style.left=r.left+'px';dialog.style.top=r.top+'px';
+ dialog.style.margin='0';moving=true;moveX=e.clientX-r.left;moveY=e.clientY-r.top;
+ header.setPointerCapture(e.pointerId);e.preventDefault();
+});
+header.addEventListener('pointermove',e=&gt;{
+ if(!moving)return;
+ const x=Math.max(0,Math.min(window.innerWidth-dialog.offsetWidth,e.clientX-moveX));
+ const y=Math.max(0,Math.min(window.innerHeight-dialog.offsetHeight,e.clientY-moveY));
+ dialog.style.left=x+'px';dialog.style.top=y+'px';
+});
+header.addEventListener('pointerup',()=&gt;moving=false);
+header.addEventListener('pointercancel',()=&gt;moving=false);
+&lt;/script&gt;&lt;script&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;
+" title="6페이지"></iframe><iframe class="page" id="page7" srcdoc="&lt;!DOCTYPE html&gt;
+
+&lt;html lang=&quot;ko&quot;&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;/&gt;&lt;meta content=&quot;width=device-width,initial-scale=1&quot; name=&quot;viewport&quot;/&gt;&lt;title&gt;시간 단위 바꾸기&lt;/title&gt;&lt;style&gt;*{box-sizing:border-box}body{margin:0;font-family:'Malgun Gothic',sans-serif;background:white;color:#171717;min-height:100vh;display:grid;place-items:center}.wrap{width:min(760px,96vw);padding:24px}.heading{font-size:clamp(22px,3vw,30px);font-weight:700;margin-bottom:38px}.square{display:inline-block;width:30px;height:30px;border:2px solid #63c7ff;border-radius:3px;vertical-align:middle;margin-right:9px}.problem{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;font-size:clamp(24px,3.5vw,34px);margin:30px auto}.dot{color:#587db9}input{width:76px;height:57px;border:2px solid #65c9ff;border-radius:5px;font-size:29px;text-align:center;outline:none}input.wrong{border-color:#e54b4b;background:#fff0f0}button{font-size:20px;padding:13px 23px;border-radius:10px;border:0;cursor:pointer;background:#2779e8;color:white}button.alt{background:#e8eff9;color:#234}.buttons{display:flex;justify-content:center;gap:12px;margin-top:35px}.msg{text-align:center;min-height:30px;margin-top:17px;font-size:19px;font-weight:bold}@media(max-width:480px){.problem{gap:5px}input{width:60px;height:49px;font-size:24px}.heading{margin-bottom:26px}}&lt;/style&gt;&lt;style&gt;
+.clock-open{background:#7c54cc}.clock-overlay{position:fixed;inset:0;background:transparent;pointer-events:none;display:none;align-items:center;justify-content:center;z-index:1000;padding:16px}.clock-overlay.visible{display:flex}.clock-dialog{pointer-events:auto;position:relative;background:white;border-radius:18px;padding:18px;width:420px;height:540px;min-width:290px;min-height:390px;max-width:96vw;max-height:94vh;resize:both;overflow:auto;box-shadow:0 16px 50px #0005;display:flex;flex-direction:column;align-items:center;gap:8px}.clock-header{cursor:move;touch-action:none;user-select:none;display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px}.clock-header h2{font-size:22px;margin:0}.clock-close{padding:5px 12px;background:#68758b}.clock-face{width:min(100%,360px);flex:1;min-height:190px;touch-action:none;user-select:none}.clock-controls{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}.clock-controls button{font-size:15px;padding:8px 12px}.clock-display{font-size:24px;font-weight:bold;color:#244f85}.clock-help{font-size:13px;color:#596579;text-align:center;margin:0}.resize-help{font-size:12px;color:#778296;text-align:right;width:100%}.clock-dialog.active-area{outline:3px solid #7c54cc}
+&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;main class=&quot;wrap&quot;&gt;&lt;div class=&quot;heading&quot;&gt;&lt;span class=&quot;square&quot;&gt;&lt;/span&gt;안에 알맞은 수를 써넣으세요.&lt;/div&gt;&lt;div class=&quot;problem&quot;&gt;&lt;span class=&quot;dot&quot;&gt;•&lt;/span&gt;&lt;span id=&quot;first&quot;&gt;70분 =&lt;/span&gt;&lt;input aria-label=&quot;1번 시간&quot; id=&quot;h&quot; inputmode=&quot;numeric&quot; maxlength=&quot;2&quot; type=&quot;text&quot;/&gt;&lt;span&gt;시간&lt;/span&gt;&lt;input aria-label=&quot;1번 분&quot; id=&quot;m&quot; inputmode=&quot;numeric&quot; maxlength=&quot;2&quot; type=&quot;text&quot;/&gt;&lt;span&gt;분&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;problem&quot;&gt;&lt;span class=&quot;dot&quot;&gt;•&lt;/span&gt;&lt;span id=&quot;second&quot;&gt;1시간 20분 =&lt;/span&gt;&lt;input aria-label=&quot;2번 분&quot; id=&quot;total&quot; inputmode=&quot;numeric&quot; maxlength=&quot;3&quot; type=&quot;text&quot;/&gt;&lt;span&gt;분&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;buttons&quot;&gt;&lt;button class=&quot;clock-open&quot; onclick=&quot;openClock()&quot; type=&quot;button&quot;&gt;🕒 시계보기&lt;/button&gt;&lt;button id=&quot;check&quot;&gt;정답확인&lt;/button&gt;&lt;button class=&quot;alt&quot; id=&quot;next&quot;&gt;다른문제&lt;/button&gt;&lt;/div&gt;&lt;div aria-live=&quot;polite&quot; class=&quot;msg&quot; id=&quot;msg&quot;&gt;&lt;/div&gt;&lt;/main&gt;&lt;script&gt;let a=70,b=80;const $=id=&gt;document.getElementById(id);const inputs=[$('h'),$('m'),$('total')];function render(){ $('first').textContent=a+'분 =';let hr=Math.floor(b/60),mn=b%60;$('second').textContent=hr+'시간'+(mn?' '+mn+'분':'')+' =';inputs.forEach(x=&gt;{x.value='';x.classList.remove('wrong')});$('msg').textContent='';}function random(){let oldA=a,oldB=b;do{a=(2+Math.floor(Math.random()*17))*10;b=(1+Math.floor(Math.random()*5))*60+Math.floor(Math.random()*6)*10;}while(a===oldA&amp;&amp;b===oldB);render();}function check(){let expected=[Math.floor(a/60),a%60,b];let ok=true;inputs.forEach((x,i)=&gt;{let valid=x.value.trim()!==''&amp;&amp;Number(x.value)===expected[i];x.classList.toggle('wrong',!valid);if(!valid)ok=false});parent.postMessage({kind:'quiz',page:7,correct:ok},'*');if(ok){$('msg').textContent='정답입니다!';setTimeout(random,450)}else{$('msg').textContent='✗ 틀렸습니다. 표시된 칸을 다시 확인하세요.'}}$('check').addEventListener('click',check);$('next').addEventListener('click',random);inputs.forEach(x=&gt;{x.addEventListener('keydown',e=&gt;{if(e.key==='Enter')check()});x.addEventListener('input',()=&gt;x.classList.remove('wrong'))});render();&lt;/script&gt;&lt;script&gt;
+let teacherMode=false;
+function teacherFill(){if(!teacherMode)return;inputs[0].value=Math.floor(a/60);inputs[1].value=a%60;inputs[2].value=b;}
+const originalGenerate=random;
+random=function(...args){const result=originalGenerate.apply(this,args);teacherFill();return result;};
+window.addEventListener('message',event=&gt;{if(event.source!==parent)return;if(event.data?.kind==='teacher-mode'){teacherMode=event.data.enabled===true;teacherFill();}});
+parent.postMessage({kind:'teacher-ready',page:7},'*');
+&lt;/script&gt;&lt;div class=&quot;clock-overlay&quot; id=&quot;clockOverlay&quot;&gt;&lt;div aria-label=&quot;조작할 수 있는 시계&quot; aria-modal=&quot;true&quot; class=&quot;clock-dialog&quot; role=&quot;dialog&quot;&gt;&lt;div class=&quot;clock-header&quot;&gt;&lt;h2&gt;🕒 시계보기&lt;/h2&gt;&lt;button aria-label=&quot;닫기&quot; class=&quot;clock-close&quot; onclick=&quot;closeClock()&quot;&gt;✕&lt;/button&gt;&lt;/div&gt;&lt;p class=&quot;clock-help&quot;&gt;시침(파랑)과 분침(빨강)을 손가락이나 마우스로 움직여 보세요.&lt;/p&gt;&lt;svg aria-label=&quot;조작 가능한 아날로그 시계&quot; class=&quot;clock-face&quot; id=&quot;clockFace&quot; viewbox=&quot;0 0 320 320&quot;&gt;&lt;circle cx=&quot;160&quot; cy=&quot;160&quot; fill=&quot;#fff&quot; r=&quot;145&quot; stroke=&quot;#334155&quot; stroke-width=&quot;6&quot;&gt;&lt;/circle&gt;&lt;g id=&quot;clockMarks&quot;&gt;&lt;/g&gt;&lt;line id=&quot;hourHand&quot; stroke=&quot;#2563eb&quot; stroke-linecap=&quot;round&quot; stroke-width=&quot;11&quot; x1=&quot;160&quot; x2=&quot;160&quot; y1=&quot;160&quot; y2=&quot;84&quot;&gt;&lt;/line&gt;&lt;line id=&quot;minuteHand&quot; stroke=&quot;#e24b5c&quot; stroke-linecap=&quot;round&quot; stroke-width=&quot;7&quot; x1=&quot;160&quot; x2=&quot;160&quot; y1=&quot;160&quot; y2=&quot;43&quot;&gt;&lt;/line&gt;&lt;circle cx=&quot;160&quot; cy=&quot;160&quot; fill=&quot;#334155&quot; r=&quot;9&quot;&gt;&lt;/circle&gt;&lt;/svg&gt;&lt;div class=&quot;clock-display&quot; id=&quot;clockDisplay&quot;&gt;9시 00분&lt;/div&gt;&lt;div class=&quot;clock-controls&quot;&gt;&lt;button onclick=&quot;adjustHour(-1)&quot;&gt;시침 -1시간&lt;/button&gt;&lt;button onclick=&quot;adjustHour(1)&quot;&gt;시침 +1시간&lt;/button&gt;&lt;button onclick=&quot;adjustMinute(-5)&quot;&gt;분침 -5분&lt;/button&gt;&lt;button onclick=&quot;adjustMinute(5)&quot;&gt;분침 +5분&lt;/button&gt;&lt;/div&gt;&lt;div class=&quot;resize-help&quot;&gt;↘ 오른쪽 아래 모서리를 끌어 창 크기를 조절하세요.&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;script&gt;let clockMinutes=540, dragging=null;
+const clockOverlay=document.getElementById('clockOverlay'),clockFace=document.getElementById('clockFace');
+function openClock(){clockOverlay.classList.add('visible');clockMinutes=540;renderClock()}
+function closeClock(){clockOverlay.classList.remove('visible');dragging=null}
+function adjustHour(n){clockMinutes=(clockMinutes+n*60+1440)%1440;renderClock()}
+function adjustMinute(n){clockMinutes=(clockMinutes+n+1440)%1440;renderClock()}
+function renderClock(){let minute=clockMinutes%60,hour=(clockMinutes/60)%12;for(const [id,angle,len] of [['hourHand',(hour*30+minute*.5)*Math.PI/180,76],['minuteHand',minute*6*Math.PI/180,117]]){let hand=document.getElementById(id);hand.setAttribute('x2',160+Math.sin(angle)*len);hand.setAttribute('y2',160-Math.cos(angle)*len)}document.getElementById('clockDisplay').textContent=`${Math.floor(clockMinutes/60)%12||12}시 ${String(minute).padStart(2,'0')}분`}
+const marks=document.getElementById('clockMarks');for(let i=0;i&lt;60;i++){let t=i*Math.PI/30,major=i%5===0;let line=document.createElementNS('http://www.w3.org/2000/svg','line');for(const [k,v] of Object.entries({x1:160+Math.sin(t)*(major?124:134),y1:160-Math.cos(t)*(major?124:134),x2:160+Math.sin(t)*139,y2:160-Math.cos(t)*139,stroke:'#475569','stroke-width':major?3:1.5}))line.setAttribute(k,v);marks.appendChild(line)}for(let n=1;n&lt;=12;n++){let t=n*Math.PI/6,txt=document.createElementNS('http://www.w3.org/2000/svg','text');txt.setAttribute('x',160+Math.sin(t)*105);txt.setAttribute('y',160-Math.cos(t)*105+7);txt.setAttribute('font-size','23');txt.setAttribute('font-weight','bold');txt.setAttribute('text-anchor','middle');txt.setAttribute('fill','#25354b');txt.textContent=n;marks.appendChild(txt)}
+function pointerAngle(e){let rect=clockFace.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*320-160,y=(e.clientY-rect.top)/rect.height*320-160;return {angle:(Math.atan2(x,-y)*180/Math.PI+360)%360,r:Math.hypot(x,y)}}
+clockFace.addEventListener('pointerdown',e=&gt;{let {angle,r}=pointerAngle(e);if(r&lt;16||r&gt;148)return;let minuteAngle=clockMinutes%60*6,hourAngle=(clockMinutes/60%12)*30;let dist=(x,y)=&gt;Math.abs((x-y+540)%360-180);dragging=r&gt;95?'minute':dist(angle,minuteAngle)&lt;dist(angle,hourAngle)?'minute':'hour';clockFace.setPointerCapture(e.pointerId);moveHand(e)});
+function moveHand(e){if(!dragging)return;let angle=pointerAngle(e).angle;if(dragging==='minute'){let m=Math.round(angle/6)%60;let h=Math.floor(clockMinutes/60);let old=clockMinutes%60;if(old&gt;45&amp;&amp;m&lt;15)h++;if(old&lt;15&amp;&amp;m&gt;45)h--;clockMinutes=((h*60+m)%1440+1440)%1440}else{let h=Math.round(angle/30)%12;let oldH=Math.floor(clockMinutes/60)%12;let diff=((h-oldH+18)%12)-6;clockMinutes=(clockMinutes+diff*60+1440)%1440}renderClock()}
+clockFace.addEventListener('pointermove',moveHand);clockFace.addEventListener('pointerup',()=&gt;dragging=null);clockFace.addEventListener('pointercancel',()=&gt;dragging=null);const dialog=document.querySelector('.clock-dialog');
+const header=document.querySelector('.clock-header');
+let moving=false, moveX=0, moveY=0;
+header.addEventListener('pointerdown',e=&gt;{
+ if(e.target.closest('button'))return;
+ const r=dialog.getBoundingClientRect();
+ dialog.style.position='fixed';dialog.style.left=r.left+'px';dialog.style.top=r.top+'px';
+ dialog.style.margin='0';moving=true;moveX=e.clientX-r.left;moveY=e.clientY-r.top;
+ header.setPointerCapture(e.pointerId);e.preventDefault();
+});
+header.addEventListener('pointermove',e=&gt;{
+ if(!moving)return;
+ const x=Math.max(0,Math.min(window.innerWidth-dialog.offsetWidth,e.clientX-moveX));
+ const y=Math.max(0,Math.min(window.innerHeight-dialog.offsetHeight,e.clientY-moveY));
+ dialog.style.left=x+'px';dialog.style.top=y+'px';
+});
+header.addEventListener('pointerup',()=&gt;moving=false);
+header.addEventListener('pointercancel',()=&gt;moving=false);
+&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;
+" title="7페이지"></iframe><section class="evaluation" id="page8" style="margin:24px auto;max-width:1050px;"><h2 style="text-align:center">자동평가</h2><iframe loading="lazy" referrerpolicy="strict-origin-when-cross-origin" src="https://eyeholder83-commits.github.io/sh0201/%ED%95%99%EA%B8%89%ED%86%B5%ED%95%A9%EA%B4%80%EB%A6%AC.html?autoActivity=act-1793659658498" title="과제 참여 여부 확인하기"></iframe></section><div aria-modal="true" class="modal" id="modal" role="alertdialog"><div>자동평가 페이지가 생겼습니다!</div></div><script>
+const KEY='time-quiz-streak-1793659658498';let streak=[0,0,0,0,0,0,0],completed=[false,false,false,false,false,false,false],unlocked=false,active=1;
+try{localStorage.removeItem(KEY)}catch(e){}
+function save(){}
+function renderNav(){let nav=document.getElementById('nav');nav.innerHTML='';for(let i=1;i<= (unlocked?8:7);i++){let b=document.createElement('button');b.type='button';b.className=(active===i?'active ':'')+(completed[i-1]?'done':'');b.innerHTML=(i===8?'자동평가':i+'페이지')+(i<=7?'<span class="count">'+(completed[i-1]?'✓ 완료':streak[i-1]+'/'+(i===5?4:7)+' 연속 정답')+'</span>':'');b.onclick=()=>show(i);nav.appendChild(b)}}
+function show(i){if(i===8&&!unlocked)return;active=i;document.querySelectorAll('.page').forEach((p,j)=>p.classList.toggle('active',j===i-1));document.getElementById('page8').classList.toggle('active',i===8);renderNav();window.scrollTo(0,0)}
+window.addEventListener('message',e=>{let d=e.data;if(!d||d.kind!=='quiz'||!Number.isInteger(d.page)||d.page<1||d.page>7)return;let frame=document.getElementById('page'+d.page);if(e.source!==frame.contentWindow)return;let idx=d.page-1;if(completed[idx])return;if(d.correct){streak[idx]++;if(streak[idx]>=(d.page===5?4:7)){streak[idx]=(d.page===5?4:7);completed[idx]=true}}else{streak[idx]=0}if(!unlocked&&completed.every(Boolean)){unlocked=true;save();renderNav();document.getElementById('modal').classList.add('show');setTimeout(()=>{document.getElementById('modal').classList.remove('show');show(8)},2000)}else{save();renderNav()}});
+function showAutoEvaluation(){if(unlocked)show(8)}show(1);
+
+let teacherAuthenticated=false;
+const teacherButton=document.getElementById('teacherLogin');
+teacherButton.addEventListener('click',()=>{
+ if(teacherAuthenticated){teacherAuthenticated=false;teacherButton.textContent='교사용 로그인';teacherButton.classList.remove('on');broadcastTeacher();return;}
+ const entered=prompt('교사용 비밀번호를 입력하세요.');
+ if(entered===null)return;
+ if(entered==='5658'){teacherAuthenticated=true;teacherButton.textContent='교사 모드 종료';teacherButton.classList.add('on');broadcastTeacher();}
+ else alert('비밀번호가 올바르지 않습니다.');
+});
+function broadcastTeacher(){for(let i=1;i<=7;i++){const frame=document.getElementById('page'+i);frame.contentWindow?.postMessage({kind:'teacher-mode',enabled:teacherAuthenticated},'*');}}
+window.addEventListener('message',e=>{if(e.data?.kind==='teacher-ready'&&e.source===document.getElementById('page'+e.data.page)?.contentWindow){e.source.postMessage({kind:'teacher-mode',enabled:teacherAuthenticated},'*');}});
+</script></body></html>
