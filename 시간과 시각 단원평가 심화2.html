@@ -1,0 +1,88 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>시각과 시간 심화2 답안지</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f0f5fb;color:#243247;font-family:'Malgun Gothic',sans-serif}main{max-width:900px;margin:25px auto;padding:0 16px 60px}header{background:#285fbd;color:white;padding:24px;border-radius:18px}h1{margin:0 0 8px;font-size:27px}header p{margin:0}.question{background:white;margin-top:15px;padding:22px;border-radius:16px;box-shadow:0 3px 12px #15304b12;border:2px solid transparent}.question.wrong{border-color:#e34c55}.question.correct{border-color:#34a26c}.qtitle{font-size:19px;font-weight:800;margin-bottom:13px}.desc{line-height:1.75;margin-bottom:12px}.inputline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}.short{width:95px}input[type=text]{border:2px solid #ccd8e8;border-radius:9px;padding:10px;font-size:18px;min-width:0}input[type=text]:focus{outline:2px solid #8ab6f9}.choices{display:flex;gap:9px;flex-wrap:wrap}.choices label{display:inline-flex;align-items:center;gap:6px;padding:11px 13px;border:1px solid #cbd8e9;border-radius:10px;cursor:pointer;background:#fafcff}.choices label:has(input:checked){background:#dbeafe;border-color:#3479e0}input[type=radio],input[type=checkbox]{accent-color:#2864c7;width:18px;height:18px}.status{font-weight:700;margin-top:12px;min-height:22px}.wrong .status{color:#d22d3e}.correct .status{color:#168651}button{background:#2763c3;border:0;color:white;border-radius:12px;padding:15px 23px;font-weight:800;font-size:18px;cursor:pointer}.actions{text-align:center;margin:25px 0}.note{color:#59697e;font-size:14px}.clock{width:110px;height:110px;touch-action:none}.clock text{font-size:11px;fill:#3e4a5a;font-weight:700}.connect{width:100%;max-width:590px;display:block;touch-action:none;background:#f7faff;border-radius:12px;border:1px solid #dce6f4}.connect .node{cursor:pointer}.connect .node circle{fill:#fff;stroke:#346abf;stroke-width:2}.connect .node.selected circle{fill:#b7d7ff;stroke-width:4}.connect text{font-size:18px;fill:#253650}.hint{font-size:14px;color:#536781}.timeclock{width:230px;height:230px;display:block;touch-action:none;cursor:crosshair;margin:auto}.center{text-align:center}.mini{font-size:13px;color:#536781}.clockoptions{display:flex;flex-wrap:wrap;gap:15px}.clockopt{padding:10px;background:#f7faff;border-radius:12px;text-align:center}.clockopt .clock{width:94px;height:94px}@media(max-width:600px){.question{padding:16px}.clockopt .clock{width:76px;height:76px}}
+
+.teacher-entry{position:fixed;top:12px;right:14px;z-index:10;background:#fff;color:#24519b;border:1px solid #b6cbe9;padding:9px 12px;font-size:13px;border-radius:9px;box-shadow:0 2px 8px #0002}.login-overlay{position:fixed;inset:0;background:#0d1e39aa;z-index:20;display:none;align-items:center;justify-content:center;padding:20px}.login-overlay.open{display:flex}.login-box{width:min(100%,350px);background:#fff;border-radius:18px;padding:24px;box-shadow:0 12px 45px #0004}.login-box h2{margin:0 0 15px}.login-box input{width:100%;margin:7px 0 12px}.login-box button{font-size:15px;padding:11px 17px}.login-error{color:#c42a39;min-height:22px;font-size:14px}.teacher-active{outline:3px solid #f4bb4b}.login-close{float:right;background:#e7edf5;color:#34445b}
+
+#autoPage{display:none;max-width:1050px;margin:24px auto;padding:0 16px 40px}#autoPage.active{display:block}body.auto-open main{display:none}#autoPage h1{color:#24519b}#autoPage iframe{display:block;width:100%;height:650px;border:0;border-radius:16px;background:#f8fafc}.success-overlay{position:fixed;inset:0;background:#10264ac7;z-index:50;display:none;align-items:center;justify-content:center;padding:20px}.success-overlay.show{display:flex}.success-message{background:white;border-radius:20px;padding:38px 46px;text-align:center;box-shadow:0 14px 40px #0003;font-size:25px;font-weight:800;color:#24519b}
+</style></head><body><button type="button" class="teacher-entry" id="teacherBtn" onclick="openTeacher()">교사 로그인</button><div class="login-overlay" id="loginOverlay" role="dialog" aria-modal="true" aria-label="교사 로그인"><div class="login-box"><button class="login-close" type="button" onclick="closeTeacher()">닫기</button><h2>교사 로그인</h2><label for="teacherPassword">비밀번호</label><input id="teacherPassword" type="password" autocomplete="off" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')teacherLogin()"><button type="button" onclick="teacherLogin()">로그인</button><p class="login-error" id="loginError" aria-live="polite"></p></div></div><div class="success-overlay" id="successOverlay" role="alertdialog" aria-modal="true"><div class="success-message">🎉 모든 문제를 맞혔습니다!<p style="font-size:17px;font-weight:normal">자동평가 페이지로 이동합니다.</p></div></div><main><header><h1>⏰ 시각과 시간 · 심화2</h1><p>2학년 2학기 수학 4단원 | 답안 입력 활동지</p></header>
+<section class="question" id="q1"><div class="qtitle">1. 알맞은 수를 써넣으세요.</div><div class="inputline">(1) 긴바늘이 숫자 4를 가리키면 <input class="short" id="a11" type="text" inputmode="numeric" aria-label="1번 첫째 답"> 분</div><div class="inputline">(2) 긴바늘이 숫자 11을 가리키면 <input class="short" id="a12" type="text" inputmode="numeric" aria-label="1번 둘째 답"> 분</div><div class="status"></div></section>
+<section class="question" id="q2"><div class="qtitle">2. 지금 시각을 바르게 나타낸 시계를 고르세요.</div><p class="desc">“1분 전에 시계를 봤을 때 6시 10분이었어.”</p><div class="clockoptions" id="q2clocks"></div><div class="status"></div></section>
+<section class="question" id="q3"><div class="qtitle">3. 같은 시각끼리 선으로 이어 보세요.</div><p class="hint">왼쪽 시계를 누른 다음 오른쪽 디지털 시각을 누르면 선이 이어집니다. 다시 연결하면 변경됩니다.</p><svg id="connect" class="connect" viewBox="0 0 570 330" role="img" aria-label="시계 세 개와 디지털 시각 세 개를 연결하는 문제"><g id="links"></g><g id="leftnodes"></g><g id="rightnodes"></g></svg><button type="button" style="font-size:14px;padding:9px 15px;margin-top:10px" onclick="clearLines()">선 다시 잇기</button><div class="status"></div></section>
+<section class="question" id="q4"><div class="qtitle">4. 같은 시각에 일어난 사람 두 명을 쓰세요.</div><div class="desc">하진: 아침 7시 5분 전에 일어났어.<br>민우: 아침 7시 5분에 일어났어.<br>하영: 아침 6시 55분에 일어났어.</div><div class="inputline"><input type="text" class="short" id="a41" aria-label="첫째 사람"> , <input type="text" class="short" id="a42" aria-label="둘째 사람"></div><div class="status"></div></section>
+<section class="question" id="q5"><div class="qtitle">5. 시작한 시각을 시계에 나타내세요.</div><div class="desc">규민이는 수학 문제를 한 시간 동안 풀었습니다. 끝낸 시각은 11시 20분입니다.</div><p class="hint center">처음에는 12시입니다. 시계 바늘을 손가락이나 마우스로 잡고 돌리면 두 바늘이 함께 움직입니다.</p><svg id="setclock" class="timeclock" viewBox="0 0 220 220" aria-label="바늘을 설정하는 시계"></svg><p class="center mini" id="clockstate">짧은바늘과 긴바늘을 설정하세요.</p><div class="status"></div></section>
+<section class="question" id="q6"><div class="qtitle">6. 긴바늘을 몇 바퀴 돌려야 할까요?</div><div class="desc">멈춘 시계는 11시, 현재 시각은 3시입니다.</div><div class="choices" id="c6"></div><div class="status"></div></section>
+<section class="question" id="q7"><div class="qtitle">7. 야구를 한 시간은 얼마일까요?</div><div class="desc">승범이는 1시 20분부터 5시까지 야구를 했습니다.</div><div class="inputline"><input type="text" inputmode="numeric" class="short" id="a71"> 시간 <input type="text" inputmode="numeric" class="short" id="a72"> 분</div><div class="status"></div></section>
+<section class="question" id="q8"><div class="qtitle">8. 바르게 표현한 것을 모두 고르세요.</div><div class="choices" id="c8"></div><div class="status"></div></section>
+<section class="question" id="q9"><div class="qtitle">9. 날수가 30일인 월을 모두 고르세요.</div><div class="choices" id="c9"></div><div class="status"></div></section>
+<section class="question" id="q10"><div class="qtitle">10. 11월의 마지막 날은 무슨 요일일까요?</div><div class="desc">어느 해 11월 1일이 목요일이고, 11월 2일은 금요일입니다.</div><div class="inputline"><input type="text" id="a10" placeholder="요일을 입력하세요" aria-label="10번 답"></div><div class="status"></div></section>
+<div class="actions"><button onclick="grade()">정답 확인</button><p class="note">틀린 문제만 표시하며 정답은 알려주지 않습니다.</p><p id="summary" aria-live="polite"></p></div></main><section id="autoPage" aria-label="자동평가 페이지"><header><h1>자동평가</h1><p>시간과 시각 단원평가 심화2</p></header><div id="auto-evaluation-act-1794957335110" hidden style="margin:24px auto;max-width:1050px;"><iframe title="과제 참여 여부 확인하기" src="https://eyeholder83-commits.github.io/sh0201/%ED%95%99%EA%B8%89%ED%86%B5%ED%95%A9%EA%B4%80%EB%A6%AC.html?autoActivity=act-1794957335110" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div></section><script>
+const circled=['①','②','③','④','⑤'];const $=id=>document.getElementById(id);const val=id=>$(id).value.trim().replace(/\s+/g,'');const num=id=>Number(val(id).replace(/[^\d]/g,''));
+function options(id,labels,multi=false){$(id).innerHTML=labels.map((s,i)=>`<label><input type="${multi?'checkbox':'radio'}" name="${id}" value="${i+1}">${circled[i]} ${s}</label>`).join('')}
+options('c6',['1바퀴','2바퀴','3바퀴','4바퀴','5바퀴']);options('c8',['2일 10시간 = 34시간','2일 2시간 = 50시간','2일 6시간 = 52시간','3일 2시간 = 72시간','3일 8시간 = 80시간'],true);options('c9',['2월','3월','4월','5월','6월'],true);
+function chosen(id){return [...document.querySelectorAll(`#${id} input:checked`)].map(x=>+x.value).sort().join(',')}
+function clockSVG(hour,minute,sz=110){let ticks='';for(let n=1;n<=12;n++){let a=n*Math.PI/6;let x=55+39*Math.sin(a),y=55-39*Math.cos(a);ticks+=`<text x="${x}" y="${y+4}" text-anchor="middle">${n}</text>`}let ha=(hour%12+minute/60)*30,ma=minute*6;return `<svg class="clock" viewBox="0 0 110 110" width="${sz}" height="${sz}"><circle cx="55" cy="55" r="52" fill="white" stroke="#52657b" stroke-width="4"/>${ticks}<line x1="55" y1="55" x2="55" y2="30" stroke="#26364b" stroke-width="5" stroke-linecap="round" transform="rotate(${ha} 55 55)"/><line x1="55" y1="55" x2="55" y2="17" stroke="#3979d5" stroke-width="3" stroke-linecap="round" transform="rotate(${ma} 55 55)"/><circle cx="55" cy="55" r="4" fill="#253650"/></svg>`}
+// 원본 2번의 시계는 바늘 위치가 근접하므로 선택지마다 원본과 동일한 분 단위 차이를 반영
+[[6,8],[6,10],[6,11],[6,15],[6,16]].forEach(([h,m],i)=>{$('q2clocks').insertAdjacentHTML('beforeend',`<label class="clockopt"><div>${circled[i]}</div>${clockSVG(h,m,94)}<input type="radio" name="q2ans" value="${i+1}" aria-label="${circled[i]} 선택"></label>`)});
+const leftTimes=[[11,12],[10,17],[9,9]],rightTimes=['9:09','10:17','11:12'];let links={},selected=null;
+function setupLinks(){const left=$('leftnodes'),right=$('rightnodes');left.innerHTML='';right.innerHTML='';leftTimes.forEach(([h,m],i)=>{let y=57+i*105;left.insertAdjacentHTML('beforeend',`<g class="node" data-left="${i}" transform="translate(22 ${y-43})"><rect x="0" y="0" width="120" height="87" fill="transparent"/>${clockSVG(h,m,82).replace('class="clock"','x="15" y="0"')}</g><circle cx="170" cy="${y}" r="6" fill="#3266bb"/>`)});rightTimes.forEach((s,i)=>{let y=57+i*105;right.insertAdjacentHTML('beforeend',`<g class="node" data-right="${i}"><rect x="405" y="${y-29}" width="145" height="58" rx="8" fill="white" stroke="#91a8c8"/><text x="477" y="${y+7}" text-anchor="middle" font-size="22">${s}</text><circle cx="387" cy="${y}" r="6" fill="#3266bb"/></g>`)});left.querySelectorAll('[data-left]').forEach(el=>el.onclick=()=>{selected=+el.dataset.left;left.querySelectorAll('.node').forEach(n=>n.classList.remove('selected'));el.classList.add('selected')});right.querySelectorAll('[data-right]').forEach(el=>el.onclick=()=>{if(selected===null)return;links[selected]=+el.dataset.right;selected=null;left.querySelectorAll('.node').forEach(n=>n.classList.remove('selected'));drawLinks()})}
+function drawLinks(){$('links').innerHTML=Object.entries(links).map(([l,r])=>`<line x1="170" y1="${57+(+l)*105}" x2="387" y2="${57+r*105}" stroke="#3479dd" stroke-width="4" stroke-linecap="round"/>`).join('')}
+function clearLines(){links={};selected=null;drawLinks();$('leftnodes').querySelectorAll('.node').forEach(n=>n.classList.remove('selected'))}setupLinks();
+let hour=12,minute=0;
+let clockTotal=0, clockDrag=null;
+function drawSetClock(){
+ const svg=$('setclock');let t='';
+ for(let n=1;n<=12;n++){let a=n*Math.PI/6;t+=`<text x="${110+82*Math.sin(a)}" y="${115-82*Math.cos(a)}" text-anchor="middle" font-size="17" font-weight="bold" pointer-events="none">${n}</text>`}
+ const ha=(hour%12+minute/60)*30,ma=minute*6;
+ svg.innerHTML=`<circle cx="110" cy="110" r="104" fill="white" stroke="#61778d" stroke-width="5"/>${t}<line x1="110" y1="110" x2="110" y2="58" stroke="#26364b" stroke-width="7" stroke-linecap="round" transform="rotate(${ha} 110 110)" pointer-events="none"/><line x1="110" y1="110" x2="110" y2="31" stroke="#3479dd" stroke-width="4" stroke-linecap="round" transform="rotate(${ma} 110 110)" pointer-events="none"/><circle cx="110" cy="110" r="5" fill="#243247" pointer-events="none"/>`;
+ $('clockstate').textContent=`설정한 시각: ${hour}시 ${String(minute).padStart(2,'0')}분`;
+}
+function clockAngle(e){const r=$('setclock').getBoundingClientRect(),x=(e.clientX-r.left)*220/r.width-110,y=(e.clientY-r.top)*220/r.height-110;return Math.atan2(x,-y)*180/Math.PI}
+function updateClockFromTotal(){clockTotal=Math.round(clockTotal);let m=((clockTotal%720)+720)%720;hour=Math.floor(m/60)||12;minute=m%60;drawSetClock()}
+$('setclock').addEventListener('pointerdown',e=>{e.preventDefault();const angle=clockAngle(e);clockDrag={angle};$('setclock').setPointerCapture(e.pointerId)});
+$('setclock').addEventListener('pointermove',e=>{if(!clockDrag)return;e.preventDefault();const angle=clockAngle(e);let delta=angle-clockDrag.angle;if(delta>180)delta-=360;if(delta< -180)delta+=360;clockTotal+=delta/6;clockDrag.angle=angle;updateClockFromTotal()});
+function endClockDrag(){clockDrag=null}
+$('setclock').addEventListener('pointerup',endClockDrag);$('setclock').addEventListener('pointercancel',endClockDrag);
+function setClockTime(h,m){hour=h;minute=m;clockTotal=((h%12)*60+m);drawSetClock()}
+drawSetClock();
+function grade(){let tests=[num('a11')===20&&num('a12')===55,chosen('q2clocks')==='3',Object.keys(links).length===3&&links[0]===2&&links[1]===1&&links[2]===0,['하진','하영'].every(s=>[val('a41'),val('a42')].includes(s)),hour===10&&minute===20,chosen('c6')==='4',num('a71')===3&&num('a72')===40,chosen('c8')==='2,5',chosen('c9')==='3,5',['목','목요일'].includes(val('a10'))];let n=0;tests.forEach((ok,i)=>{let q=$('q'+(i+1));q.classList.toggle('correct',ok);q.classList.toggle('wrong',!ok);q.querySelector('.status').textContent=ok?'✓ 확인 완료':'✕ 틀린 문제입니다. 다시 풀어 보세요.';if(ok)n++});$('summary').textContent=`${n} / 10문항 정답 · ${n===10?'모두 맞혔어요!':'틀린 문항을 고쳐서 다시 확인하세요.'}`;if(n===10){showAutoEvaluation()}else{window.scrollTo({top:0,behavior:'smooth'})}}
+let autoEvaluationShown=false;
+function showAutoEvaluation(){
+ if(autoEvaluationShown)return;
+ autoEvaluationShown=true;
+ document.body.classList.add('auto-open');
+ $('autoPage').classList.add('active');
+ const area=$('auto-evaluation-act-1794957335110');
+ area.hidden=false;
+ window.scrollTo({top:0,behavior:'instant'});
+ $('successOverlay').classList.add('show');
+ setTimeout(()=>{$('successOverlay').classList.remove('show');area.scrollIntoView({behavior:'smooth',block:'start'})},2000);
+}
+// q2의 name은 q2ans이므로 별도로 읽음
+const originalChosen=chosen;chosen=function(id){if(id==='q2clocks'){let x=document.querySelector('input[name="q2ans"]:checked');return x?x.value:''}return originalChosen(id)};
+
+// 비밀번호의 평문은 파일에 넣지 않고 SHA-256 비교값만 보관합니다.
+// 정적 HTML은 소스 분석을 완전히 차단할 수 없으므로 강력한 인증이 필요한 경우 서버 인증이 필요합니다.
+const teacherDigest='d283fc7ed27a618f0d8e673ffbd01c18ba8d472f095f375f93576d3ed40c4782';
+let teacherMode=false;
+function openTeacher(){if(teacherMode){if(confirm('교사 모드를 종료하고 답안을 초기화할까요?')){teacherMode=false;location.reload()}return} $('loginOverlay').classList.add('open');$('teacherPassword').value='';$('loginError').textContent='';$('teacherPassword').focus()}
+function closeTeacher(){$('loginOverlay').classList.remove('open')}
+async function teacherLogin(){
+ const value=$('teacherPassword').value;
+ const bytes=new TextEncoder().encode(value);
+ const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
+ if(digest!==teacherDigest){$('loginError').textContent='비밀번호가 올바르지 않습니다.';$('teacherPassword').value='';return}
+ teacherMode=true;closeTeacher();$('teacherBtn').textContent='교사 모드 종료';document.querySelector('header').classList.add('teacher-active');fillTeacherAnswers();
+}
+function chooseOne(name,value){let el=document.querySelector(`input[name="${name}"][value="${value}"]`);if(el)el.checked=true}
+function chooseMany(container,values){document.querySelectorAll(`#${container} input`).forEach(el=>el.checked=values.includes(Number(el.value)))}
+function fillTeacherAnswers(){
+ $('a11').value='20';$('a12').value='55';chooseOne('q2ans',3);
+ links={0:2,1:1,2:0};selected=null;drawLinks();
+ $('a41').value='하진';$('a42').value='하영';
+ setClockTime(10,20);
+ chooseOne('c6',4);$('a71').value='3';$('a72').value='40';
+ chooseMany('c8',[2,5]);chooseMany('c9',[3,5]);$('a10').value='목요일';
+ for(let i=1;i<=10;i++){$('q'+i).classList.remove('correct','wrong');$('q'+i).querySelector('.status').textContent=''}
+ $('summary').textContent='교사 모드: 정답이 미리 입력되었습니다. 원하는 답을 수정한 뒤 정답 확인을 누르세요.';
+}
+</script></body></html>
