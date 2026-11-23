@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>태블릿 스마트 그림판</title>
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Noto Sans KR 및 Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', 'Inter', sans-serif;
+            overscroll-behavior: none; /* 브라우저 당겨서 새로고침 방지 */
+            user-select: none; /* UI 텍스트 드래그 방지 */
+            -webkit-user-select: none;
+        }
+        /* 캔버스 터치 제스처(스크롤, 줌) 완벽 차단 */
+        #drawingCanvas {
+            touch-action: none;
+            cursor: crosshair;
+        }
+        /* 커스텀 스크롤바 (작은 화면 툴바용) */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* 레인지 슬라이더 터치 친화적 커스텀 스타일 */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            height: 8px;
+            border-radius: 999px;
+            background: #e2e8f0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #3b82f6;
+            border: 3px solid #ffffff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+            margin-top: -8px;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 h-[100dvh] w-screen overflow-hidden flex flex-col">
+
+    <!-- 상단 헤더: 앱 타이틀 및 주요 실행 제어 (Undo, Redo, 전체 지우기, 저장) -->
+    <header class="bg-white border-b border-slate-200 px-3 py-2 sm:px-5 sm:py-2.5 flex items-center justify-between shadow-sm z-20 shrink-0">
+        <div class="flex items-center gap-2.5">
+            <div class="bg-blue-500 text-white p-2 rounded-xl shadow-sm">
+                <i data-lucide="palette" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base sm:text-lg text-slate-800 leading-tight">우리반 스마트 그림판</h1>
+                <p class="text-xs text-slate-500 hidden sm:block">손가락이나 스타일러스 펜으로 자유롭게 그려보세요!</p>
+            </div>
+        </div>
+
+        <!-- 작업 제어 버튼 그룹 -->
+        <div class="flex items-center gap-1.5 sm:gap-2.5">
+            <button id="btnUndo" disabled class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-slate-700 font-medium text-sm transition" title="실행 취소">
+                <i data-lucide="undo-2" class="w-5 h-5"></i>
+                <span class="hidden md:inline">되돌리기</span>
+            </button>
+            <button id="btnRedo" disabled class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 disabled:opacity-40 disabled:pointer-events-none text-slate-700 font-medium text-sm transition" title="다시 실행">
+                <i data-lucide="redo-2" class="w-5 h-5"></i>
+                <span class="hidden md:inline">다시실행</span>
+            </button>
+            <div class="h-6 w-px bg-slate-200 mx-0.5"></div>
+            <button id="btnClear" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-600 font-medium text-sm transition" title="전체 지우기">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                <span class="hidden sm:inline">모두 지우기</span>
+            </button>
+            <button id="btnSubmit" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition" title="선생님께 제출하기"><i data-lucide="send" class="w-5 h-5"></i><span>선생님께 제출</span></button>
+            <button id="btnSave" class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold text-sm shadow-sm transition" title="이미지로 저장">
+                <i data-lucide="download" class="w-5 h-5"></i>
+                <span>그림 저장</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 메인 작업 영역: 좌측(또는 모바일 상단) 도구바 + 중앙 캔버스 -->
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        
+        <!-- 그리기 도구 선택 툴바 -->
+        <aside class="bg-white border-b md:border-b-0 md:border-r border-slate-200 p-2 md:p-3 flex md:flex-col items-center justify-between md:justify-start gap-2 overflow-x-auto no-scrollbar z-10 shrink-0 shadow-sm">
+            
+            <!-- 도구 버튼 그리드 -->
+            <div class="flex md:flex-col gap-1.5 sm:gap-2" id="toolGroup">
+                <button data-tool="pen" class="tool-btn active flex flex-col items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-blue-600 text-white shadow-md transition active:scale-95 shrink-0">
+                    <i data-lucide="pencil" class="w-6 h-6 mb-0.5"></i>
+                    <span class="text-[11px] font-bold">펜</span>
+                </button>
+                <button data-tool="fill" class="tool-btn flex flex-col items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition active:scale-95 shrink-0">
+                    <i data-lucide="paint-bucket" class="w-6 h-6 mb-0.5"></i>
+                    <span class="text-[11px] font-medium">페인트통</span>
+                </button>
+                <button data-tool="eraser" class="tool-btn flex flex-col items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition active:scale-95 shrink-0">
+                    <i data-lucide="eraser" class="w-6 h-6 mb-0.5"></i>
+                    <span class="text-[11px] font-medium">지우개</span>
+                </button>
+                
+                <div class="w-px h-10 md:w-10 md:h-px bg-slate-200 self-center mx-0.5 md:my-1 shrink-0"></div>
+
+                <button data-tool="line" class="tool-btn flex flex-col items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition active:scale-95 shrink-0">
+                    <i data-lucide="minus" class="w-6 h-6 mb-0.5 -rotate-45"></i>
+                    <span class="text-[11px] font-medium">직선</span>
+                </button>
+                <button data-tool="rect" class="tool-btn flex flex-col items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition active:scale-95 shrink-0">
+                    <i data-lucide="square" class="w-6 h-6 mb-0.5"></i>
+                    <span class="text-[11px] font-medium">네모</span>
+                </button>
+                <button data-tool="circle" class="tool-btn flex flex-col items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition active:scale-95 shrink-0">
+                    <i data-lucide="circle" class="w-6 h-6 mb-0.5"></i>
+                    <span class="text-[11px] font-medium">동그라미</span>
+                </button>
+                <button data-tool="triangle" class="tool-btn flex flex-col items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition active:scale-95 shrink-0">
+                    <i data-lucide="triangle" class="w-6 h-6 mb-0.5"></i>
+                    <span class="text-[11px] font-medium">세모</span>
+                </button>
+
+                <div class="w-px h-10 md:w-10 md:h-px bg-slate-200 self-center mx-0.5 md:my-1 shrink-0"></div>
+
+                <button data-tool="text" class="tool-btn flex flex-col items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-600 transition active:scale-95 shrink-0">
+                    <i data-lucide="type" class="w-6 h-6 mb-0.5"></i>
+                    <span class="text-[11px] font-medium">글쓰기</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 중앙 캔버스 및 하단 속성 패널 컨테이너 -->
+        <main class="flex-1 flex flex-col overflow-hidden bg-slate-200/70 relative">
+            
+            <!-- 도화지(캔버스) 영역 -->
+            <div id="canvasWrapper" class="flex-1 p-2 sm:p-4 md:p-5 flex items-center justify-center overflow-hidden relative">
+                <div class="w-full h-full bg-white rounded-2xl shadow-lg border border-slate-300/80 overflow-hidden relative">
+                    <canvas id="drawingCanvas" class="w-full h-full block"></canvas>
+
+                    <!-- 텍스트 입력 플로팅 오버레이 (캔버스 터치 시 표시) -->
+                    <div id="textInputOverlay" class="hidden absolute z-30 bg-white/95 backdrop-blur-sm p-2.5 rounded-2xl shadow-xl border-2 border-blue-500 flex flex-col gap-2 min-w-[240px] max-w-[90vw]">
+                        <div class="flex items-center justify-between text-xs font-bold text-blue-600 px-1">
+                            <span>글자 입력하기</span>
+                            <span id="overlayFontSizeBadge">28px</span>
+                        </div>
+                        <input type="text" id="floatingTextInput" placeholder="여기에 내용을 입력하세요..." class="w-full px-3 py-2 text-base border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 bg-white text-slate-800" autocomplete="off">
+                        <div class="flex justify-end gap-1.5">
+                            <button id="btnCancelText" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">취소</button>
+                            <button id="btnConfirmText" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm">확인</button>
+                        </div>
+                    </div>
+
+                    <!-- 토스트 알림 메시지 -->
+                    <div id="toastMessage" class="pointer-events-none opacity-0 transition-opacity duration-300 absolute top-4 left-1/2 -translate-x-1/2 bg-slate-800/90 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg z-40">
+                        메시지
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단 속성 조절 바 (색상 팔레트, 도형 채우기 옵션, 선 굵기 / 글자 크기) -->
+            <section class="bg-white border-t border-slate-200 px-3 py-2.5 sm:px-6 sm:py-3 flex flex-wrap items-center justify-between gap-3 sm:gap-6 z-10 shrink-0 shadow-[0_-2px_10px_rgba(0,0,0,0.03)]">
+                
+                <!-- 1. 색상 팔레트 -->
+                <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
+                    <span class="text-xs font-bold text-slate-500 mr-1 hidden lg:inline">색상</span>
+                    <div id="colorPalette" class="flex items-center gap-1.5 sm:gap-2">
+                        <!-- 자바스크립트로 기본 색상 버튼 생성 -->
+                    </div>
+                    <!-- 자유 색상 선택기 -->
+                    <label class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border-2 border-slate-300 cursor-pointer shadow-sm hover:scale-105 transition shrink-0 flex items-center justify-center bg-gradient-to-tr from-pink-500 via-yellow-400 to-cyan-400" title="다른 색 고르기">
+                        <input type="color" id="customColorPicker" value="#1e293b" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer">
+                        <i data-lucide="plus" class="w-4 h-4 text-white drop-shadow"></i>
+                    </label>
+                </div>
+
+                <!-- 2. 도형 옵션 (도형 도구 선택 시 활성화) & 크기 조절 슬라이더 -->
+                <div class="flex flex-wrap items-center gap-3 sm:gap-5 ml-auto">
+                    
+                    <!-- 펜 도구 옵션: 닫힌 선 자동 채우기 토글 -->
+                    <div id="penAutoFillOption" class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-xl">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" id="chkAutoFillClosed" class="w-4 h-4 accent-blue-600 rounded cursor-pointer">
+                            <span class="text-xs font-bold text-slate-700 whitespace-nowrap">닫힌 선 자동 채우기</span>
+                        </label>
+                    </div>
+
+                    <!-- 페인트통 도구 안내 배지 -->
+                    <div id="fillToolHint" class="hidden items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-xl text-xs font-bold">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        <span>닫힌 선이나 도형 안쪽을 터치해 색칠하세요!</span>
+                    </div>
+
+                    <!-- 도형 내부 채우기 토글 (사각형, 원, 삼각형 선택 시 표시) -->
+                    <div id="shapeFillOption" class="hidden items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-xl">
+                        <span class="text-xs font-bold text-slate-600 hidden sm:inline">도형 스타일:</span>
+                        <button id="btnStrokeOnly" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-blue-600 shadow-sm transition">테두리만</button>
+                        <button id="btnFillShape" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">색 채우기</button>
+                    </div>
+
+                    <!-- 선 굵기 조절기 (펜, 지우개, 도형일 때 표시) -->
+                    <div id="strokeControl" class="flex items-center gap-2.5 sm:gap-3">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs font-bold text-slate-600 whitespace-nowrap">굵기</span>
+                            <!-- 실시간 굵기 미리보기 원 -->
+                            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+                                <div id="brushPreviewDot" class="rounded-full bg-slate-800 transition-all duration-75" style="width: 8px; height: 8px;"></div>
+                            </div>
+                        </div>
+                        <!-- 빠른 굵기 프리셋 버튼 -->
+                        <div class="hidden sm:flex items-center gap-1 bg-slate-100 p-1 rounded-xl" id="strokePresets">
+                            <button type="button" data-size="3" class="preset-btn w-7 h-7 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white transition">얇게</button>
+                            <button type="button" data-size="8" class="preset-btn w-7 h-7 rounded-lg text-[11px] font-bold bg-white text-blue-600 shadow-xs transition">보통</button>
+                            <button type="button" data-size="18" class="preset-btn w-7 h-7 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white transition">굵게</button>
+                            <button type="button" data-size="32" class="preset-btn w-7 h-7 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white transition">왕굵게</button>
+                        </div>
+                        <input type="range" id="strokeWidthSlider" min="2" max="45" value="8" class="w-20 sm:w-28">
+                        <span id="strokeWidthValue" class="text-xs font-bold text-slate-700 w-9 text-right">8px</span>
+                    </div>
+
+                    <!-- 글자 크기 조절기 (텍스트 도구일 때 표시) -->
+                    <div id="fontSizeControl" class="hidden items-center gap-3">
+                        <div class="flex items-center gap-1.5">
+                            <i data-lucide="a-large-small" class="w-5 h-5 text-blue-600"></i>
+                            <span class="text-xs font-bold text-slate-600 whitespace-nowrap">글자 크기</span>
+                        </div>
+                        <input type="range" id="fontSizeSlider" min="16" max="80" value="32" class="w-28 sm:w-40">
+                        <span id="fontSizeValue" class="text-xs font-bold text-blue-600 w-10 text-right">32px</span>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 학생 이름 선택 및 제출 -->
+    <div id="submitModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+        <h3 class="text-lg font-bold mb-2">선생님께 그림 제출하기</h3>
+        <p class="text-sm text-slate-500 mb-4">자신의 이름을 선택한 뒤 제출하세요.</p>
+        <select id="studentSelect" class="w-full border rounded-xl p-3 bg-white mb-3"><option value="">이름을 선택하세요</option></select>
+        <p id="submitStatus" role="status" class="text-sm text-slate-600 mb-4 min-h-5"></p>
+        <div class="flex gap-2"><button id="submitCancel" class="flex-1 bg-slate-100 rounded-xl p-3 font-bold">취소</button><button id="submitConfirm" class="flex-1 bg-emerald-600 text-white rounded-xl p-3 font-bold">제출하기</button></div>
+      </div>
+    </div>
+    <iframe name="submissionFrame" id="submissionFrame" style="display:none" title="그림 제출 처리"></iframe>
+    <form id="submissionForm" method="POST" target="submissionFrame" style="display:none">
+      <input name="student" id="formStudent"><input name="image" id="formImage"><input name="token" id="formToken">
+    </form>
+
+    <!-- 전체 지우기 확인 커스텀 모달 (alert/confirm 대체) -->
+    <div id="clearConfirmModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mb-4">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-1">도화지를 모두 지울까요?</h3>
+            <p class="text-sm text-slate-500 mb-6">지금까지 그린 그림이 모두 지워집니다. 실수로 눌렀다면 '되돌리기'로 복구할 수 있어요.</p>
+            <div class="flex gap-2.5">
+                <button id="btnModalCancel" class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">취소</button>
+                <button id="btnModalConfirmClear" class="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md transition">모두 지우기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Lucide 아이콘 초기화
+        lucide.createIcons();
+
+        // ================= DOM 요소 참조 =================
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        const toolButtons = document.querySelectorAll('.tool-btn');
+        const colorPaletteEl = document.getElementById('colorPalette');
+        const customColorPicker = document.getElementById('customColorPicker');
+
+        const penAutoFillOption = document.getElementById('penAutoFillOption');
+        const chkAutoFillClosed = document.getElementById('chkAutoFillClosed');
+        const fillToolHint = document.getElementById('fillToolHint');
+        const shapeFillOption = document.getElementById('shapeFillOption');
+        const btnStrokeOnly = document.getElementById('btnStrokeOnly');
+        const btnFillShape = document.getElementById('btnFillShape');
+
+        const strokeControl = document.getElementById('strokeControl');
+        const brushPreviewDot = document.getElementById('brushPreviewDot');
+        const presetButtons = document.querySelectorAll('.preset-btn');
+        const strokeWidthSlider = document.getElementById('strokeWidthSlider');
+        const strokeWidthValue = document.getElementById('strokeWidthValue');
+
+        const fontSizeControl = document.getElementById('fontSizeControl');
+        const fontSizeSlider = document.getElementById('fontSizeSlider');
+        const fontSizeValue = document.getElementById('fontSizeValue');
+
+        const textInputOverlay = document.getElementById('textInputOverlay');
+        const overlayFontSizeBadge = document.getElementById('overlayFontSizeBadge');
+        const floatingTextInput = document.getElementById('floatingTextInput');
+        const btnCancelText = document.getElementById('btnCancelText');
+        const btnConfirmText = document.getElementById('btnConfirmText');
+
+        const btnUndo = document.getElementById('btnUndo');
+        const btnRedo = document.getElementById('btnRedo');
+        const btnClear = document.getElementById('btnClear');
+        const btnSave = document.getElementById('btnSave');
+
+        const clearConfirmModal = document.getElementById('clearConfirmModal');
+        const btnModalCancel = document.getElementById('btnModalCancel');
+        const btnModalConfirmClear = document.getElementById('btnModalConfirmClear');
+        const toastMessage = document.getElementById('toastMessage');
+
+        // ================= 앱 상태 관리 =================
+        const state = {
+            tool: 'pen',
+            color: '#1e293b',
+            strokeWidth: 8,
+            fontSize: 32,
+            fillShape: false,
+            autoFillClosed: false,
+            isDrawing: false,
+            startX: 0,
+            startY: 0,
+            currentStrokePoints: [],
+            snapshot: null,
+            pendingTextPos: null,
+            history: [],
+            historyIndex: -1,
+            maxHistory: 25
+        };
+
+        // 학생 친화적 12색 기본 팔레트
+        const PALETTE_COLORS = [
+            '#1e293b', // 진회색(검정)
+            '#ef4444', // 빨강
+            '#f97316', // 주황
+            '#eab308', // 노랑
+            '#22c55e', // 초록
+            '#06b6d4', // 하늘
+            '#3b82f6', // 파랑
+            '#8b5cf6', // 보라
+            '#ec4899', // 분홍
+            '#92400e', // 갈색
+            '#94a3b8', // 회색
+            '#ffffff'  // 흰색
+        ];
+
+        let toastTimer = null;
+        function showToast(msg) {
+            toastMessage.textContent = msg;
+            toastMessage.classList.remove('opacity-0');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toastMessage.classList.add('opacity-0');
+            }, 2200);
+        }
+
+        /**
+         * 색상 팔레트 버튼 초기화 및 선택 상태 갱신
+         */
+        function initColorPalette() {
+            colorPaletteEl.innerHTML = '';
+            PALETTE_COLORS.forEach((hex, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `color-swatch w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 transition transform hover:scale-105 shrink-0 ${idx === 0 ? 'ring-2 ring-blue-500 ring-offset-2 border-white' : 'border-slate-300'}`;
+                btn.style.backgroundColor = hex;
+                btn.dataset.color = hex;
+                btn.addEventListener('click', () => selectColor(hex, btn));
+                colorPaletteEl.appendChild(btn);
+            });
+        }
+
+        function selectColor(hex, activeBtn) {
+            state.color = hex;
+            customColorPicker.value = hex;
+            document.querySelectorAll('.color-swatch').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2', 'border-white');
+                btn.classList.add('border-slate-300');
+            });
+            if (activeBtn) {
+                activeBtn.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2', 'border-white');
+                activeBtn.classList.remove('border-slate-300');
+            }
+            updateBrushPreview();
+            if (!textInputOverlay.classList.contains('hidden')) {
+                floatingTextInput.style.color = hex;
+            }
+        }
+
+        /**
+         * 굵기 미리보기 원 업데이트
+         */
+        function updateBrushPreview() {
+            const previewSize = Math.min(28, Math.max(4, state.strokeWidth * 0.7));
+            brushPreviewDot.style.width = `${previewSize}px`;
+            brushPreviewDot.style.height = `${previewSize}px`;
+            brushPreviewDot.style.backgroundColor = state.tool === 'eraser' ? '#cbd5e1' : state.color;
+        }
+
+        /**
+         * 도구 전환 및 하단 옵션 패널 동기화
+         */
+        function setTool(toolName) {
+            state.tool = toolName;
+            closeTextOverlay();
+
+            toolButtons.forEach(btn => {
+                if (btn.dataset.tool === toolName) {
+                    btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+                    btn.classList.remove('bg-slate-50', 'hover:bg-slate-100', 'text-slate-600');
+                } else {
+                    btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                    btn.classList.add('bg-slate-50', 'hover:bg-slate-100', 'text-slate-600');
+                }
+            });
+
+            // 모든 도구별 보조 패널 초기화 후 현재 도구에 맞게 표시
+            penAutoFillOption.classList.add('hidden');
+            fillToolHint.classList.add('hidden');
+            fillToolHint.classList.remove('flex');
+            shapeFillOption.classList.add('hidden');
+            shapeFillOption.classList.remove('flex');
+            strokeControl.classList.remove('hidden');
+            fontSizeControl.classList.add('hidden');
+            fontSizeControl.classList.remove('flex');
+
+            if (toolName === 'pen') {
+                penAutoFillOption.classList.remove('hidden');
+            } else if (toolName === 'fill') {
+                fillToolHint.classList.remove('hidden');
+                fillToolHint.classList.add('flex');
+                strokeControl.classList.add('hidden');
+            } else if (['rect', 'circle', 'triangle'].includes(toolName)) {
+                shapeFillOption.classList.remove('hidden');
+                shapeFillOption.classList.add('flex');
+            } else if (toolName === 'text') {
+                strokeControl.classList.add('hidden');
+                fontSizeControl.classList.remove('hidden');
+                fontSizeControl.classList.add('flex');
+            }
+
+            updateBrushPreview();
+        }
+
+        /**
+         * HiDPI(레티나/태블릿) 대응 캔버스 크기 조절 및 기존 그림 보존
+         */
+        function resizeCanvas(preserveContent = true) {
+            const parent = canvas.parentElement;
+            const rect = parent.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+
+            const dpr = window.devicePixelRatio || 1;
+            let tempCanvas = null;
+
+            if (preserveContent && canvas.width > 0 && canvas.height > 0) {
+                tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+            }
+
+            canvas.width = Math.floor(rect.width * dpr);
+            canvas.height = Math.floor(rect.height * dpr);
+
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // 흰색 도화지 배경 채우기
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, rect.width, rect.height);
+
+            if (tempCanvas) {
+                ctx.drawImage(
+                    tempCanvas,
+                    0, 0, tempCanvas.width, tempCanvas.height,
+                    0, 0, tempCanvas.width / dpr, tempCanvas.height / dpr
+                );
+            }
+        }
+
+        /**
+         * 히스토리(Undo / Redo) 관리
+         */
+        function saveHistory() {
+            if (state.historyIndex < state.history.length - 1) {
+                state.history = state.history.slice(0, state.historyIndex + 1);
+            }
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            state.history.push(imgData);
+
+            if (state.history.length > state.maxHistory) {
+                state.history.shift();
+            } else {
+                state.historyIndex++;
+            }
+            updateHistoryButtons();
+        }
+
+        function undo() {
+            if (state.historyIndex > 0) {
+                state.historyIndex--;
+                ctx.putImageData(state.history[state.historyIndex], 0, 0);
+                updateHistoryButtons();
+            }
+        }
+
+        function redo() {
+            if (state.historyIndex < state.history.length - 1) {
+                state.historyIndex++;
+                ctx.putImageData(state.history[state.historyIndex], 0, 0);
+                updateHistoryButtons();
+            }
+        }
+
+        function updateHistoryButtons() {
+            btnUndo.disabled = state.historyIndex <= 0;
+            btnRedo.disabled = state.historyIndex >= state.history.length - 1;
+        }
+
+        /**
+         * HEX 색상을 RGBA 배열로 변환
+         */
+        function hexToRgba(hex) {
+            const clean = hex.replace('#', '');
+            const r = parseInt(clean.substring(0, 2), 16);
+            const g = parseInt(clean.substring(2, 4), 16);
+            const b = parseInt(clean.substring(4, 6), 16);
+            return [r, g, b, 255];
+        }
+
+        /**
+         * 페인트통(Scanline Flood Fill) 알고리즘 - 닫힌 선 및 도형 내부 채우기
+         */
+        function floodFillAt(cssX, cssY, fillHex) {
+            const dpr = window.devicePixelRatio || 1;
+            const startX = Math.floor(cssX * dpr);
+            const startY = Math.floor(cssY * dpr);
+            const width = canvas.width;
+            const height = canvas.height;
+
+            if (startX < 0 || startX >= width || startY < 0 || startY >= height) return false;
+
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+
+            const startIdx = (startY * width + startX) * 4;
+            const targetR = data[startIdx];
+            const targetG = data[startIdx + 1];
+            const targetB = data[startIdx + 2];
+
+            const [fillR, fillG, fillB, fillA] = hexToRgba(fillHex);
+
+            // 이미 같은 색이면 채우기 생략
+            if (Math.abs(targetR - fillR) < 5 && Math.abs(targetG - fillG) < 5 && Math.abs(targetB - fillB) < 5) {
+                return false;
+            }
+
+            const tolerance = 36;
+            const visited = new Uint8Array(width * height);
+
+            function matchesTarget(pixelPos) {
+                const idx = pixelPos * 4;
+                return (
+                    Math.abs(data[idx] - targetR) <= tolerance &&
+                    Math.abs(data[idx + 1] - targetG) <= tolerance &&
+                    Math.abs(data[idx + 2] - targetB) <= tolerance
+                );
+            }
+
+            function setPixel(pixelPos) {
+                const idx = pixelPos * 4;
+                data[idx] = fillR;
+                data[idx + 1] = fillG;
+                data[idx + 2] = fillB;
+                data[idx + 3] = fillA;
+            }
+
+            const stack = [[startX, startY]];
+            while (stack.length > 0) {
+                const [x, y] = stack.pop();
+                let currentX = x;
+
+                // 현재 행에서 왼쪽 경계 탐색
+                while (currentX >= 0 && !visited[y * width + currentX] && matchesTarget(y * width + currentX)) {
+                    currentX--;
+                }
+                currentX++;
+
+                let spanAbove = false;
+                let spanBelow = false;
+
+                // 오른쪽으로 이동하며 픽셀 채우기 및 위/아래 행 스캔
+                while (currentX < width && !visited[y * width + currentX] && matchesTarget(y * width + currentX)) {
+                    const pos = y * width + currentX;
+                    visited[pos] = 1;
+                    setPixel(pos);
+
+                    if (y > 0) {
+                        const abovePos = (y - 1) * width + currentX;
+                        const aboveMatch = !visited[abovePos] && matchesTarget(abovePos);
+                        if (!spanAbove && aboveMatch) {
+                            stack.push([currentX, y - 1]);
+                            spanAbove = true;
+                        } else if (spanAbove && !aboveMatch) {
+                            spanAbove = false;
+                        }
+                    }
+
+                    if (y < height - 1) {
+                        const belowPos = (y + 1) * width + currentX;
+                        const belowMatch = !visited[belowPos] && matchesTarget(belowPos);
+                        if (!spanBelow && belowMatch) {
+                            stack.push([currentX, y + 1]);
+                            spanBelow = true;
+                        } else if (spanBelow && !belowMatch) {
+                            spanBelow = false;
+                        }
+                    }
+
+                    currentX++;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            return true;
+        }
+
+        /**
+         * 포인터(터치/펜/마우스)의 캔버스 상대 좌표 및 필압 계산
+         */
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+                pressure: e.pressure !== undefined && e.pressure > 0 ? e.pressure : 0.5
+            };
+        }
+
+        /**
+         * 도형 그리기 함수 (직선, 사각형, 원, 삼각형)
+         */
+        function drawShape(tool, x1, y1, x2, y2) {
+            ctx.save();
+            ctx.strokeStyle = state.color;
+            ctx.fillStyle = state.color;
+            ctx.lineWidth = state.strokeWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+
+            if (tool === 'line') {
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            } else if (tool === 'rect') {
+                const width = x2 - x1;
+                const height = y2 - y1;
+                if (state.fillShape) {
+                    ctx.fillRect(x1, y1, width, height);
+                }
+                ctx.strokeRect(x1, y1, width, height);
+            } else if (tool === 'circle') {
+                const centerX = (x1 + x2) / 2;
+                const centerY = (y1 + y2) / 2;
+                const radiusX = Math.abs(x2 - x1) / 2;
+                const radiusY = Math.abs(y2 - y1) / 2;
+                ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+                if (state.fillShape) {
+                    ctx.fill();
+                }
+                ctx.stroke();
+            } else if (tool === 'triangle') {
+                const topX = (x1 + x2) / 2;
+                const topY = y1;
+                const bottomLeftX = x1;
+                const bottomLeftY = y2;
+                const bottomRightX = x2;
+                const bottomRightY = y2;
+
+                ctx.moveTo(topX, topY);
+                ctx.lineTo(bottomLeftX, bottomLeftY);
+                ctx.lineTo(bottomRightX, bottomRightY);
+                ctx.closePath();
+                if (state.fillShape) {
+                    ctx.fill();
+                }
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        /**
+         * 캔버스 포인터 다운 (그리기 시작 / 페인트통 채우기 / 텍스트 위치 지정)
+         */
+        function handlePointerDown(e) {
+            // 마우스 우클릭 무시
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+            const pos = getPointerPos(e);
+
+            // 페인트통 도구일 경우: 터치한 닫힌 영역 내부를 즉시 채우기
+            if (state.tool === 'fill') {
+                const filled = floodFillAt(pos.x, pos.y, state.color);
+                if (filled) {
+                    saveHistory();
+                }
+                return;
+            }
+
+            // 텍스트 도구일 경우: 해당 위치에 입력창 띄우기
+            if (state.tool === 'text') {
+                openTextOverlay(pos.x, pos.y);
+                return;
+            }
+
+            // 포인터 캡처 (캔버스 밖으로 손가락이 벗어나도 부드럽게 추적)
+            canvas.setPointerCapture(e.pointerId);
+
+            state.isDrawing = true;
+            state.startX = pos.x;
+            state.startY = pos.y;
+
+            if (state.tool === 'pen' || state.tool === 'eraser') {
+                state.currentStrokePoints = [{ x: pos.x, y: pos.y }];
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                // 점 하나만 찍었을 때도 그려지도록 처리
+                ctx.lineTo(pos.x + 0.1, pos.y + 0.1);
+                ctx.strokeStyle = state.tool === 'eraser' ? '#ffffff' : state.color;
+                ctx.lineWidth = state.strokeWidth;
+                ctx.stroke();
+            } else if (['line', 'rect', 'circle', 'triangle'].includes(state.tool)) {
+                // 도형 드래그 전 현재 캔버스 픽셀 스냅샷 저장
+                state.snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        /**
+         * 캔버스 포인터 이동 (자유 곡선 그리기 / 도형 실시간 미리보기)
+         */
+        function handlePointerMove(e) {
+            if (!state.isDrawing) return;
+            const pos = getPointerPos(e);
+
+            if (state.tool === 'pen' || state.tool === 'eraser') {
+                state.currentStrokePoints.push({ x: pos.x, y: pos.y });
+                ctx.strokeStyle = state.tool === 'eraser' ? '#ffffff' : state.color;
+                // 스타일러스 펜일 경우 필압에 따라 미세하게 굵기 반응 (70% ~ 120%)
+                if (state.tool === 'pen' && e.pointerType === 'pen') {
+                    ctx.lineWidth = Math.max(1, state.strokeWidth * (0.6 + pos.pressure * 0.8));
+                } else {
+                    ctx.lineWidth = state.strokeWidth;
+                }
+
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            } else if (['line', 'rect', 'circle', 'triangle'].includes(state.tool)) {
+                // 이전 스냅샷 복원 후 새 좌표까지 도형 미리보기 그리기
+                if (state.snapshot) {
+                    ctx.putImageData(state.snapshot, 0, 0);
+                }
+                drawShape(state.tool, state.startX, state.startY, pos.x, pos.y);
+            }
+        }
+
+        /**
+         * 캔버스 포인터 업/취소 (그리기 완료, 닫힌 선 자동 채우기 판별 및 히스토리 저장)
+         */
+        function handlePointerUp(e) {
+            if (!state.isDrawing) return;
+            state.isDrawing = false;
+
+            if (canvas.hasPointerCapture(e.pointerId)) {
+                canvas.releasePointerCapture(e.pointerId);
+            }
+
+            // 펜 도구 + '닫힌 선 자동 채우기' 옵션 활성화 시 폐곡선 판별 및 내부 채우기
+            if (state.tool === 'pen' && state.autoFillClosed && state.currentStrokePoints.length > 12) {
+                const pts = state.currentStrokePoints;
+                const first = pts[0];
+                const last = pts[pts.length - 1];
+                const dist = Math.hypot(last.x - first.x, last.y - first.y);
+                const closeThreshold = Math.max(24, state.strokeWidth * 2.2);
+
+                // 시작점과 끝점이 가까우면 선을 깔끔히 닫고 내부를 색칠
+                if (dist <= closeThreshold) {
+                    ctx.lineTo(first.x, first.y);
+                    ctx.stroke();
+                    ctx.closePath();
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(pts[0].x, pts[0].y);
+                    for (let i = 1; i < pts.length; i++) {
+                        ctx.lineTo(pts[i].x, pts[i].y);
+                    }
+                    ctx.closePath();
+                    ctx.fillStyle = state.color;
+                    ctx.fill();
+                    ctx.restore();
+                } else {
+                    ctx.closePath();
+                }
+            } else {
+                ctx.closePath();
+            }
+
+            state.currentStrokePoints = [];
+            state.snapshot = null;
+            saveHistory();
+        }
+
+        /**
+         * 플로팅 텍스트 입력창 열기 및 위치 보정
+         */
+        function openTextOverlay(x, y) {
+            state.pendingTextPos = { x, y };
+            overlayFontSizeBadge.textContent = `${state.fontSize}px`;
+            floatingTextInput.value = '';
+            floatingTextInput.style.color = state.color;
+
+            // 입력창이 캔버스 오른쪽/아래쪽 경계를 넘지 않도록 위치 조정
+            const containerRect = canvas.parentElement.getBoundingClientRect();
+            const safeX = Math.min(x, containerRect.width - 260);
+            const safeY = Math.min(y, containerRect.height - 120);
+
+            textInputOverlay.style.left = `${Math.max(10, safeX)}px`;
+            textInputOverlay.style.top = `${Math.max(10, safeY)}px`;
+            textInputOverlay.classList.remove('hidden');
+
+            // 태블릿 가상 키보드 호출을 위해 약간의 지연 후 포커스
+            setTimeout(() => floatingTextInput.focus(), 50);
+        }
+
+        function closeTextOverlay() {
+            textInputOverlay.classList.add('hidden');
+            state.pendingTextPos = null;
+        }
+
+        /**
+         * 입력된 텍스트를 캔버스에 렌더링
+         */
+        function commitTextToCanvas() {
+            const text = floatingTextInput.value.trim();
+            if (text && state.pendingTextPos) {
+                ctx.save();
+                ctx.font = `bold ${state.fontSize}px 'Noto Sans KR', sans-serif`;
+                ctx.fillStyle = state.color;
+                ctx.textBaseline = 'top';
+                ctx.fillText(text, state.pendingTextPos.x, state.pendingTextPos.y);
+                ctx.restore();
+                saveHistory();
+            }
+            closeTextOverlay();
+        }
+
+        /**
+         * 그린 그림을 PNG 이미지로 다운로드
+         */
+        function downloadCanvasAsPNG() {
+            const link = document.createElement('a');
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+            link.download = `내그림_${timestamp}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('그림이 이미지(PNG)로 저장되었습니다!');
+        }
+
+        // ================= 이벤트 리스너 등록 =================
+
+        // 도구 버튼 클릭 이벤트
+        toolButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                setTool(btn.dataset.tool);
+            });
+        });
+
+        // 자유 색상 선택기 이벤트
+        customColorPicker.addEventListener('input', (e) => {
+            selectColor(e.target.value, null);
+        });
+
+        // 선 굵기 슬라이더 및 빠른 프리셋 버튼
+        function setStrokeWidth(size) {
+            state.strokeWidth = size;
+            strokeWidthSlider.value = size;
+            strokeWidthValue.textContent = `${size}px`;
+            updateBrushPreview();
+
+            presetButtons.forEach(btn => {
+                if (parseInt(btn.dataset.size, 10) === size) {
+                    btn.classList.add('bg-white', 'text-blue-600', 'shadow-xs');
+                    btn.classList.remove('text-slate-600');
+                } else {
+                    btn.classList.remove('bg-white', 'text-blue-600', 'shadow-xs');
+                    btn.classList.add('text-slate-600');
+                }
+            });
+        }
+
+        strokeWidthSlider.addEventListener('input', (e) => {
+            setStrokeWidth(parseInt(e.target.value, 10));
+        });
+
+        presetButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                setStrokeWidth(parseInt(btn.dataset.size, 10));
+            });
+        });
+
+        // 펜 닫힌 선 자동 채우기 체크박스
+        chkAutoFillClosed.addEventListener('change', (e) => {
+            state.autoFillClosed = e.target.checked;
+            if (state.autoFillClosed) {
+                showToast('선을 동그랗게 닫아 그리면 안쪽이 자동으로 색칠됩니다!');
+            }
+        });
+
+        // 글자 크기 슬라이더
+        fontSizeSlider.addEventListener('input', (e) => {
+            state.fontSize = parseInt(e.target.value, 10);
+            fontSizeValue.textContent = `${state.fontSize}px`;
+            overlayFontSizeBadge.textContent = `${state.fontSize}px`;
+        });
+
+        // 도형 채우기 옵션 토글
+        btnStrokeOnly.addEventListener('click', () => {
+            state.fillShape = false;
+            btnStrokeOnly.classList.add('bg-white', 'text-blue-600', 'shadow-sm');
+            btnStrokeOnly.classList.remove('text-slate-600');
+            btnFillShape.classList.remove('bg-white', 'text-blue-600', 'shadow-sm');
+            btnFillShape.classList.add('text-slate-600');
+        });
+
+        btnFillShape.addEventListener('click', () => {
+            state.fillShape = true;
+            btnFillShape.classList.add('bg-white', 'text-blue-600', 'shadow-sm');
+            btnFillShape.classList.remove('text-slate-600');
+            btnStrokeOnly.classList.remove('bg-white', 'text-blue-600', 'shadow-sm');
+            btnStrokeOnly.classList.add('text-slate-600');
+        });
+
+        // 캔버스 Pointer Events 연결
+        canvas.addEventListener('pointerdown', handlePointerDown);
+        canvas.addEventListener('pointermove', handlePointerMove);
+        canvas.addEventListener('pointerup', handlePointerUp);
+        canvas.addEventListener('pointercancel', handlePointerUp);
+
+        // 텍스트 입력창 버튼 및 엔터키 처리
+        btnConfirmText.addEventListener('click', commitTextToCanvas);
+        btnCancelText.addEventListener('click', closeTextOverlay);
+        floatingTextInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                commitTextToCanvas();
+            } else if (e.key === 'Escape') {
+                closeTextOverlay();
+            }
+        });
+
+        // 상단 헤더 액션 버튼
+        btnUndo.addEventListener('click', undo);
+        btnRedo.addEventListener('click', redo);
+        btnSave.addEventListener('click', downloadCanvasAsPNG);
+
+        // 전체 지우기 모달 제어
+        btnClear.addEventListener('click', () => {
+            clearConfirmModal.classList.remove('hidden');
+        });
+        btnModalCancel.addEventListener('click', () => {
+            clearConfirmModal.classList.add('hidden');
+        });
+        btnModalConfirmClear.addEventListener('click', () => {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, rect.width, rect.height);
+            saveHistory();
+            clearConfirmModal.classList.add('hidden');
+            showToast('도화지를 깨끗하게 지웠습니다');
+        });
+
+        // 태블릿 화면 회전 및 창 크기 변경 대응 (디바운스 적용)
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                resizeCanvas(true);
+            }, 150);
+        });
+
+        // 구글 드라이브 제출: POST는 숨겨진 iframe으로 전송하고, GET(JSONP)으로 실제 저장 결과 확인
+        const SUBMISSION_URL = 'https://script.google.com/macros/s/AKfycbxkmqSkeAT4k5-Nkzhu9QnnD9FuvoCU-YSa45y6sKEeAkSgInQgS263WB1kXuzF78Qn/exec';
+        const STUDENT_NAMES = ['김서아','김수현','김윤아','김태영','김하랑','나예린','박민제','박선우','양수빈','유소영','이대운','이새봄','이서율','이진서','이채원','이초은','이태환','이하린','한규빈','한유은','현지우','황지우'];
+        const submitModal = document.getElementById('submitModal');
+        const studentSelect = document.getElementById('studentSelect');
+        const submitStatus = document.getElementById('submitStatus');
+        const submitConfirm = document.getElementById('submitConfirm');
+        let submissionPending = false;
+        let pollTimer = null;
+        let activeToken = null;
+        STUDENT_NAMES.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            studentSelect.appendChild(option);
+        });
+        document.getElementById('submissionForm').action = SUBMISSION_URL;
+        document.getElementById('btnSubmit').addEventListener('click', () => {
+            if (!submissionPending) submitStatus.textContent = '';
+            submitModal.classList.remove('hidden');
+        });
+        document.getElementById('submitCancel').addEventListener('click', () => {
+            if (!submissionPending) submitModal.classList.add('hidden');
+        });
+        // 서버가 숨겨진 iframe에서 직접 전송하는 완료 신호를 받습니다.
+        let submissionTimeout = null;
+        let checkTimer = null;
+        let checkScript = null;
+        function finishSubmission(ok, message) {
+            if (!submissionPending) return;
+            submissionPending = false;
+            clearTimeout(submissionTimeout);
+            clearTimeout(checkTimer);
+            if (checkScript) { checkScript.remove(); checkScript = null; }
+            submitConfirm.disabled = !!ok;
+            submitConfirm.textContent = ok ? '제출 완료' : '다시 제출하기';
+            submitStatus.textContent = message;
+            document.getElementById('submitCancel').textContent = '닫기';
+            if (ok) showToast('선생님께 그림을 제출했습니다!');
+        }
+        window.addEventListener('message', (event) => {
+            // Google Apps Script의 HtmlService 응답은 googleusercontent.com에서 전달됩니다.
+            if (!/^https:\/\/([a-z0-9-]+\.)*googleusercontent\.com$/i.test(event.origin) &&
+                !/^https:\/\/script\.google\.com$/i.test(event.origin)) return;
+            const data = event.data;
+            if (!data || data.kind !== 'drawingSubmissionResult' ||
+                data.token !== activeToken || !submissionPending) return;
+            finishSubmission(!!data.ok, data.ok
+                ? '제출 완료! 선생님 폴더에 저장되었습니다.'
+                : '제출 실패: ' + (data.message || '알 수 없는 오류'));
+        });
+        // 직접 완료 신호가 차단된 브라우저에서는 기존 JSONP 확인을 보조적으로 사용합니다.
+        function checkSubmission(token, attempt) {
+            if (!submissionPending || token !== activeToken) return;
+            if (attempt >= 12) return; // 전체 제한 시간은 별도로 처리
+            const cb = 'drawingCallback_' + token + '_' + attempt;
+            const script = document.createElement('script');
+            checkScript = script;
+            let settled = false;
+            let watchdog;
+            const cleanup = () => {
+                clearTimeout(watchdog);
+                try { delete window[cb]; } catch (_) { window[cb] = undefined; }
+                script.remove();
+                if (checkScript === script) checkScript = null;
+            };
+            const next = () => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                if (submissionPending && token === activeToken)
+                    checkTimer = setTimeout(() => checkSubmission(token, attempt + 1), 1600);
+            };
+            window[cb] = result => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                if (!submissionPending || token !== activeToken) return;
+                if (result && result.pending) {
+                    checkTimer = setTimeout(() => checkSubmission(token, attempt + 1), 1600);
+                } else {
+                    finishSubmission(!!(result && result.ok), result && result.ok
+                        ? '제출 완료! 선생님 폴더에 저장되었습니다.'
+                        : '제출 실패: ' + ((result && result.message) || '알 수 없는 오류'));
+                }
+            };
+            script.onerror = next;
+            watchdog = setTimeout(next, 3500);
+            script.src = SUBMISSION_URL + '?token=' + encodeURIComponent(token)
+                + '&callback=' + encodeURIComponent(cb) + '&t=' + Date.now();
+            document.head.appendChild(script);
+        }
+        submitConfirm.addEventListener('click', () => {
+            if (submissionPending) return;
+            if (!studentSelect.value) {
+                submitStatus.textContent = '자신의 이름을 선택하세요.';
+                return;
+            }
+            try {
+                const bytes = new Uint8Array(16);
+                crypto.getRandomValues(bytes);
+                const token = Array.from(bytes, b => b.toString(16).padStart(2,'0')).join('');
+                activeToken = token;
+                submissionPending = true;
+                submitConfirm.disabled = true;
+                submitConfirm.textContent = '제출 중...';
+                submitStatus.textContent = '그림을 저장하고 결과를 확인하고 있습니다.';
+                document.getElementById('submitCancel').textContent = '취소';
+                document.getElementById('formStudent').value = studentSelect.value;
+                document.getElementById('formImage').value = canvas.toDataURL('image/png');
+                document.getElementById('formToken').value = token;
+                document.getElementById('submissionForm').submit();
+                checkTimer = setTimeout(() => checkSubmission(token, 0), 3000);
+                submissionTimeout = setTimeout(() => {
+                    finishSubmission(false, '제출 결과를 확인하지 못했습니다. 선생님 폴더를 먼저 확인하세요.');
+                }, 45000);
+            } catch (err) {
+                finishSubmission(false, '그림 전송을 시작하지 못했습니다: ' + err.message);
+            }
+        });
+
+        // 초기 실행
+        window.addEventListener('DOMContentLoaded', () => {
+            initColorPalette();
+            resizeCanvas(false);
+            saveHistory(); // 초기 빈 도화지 상태 저장
+            updateBrushPreview();
+        });
+    </script>
+</body>
+</html>
