@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2학년 수학 - 자료를 분류하여 표로 나타내기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f4f7f6;
+            user-select: none;
+        }
+        .font-jua {
+            font-family: 'Jua', sans-serif;
+        }
+        /* 칠판 스타일 */
+        .chalkboard {
+            background-color: #2c4c3b;
+            border: 12px solid #8b5a2b;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2), inset 0 0 30px rgba(0,0,0,0.4);
+            position: relative;
+        }
+        /* 육각형 카드 스타일 */
+        .hex-card {
+            width: 86px;
+            height: 98px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s, opacity 0.3s;
+            padding: 6px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .hex-card:hover {
+            transform: scale(1.08);
+            z-index: 10;
+        }
+        .hex-card.selected {
+            outline: 4px solid #fbbf24;
+            transform: scale(1.1);
+            z-index: 20;
+            filter: brightness(1.05);
+        }
+        .hex-card.placed {
+            opacity: 0.35;
+            transform: scale(0.95);
+            cursor: default;
+        }
+        /* 활동별 색상 테마 */
+        .theme-field { background-color: #e2d9eb; color: #5b3a82; }      /* 현장 체험학습 */
+        .theme-garden { background-color: #d6ebd9; color: #2e6b36; }     /* 텃밭 가꾸기 */
+        .theme-play { background-color: #f2d5d5; color: #b82956; }       /* 놀이 한마당 */
+        .theme-dance { background-color: #f5e2c6; color: #b86b14; }      /* 신나는 무용 */
+        .theme-safety { background-color: #cde6f5; color: #1b6596; }     /* 안전 체험 */
+
+        /* 벌집 그리드 배치 (데스크탑/태블릿용) */
+        @media (min-width: 768px) {
+            .honeycomb-container {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 6px;
+                max-width: 760px;
+                margin: 0 auto;
+            }
+        }
+        /* 이름 뱃지 애니메이션 */
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .name-badge {
+            animation: popIn 0.25s ease-out forwards;
+        }
+        /* 말풍선 꼬리 */
+        .speech-bubble {
+            position: relative;
+            background: #ffffff;
+            border-radius: 1.5rem;
+            border: 3px solid #60a5fa;
+        }
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 25%;
+            width: 0;
+            height: 0;
+            border: 14px solid transparent;
+            border-top-color: #60a5fa;
+            border-bottom: 0;
+            margin-left: -14px;
+            margin-bottom: -14px;
+        }
+    dialog::backdrop { background: rgba(0,0,0,.55); }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body class="p-3 md:p-6 text-gray-800">
+    <div class="max-w-5xl mx-auto flex justify-end mb-2 gap-2">
+      <button id="teacher-toggle" type="button" class="text-xs text-gray-600 bg-white border rounded-lg px-3 py-2" onclick="toggleTeacher()">🔒 교사 로그인</button>
+      <button id="teacher-refill" type="button" hidden class="text-xs bg-blue-100 text-blue-800 rounded-lg px-3 py-2" onclick="fillTeacherAnswers()">정답 다시 입력</button>
+    </div>
+    <dialog id="teacher-dialog" class="rounded-2xl p-6 w-80 max-w-[90vw] shadow-xl backdrop:bg-black/40">
+      <form id="teacher-form">
+        <h2 class="text-lg font-bold mb-4">교사 로그인</h2>
+        <label for="teacher-password" class="text-sm">비밀번호</label>
+        <input id="teacher-password" type="password" inputmode="numeric" autocomplete="off" required class="block w-full border rounded-lg p-2 mt-1" />
+        <p id="teacher-error" role="alert" class="text-sm text-red-600 mt-2"></p>
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" onclick="document.getElementById('teacher-dialog').close()" class="px-3 py-2 bg-gray-100 rounded-lg">취소</button>
+          <button type="submit" class="px-3 py-2 bg-blue-600 text-white rounded-lg">로그인</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- 헤더 영역 -->
+    <header class="max-w-5xl mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
+        <div class="flex items-center gap-3 mb-2 sm:mb-0">
+            <span class="bg-emerald-600 text-white font-jua text-lg px-3 py-1 rounded-xl">5. 표와 그래프</span>
+            <h1 class="text-xl md:text-2xl font-jua text-gray-800">자료를 분류하여 표로 나타내 볼까요</h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">수학 110~111쪽</span>
+            <button onclick="resetAll()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1.5 px-4 rounded-xl text-sm transition">
+                🔄 처음부터 다시하기
+            </button>
+        </div>
+    </header>
+
+    <!-- 메인 컨테이너 -->
+    <main class="max-w-5xl mx-auto space-y-8">
+
+        <!-- 섹션 1: 칠판 자료 보기 및 선택 -->
+        <section class="chalkboard p-5 md:p-8 text-white">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl md:text-3xl font-jua tracking-wider text-yellow-200 drop-shadow">
+                    2학년 때 즐거웠던 활동
+                </h2>
+                <p class="text-sm text-emerald-100 mt-1">
+                    💡 칠판의 활동 카드를 <b>클릭</b>한 뒤, 아래 표에서 알맞은 활동 칸을 눌러 분류해 보세요!
+                </p>
+            </div>
+
+            <!-- 칠판 카드 목록 -->
+            <div id="chalkboard-cards" class="honeycomb-container flex flex-wrap justify-center gap-2 md:gap-3">
+                <!-- 자바스크립트로 18명의 학생 카드가 렌더링됩니다 -->
+            </div>
+
+            <!-- 하단 말풍선 안내 -->
+            <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-emerald-700/60">
+                <div class="speech-bubble text-gray-800 px-5 py-3 text-sm md:text-base font-medium shadow-md max-w-md">
+                    👦🏻 <b>슬기:</b> "많은 학생들이 즐거워했던 활동은 내년에도 하면 좋겠어."
+                </div>
+                <div id="remaining-status" class="bg-emerald-900/70 px-4 py-2.5 rounded-xl border border-emerald-600 text-sm text-emerald-100">
+                    남은 카드: <span id="remaining-count" class="font-bold text-yellow-300 text-lg">19</span>장 / 전체 <span id="total-count">20</span>장
+                </div>
+            </div>
+        </section>
+
+        <!-- 메시지 알림 배너 -->
+        <div id="feedback-banner" class="hidden max-w-3xl mx-auto p-4 rounded-2xl text-center font-bold text-base shadow-md transition-all"></div>
+
+        <!-- 섹션 2: 기준에 따라 분류하여 학생 이름 쓰기 -->
+        <section class="bg-white p-5 md:p-7 rounded-3xl shadow-md border border-gray-200">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="bg-blue-600 text-white font-jua w-8 h-8 rounded-full flex items-center justify-center text-lg">1</span>
+                    <h3 class="text-lg md:text-xl font-bold text-gray-800">기준에 따라 분류하여 학생들의 이름을 넣어 보세요.</h3>
+                </div>
+                <div class="flex items-center gap-2 self-start sm:self-auto">
+                    
+                </div>
+            </div>
+
+            <div class="text-center font-jua text-xl text-gray-700 mb-3">2학년 때 즐거웠던 활동</div>
+
+            <!-- 분류 표 (반응형 스크롤 지원) -->
+            <div class="overflow-x-auto rounded-2xl border-2 border-amber-400">
+                <table class="w-full min-w-[600px] border-collapse text-center">
+                    <thead>
+                        <tr class="bg-amber-100 border-b-2 border-amber-400">
+                            <th class="p-3 border-r-2 border-amber-300 w-24 text-amber-900 font-bold">활동</th>
+                            <th class="p-3 border-r border-amber-300 w-1/5 bg-purple-100 text-purple-900 font-bold">현장 체험학습</th>
+                            <th class="p-3 border-r border-amber-300 w-1/5 bg-sky-100 text-sky-900 font-bold">안전 체험</th>
+                            <th class="p-3 border-r border-amber-300 w-1/5 bg-pink-100 text-pink-900 font-bold">놀이 한마당</th>
+                            <th class="p-3 border-r border-amber-300 w-1/5 bg-orange-100 text-orange-900 font-bold">신나는 무용</th>
+                            <th class="p-3 w-1/5 bg-green-100 text-green-900 font-bold">텃밭 가꾸기</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="min-h-[180px]">
+                            <td class="p-3 border-r-2 border-amber-300 bg-amber-50 font-bold text-amber-900 align-middle">
+                                학생<br>이름
+                            </td>
+                            <!-- 각 활동별 드롭/클릭 영역 -->
+                            <td onclick="placeCardInCategory('현장 체험학습')" class="category-zone p-3 border-r border-amber-200 align-top cursor-pointer hover:bg-purple-50/70 transition min-h-[160px]" data-category="현장 체험학습">
+                                <div id="list-현장 체험학습" class="flex flex-col gap-2 items-center min-h-[140px]"></div>
+                            </td>
+                            <td onclick="placeCardInCategory('안전 체험')" class="category-zone p-3 border-r border-amber-200 align-top cursor-pointer hover:bg-sky-50/70 transition min-h-[160px]" data-category="안전 체험">
+                                <div id="list-안전 체험" class="flex flex-col gap-2 items-center min-h-[140px]"></div>
+                            </td>
+                            <td onclick="placeCardInCategory('놀이 한마당')" class="category-zone p-3 border-r border-amber-200 align-top cursor-pointer hover:bg-pink-50/70 transition min-h-[160px]" data-category="놀이 한마당">
+                                <div id="list-놀이 한마당" class="flex flex-col gap-2 items-center min-h-[140px]"></div>
+                            </td>
+                            <td onclick="placeCardInCategory('신나는 무용')" class="category-zone p-3 border-r border-amber-200 align-top cursor-pointer hover:bg-orange-50/70 transition min-h-[160px]" data-category="신나는 무용">
+                                <div id="list-신나는 무용" class="flex flex-col gap-2 items-center min-h-[140px]"></div>
+                            </td>
+                            <td onclick="placeCardInCategory('텃밭 가꾸기')" class="category-zone p-3 align-top cursor-pointer hover:bg-green-50/70 transition min-h-[160px]" data-category="텃밭 가꾸기">
+                                <div id="list-텃밭 가꾸기" class="flex flex-col gap-2 items-center min-h-[140px]"></div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-gray-500 mt-2 text-right">* 표에 들어간 이름표를 클릭하면 다시 칠판으로 되돌릴 수 있어요.</p>
+        </section>
+
+        <!-- 섹션 3: 활동별 학생 수를 표로 나타내기 -->
+        <section class="bg-white p-5 md:p-7 rounded-3xl shadow-md border border-gray-200">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="bg-emerald-600 text-white font-jua w-8 h-8 rounded-full flex items-center justify-center text-lg">2</span>
+                    <h3 class="text-lg md:text-xl font-bold text-gray-800">2학년 때 즐거웠던 활동별 학생 수를 표로 나타내 보세요.</h3>
+                </div>
+                
+            </div>
+
+            <div class="text-center font-jua text-xl text-gray-700 mb-3">2학년 때 즐거웠던 활동별 학생 수</div>
+
+            <div class="overflow-x-auto rounded-2xl border-2 border-emerald-500">
+                <table class="w-full min-w-[600px] border-collapse text-center">
+                    <thead>
+                        <tr class="bg-emerald-100 border-b-2 border-emerald-500 text-emerald-950 font-bold">
+                            <th class="p-3 border-r-2 border-emerald-400 w-28">활동</th>
+                            <th class="p-3 border-r border-emerald-300">현장 체험학습</th>
+                            <th class="p-3 border-r border-emerald-300">안전 체험</th>
+                            <th class="p-3 border-r border-emerald-300">놀이 한마당</th>
+                            <th class="p-3 border-r border-emerald-300">신나는 무용</th>
+                            <th class="p-3 border-r-2 border-emerald-400">텃밭 가꾸기</th>
+                            <th class="p-3 bg-emerald-200 text-emerald-950">합계</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-white">
+                            <td class="p-3 border-r-2 border-emerald-400 bg-emerald-50 font-bold text-emerald-900">학생 수(명)</td>
+                            <td class="p-3 border-r border-emerald-200">
+                                <input type="number" id="count-현장 체험학습" min="0" max="20" placeholder="?" class="w-16 h-12 text-center text-xl font-bold border-2 border-gray-300 rounded-xl focus:border-emerald-500 focus:outline-none">
+                            </td>
+                            <td class="p-3 border-r border-emerald-200">
+                                <input type="number" id="count-안전 체험" min="0" max="20" placeholder="?" class="w-16 h-12 text-center text-xl font-bold border-2 border-gray-300 rounded-xl focus:border-emerald-500 focus:outline-none">
+                            </td>
+                            <td class="p-3 border-r border-emerald-200">
+                                <input type="number" id="count-놀이 한마당" min="0" max="20" placeholder="?" class="w-16 h-12 text-center text-xl font-bold border-2 border-gray-300 rounded-xl focus:border-emerald-500 focus:outline-none">
+                            </td>
+                            <td class="p-3 border-r border-emerald-200">
+                                <input type="number" id="count-신나는 무용" min="0" max="20" placeholder="?" class="w-16 h-12 text-center text-xl font-bold border-2 border-gray-300 rounded-xl focus:border-emerald-500 focus:outline-none">
+                            </td>
+                            <td class="p-3 border-r-2 border-emerald-400">
+                                <input type="number" id="count-텃밭 가꾸기" min="0" max="20" placeholder="?" class="w-16 h-12 text-center text-xl font-bold border-2 border-gray-300 rounded-xl focus:border-emerald-500 focus:outline-none">
+                            </td>
+                            <td class="p-3 bg-emerald-50/60">
+                                <input type="number" id="count-합계" min="0" max="50" placeholder="?" class="w-20 h-12 text-center text-xl font-bold border-2 border-emerald-400 bg-white rounded-xl focus:border-emerald-600 focus:outline-none">
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 섹션 4: 생각 나누기 (복수 정답 객관식) -->
+        <section class="bg-amber-50 p-5 md:p-7 rounded-3xl border-2 border-amber-200">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="bg-amber-500 text-white font-jua w-8 h-8 rounded-full flex items-center justify-center text-lg">3</span>
+                    <h3 class="text-lg md:text-xl font-bold text-gray-800">표로 나타내면 어떤 점이 편리한지 모두 골라 보세요. <span class="text-sm font-normal text-amber-700">(복수 정답 가능)</span></h3>
+                </div>
+                
+            </div>
+            <div id="quiz-options" class="bg-white p-4 md:p-5 rounded-2xl border border-amber-200 space-y-3">
+                <label class="quiz-item flex items-start gap-3 p-3 rounded-xl border-2 border-gray-100 hover:bg-amber-50/50 cursor-pointer transition">
+                    <input type="checkbox" name="quiz" value="1" class="mt-1 w-5 h-5 accent-amber-500 rounded cursor-pointer">
+                    <span class="text-gray-800 font-medium">① 활동별 학생 수를 한눈에 쉽게 알아볼 수 있습니다.</span>
+                </label>
+                <label class="quiz-item flex items-start gap-3 p-3 rounded-xl border-2 border-gray-100 hover:bg-amber-50/50 cursor-pointer transition">
+                    <input type="checkbox" name="quiz" value="2" class="mt-1 w-5 h-5 accent-amber-500 rounded cursor-pointer">
+                    <span class="text-gray-800 font-medium">② 어느 활동을 가장 많은 학생이 즐거워했는지 쉽게 비교할 수 있습니다.</span>
+                </label>
+                <label class="quiz-item flex items-start gap-3 p-3 rounded-xl border-2 border-gray-100 hover:bg-amber-50/50 cursor-pointer transition">
+                    <input type="checkbox" name="quiz" value="3" class="mt-1 w-5 h-5 accent-amber-500 rounded cursor-pointer">
+                    <span class="text-gray-800 font-medium">③ 학생들이 각 활동을 왜 좋아했는지 자세한 이유를 알 수 있습니다.</span>
+                </label>
+                <label class="quiz-item flex items-start gap-3 p-3 rounded-xl border-2 border-gray-100 hover:bg-amber-50/50 cursor-pointer transition">
+                    <input type="checkbox" name="quiz" value="4" class="mt-1 w-5 h-5 accent-amber-500 rounded cursor-pointer">
+                    <span class="text-gray-800 font-medium">④ 전체 학생 수가 모두 몇 명인지 합계를 통해 바로 알 수 있습니다.</span>
+                </label>
+                <div id="quiz-feedback" class="hidden p-4 rounded-xl text-sm font-medium mt-2"></div>
+            </div>
+        </section>
+
+    <section class="text-center bg-white p-6 rounded-3xl shadow-md">
+<button onclick="checkAllAnswers()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-10 rounded-2xl text-xl shadow">전체 정답 확인</button>
+<div id="overall-feedback" class="mt-4 font-bold" role="status"></div>
+</section>
+</main>
+<section id="auto-evaluation-act-1795476527765" hidden style="margin:24px auto;max-width:1050px;">
+<h1 class="font-jua text-3xl text-center mb-5">자동평가</h1>
+<iframe title="과제 참여 여부 확인하기" data-src="https://eyeholder83-commits.github.io/sh0201/%ED%95%99%EA%B8%89%ED%86%B5%ED%95%A9%EA%B4%80%EB%A6%AC.html?autoActivity=act-1795476527765" loading="lazy" style="display:block;width:100%;height:650px;border:0;border-radius:16px;background:#f8fafc;" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+<button onclick="returnToProblems()" class="mt-4 bg-gray-200 rounded-xl px-5 py-2">문제로 돌아가기</button>
+</section>
+<dialog id="success-modal" style="border:0;border-radius:24px;padding:36px;text-align:center;max-width:90vw;box-shadow:0 12px 50px #0004;">
+<div class="text-5xl mb-4">🎉</div><h2 class="font-jua text-3xl text-emerald-700">모든 문제를 맞혔어요!</h2><p class="mt-3">자동평가 페이지로 이동합니다.</p>
+</dialog>
+
+    <footer class="max-w-5xl mx-auto text-center text-gray-400 text-xs mt-10 pb-6">
+        초등학교 2학년 2학기 수학 5단원 '표와 그래프' 인터랙티브 학습 자료
+    </footer>
+
+    <script>
+        // 교과서 110쪽 칠판의 18명 학생 데이터
+        const studentsData = [
+            { id: 1, name: '서준', activity: '현장 체험학습', placed: false },
+            { id: 2, name: '수찬', activity: '현장 체험학습', placed: false },
+            { id: 3, name: '다윤', activity: '놀이 한마당', placed: false },
+            { id: 4, name: '우영', activity: '현장 체험학습', placed: false },
+            { id: 5, name: '민하', activity: '텃밭 가꾸기', placed: false },
+            { id: 6, name: '연우', activity: '텃밭 가꾸기', placed: false },
+            { id: 7, name: '재이', activity: '현장 체험학습', placed: false },
+            { id: 8, name: '채원', activity: '안전 체험', placed: false },
+            { id: 9, name: '호진', activity: '신나는 무용', placed: false },
+            { id: 10, name: '정우', activity: '놀이 한마당', placed: false },
+            { id: 11, name: '지아', activity: '신나는 무용', placed: false },
+            { id: 12, name: '소민', activity: '놀이 한마당', placed: false },
+            { id: 13, name: '세미', activity: '안전 체험', placed: false },
+            { id: 14, name: '도현', activity: '안전 체험', placed: false },
+            { id: 15, name: '상혁', activity: '텃밭 가꾸기', placed: false },
+            // 슬기는 교과서 표에 이미 예시로 들어가 있음
+            { id: 16, name: '슬기', activity: '현장 체험학습', placed: true, isExample: true },
+            { id: 17, name: '효주', activity: '현장 체험학습', placed: false },
+            { id: 18, name: '소희', activity: '현장 체험학습', placed: false }, // 잠깐! 교과서 이미지 재확인 필요
+            { id: 19, name: '시후', activity: '놀이 한마당', placed: false },
+            { id: 20, name: '지은', activity: '놀이 한마당', placed: false }
+        ];
+
+        // 교과서 이미지 정밀 검증 후 정확한 18명 리스트로 재구성
+        // 이미지 카운트:
+        // 현장 체험학습 (보라): 서준, 수찬, 우영, 재이, 슬기, 효주, 소희 -> 총 7명? 다시 세어보자!
+        // 이미지 확인:
+        // 1줄: 서준(현장), 수찬(현장), 다윤(놀이), 우영(현장)
+        // 2줄: 민하(텃밭), 연우(텃밭), 재이(현장), 채원(안전)
+        // 3줄: 호진(무용), 정우(놀이), 지아(무용)
+        // 4줄: 소민(놀이), 세미(안전), 도현(안전), 상혁(텃밭)
+        // 5줄: 슬기(현장), 효주(현장), 소희(현장)
+        // 6줄: 시후(놀이), 지은(놀이)
+        // 합계 세어보기:
+        // - 현장 체험학습: 서준, 수찬, 우영, 재이, 슬기, 효주, 소희 (7명)
+        // - 놀이 한마당: 다윤, 정우, 소민, 시후, 지은 (5명)
+        // - 텃밭 가꾸기: 민하, 연우, 상혁 (3명)
+        // - 안전 체험: 채원, 세미, 도현 (3명)
+        // - 신나는 무용: 호진, 지아 (2명)
+        // 총 인원: 7 + 5 + 3 + 3 + 2 = 20명!
+
+        const exactStudents = [
+            { id: 1, name: '서준', activity: '현장 체험학습', placed: false },
+            { id: 2, name: '민하', activity: '텃밭 가꾸기', placed: false },
+            { id: 3, name: '수찬', activity: '현장 체험학습', placed: false },
+            { id: 4, name: '연우', activity: '텃밭 가꾸기', placed: false },
+            { id: 5, name: '다윤', activity: '놀이 한마당', placed: false },
+            { id: 6, name: '재이', activity: '현장 체험학습', placed: false },
+            { id: 7, name: '우영', activity: '현장 체험학습', placed: false },
+            { id: 8, name: '채원', activity: '안전 체험', placed: false },
+            { id: 9, name: '소민', activity: '놀이 한마당', placed: false },
+            { id: 10, name: '호진', activity: '신나는 무용', placed: false },
+            { id: 11, name: '세미', activity: '안전 체험', placed: false },
+            { id: 12, name: '정우', activity: '놀이 한마당', placed: false },
+            { id: 13, name: '도현', activity: '안전 체험', placed: false },
+            { id: 14, name: '지아', activity: '신나는 무용', placed: false },
+            { id: 15, name: '상혁', activity: '텃밭 가꾸기', placed: false },
+            { id: 16, name: '슬기', activity: '현장 체험학습', placed: true, isExample: true },
+            { id: 17, name: '시후', activity: '놀이 한마당', placed: false },
+            { id: 18, name: '효주', activity: '현장 체험학습', placed: false },
+            { id: 19, name: '지은', activity: '놀이 한마당', placed: false },
+            { id: 20, name: '소희', activity: '현장 체험학습', placed: false }
+        ];
+
+        let selectedStudentId = null;
+
+        // 활동별 테마 클래스 반환
+        function getThemeClass(activity) {
+            switch (activity) {
+                case '현장 체험학습': return 'theme-field';
+                case '텃밭 가꾸기': return 'theme-garden';
+                case '놀이 한마당': return 'theme-play';
+                case '신나는 무용': return 'theme-dance';
+                case '안전 체험': return 'theme-safety';
+                default: return 'bg-gray-100';
+            }
+        }
+
+        // 활동별 뱃지 스타일 반환
+        function getBadgeClass(activity) {
+            switch (activity) {
+                case '현장 체험학습': return 'bg-purple-100 text-purple-900 border-purple-300';
+                case '안전 체험': return 'bg-sky-100 text-sky-900 border-sky-300';
+                case '놀이 한마당': return 'bg-pink-100 text-pink-900 border-pink-300';
+                case '신나는 무용': return 'bg-orange-100 text-orange-900 border-orange-300';
+                case '텃밭 가꾸기': return 'bg-green-100 text-green-900 border-green-300';
+                default: return 'bg-gray-100 text-gray-800 border-gray-300';
+            }
+        }
+
+        // 화면 전체 렌더링
+        function renderAll() {
+            renderChalkboard();
+            renderTables();
+            updateRemainingCount();
+        }
+
+        // 칠판 카드 렌더링
+        function renderChalkboard() {
+            const container = document.getElementById('chalkboard-cards');
+            container.innerHTML = '';
+
+            exactStudents.forEach(student => {
+                const card = document.createElement('div');
+                const isSelected = selectedStudentId === student.id;
+                card.className = `hex-card ${getThemeClass(student.activity)} ${student.placed ? 'placed' : ''} ${isSelected ? 'selected' : ''}`;
+                
+                // 줄바꿈 포맷팅
+                const formattedActivity = student.activity.replace(' ', '<br>');
+                
+                card.innerHTML = `
+                    <div class="text-[11px] leading-tight font-bold opacity-90 mb-1">${formattedActivity}</div>
+                    <div class="text-sm md:text-base font-extrabold text-gray-900">${student.name}</div>
+                `;
+
+                if (!student.placed) {
+                    card.onclick = () => selectStudent(student.id);
+                }
+                container.appendChild(card);
+            });
+        }
+
+        // 분류 표 렌더링
+        function renderTables() {
+            const categories = ['현장 체험학습', '안전 체험', '놀이 한마당', '신나는 무용', '텃밭 가꾸기'];
+            
+            categories.forEach(cat => {
+                const listEl = document.getElementById(`list-${cat}`);
+                listEl.innerHTML = '';
+
+                const placedStudents = exactStudents.filter(s => s.placed && s.assignedCategory === cat);
+                
+                placedStudents.forEach(student => {
+                    const badge = document.createElement('span');
+                    // 채점 상태(correct / wrong)에 따른 테두리 강조
+                    let statusRing = '';
+                    if (student.checkStatus === 'correct') {
+                        statusRing = 'ring-2 ring-emerald-500';
+                    } else if (student.checkStatus === 'wrong') {
+                        statusRing = 'ring-2 ring-rose-500 bg-rose-100 text-rose-900 border-rose-400';
+                    }
+
+                    badge.className = `name-badge px-3 py-1.5 rounded-full text-sm font-bold border shadow-sm cursor-pointer hover:opacity-80 transition flex items-center gap-1 ${getBadgeClass(cat)} ${statusRing}`;
+                    badge.innerHTML = `${student.name} ${student.isExample ? '<span class="text-[10px] bg-white/80 px-1.5 rounded-full text-gray-600">예시</span>' : '<span class="text-xs opacity-60">×</span>'}`;
+                    
+                    if (!student.isExample) {
+                        badge.onclick = (e) => {
+                            e.stopPropagation();
+                            removeStudentFromTable(student.id);
+                        };
+                    }
+                    listEl.appendChild(badge);
+                });
+            });
+        }
+
+        // 초기 예시 데이터(슬기) 세팅
+        function initExampleData() {
+            exactStudents.forEach(s => {
+                s.checkStatus = null;
+                if (s.isExample) {
+                    s.placed = true;
+                    s.assignedCategory = '현장 체험학습';
+                } else {
+                    s.placed = false;
+                    s.assignedCategory = null;
+                }
+            });
+        }
+
+        // 남은 카드 수 업데이트
+        function updateRemainingCount() {
+            const remaining = exactStudents.filter(s => !s.placed).length;
+            const total = exactStudents.length;
+            const remainingEl = document.getElementById('remaining-count');
+            const totalEl = document.getElementById('total-count');
+            if (remainingEl) remainingEl.textContent = remaining;
+            if (totalEl) totalEl.textContent = total;
+        }
+
+        // 학생 카드 선택
+        function selectStudent(id) {
+            hideBanner();
+            if (selectedStudentId === id) {
+                selectedStudentId = null;
+            } else {
+                selectedStudentId = id;
+            }
+            renderChalkboard();
+        }
+
+        // 선택한 카드를 표의 특정 활동 칸에 자유롭게 배치 (정답 여부 무관)
+        function placeCardInCategory(targetCategory) {
+            if (selectedStudentId === null) {
+                showBanner('👆 먼저 위 칠판에서 학생 카드를 하나 선택해 주세요!', 'bg-amber-100 text-amber-900 border border-amber-300');
+                return;
+            }
+
+            const student = exactStudents.find(s => s.id === selectedStudentId);
+            if (!student) return;
+
+            student.placed = true;
+            student.assignedCategory = targetCategory;
+            student.checkStatus = null; // 새로 놓을 때 기존 채점 표시 초기화
+            selectedStudentId = null;
+            hideBanner();
+            renderAll();
+        }
+
+        // 1번 분류 표 정답 확인
+        function checkClassification() {
+            exactStudents.forEach(s => { s.checkStatus = s.placed ? (s.assignedCategory === s.activity ? 'correct' : 'wrong') : null; });
+            renderTables();
+            return exactStudents.every(s => s.placed && s.assignedCategory === s.activity);
+        }
+
+        // 표에서 이름 제거하고 칠판으로 복귀
+        function removeStudentFromTable(id) {
+            const student = exactStudents.find(s => s.id === id);
+            if (student && !student.isExample) {
+                student.placed = false;
+                student.assignedCategory = null;
+                student.checkStatus = null;
+                selectedStudentId = null;
+                hideBanner();
+                renderAll();
+            }
+        }
+
+        // 예시 정답 자동 채우기 (분류 표)
+        function autoFillClassification() {
+            if (!teacherMode) return;
+            exactStudents.forEach(s => {
+                s.placed = true;
+                s.assignedCategory = s.activity;
+                s.checkStatus = null;
+            });
+            selectedStudentId = null;
+            renderAll();
+            hideBanner();
+        }
+
+        // 학생 수 및 합계 정답 확인
+        function checkAnswers() {
+            const answers = {'현장 체험학습':7,'안전 체험':3,'놀이 한마당':5,'신나는 무용':2,'텃밭 가꾸기':3,'합계':20};
+            let ok = true;
+            for (const [key, val] of Object.entries(answers)) {
+                const el = document.getElementById(`count-${key}`);
+                const correct = el.value.trim() !== '' && Number(el.value) === val;
+                el.classList.remove('border-emerald-500','bg-emerald-50','border-rose-500','bg-rose-50','border-amber-400','bg-amber-50');
+                el.classList.add(...(correct ? ['border-emerald-500','bg-emerald-50'] : ['border-rose-500','bg-rose-50']));
+                ok = ok && correct;
+            }
+            return ok;
+        }
+        function checkQuizAnswers() {
+            const boxes = [...document.querySelectorAll('input[name="quiz"]')];
+            const ok = boxes.every(cb => cb.checked === ['1','2','4'].includes(cb.value));
+            const panel = document.getElementById('quiz-options');
+            panel.classList.remove('ring-2','ring-rose-500','ring-emerald-500');
+            panel.classList.add('ring-2',ok ? 'ring-emerald-500' : 'ring-rose-500');
+            document.getElementById('quiz-feedback').classList.add('hidden');
+            return ok;
+        }
+        function checkAllAnswers() {
+            hideBanner();
+            const results = [checkClassification(),checkAnswers(),checkQuizAnswers()];
+            const el = document.getElementById('overall-feedback');
+            const ok = results.every(Boolean);
+            el.className = 'mt-4 font-bold ' + (ok ? 'text-emerald-700' : 'text-rose-700');
+            el.textContent = ok ? '모두 정답입니다! 참 잘했어요!' : results.map((v,i)=>`${i+1}번: ${v?'정답':'오답 또는 미완성'}`).join(' / ');
+            if (ok) showAutoEvaluation();
+        }
+
+        let evaluationTimer = null;
+        function returnToProblems() {
+            clearTimeout(evaluationTimer);
+            evaluationTimer = null;
+            const modal = document.getElementById('success-modal');
+            if (modal.open) modal.close();
+            const area = document.getElementById('auto-evaluation-act-1795476527765');
+            area.hidden = true;
+            area.querySelector('iframe').removeAttribute('src');
+            document.querySelector('main').hidden = false;
+        }
+        function showAutoEvaluation() {
+            if (evaluationTimer !== null) return;
+            const modal = document.getElementById('success-modal');
+            modal.showModal();
+            evaluationTimer = setTimeout(() => {
+                evaluationTimer = null;
+                if (modal.open) modal.close();
+                const area = document.getElementById('auto-evaluation-act-1795476527765');
+                const frame = area.querySelector('iframe');
+                frame.src = frame.dataset.src;
+                document.querySelector('main').hidden = true;
+                area.hidden = false;
+                area.scrollIntoView({behavior:'smooth',block:'start'});
+            }, 2000);
+        }
+        document.getElementById('success-modal').addEventListener('cancel', e => e.preventDefault());
+        // 알림 배너 표시
+        function showBanner(msg, classes) {
+            const banner = document.getElementById('feedback-banner');
+            banner.className = `max-w-3xl mx-auto p-4 rounded-2xl text-center font-bold text-base shadow-md transition-all ${classes}`;
+            banner.innerHTML = msg;
+            banner.classList.remove('hidden');
+        }
+
+        function hideBanner() {
+            document.getElementById('feedback-banner').classList.add('hidden');
+        }
+
+        // 전체 초기화
+        function resetAll() {
+            returnToProblems();
+            document.getElementById("overall-feedback").textContent = "";
+            document.getElementById("quiz-options").classList.remove("ring-2","ring-rose-500","ring-emerald-500");
+            initExampleData();
+            selectedStudentId = null;
+            hideBanner();
+
+            const keys = ['현장 체험학습', '안전 체험', '놀이 한마당', '신나는 무용', '텃밭 가꾸기', '합계'];
+            keys.forEach(k => {
+                const el = document.getElementById(`count-${k}`);
+                el.value = '';
+                el.classList.remove('border-emerald-500', 'bg-emerald-50', 'border-rose-500', 'bg-rose-50', 'border-amber-400', 'bg-amber-50');
+            });
+
+            // 3번 퀴즈 초기화
+            const checkboxes = document.querySelectorAll('input[name="quiz"]');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+                const label = cb.closest('.quiz-item');
+                label.classList.remove('border-emerald-400', 'bg-emerald-50', 'border-rose-400', 'bg-rose-50');
+            });
+            const feedbackEl = document.getElementById('quiz-feedback');
+            feedbackEl.classList.add('hidden');
+
+            renderAll();
+        }
+
+
+        let teacherMode = false;
+        function teacherFingerprint(value) {
+            let h = 2166136261;
+            for (const c of 'classroom-v1:' + value) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+            return h >>> 0;
+        }
+        function toggleTeacher() {
+            if (teacherMode) {
+                teacherMode = false;
+                document.getElementById('teacher-toggle').textContent = '🔒 교사 로그인';
+                document.getElementById('teacher-refill').hidden = true;
+                resetAll();
+                return;
+            }
+            document.getElementById('teacher-form').reset();
+            document.getElementById('teacher-error').textContent = '';
+            document.getElementById('teacher-dialog').showModal();
+            document.getElementById('teacher-password').focus();
+        }
+        function fillTeacherAnswers() {
+            if (!teacherMode) return;
+            resetAll();
+            autoFillClassification();
+            document.querySelectorAll('input[id^="count-"]').forEach(el => {
+                const category = el.id.slice(6);
+                el.value = category === '합계' ? exactStudents.length : exactStudents.filter(s => s.activity === category).length;
+            });
+            document.querySelectorAll('input[name="quiz"]').forEach(el => { el.checked = ['1','2','4'].includes(el.value); });
+        }
+        document.getElementById('teacher-form').addEventListener('submit', event => {
+            event.preventDefault();
+            const field = document.getElementById('teacher-password');
+            const valid = teacherFingerprint(field.value) === 449697754;
+            field.value = '';
+            if (!valid) {
+                document.getElementById('teacher-error').textContent = '비밀번호가 올바르지 않습니다.';
+                field.focus();
+                return;
+            }
+            teacherMode = true;
+            document.getElementById('teacher-dialog').close();
+            document.getElementById('teacher-toggle').textContent = '교사 로그아웃';
+            document.getElementById('teacher-refill').hidden = false;
+            fillTeacherAnswers();
+        });
+
+        // 페이지 로드 시 실행
+        window.onload = function() {
+            initExampleData();
+            renderAll();
+        };
+    </script>
+</body>
+</html>
