@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>자료를 분류하여 표로 나타내 볼까요 - 활동지 답안 입력</title>
+<!-- Tailwind CSS 로드 -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Google Fonts: Jua & Noto Sans KR (초등학생 친화적 폰트) -->
+<link href="https://fonts.googleapis.com/css2?family=Jua&amp;family=Noto+Sans+KR:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Canvas Confetti (정답 축하 효과) -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f9ff;
+            color: #1e293b;
+        }
+        .font-jua {
+            font-family: 'Jua', sans-serif;
+        }
+        /* 입력창 기본 스타일 및 포커스 효과 */
+        .math-input {
+            transition: all 0.2s ease-in-out;
+        }
+        .math-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+        /* 정답 / 오답 상태 스타일 */
+        .correct-input {
+            background-color: #dcfce7 !important;
+            border-color: #22c55e !important;
+            color: #15803d !important;
+            font-weight: bold;
+        }
+        .wrong-input {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+            color: #b91c1c !important;
+            animation: shake 0.3s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+        /* 구슬 클릭 애니메이션 */
+        .marble-item {
+            transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+            user-select: none;
+        }
+        .marble-item:active {
+            transform: scale(0.85);
+        }
+        .marble-counted {
+            opacity: 0.45;
+            transform: scale(0.9);
+            box-shadow: inset 0 0 0 3px #1e293b;
+        }
+        /* 과일 상자 스타일 */
+        .fruit-box {
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), inset 0 0 0 2px #cbd5e1;
+        }
+    
+        #lesson-header > div { display:grid; grid-template-columns:minmax(0,1fr) auto; max-width: 72rem; align-items:center; }
+        #lesson-header > div > div:first-child { grid-column:1; grid-row:1; min-width:0; }
+        #lesson-header h1 { white-space:nowrap; font-size:clamp(12px, 2.5vw, 30px); letter-spacing:0; }
+        #teacher-open { grid-column:2; grid-row:1; white-space:nowrap; justify-self:end; }
+        #lesson-header > div > div:last-child { grid-column:1 / -1; justify-self:end; white-space:nowrap; }
+        @media(max-width:600px) {
+          #lesson-header > div { gap:8px; padding:10px; }
+          #lesson-header > div > div:first-child { grid-column:1 / -1; grid-row:2; }
+          #teacher-open { grid-row:1; }
+          #lesson-header > div > div:last-child { grid-row:3; }
+          #lesson-header h1 { font-size:clamp(11px,4vw,23px); }
+          #lesson-header > div > div:first-child > div { flex-wrap:wrap; }
+        }
+    .tally-controls{display:flex;justify-content:center;gap:6px;margin:6px 0}.tally-controls button{width:34px;height:34px;border:1px solid #94a3b8;border-radius:8px;background:#f1f5f9;font-size:22px;font-weight:bold;touch-action:manipulation}.tally-controls button:disabled{opacity:.35}.tally.wrong-input{border-radius:6px}.tally svg{min-height:32px}</style>
+</head>
+<body class="min-h-screen pb-16">
+<!-- 상단 헤더 영역 -->
+<header id="lesson-header" class="bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-lg sticky top-0 z-30">
+<div class="max-w-4xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+<div>
+<div class="flex items-center gap-2 text-sky-100 text-xs sm:text-sm font-medium">
+<span class="bg-white/20 px-2.5 py-0.5 rounded-full">수학 2-2</span>
+<span>5. 표와 그래프</span>
+<span>•</span>
+<span>교과서 110-111쪽 / 수익 70-71쪽</span>
+</div>
+<h1 class="font-jua text-2xl sm:text-3xl mt-1 tracking-wide">
+                    [2차시] 자료를 분류하여 표로 나타내 볼까요
+                </h1>
+</div>
+<!-- 교사로그인 -->
+<button class="rounded-lg bg-white/20 px-3 py-2 text-sm font-bold hover:bg-white/30" id="teacher-open" onclick="openTeacherLogin()" type="button">🔒 교사로그인</button>
+<!-- 학생 정보 입력 -->
+<div class="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm px-3 py-2 rounded-xl text-sm">
+<input class="w-7 text-center bg-white text-slate-800 rounded font-bold py-0.5" maxlength="2" placeholder="2" type="text"/>
+<span>학년</span>
+<input class="w-7 text-center bg-white text-slate-800 rounded font-bold py-0.5" maxlength="2" placeholder="1" type="text"/>
+<span>반</span>
+<input class="w-8 text-center bg-white text-slate-800 rounded font-bold py-0.5" maxlength="2" placeholder="1" type="text"/>
+<span>번</span>
+<input class="w-16 text-center bg-white text-slate-800 rounded font-bold py-0.5 ml-1" maxlength="6" placeholder="이름" type="text"/>
+</div>
+</div>
+</header>
+<!-- 메인 학습 콘텐츠 컨테이너 -->
+<main class="max-w-4xl mx-auto px-4 mt-6 space-y-8">
+<!-- 안내 배너 -->
+<div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+<span class="text-2xl">💡</span>
+<p class="text-sm sm:text-base text-amber-900 font-medium">활동지를 보고 문제의 답을 아래 빈칸에 입력하거나 선택하세요.</p>
+</div>
+<!-- ==================== 문제 1 ==================== -->
+<section class="bg-white rounded-3xl shadow-md border border-slate-100 p-5 sm:p-7 relative overflow-hidden">
+<div class="flex items-start justify-between gap-2 mb-4">
+<h2 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2.5">
+<span class="bg-sky-500 text-white font-jua w-8 h-8 rounded-xl flex items-center justify-center text-lg shrink-0">1</span>
+                    친구들이 좋아하는 악기를 보고 물음에 답해 보세요.
+                </h2>
+<span class="hidden px-3 py-1 rounded-full text-xs font-bold" id="badge-q1"></span>
+</div>
+<!-- 악기 자료 표 -->
+
+<!-- 하위 질문 -->
+<div class="space-y-4 bg-slate-50 p-4 sm:p-5 rounded-2xl">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+<label class="font-medium text-slate-700" for="q1-1">• 효진이가 좋아하는 악기는 무엇인가요?</label>
+<div class="flex items-center gap-2">
+<input class="math-input w-32 text-center border-2 border-slate-300 rounded-xl py-2 px-3 bg-white font-bold" id="q1-1" placeholder="악기 이름" type="text"/>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-200">
+<label class="font-medium text-slate-700" for="q1-2">• 가장 많은 친구들이 좋아하는 악기는 무엇인가요?</label>
+<div class="flex items-center gap-2">
+<input class="math-input w-32 text-center border-2 border-slate-300 rounded-xl py-2 px-3 bg-white font-bold" id="q1-2" placeholder="악기 이름" type="text"/>
+</div>
+</div>
+</div>
+</section>
+<!-- ==================== 문제 2 ==================== -->
+<section class="bg-white rounded-3xl shadow-md border border-slate-100 p-5 sm:p-7">
+<div class="flex items-start justify-between gap-2 mb-4">
+<h2 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2.5">
+<span class="bg-sky-500 text-white font-jua w-8 h-8 rounded-xl flex items-center justify-center text-lg shrink-0">2</span>
+                    알맞은 말에 <span class="inline-block w-6 h-6 rounded-full border-2 border-sky-600 mx-1 align-middle"></span> 표를 하세요.
+                </h2>
+<span class="hidden px-3 py-1 rounded-full text-xs font-bold" id="badge-q2"></span>
+</div>
+<div class="bg-indigo-50/70 border-2 border-indigo-100 rounded-2xl p-6 text-center text-base sm:text-lg leading-relaxed font-medium text-slate-800">
+                자료와 표 중 종류별 수를 한눈에 쉽게 알 수 있는 것은 (
+                <button class="q2-btn relative px-4 py-1 mx-1 rounded-xl font-bold text-indigo-900 hover:bg-indigo-100 transition" id="btn-q2-자료" onclick="selectQ2('자료')" type="button">
+                    자료
+                    <span class="circle-mark hidden absolute inset-0 border-4 border-rose-500 rounded-full pointer-events-none"></span>
+</button>
+                ,
+                <button class="q2-btn relative px-4 py-1 mx-1 rounded-xl font-bold text-indigo-900 hover:bg-indigo-100 transition" id="btn-q2-표" onclick="selectQ2('표')" type="button">
+                    표
+                    <span class="circle-mark hidden absolute inset-0 border-4 border-rose-500 rounded-full pointer-events-none"></span>
+</button>
+                )입니다.
+            </div>
+</section>
+<!-- ==================== 문제 3: 실제 활동지 색깔과 숫자 반영 ==================== -->
+<section class="bg-white rounded-3xl shadow-md border border-slate-100 p-5 sm:p-7">
+<div class="flex items-start justify-between gap-2 mb-4">
+<h2 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2.5"><span class="bg-sky-500 text-white font-jua w-8 h-8 rounded-xl flex items-center justify-center text-lg shrink-0">3</span>구슬의 수를 세어 보고 표를 완성해 보세요.</h2>
+<span class="hidden px-3 py-1 rounded-full text-xs font-bold" id="badge-q3"></span>
+</div>
+<div class="text-center font-jua text-lg text-slate-700 mb-2">구슬 수</div>
+<div class="overflow-x-auto">
+<table class="w-full border-collapse border-2 border-rose-300 text-center bg-white" style="min-width:480px;table-layout:fixed">
+<colgroup><col style="width:16.6667%" span="6"></colgroup><thead><tr class="bg-rose-100">
+<th class="border-2 border-rose-300 py-3 px-2">색깔</th>
+<th class="border-2 border-rose-300 py-3 px-2"><span aria-label="빨간색" class="inline-block w-9 h-9 rounded-full bg-red-500"></span></th>
+<th class="border-2 border-rose-300 py-3 px-2"><span aria-label="주황색" class="inline-block w-9 h-9 rounded-full bg-orange-400"></span></th>
+<th class="border-2 border-rose-300 py-3 px-2"><span aria-label="파란색" class="inline-block w-9 h-9 rounded-full bg-sky-500"></span></th>
+<th class="border-2 border-rose-300 py-3 px-2"><span aria-label="초록색" class="inline-block w-9 h-9 rounded-full bg-lime-500"></span></th>
+<th class="border-2 border-rose-300 py-3 px-2">합계</th>
+</tr></thead>
+<tbody><tr>
+<th rowspan="2" class="border-2 border-rose-300 bg-rose-50 py-4 px-2">구슬 수<br>(개)</th>
+<td class="border-2 border-rose-300 p-1"><div class="tally" id="tally-0"><svg viewBox="0 0 104 46" style="width:100%;max-width:120px;height:auto;display:block;margin:auto" aria-hidden="true"><line x1="17" y1="5" x2="3" y2="39" stroke="#111" stroke-width="2.5" /><line x1="26" y1="5" x2="12" y2="39" stroke="#111" stroke-width="2.5" /><line x1="35" y1="5" x2="21" y2="39" stroke="#111" stroke-width="2.5" /><line x1="44" y1="5" x2="30" y2="39" stroke="#111" stroke-width="2.5" /><line x1="2" y1="16" x2="46" y2="33" stroke="#111" stroke-width="2.5" /><line x1="69" y1="5" x2="55" y2="39" stroke="#111" stroke-width="2.5" /><line x1="78" y1="5" x2="64" y2="39" stroke="#111" stroke-width="2.5" /><line x1="87" y1="5" x2="73" y2="39" stroke="#111" stroke-width="2.5" /><line x1="96" y1="5" x2="82" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="54" y1="16" x2="98" y2="33" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/></svg></div><div class="tally-controls"><button type="button" aria-label="빗금 줄이기" onclick="changeTally(0,-1)">−</button><button type="button" aria-label="빗금 늘리기" onclick="changeTally(0,1)">+</button></div></td><td class="border-2 border-rose-300 p-1"><div class="tally" id="tally-1"><svg viewBox="0 0 104 46" style="width:100%;max-width:120px;height:auto;display:block;margin:auto" aria-hidden="true"><line x1="17" y1="5" x2="3" y2="39" stroke="#111" stroke-width="2.5" /><line x1="26" y1="5" x2="12" y2="39" stroke="#111" stroke-width="2.5" /><line x1="35" y1="5" x2="21" y2="39" stroke="#111" stroke-width="2.5" /><line x1="44" y1="5" x2="30" y2="39" stroke="#111" stroke-width="2.5" /><line x1="2" y1="16" x2="46" y2="33" stroke="#111" stroke-width="2.5" /><line x1="69" y1="5" x2="55" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="78" y1="5" x2="64" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="87" y1="5" x2="73" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="96" y1="5" x2="82" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="54" y1="16" x2="98" y2="33" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/></svg></div><div class="tally-controls"><button type="button" aria-label="빗금 줄이기" onclick="changeTally(1,-1)">−</button><button type="button" aria-label="빗금 늘리기" onclick="changeTally(1,1)">+</button></div></td><td class="border-2 border-rose-300 p-1"><div class="tally" id="tally-2"><svg viewBox="0 0 104 46" style="width:100%;max-width:120px;height:auto;display:block;margin:auto" aria-hidden="true"><line x1="17" y1="5" x2="3" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="26" y1="5" x2="12" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="35" y1="5" x2="21" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="44" y1="5" x2="30" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="2" y1="16" x2="46" y2="33" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="69" y1="5" x2="55" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="78" y1="5" x2="64" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="87" y1="5" x2="73" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="96" y1="5" x2="82" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="54" y1="16" x2="98" y2="33" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/></svg></div><div class="tally-controls"><button type="button" aria-label="빗금 줄이기" onclick="changeTally(2,-1)">−</button><button type="button" aria-label="빗금 늘리기" onclick="changeTally(2,1)">+</button></div></td><td class="border-2 border-rose-300 p-1"><div class="tally" id="tally-3"><svg viewBox="0 0 104 46" style="width:100%;max-width:120px;height:auto;display:block;margin:auto" aria-hidden="true"><line x1="17" y1="5" x2="3" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="26" y1="5" x2="12" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="35" y1="5" x2="21" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="44" y1="5" x2="30" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="2" y1="16" x2="46" y2="33" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="69" y1="5" x2="55" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="78" y1="5" x2="64" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="87" y1="5" x2="73" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="96" y1="5" x2="82" y2="39" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/><line x1="54" y1="16" x2="98" y2="33" stroke="#d1d5db" stroke-width="2.5" stroke-dasharray="4 3"/></svg></div><div class="tally-controls"><button type="button" aria-label="빗금 줄이기" onclick="changeTally(3,-1)">−</button><button type="button" aria-label="빗금 늘리기" onclick="changeTally(3,1)">+</button></div></td><td rowspan="2" class="border-2 border-rose-300 py-4 px-2 font-bold text-xl">20</td></tr><tr>
+<td class="border-2 border-rose-300 py-4 px-2 font-bold text-xl">8</td>
+<td class="border-2 border-rose-300 py-4 px-2"><input aria-label="주황색 구슬 수" class="math-input w-16 text-center border-2 border-slate-300 rounded-lg py-2 font-bold" id="q3-n2" type="number" min="0"/></td>
+<td class="border-2 border-rose-300 py-4 px-2"><input aria-label="파란색 구슬 수" class="math-input w-16 text-center border-2 border-slate-300 rounded-lg py-2 font-bold" id="q3-n3" type="number" min="0"/></td>
+<td class="border-2 border-rose-300 py-4 px-2"><input aria-label="초록색 구슬 수" class="math-input w-16 text-center border-2 border-slate-300 rounded-lg py-2 font-bold" id="q3-n4" type="number" min="0"/></td>
+</tr></tbody></table></div></section>
+<!-- ==================== 문제 4 ==================== -->
+<section class="bg-white rounded-3xl shadow-md border border-slate-100 p-5 sm:p-7">
+<div class="flex items-start justify-between gap-2 mb-4">
+<h2 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2.5">
+<span class="bg-sky-500 text-white font-jua w-8 h-8 rounded-xl flex items-center justify-center text-lg shrink-0">4</span>
+                    친구들이 좋아하는 과목을 보고 표로 나타내 보세요.
+                </h2>
+<span class="hidden px-3 py-1 rounded-full text-xs font-bold" id="badge-q4"></span>
+</div>
+<!-- 과목 조사 자료 -->
+
+<!-- 과목별 학생 수 표 -->
+<div class="text-center font-jua text-lg text-slate-700 mb-2">좋아하는 과목별 학생 수</div>
+<div class="overflow-x-auto">
+<table class="w-full border-collapse border-2 border-slate-400 text-center bg-white">
+<thead>
+<tr class="bg-indigo-100">
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/5 font-bold">과목</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/5 font-bold">국어</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/5 font-bold">수학</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/5 font-bold">통합</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/5 bg-indigo-200 font-bold">합계</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="border-2 border-slate-400 py-3 px-2 bg-slate-50 font-bold text-sm sm:text-base">학생 수(명)</td>
+<td class="border-2 border-slate-400 py-2 px-2">
+<input class="math-input w-16 text-center border-2 border-slate-300 rounded-lg py-1.5 font-bold" id="q4-1" type="number"/>
+</td>
+<td class="border-2 border-slate-400 py-2 px-2">
+<input class="math-input w-16 text-center border-2 border-slate-300 rounded-lg py-1.5 font-bold" id="q4-2" type="number"/>
+</td>
+<td class="border-2 border-slate-400 py-2 px-2">
+<input class="math-input w-16 text-center border-2 border-slate-300 rounded-lg py-1.5 font-bold" id="q4-3" type="number"/>
+</td>
+<td class="border-2 border-slate-400 py-2 px-2 bg-indigo-50/50">
+<input class="math-input w-16 text-center border-2 border-slate-300 rounded-lg py-1.5 font-bold" id="q4-total" type="number"/>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- ==================== 문제 5 ==================== -->
+<section class="bg-white rounded-3xl shadow-md border border-slate-100 p-5 sm:p-7">
+<div class="flex items-start justify-between gap-2 mb-2">
+<h2 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2.5">
+<span class="bg-sky-500 text-white font-jua w-8 h-8 rounded-xl flex items-center justify-center text-lg shrink-0">5</span>
+                    과일의 수를 세어 보고 표로 나타내 보세요.
+                </h2>
+<span class="hidden px-3 py-1 rounded-full text-xs font-bold" id="badge-q5"></span>
+</div>
+
+<!-- 나무 상자 속 과일 그림 재현 (사과 6개씩 3상자=18, 참외 4개씩 3상자=12, 수박 6개, 파인애플 5개씩 4줄=20) -->
+
+<!-- 과일 수 표 -->
+<div class="text-center font-jua text-lg text-slate-700 mb-2">과일 수</div>
+<div class="overflow-x-auto">
+<table class="w-full border-collapse border-2 border-slate-400 text-center bg-white">
+<thead>
+<tr class="bg-emerald-100">
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/6 font-bold">과일</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/6 font-bold">사과</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/6 font-bold">참외</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/6 font-bold">수박</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/6 font-bold">파인애플</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/6 bg-emerald-200 font-bold">합계</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="border-2 border-slate-400 py-3 px-2 bg-slate-50 font-bold text-sm sm:text-base">과일 수(개)</td>
+<td class="border-2 border-slate-400 py-2 px-2">
+<input class="math-input w-14 sm:w-16 text-center border-2 border-slate-300 rounded-lg py-1.5 font-bold" id="q5-1" type="number"/>
+</td>
+<td class="border-2 border-slate-400 py-2 px-2">
+<input class="math-input w-14 sm:w-16 text-center border-2 border-slate-300 rounded-lg py-1.5 font-bold" id="q5-2" type="number"/>
+</td>
+<td class="border-2 border-slate-400 py-2 px-2">
+<input class="math-input w-14 sm:w-16 text-center border-2 border-slate-300 rounded-lg py-1.5 font-bold" id="q5-3" type="number"/>
+</td>
+<td class="border-2 border-slate-400 py-2 px-2">
+<input class="math-input w-14 sm:w-16 text-center border-2 border-slate-300 rounded-lg py-1.5 font-bold" id="q5-4" type="number"/>
+</td>
+<td class="border-2 border-slate-400 py-2 px-2 bg-emerald-50/50">
+<input class="math-input w-14 sm:w-16 text-center border-2 border-slate-300 rounded-lg py-1.5 font-bold" id="q5-total" type="number"/>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- ==================== 문제 6 ==================== -->
+<section class="bg-white rounded-3xl shadow-md border border-slate-100 p-5 sm:p-7">
+<div class="flex items-start justify-between gap-2 mb-4">
+<h2 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2.5">
+<span class="bg-sky-500 text-white font-jua w-8 h-8 rounded-xl flex items-center justify-center text-lg shrink-0">6</span>
+                    표를 보고 <span class="inline-block w-7 h-6 border-2 border-slate-700 rounded mx-1 align-middle bg-white"></span> 안에 알맞은 수나 말을 써넣으세요.
+                </h2>
+<span class="hidden px-3 py-1 rounded-full text-xs font-bold" id="badge-q6"></span>
+</div>
+<!-- 계절별 학생 수 표 -->
+<div class="text-center font-jua text-lg text-slate-700 mb-2">좋아하는 계절별 학생 수</div>
+<div class="overflow-x-auto mb-6">
+<table class="w-full border-collapse border-2 border-slate-400 text-center bg-white">
+<thead>
+<tr class="bg-amber-100">
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/6 font-bold">계절</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/6 font-bold">🌸 봄</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/6 font-bold">☀️ 여름</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/6 font-bold">🍁 가을</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/6 font-bold">⛄ 겨울</th>
+<th class="border-2 border-slate-400 py-2.5 px-2 w-1/6 bg-amber-200 font-bold">합계</th>
+</tr>
+</thead>
+<tbody>
+<tr class="font-bold text-lg">
+<td class="border-2 border-slate-400 py-2.5 px-2 bg-slate-50 text-sm sm:text-base">학생 수(명)</td>
+<td class="border-2 border-slate-400 py-2.5 px-2">5</td>
+<td class="border-2 border-slate-400 py-2.5 px-2">4</td>
+<td class="border-2 border-slate-400 py-2.5 px-2">2</td>
+<td class="border-2 border-slate-400 py-2.5 px-2">4</td>
+<td class="border-2 border-slate-400 py-2.5 px-2 bg-amber-50 text-amber-800">15</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- 빈칸 문장 -->
+<div class="space-y-4 bg-slate-50 p-5 rounded-2xl text-base sm:text-lg font-medium text-slate-800">
+<div class="flex flex-wrap items-center gap-1.5">
+<span>• 전체 학생은 모두</span>
+<input class="math-input w-20 text-center border-2 border-slate-400 rounded-lg py-1 px-2 bg-white font-bold" id="q6-1" type="number"/>
+<span>명입니다.</span>
+</div>
+<div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200">
+<span>• 표로 나타내면</span>
+<input class="math-input w-24 text-center border-2 border-slate-400 rounded-lg py-1 px-2 bg-white font-bold" id="q6-2" type="text"/>
+<span>별로 좋아하는 학생 수를 쉽게 알 수 있습니다.</span>
+</div>
+</div>
+</section>
+<!-- ==================== 하단 채점 및 컨트롤 바 ==================== -->
+<div class="bg-white rounded-3xl shadow-lg border-2 border-sky-200 p-6 text-center space-y-4">
+<div class="hidden p-4 rounded-2xl mb-2" id="result-box">
+<p class="font-jua text-2xl mb-1" id="result-title"></p>
+<p class="text-sm sm:text-base" id="result-desc"></p>
+</div>
+<div class="flex flex-wrap justify-center gap-3">
+<button class="bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-jua text-xl px-8 py-3.5 rounded-2xl shadow-md hover:shadow-lg transform active:scale-95 transition flex items-center gap-2" onclick="gradeAll()" type="button">
+<span>✅</span> 정답 확인
+                </button>
+<button class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-base px-6 py-3.5 rounded-2xl transition" id="teacher-answer-button" onclick="showAnswers()" style="display:none" type="button">
+                    정답 자동 입력
+                </button>
+<button class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-base px-6 py-3.5 rounded-2xl transition" onclick="resetAll()" type="button">
+                    다시 풀기
+                </button>
+</div>
+</div>
+</main>
+<section id="evaluation-page" hidden style="margin:24px auto;max-width:1050px;padding:0 16px;">
+<h2 class="font-jua text-3xl text-center mb-4">자동평가</h2>
+<!-- 자동평가: 5-2.자료를 분류하여 표로 나타내 볼까요(활동지) -->
+<div id="auto-evaluation-act-1795475770845" hidden style="margin:24px auto;max-width:1050px;">
+  <iframe title="과제 참여 여부 확인하기" data-src="https://eyeholder83-commits.github.io/sh0201/%ED%95%99%EA%B8%89%ED%86%B5%ED%95%A9%EA%B4%80%EB%A6%AC.html?autoActivity=act-1795475770845" loading="lazy" style="display:block;width:100%;height:650px;border:0;border-radius:16px;background:#f8fafc;" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+</div>
+</section>
+<!-- 교사로그인 창 -->
+<div class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4" id="teacher-login-modal">
+<div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+<h3 class="font-jua text-2xl mb-3">교사로그인</h3>
+<form onsubmit="teacherLogin(event)">
+<label class="block mb-2 text-sm" for="teacher-password">비밀번호</label>
+<input autocomplete="off" class="w-full border-2 rounded-xl p-3 mb-2" id="teacher-password" required="" type="password"/>
+<p aria-live="polite" class="text-red-600 text-sm min-h-5 mb-2" id="teacher-login-error"></p>
+<div class="flex gap-2"><button class="flex-1 bg-indigo-600 text-white rounded-xl p-3" type="submit">로그인</button><button class="flex-1 bg-slate-100 rounded-xl p-3" onclick="closeTeacherLogin()" type="button">취소</button></div>
+</form>
+</div>
+</div>
+<!-- 커스텀 알림 모달 (alert 대체) -->
+<div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center z-50 p-4" id="custom-modal">
+<div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl transform transition-all">
+<div class="text-4xl mb-3" id="modal-icon">🎉</div>
+<h3 class="font-jua text-2xl text-slate-800 mb-2" id="modal-title">알림</h3>
+<p class="text-slate-600 mb-5 text-sm sm:text-base" id="modal-msg"></p>
+<button class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-2.5 rounded-xl transition" onclick="closeModal()" type="button">
+                확인
+            </button>
+</div>
+</div>
+<script>
+        // 교사 모드: 클라이언트 측 간이 확인 (보안 인증은 아님)
+        let teacherMode = false;
+        function openTeacherLogin() {
+            if (teacherMode) { teacherMode = false; document.getElementById('teacher-open').textContent = '🔒 교사로그인'; document.getElementById('teacher-answer-button').style.display = 'none'; resetAll(); return; }
+            const modal = document.getElementById('teacher-login-modal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            document.getElementById('teacher-password').value = '';
+            document.getElementById('teacher-login-error').textContent = '';
+            document.getElementById('teacher-password').focus();
+        }
+        function closeTeacherLogin() {
+            const modal = document.getElementById('teacher-login-modal');
+            modal.classList.add('hidden'); modal.classList.remove('flex');
+            document.getElementById('teacher-password').value = '';
+        }
+        function teacherLogin(event) {
+            event.preventDefault();
+            // 비밀번호 원문 대신 SHA-256 해시를 비교한다.
+            const input = document.getElementById('teacher-password').value;
+            crypto.subtle.digest('SHA-256', new TextEncoder().encode(input)).then(buffer => {
+                const hash = Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+                if (hash === TEACHER_HASH) {
+                    teacherMode = true;
+                    closeTeacherLogin();
+                    document.getElementById('teacher-open').textContent = '🔓 교사 로그아웃';
+                    document.getElementById('teacher-answer-button').style.display = '';
+                    fillTeacherAnswers();
+                } else {
+                    document.getElementById('teacher-login-error').textContent = '비밀번호가 올바르지 않습니다.';
+                }
+            }).catch(() => {
+                document.getElementById('teacher-login-error').textContent = '보안 연결(HTTPS)에서 다시 시도해 주세요.';
+            });
+        }
+        const TEACHER_HASH = 'd283fc7ed27a618f0d8e673ffbd01c18ba8d472f095f375f93576d3ed40c4782';
+        function fillTeacherAnswers() {
+            hideAutoEvaluation();
+ renderTallies([8,5,3,4]);
+            const answers = {
+                'q1-1':'큰북','q1-2':'탬버린','q3-n2':5,'q3-n3':3,'q3-n4':4,'q4-1':3,'q4-2':4,'q4-3':6,'q4-total':13,
+                'q5-1':18,'q5-2':12,'q5-3':6,'q5-4':20,'q5-total':56,'q6-1':15,'q6-2':'계절'
+            };
+            Object.entries(answers).forEach(([id,value]) => {
+                const el = document.getElementById(id);
+                if (el) { el.value = value; el.classList.remove('correct-input','wrong-input'); }
+            });
+            selectQ2('표');
+            document.querySelectorAll('[id^="badge-q"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById('result-box').classList.add('hidden');
+        }
+        // ================= 상태 변수 =================
+        let selectedQ2 = '';
+        let countedMarbles = 0;
+
+        // ================= 초기화: 구슬 20개 생성 =================
+        // 정답 기준: 빨강 5개, 파랑 8개, 노랑 3개, 초록 4개 (총 20개)
+        const marbleData = [
+            { color: 'red', bg: 'bg-red-500', name: '빨강' },
+            { color: 'blue', bg: 'bg-blue-500', name: '파랑' },
+            { color: 'yellow', bg: 'bg-yellow-400', name: '노랑' },
+            { color: 'blue', bg: 'bg-blue-500', name: '파랑' },
+            { color: 'green', bg: 'bg-green-500', name: '초록' },
+            { color: 'red', bg: 'bg-red-500', name: '빨강' },
+            { color: 'blue', bg: 'bg-blue-500', name: '파랑' },
+            { color: 'blue', bg: 'bg-blue-500', name: '파랑' },
+            { color: 'yellow', bg: 'bg-yellow-400', name: '노랑' },
+            { color: 'red', bg: 'bg-red-500', name: '빨강' },
+            { color: 'green', bg: 'bg-green-500', name: '초록' },
+            { color: 'blue', bg: 'bg-blue-500', name: '파랑' },
+            { color: 'red', bg: 'bg-red-500', name: '빨강' },
+            { color: 'green', bg: 'bg-green-500', name: '초록' },
+            { color: 'blue', bg: 'bg-blue-500', name: '파랑' },
+            { color: 'yellow', bg: 'bg-yellow-400', name: '노랑' },
+            { color: 'blue', bg: 'bg-blue-500', name: '파랑' },
+            { color: 'red', bg: 'bg-red-500', name: '빨강' },
+            { color: 'green', bg: 'bg-green-500', name: '초록' },
+            { color: 'blue', bg: 'bg-blue-500', name: '파랑' }
+        ];
+
+        function initMarbles() {
+            const container = document.getElementById('marble-container');
+            if (!container) return;
+            container.innerHTML = '';
+            countedMarbles = 0;
+            updateMarbleCounter();
+
+            marbleData.forEach((m, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `marble-item w-11 h-11 sm:w-12 sm:h-12 rounded-full ${m.bg} shadow-md flex items-center justify-center text-white font-bold text-xs relative`;
+                btn.title = `${m.name} 구슬`;
+                // 입체감 하이라이트
+                btn.innerHTML = `<span class="w-3 h-3 bg-white/40 rounded-full absolute top-2 left-2.5"></span>`;
+                
+                btn.addEventListener('click', () => {
+                    btn.classList.toggle('marble-counted');
+                    if (btn.classList.contains('marble-counted')) {
+                        countedMarbles++;
+                        btn.innerHTML += `<span class="check-icon text-lg font-extrabold drop-shadow">✓</span>`;
+                    } else {
+                        countedMarbles--;
+                        const check = btn.querySelector('.check-icon');
+                        if (check) check.remove();
+                    }
+                    updateMarbleCounter();
+                });
+                container.appendChild(btn);
+            });
+        }
+
+        function updateMarbleCounter() {
+            document.getElementById('marble-counter').textContent = countedMarbles;
+        }
+
+        function resetMarbles() {
+            initMarbles();
+        }
+
+        // ================= 문제 2 선택 로직 =================
+        function selectQ2(choice) {
+            selectedQ2 = choice;
+            document.querySelectorAll('.q2-btn .circle-mark').forEach(el => el.classList.add('hidden'));
+            const target = document.querySelector(`#btn-q2-${choice} .circle-mark`);
+            if (target) target.classList.remove('hidden');
+        }
+
+        // ================= 문제 5 묶음 힌트 토글 =================
+        function toggleHint(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('hidden');
+        }
+
+        // ================= 입력값 검증 헬퍼 =================
+        function checkText(id, validAnswers) {
+            const el = document.getElementById(id);
+            const val = el.value.trim().replace(/\s+/g, '');
+            const isCorrect = validAnswers.includes(val);
+            el.classList.remove('correct-input', 'wrong-input');
+            el.classList.add(isCorrect ? 'correct-input' : 'wrong-input');
+            return isCorrect;
+        }
+
+        function checkNum(id, expected) {
+            const el = document.getElementById(id);
+            const val = parseInt(el.value.trim(), 10);
+            const isCorrect = val === expected;
+            el.classList.remove('correct-input', 'wrong-input');
+            el.classList.add(isCorrect ? 'correct-input' : 'wrong-input');
+            return isCorrect;
+        }
+
+        function setBadge(id, isCorrect) {
+            const badge = document.getElementById(id);
+            badge.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+            if (isCorrect) {
+                badge.textContent = '⭕ 정답';
+                badge.classList.add('bg-green-100', 'text-green-700');
+            } else {
+                badge.textContent = '❌ 오답';
+                badge.classList.add('bg-red-100', 'text-red-700');
+            }
+        }
+
+        // ================= 전체 채점 로직 =================
+        let evaluationTimer;
+        function showAutoEvaluation() {
+            const page = document.getElementById('evaluation-page');
+            const area = document.getElementById('auto-evaluation-act-1795475770845');
+            const frame = area.querySelector('iframe');
+            if (!frame.hasAttribute('src')) frame.src = frame.dataset.src;
+            document.querySelector('main').hidden = true;
+            page.hidden = false;
+            area.hidden = false;
+            window.scrollTo(0,0);
+            openModal('🏆', '모든 문제 정답!', '자동평가 페이지가 열렸습니다.');
+            clearTimeout(evaluationTimer);
+            evaluationTimer = setTimeout(closeModal, 2000);
+        }
+        function hideAutoEvaluation() {
+            clearTimeout(evaluationTimer);
+            closeModal();
+            document.getElementById('evaluation-page').hidden = true;
+            document.getElementById('auto-evaluation-act-1795475770845').hidden = true;
+            document.querySelector('#evaluation-page iframe').removeAttribute('src');
+            document.querySelector('main').hidden = false;
+        }
+        function gradeAll() {
+            let score = 0;
+
+            // 1번 채점
+            const q1_1 = checkText('q1-1', ['큰북']);
+            const q1_2 = checkText('q1-2', ['탬버린']);
+            const q1Pass = q1_1 && q1_2;
+            setBadge('badge-q1', q1Pass);
+            if (q1Pass) score++;
+
+            // 2번 채점
+            const q2Pass = selectedQ2 === '표';
+            setBadge('badge-q2', q2Pass);
+            if (q2Pass) score++;
+
+            // 3번: 활동지 기준 빨강 8(제시), 주황 5, 파랑 3, 초록 4, 합계 20(제시)
+            const q3Pass = [checkNum('q3-n2', 5), checkNum('q3-n3', 3), checkNum('q3-n4', 4), gradeTallies()].every(Boolean);
+            setBadge('badge-q3', q3Pass);
+            if (q3Pass) score++;
+
+            // 4번 채점 (국어 3, 수학 4, 통합 6, 합계 13)
+            const q4_1 = checkNum('q4-1', 3);
+            const q4_2 = checkNum('q4-2', 4);
+            const q4_3 = checkNum('q4-3', 6);
+            const q4_t = checkNum('q4-total', 13);
+            const q4Pass = q4_1 && q4_2 && q4_3 && q4_t;
+            setBadge('badge-q4', q4Pass);
+            if (q4Pass) score++;
+
+            // 5번 채점 (사과 18, 참외 12, 수박 6, 파인애플 20, 합계 56)
+            const q5_1 = checkNum('q5-1', 18);
+            const q5_2 = checkNum('q5-2', 12);
+            const q5_3 = checkNum('q5-3', 6);
+            const q5_4 = checkNum('q5-4', 20);
+            const q5_t = checkNum('q5-total', 56);
+            const q5Pass = q5_1 && q5_2 && q5_3 && q5_4 && q5_t;
+            setBadge('badge-q5', q5Pass);
+            if (q5Pass) score++;
+
+            // 6번 채점 (15, 계절)
+            const q6_1 = checkNum('q6-1', 15);
+            const q6_2 = checkText('q6-2', ['계절']);
+            const q6Pass = q6_1 && q6_2;
+            setBadge('badge-q6', q6Pass);
+            if (q6Pass) score++;
+
+            // 결과 표시
+            const resultBox = document.getElementById('result-box');
+            const resultTitle = document.getElementById('result-title');
+            const resultDesc = document.getElementById('result-desc');
+
+            resultBox.classList.remove('hidden', 'bg-green-50', 'text-green-800', 'bg-amber-50', 'text-amber-800');
+
+            if (score === 6) {
+                resultBox.classList.add('bg-green-50', 'text-green-800');
+                resultTitle.textContent = '🎉 참 잘했어요! 6문제 모두 정답입니다!';
+                resultDesc.textContent = '자료를 분류하여 표로 나타내는 방법을 완벽하게 이해했네요!';
+                if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+                showAutoEvaluation();
+            } else {
+                resultBox.classList.add('bg-amber-50', 'text-amber-800');
+                resultTitle.textContent = `6문제 중 ${score}문제를 맞혔어요!`;
+                resultDesc.textContent = '틀렸다고 표시된 문제를 다시 확인해 보세요.';
+            }
+        }
+
+        // ================= 정답 보기 =================
+        function showAnswers() {
+            if (!teacherMode) return;
+            renderTallies([8,5,3,4]);
+            document.getElementById('q1-1').value = '큰북';
+            document.getElementById('q1-2').value = '탬버린';
+            
+            selectQ2('표');
+
+            document.getElementById('q3-n2').value = 5;
+            document.getElementById('q3-n3').value = 3;
+            document.getElementById('q3-n4').value = 4;
+
+            document.getElementById('q4-1').value = 3;
+            document.getElementById('q4-2').value = 4;
+            document.getElementById('q4-3').value = 6;
+            document.getElementById('q4-total').value = 13;
+
+            document.getElementById('q5-1').value = 18;
+            document.getElementById('q5-2').value = 12;
+            document.getElementById('q5-3').value = 6;
+            document.getElementById('q5-4').value = 20;
+            document.getElementById('q5-total').value = 56;
+
+            document.getElementById('q6-1').value = 15;
+            document.getElementById('q6-2').value = '계절';
+
+            gradeAll();
+        }
+
+        // ================= 전체 초기화 =================
+        function resetAll() {
+            hideAutoEvaluation();
+ renderTallies([8,5,0,0]);
+            document.querySelectorAll('.math-input').forEach(input => {
+                input.value = '';
+                input.classList.remove('correct-input', 'wrong-input');
+            });
+            selectedQ2 = '';
+            document.querySelectorAll('.q2-btn .circle-mark').forEach(el => el.classList.add('hidden'));
+            
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById(`badge-q${i}`).classList.add('hidden');
+            }
+            document.getElementById('result-box').classList.add('hidden');
+            initMarbles();
+            if (teacherMode) fillTeacherAnswers();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ================= 모달 제어 =================
+        function openModal(icon, title, msg) {
+            document.getElementById('modal-icon').textContent = icon;
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-msg').textContent = msg;
+            const modal = document.getElementById('custom-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('custom-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // 페이지 로드 시 구슬 초기화
+        // 실제 활동지 답안 입력 화면에서는 구슬 그림을 표시하지 않습니다.
+    
+const tallyCounts = [8,5,0,0];
+function renderTallies(values) {
+ values.forEach((n,j)=>{
+ tallyCounts[j]=n;
+ const el=document.getElementById('tally-'+j);
+ const groups=Math.max(2,Math.ceil(n/5));
+ let lines='';
+ for(let g=0;g<groups;g++) for(let k=0;k<5;k++){
+ const x=g%2*52, y=Math.floor(g/2)*46;
+ const a=k===4?[2,16,46,33]:[17+k*9,5,3+k*9,39];
+ const active=g*5+k<n;
+ lines+=`<line x1="${a[0]+x}" y1="${a[1]+y}" x2="${a[2]+x}" y2="${a[3]+y}" stroke="${active?'#111':'#d1d5db'}" stroke-width="2.5" ${active?'':'stroke-dasharray="4 3"'}/>`;
+ }
+ el.innerHTML=`<svg viewBox="0 0 104 ${Math.ceil(groups/2)*46}" style="width:100%;max-width:120px;height:auto;display:block;margin:auto" role="img" aria-label="빗금 ${n}개">${lines}</svg>`;
+ el.classList.remove('correct-input','wrong-input');
+ const buttons=el.nextElementSibling.querySelectorAll('button');buttons[0].disabled=n===0;buttons[1].disabled=n===20;
+ });
+}
+function changeTally(j,delta){const next=[...tallyCounts];next[j]=Math.max(0,Math.min(20,next[j]+delta));renderTallies(next);document.getElementById('badge-q3').classList.add('hidden');document.getElementById('result-box').classList.add('hidden');}
+function gradeTallies(){return [8,5,3,4].map((n,j)=>{const ok=tallyCounts[j]===n;const el=document.getElementById('tally-'+j);el.classList.remove('correct-input','wrong-input');el.classList.add(ok?'correct-input':'wrong-input');return ok;}).every(Boolean);}
+renderTallies(tallyCounts);
+</script>
+</body>
+</html>
