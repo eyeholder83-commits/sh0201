@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>꼬마 과학자 탐구 현미경 🔬</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 55%, #fef9c3 100%);
+            color: #1e293b;
+            overscroll-behavior: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-kids {
+            font-family: 'Jua', sans-serif;
+            letter-spacing: 0.02em;
+        }
+        /* 초등학생 태블릿 손가락에 딱 맞는 통통하고 귀여운 슬라이더 */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            height: 40px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 30px;
+            width: 30px;
+            border-radius: 50%;
+            background: #fbbf24;
+            border: 4px solid #ffffff;
+            cursor: pointer;
+            margin-top: -11px;
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.45);
+            transition: transform 0.12s ease;
+        }
+        input[type=range]:active::-webkit-slider-thumb {
+            transform: scale(1.22);
+            background: #f59e0b;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 10px;
+            cursor: pointer;
+            background: #bae6fd;
+            border-radius: 999px;
+            border: 2px solid #7dd3fc;
+        }
+        /* 사진 찰칵 플래시 효과 */
+        @keyframes shutterFlash {
+            0% { opacity: 0.95; }
+            100% { opacity: 0; }
+        }
+        .animate-shutter {
+            animation: shutterFlash 0.45s ease-out forwards;
+        }
+        /* 부드러운 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0f2fe;
+            border-radius: 999px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #7dd3fc;
+            border-radius: 999px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- 상단 꼬마 과학자 헤더 바 -->
+    <header class="bg-white/90 backdrop-blur-md border-b-4 border-sky-200 px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-30 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-300 to-orange-400 border-2 border-white flex items-center justify-center text-2xl shadow-md">
+                🔬
+            </div>
+            <div>
+                <h1 class="font-kids text-lg sm:text-xl text-sky-900 flex items-center gap-2">
+                    꼬마 과학자 탐구 현미경
+                    <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300">탐험 모드 ✨</span>
+                </h1>
+                <p id="sourceStatusText" class="text-xs sm:text-sm font-medium text-sky-600">지금 보고 있는 것: 재미있는 샘플 보기 (양파 세포)</p>
+            </div>
+        </div>
+
+        <!-- 관찰 재료 선택 버튼 (카메라 / 내 사진 / 재미있는 샘플) -->
+        <div class="flex flex-wrap items-center gap-2">
+            <button id="btnStartCamera" class="font-kids px-4 py-2.5 rounded-2xl bg-gradient-to-b from-emerald-400 to-emerald-500 hover:from-emerald-500 hover:to-emerald-600 active:scale-95 text-white text-sm sm:text-base flex items-center gap-1.5 shadow-md border-b-4 border-emerald-700 transition">
+                <span>📷</span>
+                <span>카메라로 직접 보기</span>
+            </button>
+
+            <label class="font-kids px-4 py-2.5 rounded-2xl bg-gradient-to-b from-sky-400 to-sky-500 hover:from-sky-500 hover:to-sky-600 active:scale-95 text-white text-sm sm:text-base flex items-center gap-1.5 cursor-pointer shadow-md border-b-4 border-sky-700 transition">
+                <span>🖼️</span>
+                <span>내 사진 불러오기</span>
+                <input type="file" id="imageUploadInput" accept="image/*" class="hidden">
+            </label>
+
+            <button id="btnSampleMode" class="font-kids px-4 py-2.5 rounded-2xl bg-gradient-to-b from-amber-300 to-amber-400 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-amber-950 text-sm sm:text-base flex items-center gap-1.5 shadow-md border-b-4 border-amber-600 transition">
+                <span>🧪</span>
+                <span>재미있는 샘플 보기</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 칭찬 배지 및 안내 토스트 배너 -->
+    <div id="toastBanner" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full bg-amber-400 border-4 border-white text-sm sm:text-base font-kids text-amber-950 shadow-xl transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2">
+        <span class="text-xl">🌟</span>
+        <span id="toastMessage">와! 멋진 발견이에요!</span>
+    </div>
+
+    <!-- 메인 탐구 워크스페이스 (가로: 좌우 분할 / 세로: 상하 분할) -->
+    <main class="flex-1 flex flex-col landscape:flex-row lg:flex-row items-stretch justify-between gap-3 sm:gap-4 p-3 sm:p-4 max-w-[1440px] w-full mx-auto">
+
+        <!-- 좌측/상단: 알록달록 현미경 관찰 창 영역 -->
+        <section class="flex-1 flex flex-col items-center justify-between bg-white/85 backdrop-blur-sm border-4 border-sky-200 rounded-3xl p-3 sm:p-4 relative shadow-lg">
+            
+            <!-- 상단 도우미 버튼 줄 (손전등, 카메라 앞/뒤, 렌즈 모양, 가운데로 맞추기) -->
+            <div class="w-full flex flex-wrap items-center justify-between gap-2 mb-2 z-20">
+                <div class="flex items-center gap-2">
+                    <button id="btnTorch" class="font-kids px-3.5 py-2 rounded-2xl bg-amber-100 hover:bg-amber-200 active:scale-95 border-2 border-amber-300 text-xs sm:text-sm text-amber-900 flex items-center gap-1.5 transition disabled:opacity-40">
+                        <span>🔦</span>
+                        <span id="torchLabel">손전등 끄기</span>
+                    </button>
+
+                    <button id="btnSwitchCamera" class="hidden font-kids px-3.5 py-2 rounded-2xl bg-emerald-100 hover:bg-emerald-200 active:scale-95 border-2 border-emerald-300 text-xs sm:text-sm text-emerald-900 flex items-center gap-1.5 transition">
+                        <span>🔄</span>
+                        <span>앞/뒤 카메라</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="btnViewportShape" class="font-kids px-3.5 py-2 rounded-2xl bg-purple-100 hover:bg-purple-200 active:scale-95 border-2 border-purple-300 text-xs sm:text-sm text-purple-900 flex items-center gap-1.5 transition">
+                        <span>⭕</span>
+                        <span id="viewportShapeLabel">동그란 렌즈</span>
+                    </button>
+
+                    <button id="btnResetPan" class="font-kids px-3.5 py-2 rounded-2xl bg-sky-100 hover:bg-sky-200 active:scale-95 border-2 border-sky-300 text-xs sm:text-sm text-sky-900 transition">
+                        🎯 가운데로!
+                    </button>
+                </div>
+            </div>
+
+            <!-- 재미있는 샘플 3종 선택 바 (샘플 모드일 때 표시) -->
+            <div id="samplePickerBar" class="w-full flex flex-wrap items-center justify-center gap-2 mb-2 bg-sky-50 border-2 border-sky-200 rounded-2xl p-2">
+                <span class="font-kids text-xs sm:text-sm text-sky-800 mr-1">🧫 관찰할 샘플 고르기:</span>
+                <button class="sample-type-btn font-kids px-3.5 py-1.5 rounded-xl text-xs sm:text-sm bg-emerald-500 text-white shadow-sm transition" data-sample="onion">🧅 양파 세포</button>
+                <button class="sample-type-btn font-kids px-3.5 py-1.5 rounded-xl text-xs sm:text-sm bg-white text-sky-800 border border-sky-200 hover:bg-sky-100 transition" data-sample="pond">💧 연못 속 물방울 친구들</button>
+                <button class="sample-type-btn font-kids px-3.5 py-1.5 rounded-xl text-xs sm:text-sm bg-white text-sky-800 border border-sky-200 hover:bg-sky-100 transition" data-sample="butterfly">🦋 나비 날개 가루</button>
+            </div>
+
+            <!-- 중앙 현미경 뷰파인더 -->
+            <div class="flex-1 w-full flex flex-col items-center justify-center my-1">
+                <div id="viewfinderFrame" class="relative w-full max-w-[410px] landscape:max-w-[380px] lg:max-w-[460px] aspect-square flex items-center justify-center rounded-full bg-gradient-to-b from-sky-300 via-teal-300 to-emerald-400 p-3 shadow-[0_12px_30px_rgba(14,165,233,0.28)] border-4 border-white transition-all duration-300">
+                    <div id="canvasContainer" class="relative w-full h-full rounded-full overflow-hidden bg-slate-900 cursor-move touch-none shadow-inner transition-all duration-300">
+                        <canvas id="microscopeCanvas" class="w-full h-full block"></canvas>
+
+                        <!-- 셔터 플래시 오버레이 -->
+                        <div id="shutterOverlay" class="absolute inset-0 bg-white opacity-0 pointer-events-none z-30"></div>
+
+                        <!-- 배율 & 필터 귀여운 뱃지 -->
+                        <div class="absolute top-4 left-4 pointer-events-none flex flex-col gap-1.5 z-10">
+                            <span id="liveZoomBadge" class="font-kids text-sm sm:text-base px-3 py-1 rounded-full bg-amber-300 border-2 border-white text-amber-950 shadow">
+                                🔍 4.0배 확대
+                            </span>
+                            <span id="liveFilterBadge" class="font-kids text-xs px-2.5 py-0.5 rounded-full bg-white/90 border border-sky-300 text-sky-800 shadow-sm">
+                                ✨ 원래대로
+                            </span>
+                        </div>
+
+                        <!-- 눈금자 크기 배지 -->
+                        <div class="absolute top-4 right-4 pointer-events-none z-10">
+                            <span id="liveScaleBadge" class="font-kids text-xs sm:text-sm px-3 py-1 rounded-full bg-emerald-400 border-2 border-white text-emerald-950 shadow">
+                                📏 250 μm
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 초등학생 눈높이 크기 비교 힌트 말풍선 -->
+                <div class="mt-2.5 px-4 py-1.5 rounded-full bg-yellow-100 border-2 border-yellow-300 text-xs sm:text-sm font-bold text-amber-900 flex items-center gap-1.5 shadow-sm">
+                    <span>💡 크기 힌트:</span>
+                    <span id="sizeHintText">눈금 한 칸이 머리카락 굵기보다 얇아요!</span>
+                </div>
+            </div>
+
+            <!-- 하단 관찰 일기 이름표 & 찰칵 사진 찍기 버튼 -->
+            <div class="w-full flex flex-col sm:flex-row items-center justify-between gap-2.5 mt-2 pt-2.5 border-t-2 border-sky-100">
+                <div class="w-full sm:flex-1 flex items-center gap-2 bg-sky-50 border-2 border-sky-300 rounded-2xl px-3.5 py-2.5 focus-within:border-amber-400 focus-within:bg-white transition">
+                    <span class="font-kids text-sm text-sky-800 shrink-0">✏️ 관찰 일기 이름표:</span>
+                    <input type="text" id="specimenMemoInput" maxlength="28" placeholder="예: 내가 찾은 양파 세포!" class="w-full bg-transparent text-sm sm:text-base font-medium text-slate-800 placeholder-sky-400 focus:outline-none">
+                </div>
+
+                <!-- 큼직한 코랄 핑크 찰칵 셔터 버튼 -->
+                <button id="btnCapture" class="font-kids w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-b from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600 active:scale-95 text-white text-base sm:text-lg shadow-lg border-b-4 border-rose-700 transition flex items-center justify-center gap-2 shrink-0">
+                    <span class="text-xl">📸</span>
+                    <span>찰칵! 사진 찍기</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 우측/하단: 꼬마 과학자 조종판 -->
+        <aside class="w-full landscape:w-[390px] lg:w-[420px] bg-white/90 backdrop-blur-sm border-4 border-emerald-200 rounded-3xl p-4 flex flex-col justify-between gap-3.5 shadow-lg shrink-0">
+            
+            <!-- 1. 크게 보기 (배율 조절) -->
+            <div class="bg-sky-50/90 border-2 border-sky-200 rounded-2xl p-3.5">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-kids text-sm sm:text-base text-sky-900 flex items-center gap-1.5">
+                        <span>🔎</span>
+                        <span>얼마나 크게 볼까요?</span>
+                    </span>
+                    <span id="zoomValueLabel" class="font-kids text-base sm:text-lg px-2.5 py-0.5 rounded-xl bg-amber-300 text-amber-950">4.0배</span>
+                </div>
+                <input type="range" id="zoomSlider" min="1" max="20" step="0.1" value="4.0" class="w-full">
+                <div class="grid grid-cols-5 gap-1.5 mt-1.5">
+                    <button class="zoom-preset font-kids py-2.5 rounded-xl bg-white hover:bg-amber-100 active:scale-95 text-xs sm:text-sm text-sky-900 border-2 border-sky-200 transition" data-zoom="1">1배</button>
+                    <button class="zoom-preset font-kids py-2.5 rounded-xl bg-white hover:bg-amber-100 active:scale-95 text-xs sm:text-sm text-sky-900 border-2 border-sky-200 transition" data-zoom="2">2배</button>
+                    <button class="zoom-preset font-kids py-2.5 rounded-xl bg-white hover:bg-amber-100 active:scale-95 text-xs sm:text-sm text-sky-900 border-2 border-sky-200 transition" data-zoom="4">4배</button>
+                    <button class="zoom-preset font-kids py-2.5 rounded-xl bg-white hover:bg-amber-100 active:scale-95 text-xs sm:text-sm text-sky-900 border-2 border-sky-200 transition" data-zoom="10">10배</button>
+                    <button class="zoom-preset font-kids py-2.5 rounded-xl bg-white hover:bg-amber-100 active:scale-95 text-xs sm:text-sm text-sky-900 border-2 border-sky-200 transition" data-zoom="20">20배</button>
+                </div>
+            </div>
+
+            <!-- 2. 마법 렌즈 필터 4종 -->
+            <div class="bg-purple-50/80 border-2 border-purple-200 rounded-2xl p-3.5">
+                <span class="font-kids text-sm sm:text-base text-purple-900 flex items-center gap-1.5 mb-2">
+                    <span>🪄</span>
+                    <span>마법 렌즈 필터</span>
+                </span>
+                <div class="grid grid-cols-2 gap-2" id="filterGroup">
+                    <button class="filter-btn font-kids py-2.5 px-2 rounded-xl text-xs sm:text-sm bg-emerald-500 text-white border-b-4 border-emerald-700 transition" data-filter="normal">✨ 원래대로</button>
+                    <button class="filter-btn font-kids py-2.5 px-2 rounded-xl text-xs sm:text-sm bg-white text-purple-900 border-2 border-purple-200 hover:bg-purple-100 transition" data-filter="fluorescence">🌟 반짝반짝 형광</button>
+                    <button class="filter-btn font-kids py-2.5 px-2 rounded-xl text-xs sm:text-sm bg-white text-purple-900 border-2 border-purple-200 hover:bg-purple-100 transition" data-filter="staining">🌈 알록달록 무지개 염색</button>
+                    <button class="filter-btn font-kids py-2.5 px-2 rounded-xl text-xs sm:text-sm bg-white text-purple-900 border-2 border-purple-200 hover:bg-purple-100 transition" data-filter="darkfield">🦴 엑스레이 투시</button>
+                </div>
+            </div>
+
+            <!-- 3. 환하게 비추기 & 또렷하게 보기 -->
+            <div class="bg-amber-50/80 border-2 border-amber-200 rounded-2xl p-3.5 space-y-2">
+                <div>
+                    <div class="flex justify-between items-center text-xs sm:text-sm font-bold text-amber-900">
+                        <span>☀️ 환하게 비추기</span>
+                        <span id="brightnessVal" class="font-kids text-amber-700">100%</span>
+                    </div>
+                    <input type="range" id="brightnessSlider" min="45" max="175" value="100" class="w-full">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center text-xs sm:text-sm font-bold text-emerald-900">
+                        <span>👀 또렷하게 보기</span>
+                        <span id="sharpenVal" class="font-kids text-emerald-700">35%</span>
+                    </div>
+                    <input type="range" id="sharpenSlider" min="0" max="100" value="35" class="w-full">
+                </div>
+            </div>
+
+            <!-- 4. 눈금자 및 관찰 카드 라벨 스위치 -->
+            <div class="grid grid-cols-2 gap-2">
+                <label class="font-kids flex items-center justify-center gap-2 p-3 rounded-2xl bg-sky-100 border-2 border-sky-300 cursor-pointer text-xs sm:text-sm text-sky-900">
+                    <input type="checkbox" id="toggleReticle" checked class="w-5 h-5 rounded accent-emerald-500">
+                    <span>📏 눈금자 보이기</span>
+                </label>
+
+                <label class="font-kids flex items-center justify-center gap-2 p-3 rounded-2xl bg-pink-100 border-2 border-pink-300 cursor-pointer text-xs sm:text-sm text-pink-900">
+                    <input type="checkbox" id="toggleMetadata" checked class="w-5 h-5 rounded accent-pink-500">
+                    <span>🏷️ 관찰 카드 꾸미기</span>
+                </label>
+            </div>
+        </aside>
+    </main>
+
+    <!-- 하단 꼬마 과학자 관찰 앨범 바 -->
+    <footer class="bg-white/95 border-t-4 border-sky-200 px-4 py-2.5 shadow-inner">
+        <div class="max-w-[1440px] mx-auto flex items-center justify-between gap-4">
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-lg">📒</span>
+                <span class="font-kids text-sm sm:text-base text-sky-900">나의 관찰 앨범</span>
+                <span id="galleryCountBadge" class="font-kids text-xs px-2.5 py-0.5 rounded-full bg-amber-300 text-amber-950">0장</span>
+            </div>
+
+            <div id="thumbnailStrip" class="flex-1 flex items-center gap-2.5 overflow-x-auto py-1">
+                <span id="emptyGalleryHint" class="text-xs sm:text-sm font-medium text-sky-600">분홍색 [찰칵! 사진 찍기] 버튼을 누르면 멋진 관찰 카드가 여기에 모여요!</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 촬영 결과 꼬마 과학자 관찰 카드 모달 -->
+    <div id="captureModal" class="fixed inset-0 z-50 bg-sky-950/70 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white border-4 border-amber-300 rounded-3xl max-w-lg w-full p-5 shadow-2xl flex flex-col gap-3.5">
+            <div class="flex items-center justify-between">
+                <h2 class="font-kids text-lg sm:text-xl text-sky-900 flex items-center gap-2">
+                    <span>🏅</span>
+                    <span>와! 멋진 발견이에요!</span>
+                </h2>
+                <button id="btnCloseModal" class="w-9 h-9 rounded-full bg-sky-100 hover:bg-sky-200 text-sky-800 font-bold flex items-center justify-center">
+                    ✕
+                </button>
+            </div>
+
+            <div class="relative rounded-2xl overflow-hidden bg-sky-50 border-4 border-sky-200 flex items-center justify-center p-1">
+                <img id="capturedPreviewImg" alt="꼬마 과학자 관찰 카드" class="max-h-[50vh] w-auto object-contain rounded-xl">
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm font-bold text-sky-900 bg-amber-50 p-3 rounded-2xl border-2 border-amber-200">
+                <span id="captureMetaSummary">🔍 4.0배 확대 | 📏 250 μm</span>
+                <span id="captureTimeSummary" class="text-amber-700"></span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <button id="btnRetake" class="font-kids py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm sm:text-base border-b-4 border-slate-300 transition">
+                    더 관찰하기
+                </button>
+
+                <button id="btnShareImg" class="font-kids py-3 rounded-2xl bg-sky-400 hover:bg-sky-500 text-white text-sm sm:text-base border-b-4 border-sky-600 transition flex items-center justify-center gap-1.5">
+                    <span>💌</span>
+                    <span>친구에게 보내기</span>
+                </button>
+
+                <a id="btnDownloadImg" download="꼬마과학자_관찰카드.png" class="font-kids col-span-2 sm:col-span-1 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm sm:text-base text-center border-b-4 border-emerald-700 transition cursor-pointer flex items-center justify-center gap-1.5">
+                    <span>💾</span>
+                    <span>사진첩에 저장</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 숨겨진 실시간 카메라 스트림 -->
+    <video id="cameraVideo" playsinline autoplay muted class="hidden"></video>
+
+    <script>
+        /**
+         * 꼬마 과학자 탐구 현미경 (초등학생 맞춤형 태블릿 웹 앱)
+         * - 3가지 재미있는 샘플(양파 세포, 연못 속 물방울 친구들, 나비 날개 가루) 애니메이션
+         * - 4가지 마법 렌즈 필터, 초등학생 눈높이 크기 비교 힌트, 멀티터치 핀치 줌 & 드래그
+         * - 귀여운 '꼬마 과학자 관찰 카드' 프레임 합성 및 저장/공유 지원
+         */
+        (() => {
+            const canvas = document.getElementById('microscopeCanvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            const container = document.getElementById('canvasContainer');
+            const viewfinderFrame = document.getElementById('viewfinderFrame');
+            const video = document.getElementById('cameraVideo');
+            const shutterOverlay = document.getElementById('shutterOverlay');
+
+            const offCanvas = document.createElement('canvas');
+            const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
+            // UI 요소 참조
+            const zoomSlider = document.getElementById('zoomSlider');
+            const zoomValueLabel = document.getElementById('zoomValueLabel');
+            const liveZoomBadge = document.getElementById('liveZoomBadge');
+            const liveFilterBadge = document.getElementById('liveFilterBadge');
+            const liveScaleBadge = document.getElementById('liveScaleBadge');
+            const sizeHintText = document.getElementById('sizeHintText');
+            const brightnessSlider = document.getElementById('brightnessSlider');
+            const sharpenSlider = document.getElementById('sharpenSlider');
+            const brightnessVal = document.getElementById('brightnessVal');
+            const sharpenVal = document.getElementById('sharpenVal');
+            const toggleReticle = document.getElementById('toggleReticle');
+            const toggleMetadata = document.getElementById('toggleMetadata');
+            const specimenMemoInput = document.getElementById('specimenMemoInput');
+            const sourceStatusText = document.getElementById('sourceStatusText');
+            const samplePickerBar = document.getElementById('samplePickerBar');
+
+            // 버튼 요소
+            const btnStartCamera = document.getElementById('btnStartCamera');
+            const btnSampleMode = document.getElementById('btnSampleMode');
+            const imageUploadInput = document.getElementById('imageUploadInput');
+            const btnTorch = document.getElementById('btnTorch');
+            const torchLabel = document.getElementById('torchLabel');
+            const btnSwitchCamera = document.getElementById('btnSwitchCamera');
+            const btnViewportShape = document.getElementById('btnViewportShape');
+            const viewportShapeLabel = document.getElementById('viewportShapeLabel');
+            const btnResetPan = document.getElementById('btnResetPan');
+            const btnCapture = document.getElementById('btnCapture');
+
+            // 앨범 및 모달
+            const thumbnailStrip = document.getElementById('thumbnailStrip');
+            const emptyGalleryHint = document.getElementById('emptyGalleryHint');
+            const galleryCountBadge = document.getElementById('galleryCountBadge');
+            const captureModal = document.getElementById('captureModal');
+            const capturedPreviewImg = document.getElementById('capturedPreviewImg');
+            const btnCloseModal = document.getElementById('btnCloseModal');
+            const btnRetake = document.getElementById('btnRetake');
+            const btnShareImg = document.getElementById('btnShareImg');
+            const btnDownloadImg = document.getElementById('btnDownloadImg');
+            const captureMetaSummary = document.getElementById('captureMetaSummary');
+            const captureTimeSummary = document.getElementById('captureTimeSummary');
+
+            // 초등학생 눈높이 마법 렌즈 이름
+            const FILTER_LABELS = {
+                normal: '✨ 원래대로',
+                fluorescence: '🌟 반짝반짝 형광',
+                staining: '🌈 알록달록 무지개 염색',
+                darkfield: '🦴 엑스레이 투시'
+            };
+
+            // 샘플 이름 매핑
+            const SAMPLE_NAMES = {
+                onion: '🧅 양파 세포',
+                pond: '💧 연못 속 물방울 친구들',
+                butterfly: '🦋 나비 날개 가루'
+            };
+
+            // 칭찬 문구 목록
+            const PRAISE_MESSAGES = [
+                '와! 멋진 발견이에요! 🌟',
+                '대단해요! 꼬마 과학자 박사님! 🔬',
+                '우와, 숨어 있던 비밀을 찾았어요! ✨',
+                '최고의 관찰 실력이에요! 🏅'
+            ];
+
+            // 상태 관리 객체
+            const state = {
+                sourceMode: 'sample', // 'camera' | 'image' | 'sample'
+                sampleType: 'onion',  // 'onion' | 'pond' | 'butterfly'
+                viewportShape: 'circle', // 'circle' | 'square'
+                zoom: 4.0,
+                panX: 0,
+                panY: 0,
+                filter: 'normal',
+                brightness: 100,
+                sharpen: 35,
+                showReticle: true,
+                includeMetadata: true,
+                facingMode: 'environment',
+                torchOn: false,
+                stream: null,
+                uploadedImg: null,
+                pondFriends: [],
+                butterflyScales: [],
+                gallery: [],
+                currentModalItem: null,
+                time: 0
+            };
+
+            // 귀여운 토스트 배너 알림
+            let toastTimer = null;
+            function showToast(msg) {
+                const banner = document.getElementById('toastBanner');
+                const messageEl = document.getElementById('toastMessage');
+                messageEl.textContent = msg;
+                banner.classList.remove('opacity-0', '-translate-y-2');
+                banner.classList.add('opacity-100', 'translate-y-0');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    banner.classList.remove('opacity-100', 'translate-y-0');
+                    banner.classList.add('opacity-0', '-translate-y-2');
+                }, 2600);
+            }
+
+            // 3가지 샘플 데이터 초기화
+            function initSamples() {
+                // 1) 연못 속 물방울 친구들 (짚신벌레, 유글레나, 물방울)
+                state.pondFriends = [];
+                for (let i = 0; i < 24; i++) {
+                    const isParamecium = i % 2 === 0;
+                    state.pondFriends.push({
+                        x: (Math.random() - 0.5) * 850,
+                        y: (Math.random() - 0.5) * 850,
+                        vx: (Math.random() - 0.5) * 1.1,
+                        vy: (Math.random() - 0.5) * 1.1,
+                        size: 22 + Math.random() * 24,
+                        angle: Math.random() * Math.PI * 2,
+                        wiggleOffset: Math.random() * 10,
+                        type: isParamecium ? 'paramecium' : 'volvox',
+                        hue: isParamecium ? 145 + Math.random() * 35 : 185 + Math.random() * 35
+                    });
+                }
+
+                // 2) 나비 날개 가루 (반짝이는 인편 비늘 배열)
+                state.butterflyScales = [];
+                const rows = 14;
+                const cols = 16;
+                const palette = ['#38bdf8', '#818cf8', '#f472b6', '#fbbf24', '#34d399', '#a78bfa'];
+                for (let r = -rows / 2; r < rows / 2; r++) {
+                    for (let c = -cols / 2; c < cols / 2; c++) {
+                        state.butterflyScales.push({
+                            x: c * 58 + (r % 2 === 0 ? 28 : 0),
+                            y: r * 62,
+                            color: palette[Math.abs(r + c) % palette.length],
+                            shimmer: Math.random() * Math.PI * 2
+                        });
+                    }
+                }
+            }
+
+            // 캔버스 크기 반응형 조정
+            function resizeCanvas() {
+                const rect = container.getBoundingClientRect();
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                const size = Math.max(280, Math.floor(rect.width * dpr));
+                canvas.width = size;
+                canvas.height = size;
+                offCanvas.width = size;
+                offCanvas.height = size;
+            }
+
+            // 배율에 따른 눈금자(μm) 및 초등학생 눈높이 크기 비교 힌트 계산
+            function getScaleInfo() {
+                const baseMicrons = 1000 / state.zoom;
+                let niceMicrons = 500;
+                let hint = '개미 다리 털보다 조금 더 큰 크기예요!';
+
+                if (baseMicrons >= 800) {
+                    niceMicrons = 500;
+                    hint = '샤프심(0.5mm) 굵기와 똑같은 크기예요! ✏️';
+                } else if (baseMicrons >= 400) {
+                    niceMicrons = 250;
+                    hint = '소금 알갱이 반쪽만한 크기예요! 🧂';
+                } else if (baseMicrons >= 200) {
+                    niceMicrons = 100;
+                    hint = '우리 머리카락 한 올 굵기와 비슷해요! 💇';
+                } else if (baseMicrons >= 100) {
+                    niceMicrons = 50;
+                    hint = '머리카락 굵기의 절반만큼 아주 얇아요! ✨';
+                } else if (baseMicrons >= 50) {
+                    niceMicrons = 25;
+                    hint = '눈에 보이지 않는 꽃가루 알갱이 크기예요! 🌸';
+                } else {
+                    niceMicrons = 10;
+                    hint = '우리 몸속 적혈구 세포만큼 엄청나게 작아요! 🔬';
+                }
+
+                const ratio = niceMicrons / baseMicrons;
+                return {
+                    label: `${niceMicrons} μm`,
+                    hint,
+                    barRatio: Math.min(0.42, Math.max(0.14, ratio * 0.62))
+                };
+            }
+
+            // 확대 배율 UI 업데이트
+            function updateZoomUI() {
+                const zText = `${state.zoom.toFixed(1)}배`;
+                zoomSlider.value = state.zoom;
+                zoomValueLabel.textContent = zText;
+                liveZoomBadge.textContent = `🔍 ${zText} 확대`;
+
+                const info = getScaleInfo();
+                liveScaleBadge.textContent = `📏 ${info.label}`;
+                sizeHintText.textContent = info.hint;
+            }
+
+            // 실시간 태블릿 카메라 연결
+            async function startCamera() {
+                try {
+                    if (state.stream) {
+                        state.stream.getTracks().forEach(t => t.stop());
+                    }
+                    const constraints = {
+                        video: {
+                            facingMode: state.facingMode,
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 }
+                        },
+                        audio: false
+                    };
+                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    state.stream = stream;
+                    video.srcObject = stream;
+                    await video.play();
+
+                    state.sourceMode = 'camera';
+                    state.panX = 0;
+                    state.panY = 0;
+                    samplePickerBar.classList.add('hidden');
+                    sourceStatusText.textContent = `지금 보고 있는 것: 📷 카메라로 직접 보기 (${state.facingMode === 'environment' ? '뒷면 렌즈' : '앞면 렌즈'})`;
+                    btnSwitchCamera.classList.remove('hidden');
+                    checkTorchSupport();
+                    showToast('카메라 렌즈가 켜졌어요! 관찰할 물체에 가까이 대보세요! 📷');
+                } catch (err) {
+                    console.warn('카메라 연결 실패:', err);
+                    state.sourceMode = 'sample';
+                    samplePickerBar.classList.remove('hidden');
+                    sourceStatusText.textContent = `지금 보고 있는 것: 재미있는 샘플 보기 (${SAMPLE_NAMES[state.sampleType]})`;
+                    showToast('카메라가 없어서 재미있는 샘플 모드로 보여줄게요! 🧪');
+                }
+            }
+
+            // 손전등(플래시) 지원 확인 및 토글
+            function checkTorchSupport() {
+                if (!state.stream) {
+                    btnTorch.disabled = true;
+                    return;
+                }
+                const track = state.stream.getVideoTracks()[0];
+                const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+                btnTorch.disabled = !capabilities.torch;
+                state.torchOn = false;
+                torchLabel.textContent = '손전등 끄기';
+            }
+
+            async function toggleTorch() {
+                if (!state.stream) {
+                    showToast('카메라로 직접 볼 때만 손전등을 켤 수 있어요! 🔦');
+                    return;
+                }
+                const track = state.stream.getVideoTracks()[0];
+                try {
+                    state.torchOn = !state.torchOn;
+                    await track.applyConstraints({
+                        advanced: [{ torch: state.torchOn }]
+                    });
+                    torchLabel.textContent = state.torchOn ? '손전등 켜짐 💡' : '손전등 끄기';
+                    showToast(state.torchOn ? '반짝! 손전등 조명이 켜졌어요! 💡' : '손전등을 껐어요.');
+                } catch (e) {
+                    state.torchOn = false;
+                    showToast('이 태블릿에는 손전등 불빛이 없어요!');
+                }
+            }
+
+            // 3가지 초등학생 과학 샘플 그리기
+            function drawFunSamples(targetCtx, width, height) {
+                targetCtx.save();
+                targetCtx.translate(width / 2 + state.panX, height / 2 + state.panY);
+                targetCtx.scale(state.zoom * 0.55, state.zoom * 0.55);
+
+                if (state.sampleType === 'onion') {
+                    // 1. 양파 표피 세포 (벽돌 모양의 식물 세포벽과 동그란 핵)
+                    targetCtx.fillStyle = '#fce7f3';
+                    targetCtx.fillRect(-600, -600, 1200, 1200);
+
+                    const cellW = 130;
+                    const cellH = 56;
+                    for (let row = -10; row <= 10; row++) {
+                        for (let col = -6; col <= 6; col++) {
+                            const x = col * cellW + (row % 2 === 0 ? 0 : cellW / 2);
+                            const y = row * cellH;
+
+                            // 세포 안쪽 채우기
+                            targetCtx.fillStyle = (row + col) % 2 === 0 ? 'rgba(244, 114, 182, 0.18)' : 'rgba(251, 207, 232, 0.35)';
+                            targetCtx.beginPath();
+                            targetCtx.roundRect(x - cellW / 2 + 3, y - cellH / 2 + 3, cellW - 6, cellH - 6, 14);
+                            targetCtx.fill();
+
+                            // 두꺼운 식물 세포벽
+                            targetCtx.lineWidth = 4;
+                            targetCtx.strokeStyle = '#be185d';
+                            targetCtx.stroke();
+
+                            // 세포핵 (살짝 움직이는 귀여운 핵)
+                            const wobbleX = Math.sin(state.time * 1.5 + row + col) * 2;
+                            targetCtx.beginPath();
+                            targetCtx.arc(x + wobbleX + ((row * 17) % 24 - 12), y, 10, 0, Math.PI * 2);
+                            targetCtx.fillStyle = '#9d174d';
+                            targetCtx.fill();
+
+                            // 핵 반짝이 하이라이트
+                            targetCtx.beginPath();
+                            targetCtx.arc(x + wobbleX + ((row * 17) % 24 - 15), y - 3, 3, 0, Math.PI * 2);
+                            targetCtx.fillStyle = '#ffffff';
+                            targetCtx.fill();
+                        }
+                    }
+                } else if (state.sampleType === 'pond') {
+                    // 2. 연못 속 물방울 친구들 (헤엄치는 짚신벌레와 초록 볼복스)
+                    targetCtx.fillStyle = '#ccfbf1';
+                    targetCtx.fillRect(-600, -600, 1200, 1200);
+
+                    // 물결 동심원 배경
+                    targetCtx.strokeStyle = 'rgba(20, 184, 166, 0.15)';
+                    targetCtx.lineWidth = 3;
+                    for (let r = 80; r <= 560; r += 90) {
+                        targetCtx.beginPath();
+                        targetCtx.arc(0, 0, r + Math.sin(state.time + r) * 5, 0, Math.PI * 2);
+                        targetCtx.stroke();
+                    }
+
+                    state.pondFriends.forEach(friend => {
+                        friend.x += friend.vx;
+                        friend.y += friend.vy;
+                        if (friend.x > 460) friend.x = -460;
+                        if (friend.x < -460) friend.x = 460;
+                        if (friend.y > 460) friend.y = -460;
+                        if (friend.y < -460) friend.y = 460;
+
+                        targetCtx.save();
+                        targetCtx.translate(friend.x, friend.y);
+
+                        if (friend.type === 'paramecium') {
+                            // 짚신벌레 모양
+                            const swimAngle = Math.atan2(friend.vy, friend.vx) + Math.sin(state.time * 4 + friend.wiggleOffset) * 0.15;
+                            targetCtx.rotate(swimAngle);
+
+                            targetCtx.beginPath();
+                            targetCtx.ellipse(0, 0, friend.size * 1.4, friend.size * 0.58, 0, 0, Math.PI * 2);
+                            targetCtx.fillStyle = `hsla(${friend.hue}, 75%, 65%, 0.65)`;
+                            targetCtx.fill();
+                            targetCtx.lineWidth = 3;
+                            targetCtx.strokeStyle = `hsla(${friend.hue}, 80%, 32%, 0.9)`;
+                            targetCtx.stroke();
+
+                            // 수축포와 핵
+                            targetCtx.beginPath();
+                            targetCtx.arc(-friend.size * 0.4, 0, friend.size * 0.22, 0, Math.PI * 2);
+                            targetCtx.arc(friend.size * 0.45, 0, friend.size * 0.16, 0, Math.PI * 2);
+                            targetCtx.fillStyle = `hsla(${friend.hue}, 85%, 28%, 0.75)`;
+                            targetCtx.fill();
+                        } else {
+                            // 동글동글 볼복스 군체
+                            targetCtx.beginPath();
+                            targetCtx.arc(0, 0, friend.size, 0, Math.PI * 2);
+                            targetCtx.fillStyle = 'rgba(52, 211, 153, 0.45)';
+                            targetCtx.fill();
+                            targetCtx.lineWidth = 3;
+                            targetCtx.strokeStyle = '#059669';
+                            targetCtx.stroke();
+
+                            // 안쪽 작은 아기 볼복스들
+                            for (let k = 0; k < 5; k++) {
+                                const a = (k * Math.PI * 2) / 5 + state.time;
+                                targetCtx.beginPath();
+                                targetCtx.arc(Math.cos(a) * friend.size * 0.45, Math.sin(a) * friend.size * 0.45, friend.size * 0.22, 0, Math.PI * 2);
+                                targetCtx.fillStyle = '#047857';
+                                targetCtx.fill();
+                            }
+                        }
+                        targetCtx.restore();
+                    });
+                } else {
+                    // 3. 나비 날개 가루 (기왓장처럼 겹쳐진 알록달록 인편 비늘)
+                    targetCtx.fillStyle = '#1e1b4b';
+                    targetCtx.fillRect(-600, -600, 1200, 1200);
+
+                    state.butterflyScales.forEach(scale => {
+                        const glow = 0.8 + Math.sin(state.time * 3 + scale.shimmer) * 0.2;
+                        targetCtx.save();
+                        targetCtx.translate(scale.x, scale.y);
+                        targetCtx.globalAlpha = glow;
+
+                        // 부채꼴 나비 비늘 모양
+                        targetCtx.beginPath();
+                        targetCtx.moveTo(0, -28);
+                        targetCtx.lineTo(24, -10);
+                        targetCtx.lineTo(20, 26);
+                        targetCtx.lineTo(0, 20);
+                        targetCtx.lineTo(-20, 26);
+                        targetCtx.lineTo(-24, -10);
+                        targetCtx.closePath();
+
+                        targetCtx.fillStyle = scale.color;
+                        targetCtx.fill();
+                        targetCtx.lineWidth = 2.5;
+                        targetCtx.strokeStyle = '#ffffff';
+                        targetCtx.stroke();
+
+                        // 비늘 결 무늬
+                        targetCtx.beginPath();
+                        targetCtx.moveTo(-8, -16);
+                        targetCtx.lineTo(-8, 18);
+                        targetCtx.moveTo(0, -20);
+                        targetCtx.lineTo(0, 16);
+                        targetCtx.moveTo(8, -16);
+                        targetCtx.lineTo(8, 18);
+                        targetCtx.strokeStyle = 'rgba(255,255,255,0.45)';
+                        targetCtx.lineWidth = 1.5;
+                        targetCtx.stroke();
+
+                        targetCtx.restore();
+                    });
+                }
+
+                targetCtx.restore();
+            }
+
+            // 마법 렌즈 필터 문자열 생성
+            function buildFilterString() {
+                let f = `brightness(${state.brightness}%) contrast(108%)`;
+                switch (state.filter) {
+                    case 'fluorescence':
+                        f += ' hue-rotate(115deg) saturate(260%) contrast(135%)';
+                        break;
+                    case 'staining':
+                        f += ' saturate(210%) contrast(145%) hue-rotate(-22deg)';
+                        break;
+                    case 'darkfield':
+                        f += ' invert(100%) hue-rotate(180deg) contrast(130%)';
+                        break;
+                    default:
+                        break;
+                }
+                return f;
+            }
+
+            // 또렷하게 보기(선명도) 보정
+            function applySharpen(targetCtx, width, height, amount) {
+                if (amount <= 0) return;
+                const mix = (amount / 100) * 0.8;
+                const imgData = targetCtx.getImageData(0, 0, width, height);
+                const data = imgData.data;
+                const copy = new Uint8ClampedArray(data);
+                const w = width;
+                const h = height;
+
+                for (let y = 1; y < h - 1; y++) {
+                    const row = y * w * 4;
+                    const up = (y - 1) * w * 4;
+                    const down = (y + 1) * w * 4;
+                    for (let x = 1; x < w - 1; x++) {
+                        const i = row + x * 4;
+                        for (let c = 0; c < 3; c++) {
+                            const center = copy[i + c] * 5;
+                            const neighbors =
+                                copy[up + x * 4 + c] +
+                                copy[down + x * 4 + c] +
+                                copy[i - 4 + c] +
+                                copy[i + 4 + c];
+                            const sharpVal = center - neighbors;
+                            data[i + c] = copy[i + c] * (1 - mix) + sharpVal * mix;
+                        }
+                    }
+                }
+                targetCtx.putImageData(imgData, 0, 0);
+            }
+
+            // 귀여운 눈금자 및 '꼬마 과학자 관찰 카드' 프레임 오버레이
+            function drawEyepieceOverlay(targetCtx, width, height, includeCardFrame = false) {
+                const cx = width / 2;
+                const cy = height / 2;
+                const radius = width / 2;
+
+                // 1. 렌즈 가장자리 부드러운 그림자
+                if (state.viewportShape === 'circle') {
+                    const vignette = targetCtx.createRadialGradient(cx, cy, radius * 0.78, cx, cy, radius);
+                    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                    vignette.addColorStop(0.88, 'rgba(14, 116, 144, 0.16)');
+                    vignette.addColorStop(1, 'rgba(15, 23, 42, 0.65)');
+                    targetCtx.fillStyle = vignette;
+                    targetCtx.fillRect(0, 0, width, height);
+                }
+
+                // 2. 눈금자 (십자 눈금)
+                if (state.showReticle) {
+                    targetCtx.save();
+                    targetCtx.strokeStyle = state.filter === 'darkfield'
+                        ? 'rgba(125, 211, 252, 0.78)'
+                        : 'rgba(251, 191, 36, 0.8)';
+                    targetCtx.lineWidth = Math.max(1.5, width * 0.0028);
+
+                    const span = radius * 0.56;
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(cx - span, cy);
+                    targetCtx.lineTo(cx + span, cy);
+                    targetCtx.moveTo(cx, cy - span);
+                    targetCtx.lineTo(cx, cy + span);
+                    targetCtx.stroke();
+
+                    const step = span / 8;
+                    for (let i = -8; i <= 8; i++) {
+                        if (i === 0) continue;
+                        const isMajor = i % 4 === 0;
+                        const tickLen = isMajor ? radius * 0.032 : radius * 0.016;
+
+                        targetCtx.beginPath();
+                        targetCtx.moveTo(cx + i * step, cy - tickLen);
+                        targetCtx.lineTo(cx + i * step, cy + tickLen);
+                        targetCtx.stroke();
+
+                        targetCtx.beginPath();
+                        targetCtx.moveTo(cx - tickLen, cy + i * step);
+                        targetCtx.lineTo(cx + tickLen, cy + i * step);
+                        targetCtx.stroke();
+                    }
+
+                    targetCtx.beginPath();
+                    targetCtx.arc(cx, cy, radius * 0.13, 0, Math.PI * 2);
+                    targetCtx.stroke();
+                    targetCtx.restore();
+                }
+
+                // 3. 하단 길이 눈금 막대 (μm)
+                const scaleInfo = getScaleInfo();
+                const barWidth = width * scaleInfo.barRatio;
+                const barX = cx - barWidth / 2;
+                const barY = includeCardFrame ? height * 0.79 : height * 0.83;
+
+                targetCtx.save();
+                targetCtx.strokeStyle = '#ffffff';
+                targetCtx.fillStyle = '#fef08a';
+                targetCtx.lineWidth = Math.max(2.5, width * 0.005);
+                targetCtx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+                targetCtx.shadowBlur = 5;
+
+                targetCtx.beginPath();
+                targetCtx.moveTo(barX, barY);
+                targetCtx.lineTo(barX + barWidth, barY);
+                targetCtx.moveTo(barX, barY - 7);
+                targetCtx.lineTo(barX, barY + 7);
+                targetCtx.moveTo(barX + barWidth, barY - 7);
+                targetCtx.lineTo(barX + barWidth, barY + 7);
+                targetCtx.stroke();
+
+                const fontSize = Math.max(14, Math.round(width * 0.028));
+                targetCtx.font = `bold ${fontSize}px "Jua", "Noto Sans KR", sans-serif`;
+                targetCtx.textAlign = 'center';
+                targetCtx.fillText(`📏 ${scaleInfo.label}`, cx, barY - 10);
+                targetCtx.restore();
+
+                // 4. 사진 저장 시 합성되는 귀여운 '꼬마 과학자 관찰 카드' 배너 프레임
+                if (includeCardFrame) {
+                    targetCtx.save();
+                    const pad = width * 0.035;
+                    const bannerH = height * 0.095;
+
+                    // 상단 하늘색 타이틀 리본
+                    targetCtx.fillStyle = 'rgba(255, 255, 255, 0.94)';
+                    targetCtx.beginPath();
+                    targetCtx.roundRect(pad, pad, width - pad * 2, bannerH, 24);
+                    targetCtx.fill();
+                    targetCtx.lineWidth = 4;
+                    targetCtx.strokeStyle = '#38bdf8';
+                    targetCtx.stroke();
+
+                    const titleFont = Math.max(18, Math.round(width * 0.032));
+                    targetCtx.font = `bold ${titleFont}px "Jua", "Noto Sans KR", sans-serif`;
+                    targetCtx.fillStyle = '#0369a1';
+                    targetCtx.textAlign = 'center';
+                    targetCtx.textBaseline = 'middle';
+                    targetCtx.fillText(`🔬 꼬마 과학자 관찰 카드  |  🔍 ${state.zoom.toFixed(1)}배 확대`, cx, pad + bannerH / 2);
+
+                    // 하단 노란색 관찰 일기 이름표 카드
+                    const bottomY = height - pad - bannerH * 1.15;
+                    targetCtx.fillStyle = 'rgba(254, 249, 195, 0.96)';
+                    targetCtx.beginPath();
+                    targetCtx.roundRect(pad, bottomY, width - pad * 2, bannerH * 1.15, 24);
+                    targetCtx.fill();
+                    targetCtx.lineWidth = 4;
+                    targetCtx.strokeStyle = '#fbbf24';
+                    targetCtx.stroke();
+
+                    const memo = specimenMemoInput.value.trim() || (state.sourceMode === 'sample' ? SAMPLE_NAMES[state.sampleType] : '신기한 현미경 관찰!');
+                    const memoFont = Math.max(18, Math.round(width * 0.031));
+                    targetCtx.font = `bold ${memoFont}px "Jua", "Noto Sans KR", sans-serif`;
+                    targetCtx.fillStyle = '#78350f';
+                    targetCtx.fillText(`✏️ ${memo}`, cx, bottomY + bannerH * 0.42);
+
+                    const dateStr = new Date().toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                    const subFont = Math.max(13, Math.round(width * 0.02));
+                    targetCtx.font = `bold ${subFont}px "Noto Sans KR", sans-serif`;
+                    targetCtx.fillStyle = '#b45309';
+                    targetCtx.fillText(`${dateStr}  •  ${FILTER_LABELS[state.filter]}`, cx, bottomY + bannerH * 0.88);
+                    targetCtx.restore();
+                }
+            }
+
+            // 단일 프레임 렌더링
+            function renderFrame(targetCtx, width, height, isCapture = false) {
+                targetCtx.save();
+                targetCtx.clearRect(0, 0, width, height);
+
+                if (state.viewportShape === 'circle' && !isCapture) {
+                    targetCtx.beginPath();
+                    targetCtx.arc(width / 2, height / 2, width / 2, 0, Math.PI * 2);
+                    targetCtx.clip();
+                }
+
+                offCtx.save();
+                offCtx.clearRect(0, 0, width, height);
+                offCtx.filter = buildFilterString();
+
+                if (state.sourceMode === 'camera' && video.readyState >= 2) {
+                    const vw = video.videoWidth;
+                    const vh = video.videoHeight;
+                    const baseScale = Math.max(width / vw, height / vh);
+                    const drawW = vw * baseScale * state.zoom;
+                    const drawH = vh * baseScale * state.zoom;
+                    const dx = (width - drawW) / 2 + state.panX;
+                    const dy = (height - drawH) / 2 + state.panY;
+                    offCtx.drawImage(video, dx, dy, drawW, drawH);
+                } else if (state.sourceMode === 'image' && state.uploadedImg) {
+                    const iw = state.uploadedImg.width;
+                    const ih = state.uploadedImg.height;
+                    const baseScale = Math.max(width / iw, height / ih);
+                    const drawW = iw * baseScale * state.zoom;
+                    const drawH = ih * baseScale * state.zoom;
+                    const dx = (width - drawW) / 2 + state.panX;
+                    const dy = (height - drawH) / 2 + state.panY;
+                    offCtx.drawImage(state.uploadedImg, dx, dy, drawW, drawH);
+                } else {
+                    drawFunSamples(offCtx, width, height);
+                }
+                offCtx.restore();
+
+                if (state.sharpen > 0) {
+                    applySharpen(offCtx, width, height, state.sharpen);
+                }
+
+                targetCtx.drawImage(offCanvas, 0, 0, width, height);
+                drawEyepieceOverlay(targetCtx, width, height, isCapture && state.includeMetadata);
+                targetCtx.restore();
+            }
+
+            // 실시간 애니메이션 루프
+            function animateLoop() {
+                state.time += 0.025;
+                renderFrame(ctx, canvas.width, canvas.height, false);
+                requestAnimationFrame(animateLoop);
+            }
+
+            // 관찰 카드 결과 모달 열기
+            function openCaptureModal(item) {
+                state.currentModalItem = item;
+                capturedPreviewImg.src = item.dataUrl;
+                btnDownloadImg.href = item.dataUrl;
+                btnDownloadImg.download = item.filename;
+                captureMetaSummary.textContent = `🔍 ${item.zoom} 확대  |  📏 ${item.scale}  |  ${item.filterLabel}`;
+                captureTimeSummary.textContent = item.timeStr;
+
+                captureModal.classList.remove('hidden');
+                captureModal.classList.add('flex');
+            }
+
+            // 하단 나의 관찰 앨범 스트립 업데이트
+            function renderGalleryStrip() {
+                galleryCountBadge.textContent = `${state.gallery.length}장`;
+                if (state.gallery.length === 0) {
+                    emptyGalleryHint.classList.remove('hidden');
+                    return;
+                }
+                emptyGalleryHint.classList.add('hidden');
+                thumbnailStrip.innerHTML = '';
+
+                state.gallery.forEach((item) => {
+                    const card = document.createElement('button');
+                    card.className = 'relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden border-2 border-sky-300 hover:border-amber-400 active:scale-95 transition shrink-0 bg-white shadow-sm';
+                    card.title = `${item.zoom} 관찰 카드 보기`;
+
+                    const img = document.createElement('img');
+                    img.src = item.dataUrl;
+                    img.className = 'w-full h-full object-cover';
+
+                    const badge = document.createElement('span');
+                    badge.className = 'font-kids absolute bottom-0 inset-x-0 bg-amber-300/95 text-[10px] text-amber-950 text-center py-0.5';
+                    badge.textContent = item.zoom;
+
+                    card.appendChild(img);
+                    card.appendChild(badge);
+                    card.addEventListener('click', () => openCaptureModal(item));
+                    thumbnailStrip.appendChild(card);
+                });
+            }
+
+            // 찰칵! 관찰 카드 촬영하기
+            function captureMicroscopePhoto() {
+                // 경쾌한 셔터 반짝임 애니메이션
+                shutterOverlay.classList.remove('animate-shutter');
+                void shutterOverlay.offsetWidth;
+                shutterOverlay.classList.add('animate-shutter');
+
+                const captureCanvas = document.createElement('canvas');
+                const size = 1280;
+                captureCanvas.width = size;
+                captureCanvas.height = size;
+                const cCtx = captureCanvas.getContext('2d');
+
+                cCtx.fillStyle = '#e0f2fe';
+                cCtx.fillRect(0, 0, size, size);
+
+                offCanvas.width = size;
+                offCanvas.height = size;
+                renderFrame(cCtx, size, size, true);
+                resizeCanvas();
+
+                const dataUrl = captureCanvas.toDataURL('image/png');
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                const filename = `꼬마과학자_관찰카드_${state.zoom.toFixed(1)}배_${timestamp}.png`;
+
+                const capturedItem = {
+                    dataUrl,
+                    filename,
+                    zoom: `${state.zoom.toFixed(1)}배`,
+                    scale: getScaleInfo().label,
+                    filterLabel: FILTER_LABELS[state.filter],
+                    timeStr: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+                };
+
+                state.gallery.unshift(capturedItem);
+                renderGalleryStrip();
+                openCaptureModal(capturedItem);
+
+                const randomPraise = PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_MESSAGES.length)];
+                showToast(randomPraise);
+            }
+
+            // Web Share API 공유
+            async function shareCapturedImage() {
+                if (!state.currentModalItem) return;
+                try {
+                    const res = await fetch(state.currentModalItem.dataUrl);
+                    const blob = await res.blob();
+                    const file = new File([blob], state.currentModalItem.filename, { type: 'image/png' });
+
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            title: '꼬마 과학자 관찰 카드 🔬',
+                            text: `${state.currentModalItem.zoom} 확대 관찰 사진을 공유해요!`,
+                            files: [file]
+                        });
+                    } else {
+                        showToast('오른쪽 초록색 [사진첩에 저장] 버튼을 눌러 저장해 주세요! 💾');
+                    }
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        showToast('[사진첩에 저장] 버튼을 누르면 갤러리에 저장돼요! 💾');
+                    }
+                }
+            }
+
+            // 동그란 렌즈 / 네모난 창 전환
+            btnViewportShape.addEventListener('click', () => {
+                if (state.viewportShape === 'circle') {
+                    state.viewportShape = 'square';
+                    viewfinderFrame.classList.remove('rounded-full');
+                    viewfinderFrame.classList.add('rounded-3xl');
+                    container.classList.remove('rounded-full');
+                    container.classList.add('rounded-2xl');
+                    viewportShapeLabel.textContent = '네모난 창';
+                } else {
+                    state.viewportShape = 'circle';
+                    viewfinderFrame.classList.remove('rounded-3xl');
+                    viewfinderFrame.classList.add('rounded-full');
+                    container.classList.remove('rounded-2xl');
+                    container.classList.add('rounded-full');
+                    viewportShapeLabel.textContent = '동그란 렌즈';
+                }
+            });
+
+            // 샘플 3종 선택 이벤트
+            document.querySelectorAll('.sample-type-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.sample-type-btn').forEach(b => {
+                        b.classList.remove('bg-emerald-500', 'text-white', 'shadow-sm');
+                        b.classList.add('bg-white', 'text-sky-800', 'border', 'border-sky-200');
+                    });
+                    btn.classList.remove('bg-white', 'text-sky-800', 'border', 'border-sky-200');
+                    btn.classList.add('bg-emerald-500', 'text-white', 'shadow-sm');
+
+                    state.sampleType = btn.dataset.sample;
+                    state.panX = 0;
+                    state.panY = 0;
+                    sourceStatusText.textContent = `지금 보고 있는 것: 재미있는 샘플 보기 (${SAMPLE_NAMES[state.sampleType]})`;
+                    showToast(`${SAMPLE_NAMES[state.sampleType]} 샘플을 올려놓았어요!`);
+                });
+            });
+
+            // 확대 배율 및 조종판 이벤트
+            zoomSlider.addEventListener('input', (e) => {
+                state.zoom = parseFloat(e.target.value);
+                updateZoomUI();
+            });
+
+            document.querySelectorAll('.zoom-preset').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.zoom = parseFloat(btn.dataset.zoom);
+                    updateZoomUI();
+                });
+            });
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => {
+                        b.classList.remove('bg-emerald-500', 'text-white', 'border-b-4', 'border-emerald-700');
+                        b.classList.add('bg-white', 'text-purple-900', 'border-2', 'border-purple-200');
+                    });
+                    btn.classList.remove('bg-white', 'text-purple-900', 'border-2', 'border-purple-200');
+                    btn.classList.add('bg-emerald-500', 'text-white', 'border-b-4', 'border-emerald-700');
+
+                    state.filter = btn.dataset.filter;
+                    liveFilterBadge.textContent = FILTER_LABELS[state.filter];
+                });
+            });
+
+            brightnessSlider.addEventListener('input', (e) => {
+                state.brightness = parseInt(e.target.value, 10);
+                brightnessVal.textContent = `${state.brightness}%`;
+            });
+
+            sharpenSlider.addEventListener('input', (e) => {
+                state.sharpen = parseInt(e.target.value, 10);
+                sharpenVal.textContent = `${state.sharpen}%`;
+            });
+
+            toggleReticle.addEventListener('change', (e) => {
+                state.showReticle = e.target.checked;
+            });
+
+            toggleMetadata.addEventListener('change', (e) => {
+                state.includeMetadata = e.target.checked;
+            });
+
+            btnStartCamera.addEventListener('click', startCamera);
+
+            btnSwitchCamera.addEventListener('click', () => {
+                state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
+                startCamera();
+            });
+
+            btnTorch.addEventListener('click', toggleTorch);
+
+            btnSampleMode.addEventListener('click', () => {
+                if (state.stream) {
+                    state.stream.getTracks().forEach(t => t.stop());
+                    state.stream = null;
+                }
+                state.sourceMode = 'sample';
+                state.panX = 0;
+                state.panY = 0;
+                samplePickerBar.classList.remove('hidden');
+                btnSwitchCamera.classList.add('hidden');
+                btnTorch.disabled = true;
+                sourceStatusText.textContent = `지금 보고 있는 것: 재미있는 샘플 보기 (${SAMPLE_NAMES[state.sampleType]})`;
+                showToast('재미있는 샘플 슬라이드로 바꿨어요! 🧪');
+            });
+
+            imageUploadInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        if (state.stream) {
+                            state.stream.getTracks().forEach(t => t.stop());
+                            state.stream = null;
+                        }
+                        state.uploadedImg = img;
+                        state.sourceMode = 'image';
+                        state.panX = 0;
+                        state.panY = 0;
+                        samplePickerBar.classList.add('hidden');
+                        btnSwitchCamera.classList.add('hidden');
+                        btnTorch.disabled = true;
+                        sourceStatusText.textContent = `지금 보고 있는 것: 🖼️ 내 사진 (${file.name})`;
+                        showToast('내 사진을 현미경 아래에 올려놓았어요! 🖼️');
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            btnResetPan.addEventListener('click', () => {
+                state.panX = 0;
+                state.panY = 0;
+                showToast('화면 가운데로 딱 맞췄어요! 🎯');
+            });
+
+            btnCapture.addEventListener('click', captureMicroscopePhoto);
+            btnShareImg.addEventListener('click', shareCapturedImage);
+
+            const closeCaptureModal = () => {
+                captureModal.classList.add('hidden');
+                captureModal.classList.remove('flex');
+            };
+            btnCloseModal.addEventListener('click', closeCaptureModal);
+            btnRetake.addEventListener('click', closeCaptureModal);
+
+            // 태블릿 멀티터치 핀치 줌 & 한 손가락 드래그 이동
+            const activePointers = new Map();
+            let prevPinchDist = null;
+            let prevPinchMid = null;
+
+            function getPinchMetrics() {
+                const pts = Array.from(activePointers.values());
+                if (pts.length < 2) return null;
+                const dx = pts[0].x - pts[1].x;
+                const dy = pts[0].y - pts[1].y;
+                return {
+                    dist: Math.hypot(dx, dy),
+                    midX: (pts[0].x + pts[1].x) / 2,
+                    midY: (pts[0].y + pts[1].y) / 2
+                };
+            }
+
+            container.addEventListener('pointerdown', (e) => {
+                container.setPointerCapture(e.pointerId);
+                activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                if (activePointers.size === 2) {
+                    const metrics = getPinchMetrics();
+                    prevPinchDist = metrics.dist;
+                    prevPinchMid = { x: metrics.midX, y: metrics.midY };
+                }
+            });
+
+            container.addEventListener('pointermove', (e) => {
+                if (!activePointers.has(e.pointerId)) return;
+                const prevPt = activePointers.get(e.pointerId);
+                const currPt = { x: e.clientX, y: e.clientY };
+                activePointers.set(e.pointerId, currPt);
+
+                if (activePointers.size === 1) {
+                    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                    state.panX += (currPt.x - prevPt.x) * dpr;
+                    state.panY += (currPt.y - prevPt.y) * dpr;
+                } else if (activePointers.size === 2) {
+                    const metrics = getPinchMetrics();
+                    if (metrics && prevPinchDist) {
+                        const scaleFactor = metrics.dist / prevPinchDist;
+                        state.zoom = Math.min(20, Math.max(1, +(state.zoom * scaleFactor).toFixed(2)));
+                        updateZoomUI();
+
+                        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                        state.panX += (metrics.midX - prevPinchMid.x) * dpr;
+                        state.panY += (metrics.midY - prevPinchMid.y) * dpr;
+
+                        prevPinchDist = metrics.dist;
+                        prevPinchMid = { x: metrics.midX, y: metrics.midY };
+                    }
+                }
+            });
+
+            function removePointer(e) {
+                activePointers.delete(e.pointerId);
+                if (activePointers.size < 2) {
+                    prevPinchDist = null;
+                    prevPinchMid = null;
+                }
+            }
+
+            container.addEventListener('pointerup', removePointer);
+            container.addEventListener('pointercancel', removePointer);
+
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const delta = e.deltaY < 0 ? 0.4 : -0.4;
+                state.zoom = Math.min(20, Math.max(1, +(state.zoom + delta).toFixed(1)));
+                updateZoomUI();
+            }, { passive: false });
+
+            window.addEventListener('resize', resizeCanvas);
+
+            window.onload = () => {
+                initSamples();
+                resizeCanvas();
+                updateZoomUI();
+                animateLoop();
+            };
+        })();
+    </script>
+</body>
+</html>
