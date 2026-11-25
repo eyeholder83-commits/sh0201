@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>자료를 분류하여 그래프로 나타내 볼까요</title>
+<style>
+:root{font-family:"맑은 고딕",system-ui,sans-serif;color:#17283b;background:#f2f7fa;--blue:#175d91;--line:#b8ccdc}
+*{box-sizing:border-box}body{margin:0}main{width:min(940px,100% - 24px);margin:32px auto 90px}header{background:#153958;color:white;padding:clamp(20px,5vw,42px);border-radius:24px}h1{margin:6px 0 0;font-size:clamp(1.6rem,5vw,2.65rem)}header p{margin:0;color:#d4e7f8}section{background:white;border:2px solid transparent;border-radius:20px;margin:16px 0;padding:clamp(12px,4vw,28px)}h2{font-size:1.3rem;margin:0 0 10px}p{line-height:1.65}button,input,textarea{font:inherit}button{cursor:pointer;color:inherit}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #166bb0;outline-offset:2px}.survey{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;max-width:580px;margin:auto}.person{text-align:center;background:#eef5fc;border-radius:10px;padding:5px 1px;font-size:.9rem}.animal{display:block;font-size:1.55rem} .sticker,.mark{min-height:40px;background:white;border:1px solid var(--line);border-radius:8px;font-size:1.1rem}.sticker[aria-pressed=true]{outline:3px solid var(--blue)}.scroll{overflow-x:auto;padding:4px}table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid var(--line);text-align:center;padding:3px;height:45px}th{background:#eaf3fb}.classification{min-width:275px}.data{min-width:335px}.data th:first-child{width:24%}.bucket,.mark{width:100%;height:100%}.bucket{border:0;background:#f3f7fb;border-radius:6px;min-height:40px}.chart{min-width:285px}.chart th:first-child{width:23%}.mark{color:#19477d}.mark[aria-pressed=true]{background:#dcebff;font-weight:bold}.mark:disabled{opacity:1;cursor:default}.entry{width:100%;min-width:0;border:1px solid #879fb5;border-radius:6px;padding:5px 1px;text-align:center;font-size:.91rem}.title{max-width:530px;text-align:left;padding:8px;margin:4px 0 10px}textarea{width:100%;min-height:75px;border:1px solid #879fb5;border-radius:8px;padding:8px;resize:vertical}.primary{background:var(--blue);color:white;border:0;border-radius:10px;padding:12px 24px;font-weight:bold}.grade{font-weight:bold}.wrong{border-color:#bd3b4b}.wrong .grade{color:#a42234}.right .grade{color:#17653b}fieldset{border:0;padding:0;margin:8px 0 12px}fieldset label{display:inline-block;padding:6px 12px}.axis{font-size:.88rem;color:#3f5369}.feedback{min-height:1.5em}
+.tray {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(44px, 1fr));
+  grid-template-rows: repeat(2, minmax(54px, auto));
+  gap: 6px;
+  max-width: 740px;
+  overflow-x: auto;
+  background: #f1f5fa;
+  padding: 8px;
+  border-radius: 10px;
+}
+.tray .sticker {
+  min-width: 0;
+  padding: 2px;
+  font-size: clamp(1.65rem, 4vw, 2.25rem);
+  line-height: 1;
+}
+.bucket {
+  min-height: 46px;
+  font-size: clamp(1.55rem, 3.6vw, 1.95rem);
+  line-height: 1;
+}
+.teacher-actions{display:flex;justify-content:flex-end;margin-bottom:10px}
+#teacherToggle,#teacherCancel{background:white;border:1px solid #879fb5;border-radius:8px;padding:8px 12px}
+#teacherDialog{width:min(360px,calc(100% - 32px));border:1px solid var(--line);border-radius:16px;color:inherit}
+#teacherDialog::backdrop{background:#17283b88}
+#teacherPassword{margin-top:6px;text-align:left;padding:8px}
+#teacherError{min-height:1.5em;color:#a42234;margin:6px 0}
+.teacher-dialog-actions{display:flex;justify-content:flex-end;gap:8px}
+.choice-question{border:2px solid var(--line);border-radius:12px;padding:10px;margin:18px 0 0;min-inline-size:0}
+.choice-question legend{font-weight:bold;padding:0 6px}
+.choice-question label{display:flex;align-items:baseline;gap:8px;padding:8px 4px;cursor:pointer}
+.choice-question input{flex:none;accent-color:var(--blue)}
+.choice-question .grade{margin:4px 0 0}
+.choice-question .grade:empty{display:none}
+.choice-question.wrong{border-color:#bd3b4b}
+[hidden]{display:none!important}
+#autoEvaluation{margin-bottom:32px}
+#completionDialog{width:min(380px,calc(100% - 32px));padding:24px;border:1px solid var(--line);border-radius:16px;color:inherit;text-align:center}
+#completionDialog::backdrop{background:#17283b88}
+#completionDialog p{margin:0}
+</style>
+</head>
+<body>
+<main id="worksheet">
+<div class="teacher-actions"><button id="teacherToggle" type="button">교사 로그인</button></div>
+<dialog id="teacherDialog" aria-labelledby="teacherHeading">
+  <form id="teacherForm">
+    <h2 id="teacherHeading">교사 로그인</h2>
+    <label for="teacherPassword">비밀번호</label>
+    <input class="entry" id="teacherPassword" type="password" inputmode="numeric" autocomplete="off" required autofocus aria-describedby="teacherError">
+    <p id="teacherError" role="status"></p>
+    <div class="teacher-dialog-actions">
+      <button id="teacherCancel" type="button">취소</button>
+      <button class="primary" id="teacherSubmit" type="submit">로그인</button>
+    </div>
+  </form>
+</dialog>
+<header><p>초등 수학 · 114~117쪽</p><h1>자료를 분류하여 그래프로 나타내 볼까요</h1></header>
+<section><h2>조사 결과 살펴보기</h2><p>수찬이네 반 학생 20명이 좋아하는 동물을 조사했어요.</p><div class="survey" id="survey"></div>
+<fieldset class="choice-question" id="surveyMethod">
+  <legend>조사 결과를 한눈에 알아보기 쉽게 나타내려면 어떻게 하면 좋을까요?</legend>
+  <label><input type="radio" name="surveyMethod" value="1"> 학생 이름만 가나다순으로 써요.</label>
+  <label><input type="radio" name="surveyMethod" value="2"> 같은 동물끼리 분류하고, 동물별 학생 수를 표나 그래프로 나타내요.</label>
+  <label><input type="radio" name="surveyMethod" value="3"> 조사한 학생의 전체 수만 써요.</label>
+  <label><input type="radio" name="surveyMethod" value="4"> 학생이 대답한 차례대로 동물 이름을 써요.</label>
+  <label><input type="radio" name="surveyMethod" value="5"> 가장 먼저 나온 동물의 이름만 써요.</label>
+  <p class="grade" aria-live="polite"></p>
+</fieldset>
+</section>
+<section id="sort"><h2>1. 동물 붙임딱지 분류하기</h2><p><strong>같은 동물끼리 맨 아래 칸부터 위로 한 칸씩 붙이세요.</strong> 붙임딱지를 누른 뒤 놓을 칸을 누르세요. 드래그로 옮길 수도 있어요. 붙인 딱지를 다시 누르면 위로 돌아와요.</p><div id="tray" class="tray" aria-label="동물 붙임딱지"></div><p id="stickerStatus" class="feedback" role="status"></p><div class="scroll"><table id="sorting" class="classification" aria-label="동물 붙임딱지 분류표"></table></div><p class="grade"></p>
+<fieldset class="choice-question" id="stickerBenefit">
+  <legend>1) 붙임딱지로 분류했을 때 편리한 점은 무엇일까요?</legend>
+  <label><input type="radio" name="stickerBenefit" value="1"> 붙임딱지를 세면 학생들의 이름을 알 수 있어요.</label>
+  <label><input type="radio" name="stickerBenefit" value="2"> 붙임딱지를 붙이면 학생들이 그 동물을 좋아하는 까닭을 알 수 있어요.</label>
+  <label><input type="radio" name="stickerBenefit" value="3"> 붙임딱지 한 장만 보아도 전체 학생 수를 알 수 있어요.</label>
+  <label><input type="radio" name="stickerBenefit" value="4"> 같은 동물을 한곳에 모아 동물별 학생 수를 비교하기 쉬워요.</label>
+  <label><input type="radio" name="stickerBenefit" value="5"> 붙임딱지로 학생들이 대답한 차례를 알 수 있어요.</label>
+  <p class="grade" aria-live="polite"></p>
+</fieldset>
+
+<fieldset class="choice-question" id="stickerDrawback">
+  <legend>2) 붙임딱지로 분류했을 때 불편한 점은 무엇일까요?</legend>
+  <label><input type="radio" name="stickerDrawback" value="1"> 조사한 학생이 많으면 붙임딱지를 하나씩 붙이고 세는 데 시간이 걸려요.</label>
+  <label><input type="radio" name="stickerDrawback" value="2"> 붙임딱지는 한 종류의 동물에만 쓸 수 있어요.</label>
+  <label><input type="radio" name="stickerDrawback" value="3"> 붙임딱지가 많은 쪽과 적은 쪽을 비교할 수 없어요.</label>
+  <label><input type="radio" name="stickerDrawback" value="4"> 같은 동물의 붙임딱지를 한곳에 모을 수 없어요.</label>
+  <label><input type="radio" name="stickerDrawback" value="5"> 붙임딱지를 붙이면 어떤 동물인지 구별할 수 없어요.</label>
+  <p class="grade" aria-live="polite"></p>
+</fieldset>
+</section>
+<section id="count"><h2>2-1. 표 완성하기</h2><p>수찬이네 반 학생들이 좋아하는 동물별 학생 수</p><div class="scroll"><table id="counts" class="data" aria-label="동물별 학생 수 표"></table></div><p class="grade"></p></section>
+<section id="vertical"><h2>2-2. ○로 세로 그래프 그리기</h2><p>제목과 빈칸을 채우고, 각 동물을 좋아하는 학생 수만큼 아래에서부터 칸을 누르세요.</p><label for="graphTitle">그래프 제목</label><br><input class="entry title" id="graphTitle" autocomplete="off"><div class="scroll"><table class="chart" aria-label="세로 그래프" id="vchart"></table></div><p class="grade"></p></section>
+<section id="horizontal"><h2>2-3. × 또는 ／로 가로 그래프 그리기</h2><p>수찬이네 반 학생들이 좋아하는 동물별 학생 수</p><p>빈칸을 채우고, 각 동물을 좋아하는 학생 수만큼 왼쪽에서부터 칸을 누르세요.</p><fieldset><legend>사용할 기호</legend><label><input type="radio" name="symbol" value="×" checked> ×</label><label><input type="radio" name="symbol" value="／"> ／</label></fieldset><div class="scroll"><table class="chart" aria-label="가로 그래프" id="hchart"></table></div><p class="grade"></p>
+<fieldset class="choice-question" id="graphSimilarity">
+  <legend>1) 두 그래프의 같은 점은 무엇인가요?</legend>
+  <label><input type="radio" name="graphSimilarity" value="1"> 두 그래프 모두 ○를 써요.</label>
+  <label><input type="radio" name="graphSimilarity" value="2"> 두 그래프 모두 왼쪽에서 오른쪽으로 기호를 표시해요.</label>
+  <label><input type="radio" name="graphSimilarity" value="3"> 두 그래프가 나타내는 동물별 학생 수는 같아요.</label>
+  <label><input type="radio" name="graphSimilarity" value="4"> 두 그래프 모두 학생 수를 가로 방향으로 나타내요.</label>
+  <label><input type="radio" name="graphSimilarity" value="5"> 두 그래프 모두 동물 이름을 맨 아래에 써요.</label>
+  <p class="grade" aria-live="polite"></p>
+</fieldset>
+
+<fieldset class="choice-question" id="graphDifference">
+  <legend>2) 두 그래프의 다른 점은 무엇인가요?</legend>
+  <label><input type="radio" name="graphDifference" value="1"> 두 그래프가 나타내는 동물의 종류가 달라요.</label>
+  <label><input type="radio" name="graphDifference" value="2"> 두 그래프에서 학생 수가 가장 많은 동물이 달라요.</label>
+  <label><input type="radio" name="graphDifference" value="3"> 두 그래프에서 조사한 학생의 전체 수가 달라요.</label>
+  <label><input type="radio" name="graphDifference" value="4"> 세로 그래프는 학생 이름을, 가로 그래프는 학생 수를 나타내요.</label>
+  <label><input type="radio" name="graphDifference" value="5"> 세로 그래프는 아래에서 위로, 가로 그래프는 왼쪽에서 오른쪽으로 기호를 표시해요.</label>
+  <p class="grade" aria-live="polite"></p>
+</fieldset>
+</section>
+<section>
+<fieldset class="choice-question" id="graphBenefit">
+  <legend>3. 그래프로 나타내면 어떤 점이 편리할까요?</legend>
+  <label><input type="radio" name="graphBenefit" value="1"> 동물별 학생 수의 많고 적음이나 차이를 쉽게 비교할 수 있어요.</label>
+  <label><input type="radio" name="graphBenefit" value="2"> 학생들이 동물을 좋아하는 까닭을 알 수 있어요.</label>
+  <label><input type="radio" name="graphBenefit" value="3"> 학생 한 명 한 명이 좋아하는 동물을 알 수 있어요.</label>
+  <label><input type="radio" name="graphBenefit" value="4"> 학생들이 대답한 차례를 알 수 있어요.</label>
+  <label><input type="radio" name="graphBenefit" value="5"> 조사하지 않은 학생이 좋아하는 동물도 알 수 있어요.</label>
+  <p class="grade" aria-live="polite"></p>
+</fieldset>
+</section>
+<button class="primary" id="check" type="button">정답 확인</button><p id="result" role="status"></p>
+</main>
+<main id="autoEvaluation" hidden aria-labelledby="autoEvaluationHeading">
+  <h1 id="autoEvaluationHeading" tabindex="-1">자동평가</h1>
+  <!-- 자동평가: 자료를 분류하여 그래프로 나타내 볼까요(교과서) -->
+  <div id="auto-evaluation-act-1795648146825" hidden style="margin:24px auto;max-width:1050px;">
+    <iframe title="과제 참여 여부 확인하기"
+      src="https://eyeholder83-commits.github.io/sh0201/%ED%95%99%EA%B8%89%ED%86%B5%ED%95%A9%EA%B4%80%EB%A6%AC.html?autoActivity=act-1795648146825"
+      loading="lazy"
+      style="display:block;width:100%;height:650px;border:0;border-radius:16px;background:#f8fafc;"
+      referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  </div>
+</main>
+<dialog id="completionDialog" aria-labelledby="completionHeading">
+  <h2 id="completionHeading">모든 문제를 맞혔어요!</h2>
+  <p>자동평가 페이지가 열렸어요.</p>
+</dialog>
+<script>
+const animals = ['개', '앵무새', '고양이', '토끼', '금붕어'];
+const icons = ['🐶', '🦜', '🐱', '🐰', '🐠'];
+const names = '수찬 채원 지아 서준 재이 효주 슬기 정우 세미 민하 연우 호진 소민 우영 지은 다윤 소희 도현 시후 상혁'.split(' ');
+const votes = [0,1,0,2,3,2,4,4,1,0,4,2,0,4,2,3,0,1,2,0];
+const totals = animals.map((_, i) => votes.filter(vote => vote === i).length);
+const byId = id => document.getElementById(id);
+const positions = votes.map(() => null);
+const indexes = Array.from({length:6}, (_, i) => i + 1);
+let selected = null;
+const stickerStatus = byId('stickerStatus');
+byId('survey').innerHTML = names.map((name, i) => `<div class="person"><span class="animal" role="img" aria-label="${animals[votes[i]]}">${icons[votes[i]]}</span>${name}</div>`).join('');
+const headings = animals.map(animal => `<th scope="col">${animal}</th>`).join('');
+const input = (id, label, numeric = false) => `<input class="entry" id="${id}" aria-label="${label}" autocomplete="off" ${numeric ? 'inputmode="numeric" maxlength="2"' : ''}>`;
+function renderStickers() {
+  byId('tray').innerHTML = votes.map((animal, i) => positions[i] === null ?
+    `<button class="sticker" type="button" draggable="true" data-sticker="${i}" aria-label="${names[i]}의 ${animals[animal]} 딱지" aria-pressed="${selected === i}">${icons[animal]}</button>` : '').join('');
+  byId('sorting').innerHTML = '<thead><tr>' + headings + '</tr></thead><tbody>' +
+    [...indexes].reverse().map(level => '<tr>' + animals.map((animal, col) => {
+      const i = positions.findIndex(slot => slot?.col === col && slot.level === level);
+      const label = i < 0 ? `${animal}, 아래에서 ${level}번째 칸` : `${names[i]}의 ${animals[votes[i]]} 딱지 돌려놓기`;
+      return `<td><button class="bucket" type="button" data-col="${col}" data-level="${level}" data-occupant="${i}" aria-label="${label}">${i < 0 ? '' : icons[votes[i]]}</button></td>`;
+    }).join('') + '</tr>').join('') + '</tbody>';
+}
+function place(i, target) {
+  if (!Number.isInteger(i) || i < 0 || i >= votes.length || positions[i] !== null) return;
+  if (Number(target.dataset.occupant) !== -1) {
+    stickerStatus.textContent = '이미 딱지가 있어요. 빈칸을 골라 주세요.';
+    return;
+  }
+  positions[i] = {col:Number(target.dataset.col), level:Number(target.dataset.level)};
+  selected = null;
+  stickerStatus.textContent = '딱지를 붙였어요.';
+  renderStickers();
+  byId('sorting').querySelector(`[data-occupant="${i}"]`).focus();
+}
+byId('tray').addEventListener('click', event => {
+  const button = event.target.closest('[data-sticker]');
+  if (!button) return;
+  const i = Number(button.dataset.sticker);
+  selected = selected === i ? null : i;
+  for (const sticker of byId('tray').querySelectorAll('[data-sticker]')) {
+    sticker.setAttribute('aria-pressed', selected === Number(sticker.dataset.sticker));
+  }
+  stickerStatus.textContent = selected === null ? '선택을 취소했어요.' : `${animals[votes[i]]} 딱지를 놓을 칸을 누르세요.`;
+});
+byId('tray').addEventListener('dragstart', event => {
+  const button = event.target.closest('[data-sticker]');
+  if (!button) return;
+  event.dataTransfer.setData('application/x-animal-sticker', button.dataset.sticker);
+  event.dataTransfer.effectAllowed = 'move';
+});
+byId('sorting').addEventListener('dragover', event => {
+  if (event.target.closest('.bucket') && event.dataTransfer.types.includes('application/x-animal-sticker')) event.preventDefault();
+});
+byId('sorting').addEventListener('drop', event => {
+  const target = event.target.closest('.bucket');
+  const id = event.dataTransfer.getData('application/x-animal-sticker');
+  if (target && id !== '') {
+    event.preventDefault();
+    place(Number(id), target);
+  }
+});
+byId('sorting').addEventListener('click', event => {
+  const target = event.target.closest('.bucket');
+  if (!target) return;
+  if (selected !== null) return place(selected, target);
+  const i = Number(target.dataset.occupant);
+  if (i >= 0) {
+    positions[i] = null;
+    stickerStatus.textContent = '딱지를 돌려놓았어요.';
+    renderStickers();
+    byId('tray').querySelector(`[data-sticker="${i}"]`).focus();
+  } else stickerStatus.textContent = '위에서 붙임딱지를 먼저 골라 주세요.';
+});
+renderStickers();
+byId('counts').innerHTML = `<thead><tr><th scope="col">동물</th>${headings}<th scope="col">합계</th></tr></thead><tbody><tr><th scope="row">학생 수(명)</th>${animals.map((animal, i) => `<td>${i === 0 || i === 2 ? totals[i] : input('count' + i, animal + ' 학생 수', true)}</td>`).join('')}<td>20</td></tr></tbody>`;
+const mark = (i, n, fixed = false) => `<td><button type="button" class="mark" data-animal="${i}" data-count="${n}" aria-label="${animals[i]} ${n}명 칸" aria-pressed="${fixed}" ${fixed ? 'disabled' : ''}>${fixed ? '○' : ''}</button></td>`;
+byId('vchart').innerHTML = '<tbody>' + [...indexes].reverse().map(n =>
+  `<tr><th scope="row">${n > 3 ? input('vn' + n, '세로축 아래에서 ' + n + '번째 숫자', true) : n}</th>${animals.map((_, i) => mark(i,n,i === 0 && n <= 2)).join('')}</tr>`).join('') +
+  `</tbody><tfoot><tr><th class="axis">학생 수(명)<br>동물</th>${animals.map((_, i) => `<th>${i === 0 ? '개' : input('va' + i, '왼쪽에서 ' + (i + 1) + '번째 동물')}</th>`).join('')}</tr></tfoot>`;
+byId('hchart').innerHTML = '<tbody>' + animals.map((_, i) => animals.length - 1 - i).map(i =>
+  `<tr><th scope="row">${i === 0 ? '개' : input('ha' + i, '아래에서 ' + (i + 1) + '번째 동물')}</th>${indexes.map(n => mark(i,n)).join('')}</tr>`).join('') +
+  `</tbody><tfoot><tr><th class="axis">동물<br>학생 수(명)</th>${indexes.map(n => `<th>${n <= 2 ? n : input('hn' + n, '가로축 왼쪽에서 ' + n + '번째 숫자', true)}</th>`).join('')}</tr></tfoot>`;
+const currentSymbol = () => document.querySelector('[name="symbol"]:checked').value;
+for (const id of ['vchart','hchart']) {
+  byId(id).addEventListener('click', event => {
+    const button = event.target.closest('.mark');
+    if (!button || button.disabled) return;
+    const marked = button.getAttribute('aria-pressed') !== 'true';
+    setGraphMark(button, marked);
+  });
+}
+for (const radio of document.querySelectorAll('[name="symbol"]')) {
+  radio.addEventListener('change', () => {
+    for (const button of byId('hchart').querySelectorAll('.mark[aria-pressed=true]')) button.textContent = currentSymbol();
+  });
+}
+const normalize = value => value.normalize('NFKC').replace(/\s+/g,'');
+const graphTitleAnswer = '수찬이네 반 학생들이 좋아하는 동물별 학생 수';
+const graphTitleCorrect = () => {
+  const title = normalize(byId('graphTitle').value);
+  return ['수찬', '동물', '학생수'].every(keyword => title.includes(keyword));
+};
+const choiceAnswers = {
+  surveyMethod: '2',
+  stickerBenefit: '4',
+  stickerDrawback: '1',
+  graphSimilarity: '3',
+  graphDifference: '5',
+  graphBenefit: '1',
+};
+const selectedChoice = id => byId(id).querySelector('input:checked');
+const activityIds = ['sort', 'count', 'vertical', 'horizontal', ...Object.keys(choiceAnswers)];
+const correct = (id, answer) => normalize(byId(id).value) === String(answer);
+const graphCorrect = id => [...byId(id).querySelectorAll('.mark')].every(button =>
+  (button.getAttribute('aria-pressed') === 'true') === (Number(button.dataset.count) <= totals[Number(button.dataset.animal)]));
+const labelsCorrect = prefix => animals.slice(1).every((animal, i) => correct(prefix + (i + 1), animal));
+function showGrade(id, passed) {
+  const section = byId(id);
+  section.classList.toggle('wrong', !passed);
+  section.querySelector('.grade').textContent = passed ? '' : '다시 확인해 보세요.';
+}
+
+function showAutoEvaluation() {
+  if (!byId('autoEvaluation').hidden) return;
+  byId('worksheet').hidden = true;
+  byId('autoEvaluation').hidden = false;
+  byId('auto-evaluation-act-1795648146825').hidden = false;
+  const heading = byId('autoEvaluationHeading');
+  heading.focus();
+  heading.scrollIntoView({block: 'start'});
+
+  const dialog = byId('completionDialog');
+  dialog.showModal();
+  setTimeout(() => dialog.close(), 2000);
+}
+
+byId('check').addEventListener('click', () => {
+  const results = {
+    sort:positions.every((slot, i) => slot && slot.col === votes[i] && slot.level <= totals[slot.col]),
+    count:[1,3,4].every(i => correct('count' + i, totals[i])),
+    vertical:graphTitleCorrect() &&
+      [4,5,6].every(n => correct('vn' + n,n)) && labelsCorrect('va') && graphCorrect('vchart'),
+    horizontal:[3,4,5,6].every(n => correct('hn' + n,n)) && labelsCorrect('ha') && graphCorrect('hchart')
+  };
+  for (const [id, answer] of Object.entries(choiceAnswers)) {
+    results[id] = selectedChoice(id)?.value === answer;
+  }
+  for (const [id, passed] of Object.entries(results)) showGrade(id, passed);
+  if (Object.values(results).every(Boolean)) {
+    showAutoEvaluation();
+  } else {
+    byId('result').textContent = '다시 확인 표시가 있는 활동을 고쳐 보세요.';
+  }
+});
+
+const teacherToggle = byId('teacherToggle');
+const teacherDialog = byId('teacherDialog');
+const teacherPassword = byId('teacherPassword');
+const teacherError = byId('teacherError');
+const teacherSubmit = byId('teacherSubmit');
+const pinDigest = 'd283fc7ed27a618f0d8e673ffbd01c18ba8d472f095f375f93576d3ed40c4782';
+const worksheetFields = [...document.querySelectorAll('input.entry:not([type="password"])')];
+const graphMarks = [...document.querySelectorAll('.mark')];
+let studentWork = null;
+
+function setGraphMark(button, marked) {
+  button.setAttribute('aria-pressed', marked);
+  button.textContent = marked ? (button.closest('#vchart') ? '○' : currentSymbol()) : '';
+}
+
+function clearWorksheetFeedback() {
+  for (const id of activityIds) {
+    byId(id).classList.remove('wrong');
+    byId(id).querySelector('.grade').textContent = '';
+  }
+  byId('result').textContent = '';
+  stickerStatus.textContent = '';
+  selected = null;
+  renderStickers();
+}
+
+function fillTeacherAnswers() {
+  studentWork = {
+    positions: positions.slice(),
+    values: worksheetFields.map(field => field.value),
+    marks: graphMarks.map(button => button.getAttribute('aria-pressed') === 'true'),
+    choices: Object.keys(choiceAnswers).map(selectedChoice).filter(Boolean),
+    symbol: document.querySelector('[name="symbol"]:checked')
+  };
+
+  const levels = animals.map(() => 0);
+  votes.forEach((col, i) => { positions[i] = {col, level: ++levels[col]}; });
+  for (const i of [1, 3, 4]) byId('count' + i).value = totals[i];
+  byId('graphTitle').value = graphTitleAnswer;
+  for (const n of [4, 5, 6]) byId('vn' + n).value = n;
+  for (const n of [3, 4, 5, 6]) byId('hn' + n).value = n;
+  animals.slice(1).forEach((animal, index) => {
+    byId('va' + (index + 1)).value = animal;
+    byId('ha' + (index + 1)).value = animal;
+  });
+  for (const button of graphMarks) {
+    setGraphMark(button, Number(button.dataset.count) <= totals[Number(button.dataset.animal)]);
+  }
+
+  for (const [id, answer] of Object.entries(choiceAnswers)) {
+    byId(id).querySelector(`input[value="${answer}"]`).checked = true;
+  }
+  clearWorksheetFeedback();
+  teacherToggle.textContent = '로그아웃';
+}
+
+teacherToggle.addEventListener('click', () => {
+  if (!studentWork) {
+    teacherDialog.showModal();
+    return;
+  }
+  positions.splice(0, positions.length, ...studentWork.positions);
+  worksheetFields.forEach((field, i) => { field.value = studentWork.values[i]; });
+  for (const id of Object.keys(choiceAnswers)) {
+    const choice = selectedChoice(id);
+    if (choice) choice.checked = false;
+  }
+  for (const choice of studentWork.choices) choice.checked = true;
+  studentWork.symbol.checked = true;
+  graphMarks.forEach((button, i) => setGraphMark(button, studentWork.marks[i]));
+  studentWork = null;
+  clearWorksheetFeedback();
+  teacherToggle.textContent = '교사 로그인';
+});
+byId('teacherCancel').addEventListener('click', () => teacherDialog.close());
+teacherDialog.addEventListener('close', () => {
+  teacherPassword.value = '';
+  teacherError.textContent = '';
+  teacherToggle.focus();
+});
+byId('teacherForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (teacherSubmit.disabled) return;
+  teacherSubmit.disabled = true;
+  try {
+    const password = new TextEncoder().encode(teacherPassword.value);
+    const bytes = await crypto.subtle.digest('SHA-256', password);
+    if (!teacherDialog.open) return;
+    const digest = Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('');
+    if (digest === pinDigest) {
+      fillTeacherAnswers();
+      teacherDialog.close();
+    } else {
+      teacherError.textContent = '비밀번호를 다시 확인해 주세요.';
+      teacherPassword.select();
+    }
+  } catch {
+    teacherError.textContent = '브라우저에서 파일을 직접 열거나 HTTPS 페이지에서 이용해 주세요.';
+  } finally {
+    teacherSubmit.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
